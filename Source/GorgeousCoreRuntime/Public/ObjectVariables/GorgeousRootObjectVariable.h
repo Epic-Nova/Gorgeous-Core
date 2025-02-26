@@ -20,8 +20,6 @@
 #include "GorgeousRootObjectVariable.generated.h"
 //<-------------------------------------------------------------------------->
 
-
-
 /**
  * The root object variable, serving as the central registry for all object variables.
  *
@@ -33,7 +31,6 @@
  * - Cleanup functionality for removing variables from the registry.
  *
  * @note This class provides a centralized and efficient way to manage object variables within the game.
- * @todo A console command that prints out the whole hierarchy of the variables.
  */
 UCLASS(BlueprintType)
 class UGorgeousRootObjectVariable : public UGorgeousObjectVariable
