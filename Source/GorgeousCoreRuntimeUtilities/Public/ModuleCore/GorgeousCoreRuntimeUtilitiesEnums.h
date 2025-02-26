@@ -8,9 +8,15 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousCoreRuntimeUtilitiesEnums.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * @brief Enum that defines the importancy of the logging message.

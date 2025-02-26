@@ -15,19 +15,16 @@
 |								ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED								|
 |		TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE			|
 <======================================================================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
 #include "GorgeousCoreRuntimeEnums.h"
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "GorgeousCoreRuntimeLogging.h"
 #include "GorgeousCoreRuntimeMacros.h"
 #include "GorgeousCoreRuntimeStructures.h"
-
-//Data Hook Includes
-#include "DataHooks/GorgeousDataHook.h"
-
-//Data Modifier Includes
-#include "DataModifiers/GorgeousDataModifier.h"
 
 //Object Variable Includes
 #include "ObjectVariables/GorgeousObjectVariable.h"

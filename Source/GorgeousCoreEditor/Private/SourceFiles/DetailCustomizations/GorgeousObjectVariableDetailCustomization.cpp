@@ -8,14 +8,19 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "GorgeousObjectVariableDetailCustomization.h"
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
 #include "Blueprint/UserWidget.h"
-#include "Widgets/Input/SEditableTextBox.h"
-#include "Widgets/SCompoundWidget.h"
-#include "Widgets/Text/STextBlock.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// FGorgeousObjectVariableDetailCustomization Implementation
+//=============================================================================
 
 
 DECLARE_DELEGATE_OneParam(FOnPropertyValueChangedWithData, TSharedRef<IPropertyHandle>);

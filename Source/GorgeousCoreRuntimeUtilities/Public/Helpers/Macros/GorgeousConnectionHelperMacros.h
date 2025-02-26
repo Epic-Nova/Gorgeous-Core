@@ -8,6 +8,9 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
 #define GORGEOUS_API_ENDPOINT "https://api.gt.simsalabim.studio"

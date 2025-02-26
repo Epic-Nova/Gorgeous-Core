@@ -8,11 +8,27 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-#include "GorgeousCoreUtilitiesMinimalShared.h"
-#include "GorgeousCondition.generated.h"
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "GorgeousCondition.generated.h"
+//<-------------------------------------------------------------------------->
+
+/**
+ * Base class for conditions used in conditional object choosers.
+ *
+ * Key features include:
+ * - Mode selection from EConditionalChooserMode_E.
+ * - CheckCondition function to evaluate the condition.
+ *
+ * @note This class serves as a base for specific condition implementations.
+ */
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)
 class UGorgeousCondition : public UObject
 {
@@ -20,8 +36,16 @@ class UGorgeousCondition : public UObject
 
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    EConditionalChooserMode_E Mode;
-	
+	/**
+	 * The mode of the condition.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Condition")
+	EConditionalChooserMode_E Mode;
+
+	/**
+	 * Checks the condition and returns a result.
+	 *
+	 * @return The result of the condition check.
+	 */
 	virtual uint8 CheckCondition();
 };

@@ -8,8 +8,17 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// UGorgeousObjectVariableRegistry_GIS Implementation
+//=============================================================================
 
 void UGorgeousObjectVariableRegistry_GIS::Initialize(FSubsystemCollectionBase& Collection)
 {

@@ -8,7 +8,12 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+
+//=============================================================================
+// UGorgeousRootObjectVariable Implementation
+//=============================================================================
 
 TArray<TObjectPtr<UGorgeousObjectVariable>> UGorgeousRootObjectVariable::RootVariableRegistry = TArray<TObjectPtr<UGorgeousObjectVariable>>();
 TObjectPtr<UGorgeousRootObjectVariable> UGorgeousRootObjectVariable::SingletonRootInstance = nullptr;

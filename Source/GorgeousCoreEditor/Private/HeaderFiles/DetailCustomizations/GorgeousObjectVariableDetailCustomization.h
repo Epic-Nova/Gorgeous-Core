@@ -8,25 +8,71 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
-#include "DetailWidgetRow.h"
-#include "IDetailCustomization.h"
-#include "ObjectVariables/GorgeousObjectVariableEnums.h"
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
+#include "PropertyHandle.h"
+#include "Widgets/SWidget.h"
+#include "UObject/UnrealType.h"
+#include "Templates/Function.h"
+//<-------------------------------------------------------------------------->
+
+/**
+ * Customizes the detail panel appearance for Gorgeous Object Variable enums,
+ * providing a user-friendly dropdown for enum selection.
+ *
+ * Key features include:
+ * - Generation of enum dropdown widgets.
+ * - Integration with the Unreal Engine's property system for seamless customization.
+ * - Support for both header and child property customization.
+ *
+ * @note This class enhances the editor experience by providing a visual and intuitive way
+ * to select enum values within the details panel.
+ */
 class FGorgeousObjectVariableDetailCustomization : public IPropertyTypeCustomization
 {
 public:
-	
 
-	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
-	
-	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
-	
-	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+    /**
+     * Creates an instance of this property type customization.
+     *
+     * @return A shared reference to the newly created instance.
+     */
+    static TSharedRef<IPropertyTypeCustomization> MakeInstance();
+
+    /**
+     * Customizes the header row of the property in the details panel.
+     *
+     * @param PropertyHandle The property handle being customized.
+     * @param HeaderRow The detail widget row for the header.
+     * @param CustomizationUtils Utility functions for property customization.
+     */
+    virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
+
+    /**
+     * Customizes the children of the property in the details panel.
+     *
+     * @param PropertyHandle The property handle being customized.
+     * @param ChildBuilder The detail children builder.
+     * @param CustomizationUtils Utility functions for property customization.
+     */
+    virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils) override;
 
 private:
 
-	template <typename TEnum>
-	TSharedRef<SWidget> GenerateEnumDropdown(FText LabelText, const UEnum* EnumType, TFunction<void(TEnum)> OnSelectionChangedCallback);
-
+    /**
+     * Generates a dropdown widget for enum selection.
+     *
+     * @tparam TEnum The enum type.
+     * @param LabelText The label text for the dropdown.
+     * @param EnumType The UEnum object representing the enum type.
+     * @param OnSelectionChangedCallback The callback function to be executed when the selection changes.
+     * @return A shared reference to the generated dropdown widget.
+     */
+    template <typename TEnum>
+    TSharedRef<SWidget> GenerateEnumDropdown(FText LabelText, const UEnum* EnumType, TFunction<void(TEnum)> OnSelectionChangedCallback);
 };

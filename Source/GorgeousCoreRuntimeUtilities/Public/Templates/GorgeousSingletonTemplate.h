@@ -8,31 +8,60 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
+#include "UObject/Object.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousSingletonTemplate.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Used to provide a singleton way of accessing a class that depends on this template.
+ *
+ * Key features include:
+ * - Template-based singleton creation.
+ * - Singleton destruction.
+ * - Protected constructor to prevent direct instantiation.
+ *
+ * @note This class provides a generic singleton pattern for UObjects.
  */
 UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousSingletonTemplate : public UObject
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
 
-	template<typename T>
-	static T* GetSingleton();
+    /**
+     * Gets the singleton instance of the specified type.
+     *
+     * @tparam T The type of the singleton.
+     * @return The singleton instance.
+     */
+    template<typename T>
+    static T* GetSingleton();
 
-	static void DestroySingleton();
+    /**
+     * Destroys the singleton instance.
+     */
+    static void DestroySingleton();
 
 protected:
 
-	// Protected constructor to prevent direct instantiation.
-	UGorgeousSingletonTemplate() {}
-	
+    /**
+     * Protected constructor to prevent direct instantiation.
+     */
+    UGorgeousSingletonTemplate() {}
+
 private:
 
-	static UGorgeousSingletonTemplate* SingletonInstance;
+    /**
+     * The singleton instance.
+     */
+    static UGorgeousSingletonTemplate* SingletonInstance;
 };

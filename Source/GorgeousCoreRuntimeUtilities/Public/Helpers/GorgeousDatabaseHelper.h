@@ -9,6 +9,10 @@
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
 /**
  * static FORCEINLINE FString ReadGorgeousDatabase(FString Table, FString Identifier)
 {

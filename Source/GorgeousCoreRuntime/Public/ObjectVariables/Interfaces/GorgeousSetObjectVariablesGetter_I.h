@@ -8,62 +8,147 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "UObject/Interface.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousSetObjectVariablesGetter_I.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<===========--- Forward Declarations ---===========>
 class UGorgeousObjectVariable;
+//<-------------------------------------------------->
 
+/**
+ * Interface for getting set object variables.
+ *
+ * Key features include:
+ * - Functions to get sets of various object variable types.
+ * - BlueprintNativeEvent and BlueprintCallable functions for easy use in Blueprints.
+ *
+ * @note This interface provides a standardized way to access set object variables.
+ */
 UINTERFACE(MinimalAPI, BlueprintType)
 class UGorgeousSetObjectVariablesGetter_I : public UInterface
 {
 	GENERATED_BODY()
 };
 
+/**
+ * Native interface for getting set object variables.
+ */
 class GORGEOUSCORERUNTIME_API IGorgeousSetObjectVariablesGetter_I
 {
 	GENERATED_BODY()
 
 public:
 
-	//For Set Object Variables
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object Variable")
-	TSet<UGorgeousObjectVariable*> GetObjectVariableSetObjectVariable() const;
+    /**
+     * Gets a set of GorgeousObjectVariables.
+     *
+     * @return A set of GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object Variable")
+    TSet<UGorgeousObjectVariable*> GetObjectVariableSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-	TSet<UObject*> GetObjectObjectSetObjectVariable() const;
+    /**
+     * Gets a set of UObjects.
+     *
+     * @return A set of UObjects.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
+    TSet<UObject*> GetObjectObjectSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-	TSet<UClass*> GetObjectClassSetObjectVariable() const;
+    /**
+     * Gets a set of UClasses.
+     *
+     * @return A set of UClasses.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
+    TSet<UClass*> GetObjectClassSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-	TSet<TSoftObjectPtr<UObject>> GetSoftObjectObjectSetObjectVariable() const;
+    /**
+     * Gets a set of TSoftObjectPtr<UObject>.
+     *
+     * @return A set of TSoftObjectPtr<UObject>.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
+    TSet<TSoftObjectPtr<UObject>> GetSoftObjectObjectSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-	TSet<TSoftClassPtr<UObject>> GetSoftObjectClassSetObjectVariable() const;
+    /**
+     * Gets a set of TSoftClassPtr<UObject>.
+     *
+     * @return A set of TSoftClassPtr<UObject>.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
+    TSet<TSoftClassPtr<UObject>> GetSoftObjectClassSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
-	TSet<uint8> GetByteSetObjectVariable() const;
+    /**
+     * Gets a set of bytes.
+     *
+     * @return A set of bytes.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
+    TSet<uint8> GetByteSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-	TSet<double> GetFloatSetObjectVariable() const;
+    /**
+     * Gets a set of doubles.
+     *
+     * @return A set of doubles.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
+    TSet<double> GetFloatSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer64")
-	TSet<int64> GetInteger64SetObjectVariable() const;
+    /**
+     * Gets a set of 64-bit integers.
+     *
+     * @return A set of 64-bit integers.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer64")
+    TSet<int64> GetInteger64SetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer")
-	TSet<int32> GetIntegerSetObjectVariable() const;
+    /**
+     * Gets a set of integers.
+     *
+     * @return A set of integers.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer")
+    TSet<int32> GetIntegerSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Name")
-	TSet<FName> GetNameSetObjectVariable() const;
+    /**
+     * Gets a set of FNames.
+     *
+     * @return A set of FNames.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Name")
+    TSet<FName> GetNameSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
-	TSet<FString> GetStringSetObjectVariable() const;
+    /**
+     * Gets a set of FStrings.
+     *
+     * @return A set of FStrings.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
+    TSet<FString> GetStringSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
-	TSet<FTransform> GetTransformSetObjectVariable() const;
+    /**
+     * Gets a set of FTransforms.
+     *
+     * @return A set of FTransforms.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
+    TSet<FTransform> GetTransformSetObjectVariable() const;
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
-	TSet<FVector> GetVectorSetObjectVariable() const;
+    /**
+     * Gets a set of FVectors.
+     *
+     * @return A set of FVectors.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
+    TSet<FVector> GetVectorSetObjectVariable() const;
 };

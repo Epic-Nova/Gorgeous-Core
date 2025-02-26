@@ -8,152 +8,208 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousObjectVariable.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousRootObjectVariable.generated.h"
+//<-------------------------------------------------------------------------->
 
 
-//@TODO: A console command that prints out the whole hierarchy of the variables
+
+/**
+ * The root object variable, serving as the central registry for all object variables.
+ *
+ * Key features include:
+ * - Singleton pattern for global access.
+ * - Registry for tracking all object variables.
+ * - Hierarchy management for nested variables.
+ * - Universal getter and setter functions for dynamic property access.
+ * - Cleanup functionality for removing variables from the registry.
+ *
+ * @note This class provides a centralized and efficient way to manage object variables within the game.
+ * @todo A console command that prints out the whole hierarchy of the variables.
+ */
 UCLASS(BlueprintType)
 class UGorgeousRootObjectVariable : public UGorgeousObjectVariable
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
 
-	UGorgeousRootObjectVariable();
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
-	static UGorgeousRootObjectVariable* GetRootObjectVariable();
+    /**
+     * Constructor for the root object variable.
+     */
+    UGorgeousRootObjectVariable();
 
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
-	static TArray<UGorgeousObjectVariable*> GetVariableHierarchyRegistry();
+    /**
+     * Gets the singleton instance of the root object variable.
+     *
+     * @return The root object variable instance.
+     */
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    static UGorgeousRootObjectVariable* GetRootObjectVariable();
 
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
-	static TArray<UGorgeousObjectVariable*> GetRootVariableRegistry();
+    /**
+     * Gets the hierarchy registry of all object variables.
+     *
+     * @return An array of all registered object variables.
+     */
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    static TArray<UGorgeousObjectVariable*> GetVariableHierarchyRegistry();
 
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
-	static void RemoveVariableFromRegistry(UGorgeousObjectVariable* VariableToRemove);
+    /**
+     * Gets the root variable registry.
+     *
+     * @return An array of root-level object variables.
+     */
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    static TArray<UGorgeousObjectVariable*> GetRootVariableRegistry();
 
-	static void CleanupRegistry(bool bFullCleanup = false);
-	
-	/**
-	 * Used to set the value of a property with any type you want. The requirement for this is that a property with the same name and type exists in the requesting class.
-	 * To be able to get access to the object variable it has to be spawned through the NewObjectVariable function or any function that assigns a unique FGuid to its tags upon spawn.
-	 * 
-	 * @param Identifier The unique identifier that got assigned to the object variable in the spawn process commonly returned by the function NewObjectVaraible
-	 * @param Value Any value that you want to set. Be creative, anything works!
-	 * @param OptionalPropertyName Optionally the name of a property that is contained inside the object variable instance. Defaults to "Value" for the default value of an object variable.
-	 *
-	 * @todo A dropdown that lists the available variables inside OptionalPropertyName with a corresponding TSubclassOf (meta specifier)
-	 * @todo dynamic pin for the variable type (right click, change to variable type => like the math operations) or automatically set the thunk type with the OptionalPropertyName or default value "Value"
-	 */
-	UFUNCTION(BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "Value"))
-	static void SetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, const int32& Value);
+    /**
+     * Removes a variable from the registry.
+     *
+     * @param VariableToRemove The variable to remove.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+    static void RemoveVariableFromRegistry(UGorgeousObjectVariable* VariableToRemove);
 
-	DECLARE_FUNCTION(execSetUniversalVariable)
-	{
-		P_GET_STRUCT(FGuid, Identifier);
-		P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-		Stack.StepCompiledIn<FProperty>(nullptr);
-		const FProperty* SourceProperty  = Stack.MostRecentProperty;
-		const void* SourcePropertyAddress  = Stack.MostRecentPropertyAddress;
-		P_FINISH;
-		
-		if (OptionalPropertyName.IsNone())
-		{
-			OptionalPropertyName = "Value";
-		}
+    /**
+     * Cleans up the registry, optionally performing a full cleanup.
+     *
+     * @param bFullCleanup Whether to perform a full cleanup.
+     */
+    static void CleanupRegistry(bool bFullCleanup = false);
 
-		UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-			
-		for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-		{
-			if (ObjectVariable->UniqueVariableIdentifier == Identifier)
-			{
-				FoundObjectVariable = ObjectVariable;
-				break;
-			}
-		}
+    /**
+     * Sets the value of a property with any type.
+     *
+     * @param Identifier The unique identifier of the object variable.
+     * @param OptionalPropertyName The name of the property to set.
+     * @param Value The value to set.
+     *
+     * @todo A dropdown that lists the available variables inside OptionalPropertyName with a corresponding TSubclassOf (meta specifier)
+     * @todo dynamic pin for the variable type (right click, change to variable type => like the math operations) or automatically set the thunk type with the OptionalPropertyName or default value "Value"
+     */
+    UFUNCTION(BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "Value"))
+    static void SetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, const int32& Value);
 
-		if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
-		{
-			if (const FProperty* TargetProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-			{
-				if (TargetProperty->SameType(SourceProperty))
-				{
-					TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
-				}
-				else
-				{
-					UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Used to receive the value of a property with any type you want. The requirement for this is that a property with the same name and type exists in the requesting class.
-	 * To be able to get access to the object variable it has to be spawned through the NewObjectVariable function or any function that assigns a unique FGuid to its tags upon spawn.
-	 * 
-	 * @param Identifier The unique identifier that got assigned to the object variable in the spawn process commonly returned by the function NewObjectVariable
-	 * @param OutValue Any value that you want to set. Be creative, anything works!
-	 * @param OptionalPropertyName Optionally the name of a property that is contained inside the object variable instance. Defaults to "Value" for the default value of an object variable.
-	 *
-	 * @todo A dropdown that lists the available variables inside OptionalPropertyName with a corresponding TSubclassOf (meta specifier)
-	 * @todo dynamic pin for the variable type (right click, change to variable type => like the math operations) or automatically set the thunk type with the OptionalPropertyName or default value "Value"
-	 */
-	UFUNCTION(BlueprintPure, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
-	static void GetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, int32& OutValue);
+    DECLARE_FUNCTION(execSetUniversalVariable)
+    {
+       P_GET_STRUCT(FGuid, Identifier);
+       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
+       Stack.StepCompiledIn<FProperty>(nullptr);
+       const FProperty* SourceProperty  = Stack.MostRecentProperty;
+       const void* SourcePropertyAddress  = Stack.MostRecentPropertyAddress;
+       P_FINISH;
 
-	DECLARE_FUNCTION(execGetUniversalVariable)
-	{
-		P_GET_STRUCT(FGuid, Identifier);
-		P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-		Stack.StepCompiledIn<FProperty>(nullptr);
-		void* OutValueAddress = Stack.MostRecentPropertyAddress;
-		const FProperty* OutValueProperty = Stack.MostRecentProperty;
-		P_FINISH;
+       if (OptionalPropertyName.IsNone())
+       {
+          OptionalPropertyName = "Value";
+       }
 
-		if (OptionalPropertyName.IsNone())
-		{
-			OptionalPropertyName = "Value";
-		}
-		
-		UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-			
-		for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-		{
-			if (ObjectVariable->UniqueVariableIdentifier == Identifier)
-			{
-				FoundObjectVariable = ObjectVariable;
-				break;
-			}
-		}
-		
-		if (FoundObjectVariable)
-		{
-			if (const FProperty* SourceProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-			{
-				if (SourceProperty->SameType(OutValueProperty))
-				{
-					SourceProperty->CopyCompleteValue(OutValueAddress, SourceProperty->ContainerPtrToValuePtr<void>(FoundObjectVariable));
-				}
-				else
-				{
-					UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
-				}
-			}
-		}
-	}
-	
-	virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable) override;
+       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
+
+       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
+       {
+          if (ObjectVariable->UniqueVariableIdentifier == Identifier)
+          {
+             FoundObjectVariable = ObjectVariable;
+             break;
+          }
+       }
+
+       if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
+       {
+          if (const FProperty* TargetProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
+          {
+             if (TargetProperty->SameType(SourceProperty))
+             {
+                TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
+             }
+             else
+             {
+                UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
+             }
+          }
+       }
+    }
+
+    /**
+     * Gets the value of a property with any type.
+     *
+     * @param Identifier The unique identifier of the object variable.
+     * @param OptionalPropertyName The name of the property to get.
+     * @param OutValue The output value.
+     *
+     * @todo A dropdown that lists the available variables inside OptionalPropertyName with a corresponding TSubclassOf (meta specifier)
+     * @todo dynamic pin for the variable type (right click, change to variable type => like the math operations) or automatically set the thunk type with the OptionalPropertyName or default value "Value"
+     */
+    UFUNCTION(BlueprintPure, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
+    static void GetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, int32& OutValue);
+
+    DECLARE_FUNCTION(execGetUniversalVariable)
+    {
+       P_GET_STRUCT(FGuid, Identifier);
+       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
+       Stack.StepCompiledIn<FProperty>(nullptr);
+       void* OutValueAddress = Stack.MostRecentPropertyAddress;
+       const FProperty* OutValueProperty = Stack.MostRecentProperty;
+       P_FINISH;
+
+       if (OptionalPropertyName.IsNone())
+       {
+          OptionalPropertyName = "Value";
+       }
+
+       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
+
+       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
+       {
+          if (ObjectVariable->UniqueVariableIdentifier == Identifier)
+          {
+             FoundObjectVariable = ObjectVariable;
+             break;
+          }
+       }
+
+       if (FoundObjectVariable)
+       {
+          if (const FProperty* SourceProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
+          {
+             if (SourceProperty->SameType(OutValueProperty))
+             {
+                SourceProperty->CopyCompleteValue(OutValueAddress, SourceProperty->ContainerPtrToValuePtr<void>(FoundObjectVariable));
+             }
+             else
+             {
+                UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
+             }
+          }
+       }
+    }
+
+    /**
+     * Registers a new object variable with the registry.
+     *
+     * @param NewObjectVariable The object variable to register.
+     */
+    virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable) override;
 
 protected:
 
-	static TArray<TObjectPtr<UGorgeousObjectVariable>> RootVariableRegistry;
+    /**
+     * The root variable registry.
+     */
+    static TArray<TObjectPtr<UGorgeousObjectVariable>> RootVariableRegistry;
 
-	static TObjectPtr<UGorgeousRootObjectVariable> SingletonRootInstance;
-	
+    /**
+     * The singleton instance of the root object variable.
+     */
+    static TObjectPtr<UGorgeousRootObjectVariable> SingletonRootInstance;
 };

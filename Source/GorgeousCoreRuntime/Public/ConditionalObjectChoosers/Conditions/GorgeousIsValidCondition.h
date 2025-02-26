@@ -8,26 +8,52 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCondition.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousIsValidCondition.generated.h"
-
+//<-------------------------------------------------------------------------->
+/**
+ * A condition that checks if objects are valid (not null).
+ *
+ * Key features include:
+ * - Object inputs A and B.
+ * - Mode selection from EConditionalChooserMode_E (inherited from UGorgeousCondition).
+ * - CheckCondition function to evaluate the condition.
+ *
+ * @note This condition can be used in conditional object choosers to select objects based on object validity.
+ */
 UCLASS(Blueprintable, BlueprintType)
 class UGorgeousIsValidCondition : public UGorgeousCondition
 {
 	GENERATED_BODY()
 
 public:
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+
+	/**
+	 * The first object input.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IsValid Condition")
 	UObject* A;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	/**
+	 * The second object input.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IsValid Condition")
 	UObject* B;
 
+	/**
+	 * Checks if the object inputs are valid based on the selected mode.
+	 *
+	 * @return 1 if the condition is true, 0 otherwise.
+	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
 	virtual uint8 CheckCondition() override;
-	
+
 };

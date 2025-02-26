@@ -11,14 +11,19 @@
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+//<-------------------------------------------------------------------------->
 
+//=============================================================================
+// UGorgeousObjectVariable Implementation
+//=============================================================================
 
 UGorgeousObjectVariable::UGorgeousObjectVariable(): VariableRegistry(TArray<TObjectPtr<UGorgeousObjectVariable>>()),
                                                     bPersistent(false),
-                                                    Parent(nullptr)
-{
-}
+                                                    Parent(nullptr) {}
 
 void UGorgeousObjectVariable::RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
 {
@@ -66,17 +71,6 @@ void UGorgeousObjectVariable::SetDynamicProperty(const FName PropertyName, const
 		}
 	}
 }
-
-//     MyActor->SetDynamicProperty<int32, FIntProperty>(FName("MyIntProperty"), 42);
-
-/**
- * 
-	int32 RetrievedValue;
-	if (MyActor && MyActor->GetDynamicProperty<int32, FIntProperty>(FName("MyIntProperty"), RetrievedValue))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Retrieved Value: %d"), RetrievedValue);
-	}
- */
 
 
 template <typename InTCppType, typename TInPropertyBaseClass>
