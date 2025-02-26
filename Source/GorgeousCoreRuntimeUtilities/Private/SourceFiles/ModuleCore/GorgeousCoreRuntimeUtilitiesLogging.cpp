@@ -10,6 +10,5 @@
 <==========================================================================*/
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
 
-//DEFINE_LOG_CATEGORY(LogGorgeousThings);
-DEFINE_LOG_CATEGORY(GorgeousCoreRuntime);
-DEFINE_LOG_CATEGORY(GorgeousCoreRuntimeUtilities);
+DEFINE_LOG_CATEGORY(LogGorgeousCoreRuntime);
+DEFINE_LOG_CATEGORY(LogGorgeousCoreRuntimeUtilities);
