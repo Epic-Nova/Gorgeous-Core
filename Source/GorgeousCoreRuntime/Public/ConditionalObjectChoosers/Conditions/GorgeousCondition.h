@@ -23,5 +23,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EConditionalChooserMode_E Mode;
 	
-	virtual bool CheckCondition();
+	virtual uint8 CheckCondition();
 };

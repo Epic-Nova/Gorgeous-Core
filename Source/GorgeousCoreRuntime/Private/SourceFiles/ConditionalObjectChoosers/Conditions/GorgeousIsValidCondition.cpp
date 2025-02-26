@@ -10,7 +10,7 @@
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
 
-bool UGorgeousIsValidCondition::CheckCondition()
+uint8 UGorgeousIsValidCondition::CheckCondition()
 {
 	switch (Mode)
 	{

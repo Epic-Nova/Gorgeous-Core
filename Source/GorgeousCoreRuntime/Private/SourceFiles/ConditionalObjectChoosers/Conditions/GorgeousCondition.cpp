@@ -12,7 +12,7 @@
 
 #include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
 
-bool UGorgeousCondition::CheckCondition()
+uint8 UGorgeousCondition::CheckCondition()
 {
-	return false;
+	return 0;
 }

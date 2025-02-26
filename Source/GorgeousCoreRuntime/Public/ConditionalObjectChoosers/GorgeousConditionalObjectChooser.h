@@ -24,11 +24,8 @@ public:
 	UGorgeousObjectVariable* DecideCondition() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	UGorgeousCondition* Condition;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	UGorgeousObjectVariable* FalseCondition;
+	UGorgeousCondition* ConditionCheck;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	UGorgeousObjectVariable* TrueCondition;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, meta = (ExposeOnSpawn))
+	TArray<UGorgeousObjectVariable*> Conditions;
 };

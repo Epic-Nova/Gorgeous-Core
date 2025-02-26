@@ -26,5 +26,5 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool B;
 
-	virtual bool CheckCondition() override;
+	virtual uint8 CheckCondition() override;
 };

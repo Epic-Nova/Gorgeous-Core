@@ -12,5 +12,5 @@
 
 UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() const
 {
-	return Condition->CheckCondition() ? TrueCondition : FalseCondition;
+	return Conditions[ConditionCheck->CheckCondition()];
 }
