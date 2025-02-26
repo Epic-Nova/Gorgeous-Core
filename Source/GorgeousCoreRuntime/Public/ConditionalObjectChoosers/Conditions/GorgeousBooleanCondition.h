@@ -10,7 +10,7 @@
 <==========================================================================*/
 #pragma once
 #include "GorgeousCondition.h"
-
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
 #include "GorgeousBooleanCondition.generated.h"
 
 UCLASS(Blueprintable, BlueprintType)
@@ -25,4 +25,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool B;
+
+	virtual bool CheckCondition() override;
 };

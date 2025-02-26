@@ -19,18 +19,16 @@ class UGorgeousConditionalObjectChooser : public UObject
 	GENERATED_BODY()
 
 public:
-	
-	UGorgeousObjectVariable* DecideCondition();
-	
-	virtual bool CheckCondition();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Condition")
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
+	UGorgeousObjectVariable* DecideCondition() const;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
 	UGorgeousCondition* Condition;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
 	UGorgeousObjectVariable* FalseCondition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
 	UGorgeousObjectVariable* TrueCondition;
-	
 };

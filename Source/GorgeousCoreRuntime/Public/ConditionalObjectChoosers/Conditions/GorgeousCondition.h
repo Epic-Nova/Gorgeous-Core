@@ -9,7 +9,8 @@
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 #pragma once
-#include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
+#include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "GorgeousCondition.generated.h"
 
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)
@@ -18,4 +19,9 @@ class UGorgeousCondition : public UObject
 	GENERATED_BODY()
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    EConditionalChooserMode_E Mode;
+	
+	virtual bool CheckCondition();
 };

@@ -32,8 +32,6 @@
 //Object Variable Includes
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
-#include "ObjectVariables/GorgeousObjectVariableGlobals.h"
-#include "ObjectVariables/GorgeousObjectVariableStrctures.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
