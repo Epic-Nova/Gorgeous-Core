@@ -8,12 +8,21 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableEnums.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
+ * Enum that defines the variable type of the object variable.
+ * 
  * @brief Enum that defines the variable type of the object variable.
  * @author Nils Bergemann
  * @since Beginning
@@ -42,6 +51,8 @@ enum class EObjectVariableTypes_E : uint8
 };
 
 /**
+ * Enum that defines the variable count of the object variable.
+ *
  * @brief Enum that defines the variable count of the object variable.
  * @author Nils Bergemann
  * @since Beginning

@@ -8,23 +8,51 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
-#include "GorgeousCondition.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-#include "GorgeousBooleanCondition.generated.h"
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
+#include "GorgeousCondition.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "GorgeousBooleanCondition.generated.h"
+//<-------------------------------------------------------------------------->
+
+/**
+ * A condition that evaluates boolean values based on a specified mode.
+ *
+ * Key features include:
+ * - Boolean inputs A and B.
+ * - Mode selection from EConditionalChooserMode_E.
+ * - CheckCondition function to evaluate the condition.
+ *
+ * @note This condition can be used in conditional object choosers to select objects based on boolean logic.
+ */
 UCLASS(Blueprintable, BlueprintType)
 class UGorgeousBooleanCondition : public UGorgeousCondition
 {
 	GENERATED_BODY()
 
 public:
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+
+	/**
+	 * The first boolean input.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boolean Condition")
 	bool A;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	/**
+	 * The second boolean input.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boolean Condition")
 	bool B;
 
+	/**
+	 * Evaluates the boolean condition based on the selected mode.
+	 *
+	 * @return 1 if the condition is true, 0 otherwise.
+	 */
 	virtual uint8 CheckCondition() override;
 };

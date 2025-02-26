@@ -8,10 +8,18 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousObjectVariable.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableDefinitions.generated.h"
+//<-------------------------------------------------------------------------->
+
 
 UCLASS(Abstract, NotBlueprintType)
 class GORGEOUSCORERUNTIME_API USingleObjectVariable : public UGorgeousObjectVariable

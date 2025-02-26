@@ -8,7 +8,12 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
+
+//=============================================================================
+// GorgeousObjectVariable Definitions Implementations
+//=============================================================================
 
 UE_DECLARE_OBJECT_VARIABLE_DEFAULT_SINGLE_INTERFACE_IMPLEMENTATION(bool, Boolean, false)
 UE_DECLARE_OBJECT_VARIABLE_DEFAULT_SINGLE_INTERFACE_IMPLEMENTATION(FRotator, Rotator, FRotator::ZeroRotator)

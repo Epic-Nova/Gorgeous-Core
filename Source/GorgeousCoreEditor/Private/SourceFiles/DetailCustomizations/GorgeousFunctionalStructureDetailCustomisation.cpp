@@ -8,12 +8,24 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "GorgeousFunctionalStructureDetailCustomisation.h"
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "DetailWidgetRow.h"
-#include "GorgeousCoreUtilitiesMinimalShared.h"
+#include "PropertyHandle.h"
+#include "PropertyEditorModule.h"
 #include "IDetailChildrenBuilder.h"
+//<-------------------------=== Module Includes ===-------------------------->
+#include "GorgeousLoggingBlueprintFunctionLibrary.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
+//<-------------------------------------------------------------------------->
+
+
+//=============================================================================
+// FGorgeousFunctionalStructureDetailCustomisation Implementation
+//=============================================================================
 
 TSharedRef<IPropertyTypeCustomization> FGorgeousFunctionalStructureDetailCustomisation::MakeInstance()
 {

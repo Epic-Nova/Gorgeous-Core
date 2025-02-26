@@ -8,8 +8,18 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// UGorgeousObjectVariableCmdletHandler Implementation
+//=============================================================================
 
 void UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands()
 {

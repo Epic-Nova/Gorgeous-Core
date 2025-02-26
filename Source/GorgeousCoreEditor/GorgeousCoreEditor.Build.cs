@@ -34,7 +34,27 @@ public class GorgeousCoreEditor : ModuleRules
         
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "EditorSubsystem" });
         
-        PrivateDependencyModuleNames.AddRange(new[] { "PropertyEditor", "SlateCore", "Slate", "UMG", "UnrealEd", "BlueprintGraph" });
+        PrivateDependencyModuleNames.AddRange(
+            new[] 
+            {
+                "PropertyEditor", 
+                "SlateCore", 
+                "Slate", 
+                "UMG", 
+                "Kismet",
+                "Projects",
+                "EditorStyle",
+                "UnrealEd", 
+                "BlueprintGraph",
+                "HTTP",
+                "Json",
+                "JsonUtilities",
+                "MessageLog",
+                "ContentBrowser",
+                "DeveloperSettings"
+            });
+        
+        AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
         
         PrivateDependencyModuleNames.AddRange(new[] { "GorgeousCoreRuntime", "GorgeousCoreRuntimeUtilities" });
     }

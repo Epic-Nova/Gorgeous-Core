@@ -8,11 +8,20 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "GorgeousCoreRuntimeModule.h"
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "GameplayTagsManager.h"
 #include "Interfaces/IPluginManager.h"
+//<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// FGorgeousCoreRuntimeModule Implementation
+//=============================================================================
 
 void FGorgeousCoreRuntimeModule::StartupModule()
 {

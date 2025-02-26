@@ -8,33 +8,48 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "CoreMinimal.h"
 #include "GameFramework/Info.h"
-#include "Kismet/GameplayStatics.h"
-
+//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
-
 #include "ObjectVariables/Helpers/Macros/GorgeousObjectVariableHelperMacros.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesSetter_I.h"
-
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesSetter_I.h"
-
 #include "ObjectVariables/Interfaces/GorgeousMapObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousMapObjectVariablesSetter_I.h"
-
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesSetter_I.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariable.generated.h"
+//<-------------------------------------------------------------------------->
 
-/*==================================================================================================>
-| Class that provides the functionality to define variables in object form.							|
-| Children classes will be able to replicate its value over the network.							|
-<==================================================================================================*/
+/**
+ * Base class for defining variables as objects within the Gorgeous Things ecosystem.
+ *
+ * This class provides a flexible and extensible way to represent variables as UObjects,
+ * allowing for dynamic data storage and manipulation. Child classes can leverage this
+ * foundation to create specialized variable types with network replication capabilities.
+ *
+ * Key features include:
+ * - Support for single, array, map, and set variable types.
+ * - Integration with interfaces for getter and setter operations.
+ * - Dynamic property management using templates.
+ * - Registry for tracking object variables.
+ * - Persistence options for level transitions.
+ * - Unique identifier generation for each object variable.
+ *
+ * @note This class serves as the cornerstone for managing variables in the Gorgeous Things system,
+ * enabling a more object-oriented approach to variable handling.
+ */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, ClassGroup = "Gorgeous Core|Gorgeous Object Variables", DisplayName = "Gorgeous Object Variable", Category = "Gorgeous Core|Gorgeous Object Variables",
 	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables."))
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UObject,
@@ -57,37 +72,73 @@ protected:
 
 public:
 
-	virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable);
-	
-   template<typename InTCppType, typename TInPropertyBaseClass>
-	void SetDynamicProperty(const FName PropertyName, const InTCppType& Value);
+    /**
+     * Registers the object variable with the registry.
+     *
+     * @param NewObjectVariable The object variable to register.
+     */
+    virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable);
 
+    /**
+     * Sets a dynamic property of the object variable.
+     *
+     * @tparam InTCppType The C++ type of the property.
+     * @tparam TInPropertyBaseClass The base class of the property.
+     * @param PropertyName The name of the property.
+     * @param Value The value to set.
+     */
+    template<typename InTCppType, typename TInPropertyBaseClass>
+    void SetDynamicProperty(const FName PropertyName, const InTCppType& Value);
+
+    /**
+     * Gets a dynamic property of the object variable.
+     *
+     * @tparam InTCppType The C++ type of the property.
+     * @tparam TInPropertyBaseClass The base class of the property.
+     * @param PropertyName The name of the property.
+     * @param OutValue The output value of the property.
+     * @return True if the property was successfully retrieved, false otherwise.
+     */
     template<typename InTCppType, typename TInPropertyBaseClass>
     bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const;
 
+    /**
+     * Constructs a new object variable and registers it within the given registry depending on the parent given.
+     *
+     * @param Class the class that the object variable should derive from
+     * @param Identifier the unique identifier of the object variable
+     * @param Parent THe parent of this object variable. The chain can be followed up to the root object variable
+     * @param bShouldPersist Weather this object variable should be persistent across level switches
+     * @return a new variable in object format
+     */
+    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"), Category = "Gorgeous Core|Gorgeous Object Variables")
+    UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent, bool bShouldPersist);
+	
 	/**
-	 * Constructs a new object variable and registers it within the given registry depending on the parent given.
-	 * 
-	 * @param InClass the class that the object variable should derive from
-	 * @param Identifier the unique identifier of the object variable
-	 * @param Parent THe parent of this object variable. The chain can be followed up to the root object variable
-	 * @param bShouldPersist Weather this object variable should be persistent across level switches
-	 * @return a new variable in object format
+	 * The unique identifier of the object variable.
 	 */
-	UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"), Category = "Gorgeous Core|Gorgeous Object Variables")
-	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent, bool bShouldPersist);
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Object Variable")
 	FGuid UniqueVariableIdentifier;
 
+	/**
+	 * The registry of object variables.
+	 */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Object Variable")
 	TArray<TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
 
+	/**
+	 * Whether the object variable is persistent across level switches.
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Object Variable")
 	bool bPersistent;
-	
+
 protected:
+
+	/**
+	 * The parent of the object variable.
+	 */
 	UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
 	UGorgeousObjectVariable* Parent;
-
 	
 private:
 	

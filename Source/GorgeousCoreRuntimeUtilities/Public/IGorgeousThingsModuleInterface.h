@@ -8,25 +8,30 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "Modules/ModuleInterface.h"
+//<-------------------------------------------------------------------------->
 
 /**
- * This module defines the base functionality of the LogGorgeousThings plugin.
+ * This module defines the base functionality of the Gorgeous Things plugin.
  *
- * It's responsible for loading runtime components and referenced third party libraries.
- * it is also responsible for managing the support from 4.26 up to 5.4. Everything under is marked as legacy and partly supported.
+ * It's responsible for loading runtime components and referenced third-party libraries.
+ * It is also responsible for managing the support from 4.26 up to 5.4. Everything under is marked as legacy and partly supported.
  *
  * @author Nils Bergemann
  * @since Beginning
- * @version v0.1
- * @todo Finish this Interface
+ * @version v1.0
  */
 class IGorgeousThingsModuleInterface : public IModuleInterface
 {
 public:
-	
+
 	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */

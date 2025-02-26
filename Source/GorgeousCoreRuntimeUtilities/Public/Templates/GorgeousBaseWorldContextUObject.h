@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -18,35 +18,35 @@
 #include "GorgeousBaseWorldContextUObject.generated.h"
 //<-------------------------------------------------------------------------->
 
-/*============================--- Class Info ---============================>
-<-----------------------------=== Quick Info ===---------------------------->
-| Display Name: Gorgeous BaseWorld Context UObject
-| Functional Name: -
-| Parent Class: /Script/Engine.UObject
-| Class Suffix: -
-| Author: Sven Maibaum & Nils Bergemann
-<--------------------------------------------------------------------------->
-<--------------------------=== Class Description ===------------------------>
-| Provides a UObject with a default handle to the world.
-<--------------------------------------------------------------------------->
-<==========================================================================*/
+//<===========--- Forward Declarations ---===========>
+class UWorld;
+//<-------------------------------------------------->
+
+/**
+ * Provides a UObject with a default handle to the world.
+ *
+ * Key features include:
+ * - Abstract base class for UObjects requiring world context.
+ * - Overrides GetWorld() to provide world context.
+ * - Caches owner object for efficient world retrieval.
+ */
 UCLASS(Abstract, Blueprintable)
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public UObject
 {
 	GENERATED_BODY()
-	
-	//<============================--- Overrides ---============================>
-protected:
-	
-	virtual UWorld* GetWorld() const override;
-	
-	//<------------------------------------------------------------------------->
 
-	
-	//<============================--- Variables ---============================>
-	
+protected:
+
+	/**
+	 * Gets the world context for this object.
+	 *
+	 * @return The UWorld associated with this object.
+	 */
+	virtual UWorld* GetWorld() const override;
+
+	/**
+	 * Cached owner object used to determine the world context.
+	 */
 	UPROPERTY()
 	mutable TObjectPtr<UObject> CachedOwner;
-	
-	//<------------------------------------------------------------------------->
 };

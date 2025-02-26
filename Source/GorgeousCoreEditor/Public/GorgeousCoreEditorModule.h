@@ -8,30 +8,39 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * This module defines the editor module of the LogGorgeousThings plugin.
  *
+ * Key features include:
+ * - StartupModule: Called when the module is loaded.
+ * - ShutdownModule: Called when the module is unloaded.
+ *
  * @author Nils Bergemann
  * @since Beginning
- * @version v0.1
- * @todo Finish the implementation of the core runtime module and the comments.
+ * @version v1.0
  */
- class FGorgeousCoreEditorModule final : public IGorgeousThingsModuleInterface
- {
- public:
+class FGorgeousCoreEditorModule final : public IGorgeousThingsModuleInterface
+{
+public:
 
- 	/**
+	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */
- 	virtual void StartupModule() override;
+	virtual void StartupModule() override;
 
- 	/**
+	/**
 	 * The override function of the module interface that is called to unload this module.
 	 */
- 	virtual void ShutdownModule() override;
- 	
- };
+	virtual void ShutdownModule() override;
+
+};

@@ -8,7 +8,17 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
+#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// UGorgeousBooleanCondition Implementation
+//=============================================================================
 
 uint8 UGorgeousBooleanCondition::CheckCondition()
 {

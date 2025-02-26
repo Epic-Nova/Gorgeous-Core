@@ -8,7 +8,10 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
 #define UE_DEFINE_OBJECT_VARIABLE_MAP_VALUE UGorgeousObjectVariable*
 

@@ -8,31 +8,38 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#pragma once
 
+//<=============================--- Pragmas ---==============================>
+#pragma once
+//<-------------------------------------------------------------------------->
+
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//<-------------------------------------------------------------------------->
 
 /**
- * @brief This module defines the core runtime of the LogGorgeousThings plugin.
- * 
- * It's the most important module of the plugin, as it's responsible for loading the core runtime components and referenced third party libraries.
+ * This module defines the core runtime of the Gorgeous Things plugin.
+ *
+ * It's the most important module of the plugin, as it's responsible for loading the core runtime components and referenced third-party libraries.
  *
  * @author Nils Bergemann
  * @since Beginning
- * @version v0.1
+ * @version v1.0
  */
- class FGorgeousCoreRuntimeModule final : public IGorgeousThingsModuleInterface
- {
- public:
+class FGorgeousCoreRuntimeModule final : public IGorgeousThingsModuleInterface
+{
+public:
 
- 	/**
+	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */
- 	virtual void StartupModule() override;
+	virtual void StartupModule() override;
 
- 	/**
+	/**
 	 * The override function of the module interface that is called to unload this module.
 	 */
- 	virtual void ShutdownModule() override;
- 	
- };
+	virtual void ShutdownModule() override;
+
+};

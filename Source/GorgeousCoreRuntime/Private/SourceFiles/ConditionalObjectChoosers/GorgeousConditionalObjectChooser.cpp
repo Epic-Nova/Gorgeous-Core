@@ -8,7 +8,12 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
+
+//=============================================================================
+// UGorgeousConditionalObjectChooser Implementation
+//=============================================================================
 
 UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() const
 {

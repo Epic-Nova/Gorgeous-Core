@@ -8,64 +8,160 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include "UObject/Interface.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousMapObjectVariablesSetter_I.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<===========--- Forward Declarations ---===========>
 class UGorgeousObjectVariable;
+//<-------------------------------------------------->
 
+/**
+ * Interface for setting map object variables.
+ *
+ * Key features include:
+ * - Functions to set maps of various object variable types.
+ * - BlueprintNativeEvent and BlueprintCallable functions for easy use in Blueprints.
+ *
+ * @note This interface provides a standardized way to set map object variables.
+ */
 UINTERFACE(MinimalAPI, BlueprintType)
 class UGorgeousMapObjectVariablesSetter_I : public UInterface
 {
 	GENERATED_BODY()
 };
 
+/**
+ * Native interface for setting map object variables.
+ */
 class GORGEOUSCORERUNTIME_API IGorgeousMapObjectVariablesSetter_I
 {
 	GENERATED_BODY()
 
 public:
-	//For Map Object Variables
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object Variable")
-	TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*> SetObjectVariableMapObjectVariable(UPARAM(ref) TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of GorgeousObjectVariables.
+     * @return The updated map of GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object Variable")
+    TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*> SetObjectVariableMapObjectVariable(UPARAM(ref) TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-	TMap<UObject*, UGorgeousObjectVariable*> SetObjectObjectMapObjectVariable(UPARAM(ref) TMap<UObject*, UGorgeousObjectVariable*>& NewValue);
-	
-	TMap<UClass*, UGorgeousObjectVariable*> GetObjectClassMapObjectVariable() const;
+    /**
+     * Sets a map of UObjects to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of UObjects to GorgeousObjectVariables.
+     * @return The updated map of UObjects to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
+    TMap<UObject*, UGorgeousObjectVariable*> SetObjectObjectMapObjectVariable(UPARAM(ref) TMap<UObject*, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-	TMap<UClass*, UGorgeousObjectVariable*> SetObjectClassMapObjectVariable(UPARAM(ref) TMap<UClass*, UGorgeousObjectVariable*>& NewValue);
-	
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-	TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> SetSoftObjectObjectMapObjectVariable(UPARAM(ref) TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*>& NewValue);
+    /**
+    * Sets a map of UClasses to GorgeousObjectVariables.
+    *
+    * @param NewValue The new map of UClasses to GorgeousObjectVariables.
+    * @return The updated map of UClasses to GorgeousObjectVariables.
+    */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
+    TMap<UClass*, UGorgeousObjectVariable*> SetObjectClassMapObjectVariable(UPARAM(ref) TMap<UClass*, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-	TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> SetSoftObjectClassMapObjectVariable(UPARAM(ref) TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
+     * @return The updated map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
+    TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> SetSoftObjectObjectMapObjectVariable(UPARAM(ref) TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
-	TMap<uint8, UGorgeousObjectVariable*> SetByteMapObjectVariable(UPARAM(ref) TMap<uint8, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
+     * @return The updated map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
+    TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> SetSoftObjectClassMapObjectVariable(UPARAM(ref) TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-	TMap<double, UGorgeousObjectVariable*> SetFloatMapObjectVariable(UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of bytes to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of bytes to GorgeousObjectVariables.
+     * @return The updated map of bytes to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
+    TMap<uint8, UGorgeousObjectVariable*> SetByteMapObjectVariable(UPARAM(ref) TMap<uint8, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer64")
-	TMap<int64, UGorgeousObjectVariable*> SetInteger64MapObjectVariable(UPARAM(ref) TMap<int64, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of doubles to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of doubles to GorgeousObjectVariables.
+     * @return The updated map of doubles to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
+    TMap<double, UGorgeousObjectVariable*> SetFloatMapObjectVariable(UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer")
-	TMap<int32, UGorgeousObjectVariable*> SetIntegerMapObjectVariable(UPARAM(ref) TMap<int32, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of 64-bit integers to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of 64-bit integers to GorgeousObjectVariables.
+     * @return The updated map of 64-bit integers to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer64")
+    TMap<int64, UGorgeousObjectVariable*> SetInteger64MapObjectVariable(UPARAM(ref) TMap<int64, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Name")
-	TMap<FName, UGorgeousObjectVariable*> SetNameMapObjectVariable(UPARAM(ref) TMap<FName, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of integers to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of integers to GorgeousObjectVariables.
+     * @return The updated map of integers to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer")
+    TMap<int32, UGorgeousObjectVariable*> SetIntegerMapObjectVariable(UPARAM(ref) TMap<int32, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
-	TMap<FString, UGorgeousObjectVariable*> SetStringMapObjectVariable(UPARAM(ref) TMap<FString, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of FNames to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of FNames to GorgeousObjectVariables.
+     * @return The updated map of FNames to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Name")
+    TMap<FName, UGorgeousObjectVariable*> SetNameMapObjectVariable(UPARAM(ref) TMap<FName, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(NotBlueprintable, BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
-	TMap<FTransform, UGorgeousObjectVariable*> SetTransformMapObjectVariable(UPARAM(ref) TMap<FTransform, UGorgeousObjectVariable*>& NewValue);
+    /**
+     * Sets a map of FStrings to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of FStrings to GorgeousObjectVariables.
+     * @return The updated map of FStrings to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
+    TMap<FString, UGorgeousObjectVariable*> SetStringMapObjectVariable(UPARAM(ref) TMap<FString, UGorgeousObjectVariable*>& NewValue);
 
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
+    /**
+     * Sets a map of FTransforms to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of FTransforms to GorgeousObjectVariables.
+     * @return The updated map of FTransforms to GorgeousObjectVariables.
+     */
+    UFUNCTION(NotBlueprintable, BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
+    TMap<FTransform, UGorgeousObjectVariable*> SetTransformMapObjectVariable(UPARAM(ref) TMap<FTransform, UGorgeousObjectVariable*>& NewValue);
+
+    /**
+     * Sets a map of FVectors to GorgeousObjectVariables.
+     *
+     * @param NewValue The new map of FVectors to GorgeousObjectVariables.
+     * @return The updated map of FVectors to GorgeousObjectVariables.
+     */
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
 	TMap<FVector, UGorgeousObjectVariable*> SetVectorMapObjectVariable(UPARAM(ref) TMap<FVector, UGorgeousObjectVariable*>& NewValue);
 };
