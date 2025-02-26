@@ -10,7 +10,7 @@
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
 
-bool UGorgeousBooleanCondition::CheckCondition()
+uint8 UGorgeousBooleanCondition::CheckCondition()
 {
 	switch (Mode)
 	{

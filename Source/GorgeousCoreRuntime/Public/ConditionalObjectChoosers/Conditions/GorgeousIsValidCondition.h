@@ -28,6 +28,6 @@ public:
 	UObject* B;
 
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
-	virtual bool CheckCondition() override;
+	virtual uint8 CheckCondition() override;
 	
 };
