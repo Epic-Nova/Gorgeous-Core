@@ -9,7 +9,6 @@
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
-
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 
 void UGorgeousObjectVariableRegistry_GIS::Initialize(FSubsystemCollectionBase& Collection)

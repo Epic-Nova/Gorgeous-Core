@@ -10,12 +10,7 @@
 <==========================================================================*/
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
 
-UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition()
+UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() const
 {
-	return nullptr;
-}
-
-bool UGorgeousConditionalObjectChooser::CheckCondition()
-{
-	return false;
+	return Condition->CheckCondition() ? TrueCondition : FalseCondition;
 }

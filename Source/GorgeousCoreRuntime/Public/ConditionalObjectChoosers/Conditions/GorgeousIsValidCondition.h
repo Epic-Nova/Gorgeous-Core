@@ -10,6 +10,7 @@
 <==========================================================================*/
 #pragma once
 #include "GorgeousCondition.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
 
 #include "GorgeousIsValidCondition.generated.h"
 
@@ -19,11 +20,14 @@ class UGorgeousIsValidCondition : public UGorgeousCondition
 	GENERATED_BODY()
 
 public:
-
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UObject* A;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UObject* B;
+
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
+	virtual bool CheckCondition() override;
 	
 };
