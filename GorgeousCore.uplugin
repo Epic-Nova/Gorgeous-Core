@@ -1,0 +1,47 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "GT-C-0.1-FracturedHorizons",
+	"FriendlyName": "GorgeousThings",
+	"Description": "Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.",
+	"Category": "Universal",
+	"CreatedBy": "Simsalabim Studios",
+	"CreatedByURL": "https://simsalabim.studio",
+	"DocsURL": "https://docs.gt.simsalabim.studio",
+	"MarketplaceURL": "",
+	"SupportURL": "https://support.simsalabim.studio",
+	"EngineVersion": "ANY_VERSION",
+	"EnabledByDefault": true,
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "GorgeousCoreRuntime",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "GorgeousCoreEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		},
+		{
+			"Name": "GorgeousCoreRuntimeUtilities",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "GorgeousCoreEditorUtilities",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "SQLiteSupport",
+			"Enabled": true
+		}
+	]
+}
