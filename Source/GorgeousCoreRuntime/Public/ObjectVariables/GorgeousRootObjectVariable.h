@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -33,7 +33,7 @@
  * @note This class provides a centralized and efficient way to manage object variables within the game.
  */
 UCLASS(BlueprintType)
-class UGorgeousRootObjectVariable : public UGorgeousObjectVariable
+class GORGEOUSCORERUNTIME_API UGorgeousRootObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
 
@@ -114,7 +114,7 @@ public:
 
        for (const auto ObjectVariable : GetVariableHierarchyRegistry())
        {
-          if (ObjectVariable->UniqueVariableIdentifier == Identifier)
+          if (ObjectVariable->UniqueIdentifier == Identifier)
           {
              FoundObjectVariable = ObjectVariable;
              break;
@@ -168,7 +168,7 @@ public:
 
        for (const auto ObjectVariable : GetVariableHierarchyRegistry())
        {
-          if (ObjectVariable->UniqueVariableIdentifier == Identifier)
+          if (ObjectVariable->UniqueIdentifier == Identifier)
           {
              FoundObjectVariable = ObjectVariable;
              break;

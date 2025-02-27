@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
@@ -49,13 +49,13 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
-	NewObjectVariable->UniqueVariableIdentifier = NewObjectVariableIdentifier;
+	NewObjectVariable->UniqueIdentifier = NewObjectVariableIdentifier;
 	NewObjectVariable->Parent = InParent;
 	NewObjectVariable->bPersistent = bShouldPersist;
 	InParent->RegisterWithRegistry(NewObjectVariable);
 
 	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(FString::Printf(TEXT("Successfully registered new object variable with identifier: %s where the parent is: %s (%s)"),
-		*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueVariableIdentifier.ToString()), "GT.ObjectVariables.New");
+		*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.New");
 	
 	return NewObjectVariable;
 }
@@ -63,26 +63,47 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 template <typename InTCppType, typename TInPropertyBaseClass>
 void UGorgeousObjectVariable::SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
 {
-	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); PropertyName && Property->IsA(TProperty<InTCppType, TInPropertyBaseClass>()))
+	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); PropertyName.IsValid())
 	{
-		if (TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+		// Handle UObject* properties separately
+		if constexpr (std::is_base_of_v<UObject, InTCppType>)
 		{
-			TypedProperty->SetPropertyValue_InContainer(this, Value);
+			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			{
+				ObjectProperty->SetObjectPropertyValue_InContainer(this, Value);
+			}
+		}
+		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+		{
+			if (TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+			{
+				TypedProperty->SetPropertyValue_InContainer(this, Value);
+			}
 		}
 	}
 }
 
-
 template <typename InTCppType, typename TInPropertyBaseClass>
 bool UGorgeousObjectVariable::GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const
 {
-	FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName);
-	if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); Property && PropertyName.IsValid())
 	{
-		if (const TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastChecked<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+		// Handle UObject* properties separately
+		if constexpr (std::is_base_of_v<UObject, InTCppType>)
 		{
-			OutValue = TypedProperty->GetPropertyValue_InContainer(this);
-			return true;
+			if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+			{
+				OutValue = Cast<InTCppType>(ObjectProperty->GetObjectPropertyValue_InContainer(this));
+				return true;
+			}
+		}
+		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+		{
+			if (const TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+			{
+				OutValue = TypedProperty->GetPropertyValue_InContainer(this);
+				return true;
+			}
 		}
 	}
 	return false;

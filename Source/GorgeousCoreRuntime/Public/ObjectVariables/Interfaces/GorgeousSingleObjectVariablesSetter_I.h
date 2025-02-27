@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -55,7 +55,7 @@ public:
      * @return The updated GorgeousObjectVariable.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object Variable")
-    UGorgeousObjectVariable* SetObjectVariableSingleObjectVariable(UPARAM(ref) UGorgeousObjectVariable*& NewValue);
+    UGorgeousObjectVariable* SetObjectVariableSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) UGorgeousObjectVariable*& NewValue);
 
     /**
      * Sets a UObject.
@@ -64,7 +64,7 @@ public:
      * @return The updated UObject.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    UObject* SetObjectObjectSingleObjectVariable(UPARAM(ref) UObject*& NewValue);
+    UObject* SetObjectObjectSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) UObject*& NewValue);
 
     /**
      * Sets a UClass.
@@ -73,7 +73,7 @@ public:
      * @return The updated UClass.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    UClass* SetObjectClassSingleObjectVariable(UPARAM(ref) UClass*& NewValue);
+    UClass* SetObjectClassSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) UClass*& NewValue);
 
     /**
      * Sets a TSoftObjectPtr<UObject>.
@@ -82,7 +82,7 @@ public:
      * @return The updated TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    TSoftObjectPtr<UObject> SetSoftObjectObjectSingleObjectVariable(UPARAM(ref) TSoftObjectPtr<UObject>& NewValue);
+    TSoftObjectPtr<UObject> SetSoftObjectObjectSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSoftObjectPtr<UObject>& NewValue);
 
     /**
      * Sets a TSoftClassPtr<UObject>.
@@ -91,7 +91,7 @@ public:
      * @return The updated TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    TSoftClassPtr<UObject> SetSoftObjectClassSingleObjectVariable(UPARAM(ref) TSoftClassPtr<UObject>& NewValue);
+    TSoftClassPtr<UObject> SetSoftObjectClassSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSoftClassPtr<UObject>& NewValue);
 
     /**
      * Sets a boolean.
@@ -100,7 +100,7 @@ public:
      * @return The updated boolean.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Boolean")
-    bool SetBooleanSingleObjectVariable(UPARAM(ref) bool& NewValue);
+    bool SetBooleanSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) bool& NewValue);
 
     /**
      * Sets a byte.
@@ -109,7 +109,7 @@ public:
      * @return The updated byte.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Byte")
-    uint8 SetByteSingleObjectVariable(UPARAM(ref) uint8& NewValue);
+    uint8 SetByteSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) uint8& NewValue);
 
     /**
      * Sets a double.
@@ -118,7 +118,7 @@ public:
      * @return The updated double.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
-    double SetFloatSingleObjectVariable(UPARAM(ref) double& NewValue);
+    double SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) double& NewValue);
 
     /**
      * Sets a 64-bit integer.
@@ -127,7 +127,7 @@ public:
      * @return The updated 64-bit integer.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Integer64")
-    int64 SetInteger64SingleObjectVariable(UPARAM(ref) int64& NewValue);
+    int64 SetInteger64SingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) int64& NewValue);
 
     /**
      * Sets an integer.
@@ -136,7 +136,7 @@ public:
      * @return The updated integer.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Integer")
-    int32 SetIntegerSingleObjectVariable(UPARAM(ref) int32& NewValue);
+    int32 SetIntegerSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) int32& NewValue);
 
     /**
      * Sets an FName.
@@ -145,7 +145,7 @@ public:
      * @return The updated FName.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Name")
-    FName SetNameSingleObjectVariable(UPARAM(ref) FName& NewValue);
+    FName SetNameSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FName& NewValue);
 
     /**
      * Sets an FRotator.
@@ -154,7 +154,7 @@ public:
      * @return The updated FRotator.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Rotator")
-    FRotator SetRotatorSingleObjectVariable(UPARAM(ref) FRotator& NewValue);
+    FRotator SetRotatorSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FRotator& NewValue);
 
     /**
      * Sets an FString.
@@ -163,7 +163,7 @@ public:
      * @return The updated FString.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|String")
-    FString SetStringSingleObjectVariable(UPARAM(ref) FString& NewValue);
+    FString SetStringSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FString& NewValue);
 
     /**
      * Sets an FText.
@@ -172,7 +172,7 @@ public:
      * @return The updated FText.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Text")
-    FText SetTextSingleObjectVariable(UPARAM(ref) FText& NewValue);
+    FText SetTextSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FText& NewValue);
 
     /**
      * Sets an FTransform.
@@ -181,7 +181,7 @@ public:
      * @return The updated FTransform.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Transform")
-    FTransform SetTransformSingleObjectVariable(UPARAM(ref) FTransform& NewValue);
+    FTransform SetTransformSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FTransform& NewValue);
 
     /**
      * Sets an FVector.
@@ -190,5 +190,5 @@ public:
      * @return The updated FVector.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Vector")
-    FVector SetVectorSingleObjectVariable(UPARAM(ref) FVector& NewValue);
+    FVector SetVectorSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FVector& NewValue);
 };

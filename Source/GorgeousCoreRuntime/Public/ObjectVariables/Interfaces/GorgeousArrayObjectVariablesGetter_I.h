@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -54,7 +54,7 @@ public:
      * @return An array of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object Variable")
-    TArray<UGorgeousObjectVariable*> GetObjectVariableArrayObjectVariable() const;
+    TArray<UGorgeousObjectVariable*> GetObjectVariableArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of UObjects.
@@ -62,7 +62,7 @@ public:
      * @return An array of UObjects.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<UObject*> GetObjectObjectArrayObjectVariable() const;
+    TArray<UObject*> GetObjectObjectArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of UClasses.
@@ -70,7 +70,7 @@ public:
      * @return An array of UClasses.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<UClass*> GetObjectClassArrayObjectVariable() const;
+    TArray<UClass*> GetObjectClassArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of TSoftObjectPtr<UObject>.
@@ -78,7 +78,7 @@ public:
      * @return An array of TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<TSoftObjectPtr<UObject>> GetSoftObjectObjectArrayObjectVariable() const;
+    TArray<TSoftObjectPtr<UObject>> GetSoftObjectObjectArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of TSoftClassPtr<UObject>.
@@ -86,7 +86,7 @@ public:
      * @return An array of TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<TSoftClassPtr<UObject>> GetSoftObjectClassArrayObjectVariable() const;
+    TArray<TSoftClassPtr<UObject>> GetSoftObjectClassArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of booleans.
@@ -94,7 +94,7 @@ public:
      * @return An array of booleans.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Boolean")
-    TArray<bool> GetBooleanArrayObjectVariable() const;
+    TArray<bool> GetBooleanArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of bytes.
@@ -102,7 +102,7 @@ public:
      * @return An array of bytes.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Byte")
-    TArray<uint8> GetByteArrayObjectVariable() const;
+    TArray<uint8> GetByteArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of doubles.
@@ -110,7 +110,7 @@ public:
      * @return An array of doubles.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
-    TArray<double> GetFloatArrayObjectVariable() const;
+    TArray<double> GetFloatArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of integers.
@@ -118,7 +118,7 @@ public:
      * @return An array of integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Integer")
-    TArray<int32> GetIntegerArrayObjectVariable() const;
+    TArray<int32> GetIntegerArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of 64-bit integers.
@@ -126,7 +126,7 @@ public:
      * @return An array of 64-bit integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Integer64")
-    TArray<int64> GetInteger64ArrayObjectVariable() const;
+    TArray<int64> GetInteger64ArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FNames.
@@ -134,7 +134,7 @@ public:
      * @return An array of FNames.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Name")
-    TArray<FName> GetNameArrayObjectVariable() const;
+    TArray<FName> GetNameArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FRotators.
@@ -142,7 +142,7 @@ public:
      * @return An array of FRotators.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Rotator")
-    TArray<FRotator> GetRotatorArrayObjectVariable() const;
+    TArray<FRotator> GetRotatorArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FStrings.
@@ -150,7 +150,7 @@ public:
      * @return An array of FStrings.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|String")
-    TArray<FString> GetStringArrayObjectVariable() const;
+    TArray<FString> GetStringArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FTexts.
@@ -158,7 +158,7 @@ public:
      * @return An array of FTexts.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Text")
-    TArray<FText> GetTextArrayObjectVariable() const;
+    TArray<FText> GetTextArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FTransforms.
@@ -166,7 +166,7 @@ public:
      * @return An array of FTransforms.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Transform")
-    TArray<FTransform> GetTransformArrayObjectVariable() const;
+    TArray<FTransform> GetTransformArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of FVectors.
@@ -174,5 +174,5 @@ public:
      * @return An array of FVectors.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Vector")
-    TArray<FVector> GetVectorArrayObjectVariable() const;
+    TArray<FVector> GetVectorArrayObjectVariable(const FName OptionalVariableName) const;
 };

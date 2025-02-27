@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -54,7 +54,7 @@ public:
      * @return A GorgeousObjectVariable.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object Variable")
-    UGorgeousObjectVariable* GetObjectVariableSingleObjectVariable() const;
+    UGorgeousObjectVariable* GetObjectVariableSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a UObject.
@@ -62,7 +62,7 @@ public:
      * @return A UObject.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    UObject* GetObjectObjectSingleObjectVariable() const;
+    UObject* GetObjectObjectSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a UClass.
@@ -70,7 +70,7 @@ public:
      * @return A UClass.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    UClass* GetObjectClassSingleObjectVariable() const;
+    UClass* GetObjectClassSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a TSoftObjectPtr<UObject>.
@@ -78,7 +78,7 @@ public:
      * @return A TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    TSoftObjectPtr<UObject> GetSoftObjectObjectSingleObjectVariable() const;
+    TSoftObjectPtr<UObject> GetSoftObjectObjectSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a TSoftClassPtr<UObject>.
@@ -86,7 +86,7 @@ public:
      * @return A TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Object")
-    TSoftClassPtr<UObject> GetSoftObjectClassSingleObjectVariable() const;
+    TSoftClassPtr<UObject> GetSoftObjectClassSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a boolean.
@@ -94,7 +94,7 @@ public:
      * @return A boolean.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Single|Boolean")
-    bool GetBooleanSingleObjectVariable() const;
+    bool GetBooleanSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a byte.
@@ -102,7 +102,7 @@ public:
      * @return A byte.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Byte")
-    uint8 GetByteSingleObjectVariable() const;
+    uint8 GetByteSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a double.
@@ -110,7 +110,7 @@ public:
      * @return A double.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
-    double GetFloatSingleObjectVariable() const;
+    double GetFloatSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a 64-bit integer.
@@ -118,7 +118,7 @@ public:
      * @return A 64-bit integer.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Integer64")
-    int64 GetInteger64SingleObjectVariable() const;
+    int64 GetInteger64SingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an integer.
@@ -126,7 +126,7 @@ public:
      * @return An integer.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Integer")
-    int32 GetIntegerSingleObjectVariable() const;
+    int32 GetIntegerSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FName.
@@ -134,7 +134,7 @@ public:
      * @return An FName.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Name")
-    FName GetNameSingleObjectVariable() const;
+    FName GetNameSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FRotator.
@@ -142,7 +142,7 @@ public:
      * @return An FRotator.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Rotator")
-    FRotator GetRotatorSingleObjectVariable() const;
+    FRotator GetRotatorSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FString.
@@ -150,7 +150,7 @@ public:
      * @return An FString.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|String")
-    FString GetStringSingleObjectVariable() const;
+    FString GetStringSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FText.
@@ -158,7 +158,7 @@ public:
      * @return An FText.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Text")
-    FText GetTextSingleObjectVariable() const;
+    FText GetTextSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FTransform.
@@ -166,7 +166,7 @@ public:
      * @return An FTransform.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Transform")
-    FTransform GetTransformSingleObjectVariable() const;
+    FTransform GetTransformSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an FVector.
@@ -174,5 +174,5 @@ public:
      * @return An FVector.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Vector")
-    FVector GetVectorSingleObjectVariable() const;
+    FVector GetVectorSingleObjectVariable(const FName OptionalVariableName) const;
 };

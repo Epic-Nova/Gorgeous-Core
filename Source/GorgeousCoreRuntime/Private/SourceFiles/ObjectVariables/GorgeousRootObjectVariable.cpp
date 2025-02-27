@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
@@ -29,7 +29,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetRootObjectVariable(
 	{
 		SingletonRootInstance = NewObject<UGorgeousRootObjectVariable>();
 		SingletonRootInstance->AddToRoot();
-		SingletonRootInstance->UniqueVariableIdentifier = FGuid::NewGuid();
+		SingletonRootInstance->UniqueIdentifier = FGuid::NewGuid();
 	}
 	return SingletonRootInstance;
 }

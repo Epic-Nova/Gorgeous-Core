@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -186,7 +186,7 @@ UCLASS(DisplayName = "Object Array OV", Category = "Gorgeous Core|Gorgeous Objec
 class GORGEOUSCORERUNTIME_API UObject_AOTOV : public UArrayObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, UObject*, Value, ObjectObject)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UObject*>, Value, ObjectObject)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<UObject*> Value;
 };
@@ -195,7 +195,7 @@ UCLASS(DisplayName = "Class Array OV", Category = "Gorgeous Core|Gorgeous Object
 class GORGEOUSCORERUNTIME_API UClass_AOTOV : public UArrayObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, UClass*, Value, ObjectClass)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UClass*>, Value, ObjectClass)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<UClass*> Value;
 };
@@ -204,7 +204,7 @@ UCLASS(DisplayName = "Soft Object Array OV", Category = "Gorgeous Core|Gorgeous 
 class GORGEOUSCORERUNTIME_API USoftObject_AOTOV : public UArrayObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TSoftObjectPtr<UObject>, Value, SoftObjectObject)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<TSoftObjectPtr<UObject>> Value;
 };
@@ -213,7 +213,7 @@ UCLASS(DisplayName = "Soft Class Array OV", Category = "Gorgeous Core|Gorgeous O
 class GORGEOUSCORERUNTIME_API USoftClass_AOTOV : public UArrayObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TSoftClassPtr<UObject>, Value, SoftObjectClass)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<TSoftClassPtr<UObject>> Value;
 };
@@ -222,7 +222,7 @@ UCLASS(DisplayName = "Boolean Array OV", Category = "Gorgeous Core|Gorgeous Obje
 class GORGEOUSCORERUNTIME_API UBoolean_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, bool, Value, Boolean)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<bool>, Value, Boolean)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<bool> Value;
 };
@@ -231,7 +231,7 @@ UCLASS(DisplayName = "Byte Array OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UByte_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, uint8, Value, Byte)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<uint8>, Value, Byte)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<uint8> Value;
 };
@@ -240,7 +240,7 @@ UCLASS(DisplayName = "Float Array OV", Category = "Gorgeous Core|Gorgeous Object
 class GORGEOUSCORERUNTIME_API UFloat_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, double, Value, Float)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<double>, Value, Float)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<double> Value;
 };
@@ -249,7 +249,7 @@ UCLASS(DisplayName = "Integer64 Array OV", Category = "Gorgeous Core|Gorgeous Ob
 class GORGEOUSCORERUNTIME_API UInteger64_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, int64, Value, Integer64)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int64>, Value, Integer64)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<int64> Value;
 };
@@ -258,7 +258,7 @@ UCLASS(DisplayName = "Integer Array OV", Category = "Gorgeous Core|Gorgeous Obje
 class GORGEOUSCORERUNTIME_API UInteger_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, int32, Value, Integer)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int32>, Value, Integer)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<int32> Value;
 };
@@ -267,7 +267,7 @@ UCLASS(DisplayName = "Name Array OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UName_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FName, Value, Name)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FName>, Value, Name)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FName> Value;
 };
@@ -276,7 +276,7 @@ UCLASS(DisplayName = "Rotator Array OV", Category = "Gorgeous Core|Gorgeous Obje
 class GORGEOUSCORERUNTIME_API URotator_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FRotator, Value, Rotator)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FRotator>, Value, Rotator)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FRotator> Value;
 };
@@ -285,7 +285,7 @@ UCLASS(DisplayName = "String Array OV", Category = "Gorgeous Core|Gorgeous Objec
 class GORGEOUSCORERUNTIME_API UString_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FString, Value, String)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FString>, Value, String)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FString> Value;
 };
@@ -294,7 +294,7 @@ UCLASS(DisplayName = "Text Array OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UText_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FText, Value, Text)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FText>, Value, Text)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FText> Value;
 };
@@ -303,7 +303,7 @@ UCLASS(DisplayName = "Transform Array OV", Category = "Gorgeous Core|Gorgeous Ob
 class GORGEOUSCORERUNTIME_API UTransform_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FTransform, Value, Transform)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FTransform>, Value, Transform)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FTransform> Value;
 };
@@ -312,7 +312,7 @@ UCLASS(DisplayName = "Vector Array OV", Category = "Gorgeous Core|Gorgeous Objec
 class GORGEOUSCORERUNTIME_API UVector_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, FVector, Value, Vector)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FVector>, Value, Vector)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TArray<FVector> Value;
 };
@@ -455,7 +455,7 @@ UCLASS(DisplayName = "Object Set OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UObject_STOTOV : public USetObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, UObject*, Value, ObjectObject)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UObject*>, Value, ObjectObject)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<UObject*> Value;
 };
@@ -464,7 +464,7 @@ UCLASS(DisplayName = "Class Set OV", Category = "Gorgeous Core|Gorgeous Object V
 class GORGEOUSCORERUNTIME_API UClass_STOTOV : public USetObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, UClass*, Value, ObjectClass)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UClass*>, Value, ObjectClass)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<UClass*> Value;
 };
@@ -473,7 +473,7 @@ UCLASS(DisplayName = "Soft Object Set OV", Category = "Gorgeous Core|Gorgeous Ob
 class GORGEOUSCORERUNTIME_API USoftObject_STOTOV : public USetObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSoftObjectPtr<UObject>, Value, SoftObjectObject)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<TSoftObjectPtr<UObject>> Value;
 };
@@ -482,7 +482,7 @@ UCLASS(DisplayName = "Soft Class Set OV", Category = "Gorgeous Core|Gorgeous Obj
 class GORGEOUSCORERUNTIME_API USoftClass_STOTOV : public USetObjectTypeObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSoftClassPtr<UObject>, Value, SoftObjectClass)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<TSoftClassPtr<UObject>> Value;
 };
@@ -492,7 +492,7 @@ UCLASS(DisplayName = "Byte Set OV", Category = "Gorgeous Core|Gorgeous Object Va
 class GORGEOUSCORERUNTIME_API UByte_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, uint8, Value, Byte)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<uint8>, Value, Byte)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<uint8> Value;
 };
@@ -501,7 +501,7 @@ UCLASS(DisplayName = "Float Set OV", Category = "Gorgeous Core|Gorgeous Object V
 class GORGEOUSCORERUNTIME_API UFloat_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, double, Value, Float)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<double>, Value, Float)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<double> Value;
 };
@@ -510,7 +510,7 @@ UCLASS(DisplayName = "Integer64 Set OV", Category = "Gorgeous Core|Gorgeous Obje
 class GORGEOUSCORERUNTIME_API UInteger64_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, int64, Value, Integer64)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int64>, Value, Integer64)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<int64> Value;
 };
@@ -519,7 +519,7 @@ UCLASS(DisplayName = "Integer Set OV", Category = "Gorgeous Core|Gorgeous Object
 class GORGEOUSCORERUNTIME_API UInteger_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, int32, Value, Integer)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int32>, Value, Integer)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<int32> Value;
 };
@@ -528,7 +528,7 @@ UCLASS(DisplayName = "Name Set OV", Category = "Gorgeous Core|Gorgeous Object Va
 class GORGEOUSCORERUNTIME_API UName_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, FName, Value, Name)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FName>, Value, Name)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<FName> Value;
 };
@@ -537,7 +537,7 @@ UCLASS(DisplayName = "String Set OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UString_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, FString, Value, String)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FString>, Value, String)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<FString> Value;
 };
@@ -546,7 +546,7 @@ UCLASS(DisplayName = "Transform Set OV", Category = "Gorgeous Core|Gorgeous Obje
 class GORGEOUSCORERUNTIME_API UTransform_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, FTransform, Value, Transform)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FTransform>, Value, Transform)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<FTransform> Value;
 };
@@ -555,7 +555,7 @@ UCLASS(DisplayName = "Vector Set OV", Category = "Gorgeous Core|Gorgeous Object 
 class GORGEOUSCORERUNTIME_API UVector_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
-    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, FVector, Value, Vector)
+    UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FVector>, Value, Vector)
     UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
     TSet<FVector> Value;
 };
