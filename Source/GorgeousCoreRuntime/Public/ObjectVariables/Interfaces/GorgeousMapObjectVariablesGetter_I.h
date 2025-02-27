@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -54,7 +54,7 @@ public:
      * @return A map of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object Variable")
-    TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*> GetObjectVariableMapObjectVariable() const;
+    TMap<UGorgeousObjectVariable*, UGorgeousObjectVariable*> GetObjectVariableMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of UObjects to GorgeousObjectVariables.
@@ -62,7 +62,7 @@ public:
      * @return A map of UObjects to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-    TMap<UObject*, UGorgeousObjectVariable*> GetObjectObjectMapObjectVariable() const;
+    TMap<UObject*, UGorgeousObjectVariable*> GetObjectObjectMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of UClasses to GorgeousObjectVariables.
@@ -70,7 +70,7 @@ public:
      * @return A map of UClasses to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-    TMap<UClass*, UGorgeousObjectVariable*> GetObjectClassMapObjectVariable() const;
+    TMap<UClass*, UGorgeousObjectVariable*> GetObjectClassMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
@@ -78,7 +78,7 @@ public:
      * @return A map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-    TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> GetSoftObjectObjectMapObjectVariable() const;
+    TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> GetSoftObjectObjectMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
@@ -86,7 +86,7 @@ public:
      * @return A map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
-    TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> GetSoftObjectClassMapObjectVariable() const;
+    TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> GetSoftObjectClassMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of bytes to GorgeousObjectVariables.
@@ -94,7 +94,7 @@ public:
      * @return A map of bytes to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
-    TMap<uint8, UGorgeousObjectVariable*> GetByteMapObjectVariable() const;
+    TMap<uint8, UGorgeousObjectVariable*> GetByteMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of doubles to GorgeousObjectVariables.
@@ -102,7 +102,7 @@ public:
      * @return A map of doubles to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-    TMap<double, UGorgeousObjectVariable*> GetFloatMapObjectVariable() const;
+    TMap<double, UGorgeousObjectVariable*> GetFloatMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of 64-bit integers to GorgeousObjectVariables.
@@ -110,7 +110,7 @@ public:
      * @return A map of 64-bit integers to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer64")
-    TMap<int64, UGorgeousObjectVariable*> GetInteger64MapObjectVariable() const;
+    TMap<int64, UGorgeousObjectVariable*> GetInteger64MapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of integers to GorgeousObjectVariables.
@@ -118,7 +118,7 @@ public:
      * @return A map of integers to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer")
-    TMap<int32, UGorgeousObjectVariable*> GetIntegerMapObjectVariable() const;
+    TMap<int32, UGorgeousObjectVariable*> GetIntegerMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of FNames to GorgeousObjectVariables.
@@ -126,7 +126,7 @@ public:
      * @return A map of FNames to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Name")
-    TMap<FName, UGorgeousObjectVariable*> GetNameMapObjectVariable() const;
+    TMap<FName, UGorgeousObjectVariable*> GetNameMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of FStrings to GorgeousObjectVariables.
@@ -134,7 +134,7 @@ public:
      * @return A map of FStrings to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
-    TMap<FString, UGorgeousObjectVariable*> GetStringMapObjectVariable() const;
+    TMap<FString, UGorgeousObjectVariable*> GetStringMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of FTransforms to GorgeousObjectVariables.
@@ -142,7 +142,7 @@ public:
      * @return A map of FTransforms to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
-    TMap<FTransform, UGorgeousObjectVariable*> GetTransformMapObjectVariable() const;
+    TMap<FTransform, UGorgeousObjectVariable*> GetTransformMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of FVectors to GorgeousObjectVariables.
@@ -150,5 +150,5 @@ public:
      * @return A map of FVectors to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
-    TMap<FVector, UGorgeousObjectVariable*> GetVectorMapObjectVariable() const;
+    TMap<FVector, UGorgeousObjectVariable*> GetVectorMapObjectVariable(const FName OptionalVariableName) const;
 };

@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
@@ -27,6 +27,7 @@
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
 
 #include "ObjectVariables/Helpers/Macros/GorgeousObjectVariableHelperMacros.h"

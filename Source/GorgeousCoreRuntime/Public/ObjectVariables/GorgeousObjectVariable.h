@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -49,10 +49,12 @@
  *
  * @note This class serves as the cornerstone for managing variables in the Gorgeous Things system,
  * enabling a more object-oriented approach to variable handling.
+ *
+ * @todo We meed a way to also specify a optional property name with the interface way
  */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, ClassGroup = "Gorgeous Core|Gorgeous Object Variables", DisplayName = "Gorgeous Object Variable", Category = "Gorgeous Core|Gorgeous Object Variables",
 	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables."))
-class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UObject,
+class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UGorgeousBaseWorldContextUObject,
 public IGorgeousSingleObjectVariablesGetter_I, public IGorgeousSingleObjectVariablesSetter_I,
 public IGorgeousArrayObjectVariablesGetter_I, public IGorgeousArrayObjectVariablesSetter_I,
 public IGorgeousMapObjectVariablesGetter_I, public IGorgeousMapObjectVariablesSetter_I,
@@ -68,6 +70,7 @@ protected:
 	/** The Class Constructor for the Base Object Variable is used to set Default Values. */
 	UGorgeousObjectVariable();
 
+	// Sets up this object variable to be supported for networking.
 	virtual bool IsSupportedForNetworking() const override { return true; }
 
 public:
@@ -110,6 +113,8 @@ public:
      * @param Parent THe parent of this object variable. The chain can be followed up to the root object variable
      * @param bShouldPersist Weather this object variable should be persistent across level switches
      * @return a new variable in object format
+     *
+     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out
      */
     UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"), Category = "Gorgeous Core|Gorgeous Object Variables")
     UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent, bool bShouldPersist);
@@ -117,19 +122,19 @@ public:
 	/**
 	 * The unique identifier of the object variable.
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Object Variable")
-	FGuid UniqueVariableIdentifier;
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
+	FGuid UniqueIdentifier;
 
 	/**
 	 * The registry of object variables.
 	 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Object Variable")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	TArray<TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
 
 	/**
 	 * Whether the object variable is persistent across level switches.
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Object Variable")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
 protected:
@@ -137,7 +142,7 @@ protected:
 	/**
 	 * The parent of the object variable.
 	 */
-	UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+	UPROPERTY(VisibleInstanceOnly, SaveGame, Category = "Default")
 	UGorgeousObjectVariable* Parent;
 	
 private:

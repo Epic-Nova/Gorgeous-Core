@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -55,7 +55,7 @@ public:
      * @return The updated array of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object Variable")
-    TArray<UGorgeousObjectVariable*> SetObjectVariableArrayObjectVariable(UPARAM(ref) TArray<UGorgeousObjectVariable*>& NewValue);
+    TArray<UGorgeousObjectVariable*> SetObjectVariableArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<UGorgeousObjectVariable*>& NewValue);
 
     /**
      * Sets an array of UObjects.
@@ -64,7 +64,7 @@ public:
      * @return The updated array of UObjects.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<UObject*> SetObjectObjectArrayObjectVariable(UPARAM(ref) TArray<UObject*>& NewValue);
+    TArray<UObject*> SetObjectObjectArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<UObject*>& NewValue);
 
     /**
      * Sets an array of UClasses.
@@ -73,7 +73,7 @@ public:
      * @return The updated array of UClasses.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<UClass*> SetObjectClassArrayObjectVariable(UPARAM(ref) TArray<UClass*>& NewValue);
+    TArray<UClass*> SetObjectClassArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<UClass*>& NewValue);
 
     /**
      * Sets an array of TSoftObjectPtr<UObject>.
@@ -82,7 +82,7 @@ public:
      * @return The updated array of TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<TSoftObjectPtr<UObject>> SetSoftObjectObjectArrayObjectVariable(UPARAM(ref) TArray<TSoftObjectPtr<UObject>>& NewValue);
+    TArray<TSoftObjectPtr<UObject>> SetSoftObjectObjectArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<TSoftObjectPtr<UObject>>& NewValue);
 
     /**
      * Sets an array of TSoftClassPtr<UObject>.
@@ -91,7 +91,7 @@ public:
      * @return The updated array of TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Object")
-    TArray<TSoftClassPtr<UObject>> SetSoftObjectClassArrayObjectVariable(UPARAM(ref) TArray<TSoftClassPtr<UObject>>& NewValue);
+    TArray<TSoftClassPtr<UObject>> SetSoftObjectClassArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<TSoftClassPtr<UObject>>& NewValue);
 
     /**
      * Sets an array of booleans.
@@ -100,7 +100,7 @@ public:
      * @return The updated array of booleans.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Boolean")
-    TArray<bool> SetBooleanArrayObjectVariable(UPARAM(ref) TArray<bool>& NewValue);
+    TArray<bool> SetBooleanArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<bool>& NewValue);
 
     /**
      * Sets an array of bytes.
@@ -109,7 +109,7 @@ public:
      * @return The updated array of bytes.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Byte")
-    TArray<uint8> SetByteArrayObjectVariable(UPARAM(ref) TArray<uint8>& NewValue);
+    TArray<uint8> SetByteArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<uint8>& NewValue);
 
     /**
      * Sets an array of doubles.
@@ -118,7 +118,7 @@ public:
      * @return The updated array of doubles.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
-    TArray<double> SetFloatArrayObjectVariable(UPARAM(ref) TArray<double>& NewValue);
+    TArray<double> SetFloatArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<double>& NewValue);
 
     /**
      * Sets an array of integers.
@@ -127,7 +127,7 @@ public:
      * @return The updated array of integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Integer")
-    TArray<int32> SetIntegerArrayObjectVariable(UPARAM(ref) TArray<int32>& NewValue);
+    TArray<int32> SetIntegerArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<int32>& NewValue);
 
     /**
      * Sets an array of 64-bit integers.
@@ -136,7 +136,7 @@ public:
      * @return The updated array of 64-bit integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Integer64")
-    TArray<int64> SetInteger64ArrayObjectVariable(UPARAM(ref) TArray<int64>& NewValue);
+    TArray<int64> SetInteger64ArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<int64>& NewValue);
 
     /**
      * Sets an array of FNames.
@@ -145,7 +145,7 @@ public:
      * @return The updated array of FNames.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Name")
-    TArray<FName> SetNameArrayObjectVariable(UPARAM(ref) TArray<FName>& NewValue);
+    TArray<FName> SetNameArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FName>& NewValue);
 
     /**
      * Sets an array of FRotators.
@@ -154,7 +154,7 @@ public:
      * @return The updated array of FRotators.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Rotator")
-    TArray<FRotator> SetRotatorArrayObjectVariable(UPARAM(ref) TArray<FRotator>& NewValue);
+    TArray<FRotator> SetRotatorArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FRotator>& NewValue);
 
     /**
      * Sets an array of FStrings.
@@ -163,7 +163,7 @@ public:
      * @return The updated array of FStrings.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|String")
-    TArray<FString> SetStringArrayObjectVariable(UPARAM(ref) TArray<FString>& NewValue);
+    TArray<FString> SetStringArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FString>& NewValue);
 
     /**
      * Sets an array of FTexts.
@@ -172,7 +172,7 @@ public:
      * @return The updated array of FTexts.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Text")
-    TArray<FText> SetTextArrayObjectVariable(UPARAM(ref) TArray<FText>& NewValue);
+    TArray<FText> SetTextArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FText>& NewValue);
 
     /**
      * Sets an array of FTransforms.
@@ -181,7 +181,7 @@ public:
      * @return The updated array of FTransforms.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Transform")
-    TArray<FTransform> SetTransformArrayObjectVariable(UPARAM(ref) TArray<FTransform>& NewValue);
+    TArray<FTransform> SetTransformArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FTransform>& NewValue);
 
     /**
      * Sets an array of FVectors.
@@ -190,5 +190,5 @@ public:
      * @return The updated array of FVectors.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Vector")
-	TArray<FVector> SetVectorArrayObjectVariable(UPARAM(ref) TArray<FVector>& NewValue);
+	TArray<FVector> SetVectorArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FVector>& NewValue);
 };

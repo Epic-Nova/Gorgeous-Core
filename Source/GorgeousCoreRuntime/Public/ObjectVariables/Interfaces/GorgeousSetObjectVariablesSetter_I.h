@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -55,7 +55,7 @@ public:
      * @return The updated set of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object Variable")
-    TSet<UGorgeousObjectVariable*> SetObjectVariableSetObjectVariable(UPARAM(ref) TSet<UGorgeousObjectVariable*>& NewValue);
+    TSet<UGorgeousObjectVariable*> SetObjectVariableSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<UGorgeousObjectVariable*>& NewValue);
 
     /**
      * Sets a set of UObjects.
@@ -64,7 +64,7 @@ public:
      * @return The updated set of UObjects.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<UObject*> SetObjectObjectSetObjectVariable(UPARAM(ref) TSet<UObject*>& NewValue);
+    TSet<UObject*> SetObjectObjectSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<UObject*>& NewValue);
 
     /**
      * Sets a set of UClasses.
@@ -73,7 +73,7 @@ public:
      * @return The updated set of UClasses.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<UClass*> SetObjectClassSetObjectVariable(UPARAM(ref) TSet<UClass*>& NewValue);
+    TSet<UClass*> SetObjectClassSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<UClass*>& NewValue);
 
     /**
      * Sets a set of TSoftObjectPtr<UObject>.
@@ -82,7 +82,7 @@ public:
      * @return The updated set of TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<TSoftObjectPtr<UObject>> SetSoftObjectObjectSetObjectVariable(UPARAM(ref) TSet<TSoftObjectPtr<UObject>>& NewValue);
+    TSet<TSoftObjectPtr<UObject>> SetSoftObjectObjectSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<TSoftObjectPtr<UObject>>& NewValue);
 
     /**
      * Sets a set of TSoftClassPtr<UObject>.
@@ -91,7 +91,7 @@ public:
      * @return The updated set of TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<TSoftClassPtr<UObject>> SetSoftObjectClassSetObjectVariable(UPARAM(ref) TSet<TSoftClassPtr<UObject>>& NewValue);
+    TSet<TSoftClassPtr<UObject>> SetSoftObjectClassSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<TSoftClassPtr<UObject>>& NewValue);
 
     /**
      * Sets a set of bytes.
@@ -100,7 +100,7 @@ public:
      * @return The updated set of bytes.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
-    TSet<uint8> SetByteSetObjectVariable(UPARAM(ref) TSet<uint8>& NewValue);
+    TSet<uint8> SetByteSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<uint8>& NewValue);
 
     /**
      * Sets a set of doubles.
@@ -109,7 +109,7 @@ public:
      * @return The updated set of doubles.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-    TSet<double> SetFloatSetObjectVariable(UPARAM(ref) TSet<double>& NewValue);
+    TSet<double> SetFloatSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<double>& NewValue);
 
     /**
      * Sets a set of 64-bit integers.
@@ -118,7 +118,7 @@ public:
      * @return The updated set of 64-bit integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer64")
-    TSet<int64> SetInteger64SetObjectVariable(UPARAM(ref) TSet<int64>& NewValue);
+    TSet<int64> SetInteger64SetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<int64>& NewValue);
 
     /**
      * Sets a set of integers.
@@ -127,7 +127,7 @@ public:
      * @return The updated set of integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer")
-    TSet<int32> SetIntegerSetObjectVariable(UPARAM(ref) TSet<int32>& NewValue);
+    TSet<int32> SetIntegerSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<int32>& NewValue);
 
     /**
      * Sets a set of FNames.
@@ -136,7 +136,7 @@ public:
      * @return The updated set of FNames.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Name")
-    TSet<FName> SetNameSetObjectVariable(UPARAM(ref) TSet<FName>& NewValue);
+    TSet<FName> SetNameSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FName>& NewValue);
 
     /**
      * Sets a set of FStrings.
@@ -145,7 +145,7 @@ public:
      * @return The updated set of FStrings.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
-    TSet<FString> SetStringSetObjectVariable(UPARAM(ref) TSet<FString>& NewValue);
+    TSet<FString> SetStringSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FString>& NewValue);
 
     /**
      * Sets a set of FTransforms.
@@ -154,7 +154,7 @@ public:
      * @return The updated set of FTransforms.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
-    TSet<FTransform> SetTransformSetObjectVariable(UPARAM(ref) TSet<FTransform>& NewValue);
+    TSet<FTransform> SetTransformSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FTransform>& NewValue);
 
     /**
      * Sets a set of FVectors.
@@ -163,5 +163,5 @@ public:
      * @return The updated set of FVectors.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
-    TSet<FVector> SetVectorSetObjectVariable(UPARAM(ref) TSet<FVector>& NewValue);
+    TSet<FVector> SetVectorSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FVector>& NewValue);
 };

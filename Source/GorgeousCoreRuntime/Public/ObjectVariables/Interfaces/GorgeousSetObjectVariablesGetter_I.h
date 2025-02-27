@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
-|      that is has nothing in common with Epic Games in any capacity.       |
+|         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -54,7 +54,7 @@ public:
      * @return A set of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object Variable")
-    TSet<UGorgeousObjectVariable*> GetObjectVariableSetObjectVariable() const;
+    TSet<UGorgeousObjectVariable*> GetObjectVariableSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of UObjects.
@@ -62,7 +62,7 @@ public:
      * @return A set of UObjects.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<UObject*> GetObjectObjectSetObjectVariable() const;
+    TSet<UObject*> GetObjectObjectSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of UClasses.
@@ -70,7 +70,7 @@ public:
      * @return A set of UClasses.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<UClass*> GetObjectClassSetObjectVariable() const;
+    TSet<UClass*> GetObjectClassSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of TSoftObjectPtr<UObject>.
@@ -78,7 +78,7 @@ public:
      * @return A set of TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<TSoftObjectPtr<UObject>> GetSoftObjectObjectSetObjectVariable() const;
+    TSet<TSoftObjectPtr<UObject>> GetSoftObjectObjectSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of TSoftClassPtr<UObject>.
@@ -86,7 +86,7 @@ public:
      * @return A set of TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
-    TSet<TSoftClassPtr<UObject>> GetSoftObjectClassSetObjectVariable() const;
+    TSet<TSoftClassPtr<UObject>> GetSoftObjectClassSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of bytes.
@@ -94,7 +94,7 @@ public:
      * @return A set of bytes.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
-    TSet<uint8> GetByteSetObjectVariable() const;
+    TSet<uint8> GetByteSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of doubles.
@@ -102,7 +102,7 @@ public:
      * @return A set of doubles.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-    TSet<double> GetFloatSetObjectVariable() const;
+    TSet<double> GetFloatSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of 64-bit integers.
@@ -110,7 +110,7 @@ public:
      * @return A set of 64-bit integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer64")
-    TSet<int64> GetInteger64SetObjectVariable() const;
+    TSet<int64> GetInteger64SetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of integers.
@@ -118,7 +118,7 @@ public:
      * @return A set of integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer")
-    TSet<int32> GetIntegerSetObjectVariable() const;
+    TSet<int32> GetIntegerSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of FNames.
@@ -126,7 +126,7 @@ public:
      * @return A set of FNames.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Name")
-    TSet<FName> GetNameSetObjectVariable() const;
+    TSet<FName> GetNameSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of FStrings.
@@ -134,7 +134,7 @@ public:
      * @return A set of FStrings.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
-    TSet<FString> GetStringSetObjectVariable() const;
+    TSet<FString> GetStringSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of FTransforms.
@@ -142,7 +142,7 @@ public:
      * @return A set of FTransforms.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
-    TSet<FTransform> GetTransformSetObjectVariable() const;
+    TSet<FTransform> GetTransformSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of FVectors.
@@ -150,5 +150,5 @@ public:
      * @return A set of FVectors.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
-    TSet<FVector> GetVectorSetObjectVariable() const;
+    TSet<FVector> GetVectorSetObjectVariable(const FName OptionalVariableName) const;
 };
