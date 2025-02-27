@@ -50,7 +50,6 @@
  * @note This class serves as the cornerstone for managing variables in the Gorgeous Things system,
  * enabling a more object-oriented approach to variable handling.
  *
- * @todo We meed a way to also specify a optional property name with the interface way
  */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, ClassGroup = "Gorgeous Core|Gorgeous Object Variables", DisplayName = "Gorgeous Object Variable", Category = "Gorgeous Core|Gorgeous Object Variables",
 	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables."))
@@ -114,7 +113,7 @@ public:
      * @param bShouldPersist Weather this object variable should be persistent across level switches
      * @return a new variable in object format
      *
-     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out
+     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out a the construction is handled differently
      */
     UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"), Category = "Gorgeous Core|Gorgeous Object Variables")
     UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent, bool bShouldPersist);

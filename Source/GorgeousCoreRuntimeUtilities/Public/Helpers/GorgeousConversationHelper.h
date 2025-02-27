@@ -19,7 +19,6 @@ static FORCEINLINE FString GorgeousPathToRelativePath(FString FilePath)
 	//return FString(UGorgeousGlobals::GetGorgeousPlugin()->GetBaseDir() / FilePath);
 }
 
-/*
 template <typename Enumeration>
 static FORCEINLINE Enumeration GorgeousStringToEnum(const FString InValue)
 {
@@ -29,7 +28,5 @@ static FORCEINLINE Enumeration GorgeousStringToEnum(const FString InValue)
 template <typename Enumeration>
 static FORCEINLINE FString GorgeousEnumToString(const Enumeration InValue)
 {
-	return "";
-	//return StaticEnum<Enumeration>()->GetNameStringByValue(static_cast<int64>(InValue));
+	return StaticEnum<Enumeration>()->GetNameStringByValue(static_cast<int64>(InValue));
 }
-*/
