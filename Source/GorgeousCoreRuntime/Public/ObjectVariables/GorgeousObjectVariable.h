@@ -136,6 +136,8 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
+	virtual void InvokeInstancedFunctionality();
+
 protected:
 
 	/**
