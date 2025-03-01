@@ -26,20 +26,20 @@
 
 void FGorgeousCoreEditorModule::StartupModule()
 {
-	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 		UGorgeousObjectVariable::StaticClass()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariableDetailCustomization::MakeInstance));
-	PropertyEditorModule.NotifyCustomizationModuleChanged();
+	PropertyEditorModule.NotifyCustomizationModuleChanged();*/
 }
 
 void FGorgeousCoreEditorModule::ShutdownModule()
 {
-	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	/*if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(UGorgeousObjectVariable::StaticClass()->GetFName());
-	}
+	}*/
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreEditorModule, GorgeousCoreEditor)

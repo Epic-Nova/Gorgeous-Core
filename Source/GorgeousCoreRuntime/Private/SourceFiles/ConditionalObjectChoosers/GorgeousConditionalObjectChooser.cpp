@@ -17,5 +17,10 @@
 
 UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() const
 {
-	return Conditions[ConditionCheck->CheckCondition()];
+	if (UGorgeousObjectVariable* ObjectVariable = Conditions[ConditionCheck->CheckCondition()])
+	{
+		ObjectVariable->InvokeInstancedFunctionality();
+		return ObjectVariable;
+	}
+	return nullptr;
 }

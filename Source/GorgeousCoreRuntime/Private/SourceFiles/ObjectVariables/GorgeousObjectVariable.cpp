@@ -60,6 +60,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	return NewObjectVariable;
 }
 
+void UGorgeousObjectVariable::InvokeInstancedFunctionality()
+{
+}
+
 template <typename InTCppType, typename TInPropertyBaseClass>
 void UGorgeousObjectVariable::SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
 {
