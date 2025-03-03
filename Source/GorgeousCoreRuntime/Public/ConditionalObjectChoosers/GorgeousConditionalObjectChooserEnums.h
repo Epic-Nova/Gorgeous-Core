@@ -21,9 +21,6 @@
 #include "GorgeousConditionalObjectChooserEnums.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<=====================--- Class Macro Definitions ---======================>
-//<-------------------------------------------------------------------------->
-
 /**
  * Enumeration defining modes for conditional object choosers.
  *
@@ -46,4 +43,14 @@ enum class EConditionalChooserMode_E : uint8
     B_ONLY = 6 UMETA(DisplayName = "B Only", ToolTip = "Only B is evaluated."),
     N_A_ONLY = 7 UMETA(DisplayName = "Not A Only", ToolTip = "Only A is evaluated and then inverted."),
     N_B_ONLY = 8 UMETA(DisplayName = "Not B Only", ToolTip = "Only B is evaluated and then inverted."),
+};
+
+
+UENUM(BlueprintType, DisplayName = "Conditional Gamepla yTagChooser Fight Mode", meta = (ShortTooltip = "Determines the behaviour of how to proceed when more than one gameplay tag is present in the container"))
+enum class EConditionalGameplayTagChooserFightMode_E : uint8
+{
+    FIRST = 0 UMETA(DisplayName = "First", ToolTip = "Returns the first one found from the gameplay tag container."),
+    LAST = 1 UMETA(DisplayName = "Last", ToolTip = "Returns the last one found from the gameplay tag container."),
+    RANDOM = 2 UMETA(DisplayName = "Random", ToolTip = "Returns a random one from the gameplay tag container."),
+    RULE = 3 UMETA(DisplayName = "Rule", ToolTip = "Let's you define a custom rule for your own logic. For this the EvaluateCustomRule function in the condition object must be overwritten, otherwise 0 will be returned.")
 };
