@@ -14,39 +14,49 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
+#include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 //<-------------------------=== Module Includes ===-------------------------->
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GorgeousCondition.generated.h"
+#include "GorgeousConditionalObjectChooserStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * Base class for conditions used in conditional object choosers.
+ * A wrapper struct for FGameplayTagContainer, enabling its use as a key in TMap and TSet.
  *
  * Key features include:
- * - Mode selection from EConditionalChooserMode_E.
- * - CheckCondition function to evaluate the condition.
+ * - Encapsulates an FGameplayTagContainer.
+ * - Provides an explicit constructor for initialization.
+ * - Implements operator== for equality comparison.
+ * - Implements GetTypeHash for efficient hashing in associative containers.
  *
- * @note This class serves as a base for specific condition implementations.
+ * @note This struct is necessary because FGameplayTagContainer does not inherently support comparison or hashing, which are required for use as keys in TMap and TSet.
  */
-UCLASS(Blueprintable, BlueprintType, EditInlineNew)
-class UGorgeousCondition : public UObject
+USTRUCT(Blueprintable)
+struct FGameplayTagContainerWrapper_S
 {
 	GENERATED_BODY()
 
-public:
+	UPROPERTY(EditAnywhere)
+	FGameplayTagContainer Container;
 
-	/**
-	 * The mode of the condition.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Condition")
-	EConditionalChooserMode_E Mode;
+	FGameplayTagContainerWrapper_S() : Container() {}
+	
+	explicit FGameplayTagContainerWrapper_S(const FGameplayTagContainer& InContainer) : Container(InContainer) {}
 
-	/**
-	 * Checks the condition and returns a result.
-	 *
-	 * @return The result of the condition check.
-	 */
-	virtual uint8 CheckCondition();
+	bool operator==(const FGameplayTagContainerWrapper_S& Other) const
+	{
+		return Container == Other.Container;
+	}
+
+	friend uint32 GetTypeHash(const FGameplayTagContainerWrapper_S& Wrapper)
+	{
+		uint32 Hash = 0;
+		for (const FGameplayTag& Tag : Wrapper.Container)
+		{
+			Hash = HashCombine(Hash, GetTypeHash(Tag));
+		}
+		return Hash;
+	}
 };

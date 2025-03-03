@@ -35,6 +35,11 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public
 {
 	GENERATED_BODY()
 
+
+public:
+
+	void SetCachedOwner(const TObjectPtr<UObject>& NewCachedOwner) const { CachedOwner = NewCachedOwner; }
+	
 protected:
 
 	/**

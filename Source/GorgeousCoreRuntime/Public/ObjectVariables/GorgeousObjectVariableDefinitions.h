@@ -38,7 +38,7 @@ class GORGEOUSCORERUNTIME_API UObject_SOTOV : public USingleObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(UObject*, Value, ObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     UObject* Value;
 };
 
@@ -47,7 +47,7 @@ class GORGEOUSCORERUNTIME_API UClass_SOTOV : public USingleObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(UClass*, Value, ObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     UClass* Value;
 };
 
@@ -56,7 +56,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_SOTOV : public USingleObjectTypeObject
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(TSoftObjectPtr<UObject>, Value, SoftObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSoftObjectPtr<UObject> Value;
 };
 
@@ -65,7 +65,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_SOTOV : public USingleObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(TSoftClassPtr<UObject>, Value, SoftObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSoftClassPtr<UObject> Value;
 };
 
@@ -74,7 +74,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_SOV  : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(bool, Value, Boolean)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     bool Value;
 };
 
@@ -83,7 +83,7 @@ class GORGEOUSCORERUNTIME_API UByte_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(uint8, Value, Byte)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     uint8 Value;
 };
 
@@ -92,7 +92,7 @@ class GORGEOUSCORERUNTIME_API UFloat_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(double, Value, Float)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     double Value;
 };
 
@@ -101,7 +101,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(int64, Value, Integer64)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     int64 Value;
 };
 
@@ -110,7 +110,7 @@ class GORGEOUSCORERUNTIME_API UInteger_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(int32, Value, Integer)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     int32 Value;
 };
 
@@ -119,7 +119,7 @@ class GORGEOUSCORERUNTIME_API UName_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FName, Value, Name)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FName Value;
 };
 
@@ -128,7 +128,7 @@ class GORGEOUSCORERUNTIME_API URotator_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FRotator, Value, Rotator)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FRotator Value;
 };
 
@@ -137,7 +137,7 @@ class GORGEOUSCORERUNTIME_API UString_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FString, Value, String)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FString Value;
 };
 
@@ -146,7 +146,7 @@ class GORGEOUSCORERUNTIME_API UText_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FText, Value, Text)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FText Value;
 };
 
@@ -155,7 +155,7 @@ class GORGEOUSCORERUNTIME_API UTransform_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FTransform, Value, Transform)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FTransform Value;
 };
 
@@ -164,7 +164,7 @@ class GORGEOUSCORERUNTIME_API UVector_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FVector, Value, Vector)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     FVector Value;
 };
 
@@ -187,7 +187,7 @@ class GORGEOUSCORERUNTIME_API UObject_AOTOV : public UArrayObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UObject*>, Value, ObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<UObject*> Value;
 };
 
@@ -196,7 +196,7 @@ class GORGEOUSCORERUNTIME_API UClass_AOTOV : public UArrayObjectTypeObjectVariab
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UClass*>, Value, ObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<UClass*> Value;
 };
 
@@ -205,7 +205,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_AOTOV : public UArrayObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<TSoftObjectPtr<UObject>> Value;
 };
 
@@ -214,7 +214,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_AOTOV : public UArrayObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<TSoftClassPtr<UObject>> Value;
 };
 
@@ -223,7 +223,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<bool>, Value, Boolean)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<bool> Value;
 };
 
@@ -232,7 +232,7 @@ class GORGEOUSCORERUNTIME_API UByte_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<uint8>, Value, Byte)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<uint8> Value;
 };
 
@@ -241,7 +241,7 @@ class GORGEOUSCORERUNTIME_API UFloat_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<double>, Value, Float)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<double> Value;
 };
 
@@ -250,7 +250,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int64>, Value, Integer64)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<int64> Value;
 };
 
@@ -259,7 +259,7 @@ class GORGEOUSCORERUNTIME_API UInteger_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int32>, Value, Integer)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<int32> Value;
 };
 
@@ -268,7 +268,7 @@ class GORGEOUSCORERUNTIME_API UName_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FName>, Value, Name)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FName> Value;
 };
 
@@ -277,7 +277,7 @@ class GORGEOUSCORERUNTIME_API URotator_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FRotator>, Value, Rotator)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FRotator> Value;
 };
 
@@ -286,7 +286,7 @@ class GORGEOUSCORERUNTIME_API UString_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FString>, Value, String)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FString> Value;
 };
 
@@ -295,7 +295,7 @@ class GORGEOUSCORERUNTIME_API UText_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FText>, Value, Text)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FText> Value;
 };
 
@@ -304,7 +304,7 @@ class GORGEOUSCORERUNTIME_API UTransform_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FTransform>, Value, Transform)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FTransform> Value;
 };
 
@@ -313,7 +313,7 @@ class GORGEOUSCORERUNTIME_API UVector_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FVector>, Value, Vector)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TArray<FVector> Value;
 };
 
@@ -335,7 +335,7 @@ class GORGEOUSCORERUNTIME_API UObject_MOTOV : public UMapObjectTypeObjectVariabl
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(UObject*, Value, ObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<UObject*, UGorgeousObjectVariable*> Value;
 };
 
@@ -344,7 +344,7 @@ class GORGEOUSCORERUNTIME_API UClass_MOTOV : public UMapObjectTypeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(UClass*, Value, ObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<UClass*, UGorgeousObjectVariable*> Value;
 };
 
@@ -353,7 +353,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_MOTOV : public UMapObjectTypeObjectVar
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(TSoftObjectPtr<UObject>, Value, SoftObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> Value;
 };
 
@@ -362,7 +362,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_MOTOV : public UMapObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(TSoftClassPtr<UObject>, Value, SoftObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> Value;
 };
 
@@ -371,7 +371,7 @@ class GORGEOUSCORERUNTIME_API UByte_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(uint8, Value, Byte)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<uint8, UGorgeousObjectVariable*> Value;
 };
 
@@ -380,7 +380,7 @@ class GORGEOUSCORERUNTIME_API UFloat_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(double, Value, Float)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<double, UGorgeousObjectVariable*> Value;
 };
 
@@ -389,7 +389,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(int64, Value, Integer64)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<int64, UGorgeousObjectVariable*> Value;
 };
 
@@ -398,7 +398,7 @@ class GORGEOUSCORERUNTIME_API UInteger_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(int32, Value, Integer)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<int32, UGorgeousObjectVariable*> Value;
 };
 
@@ -407,7 +407,7 @@ class GORGEOUSCORERUNTIME_API UName_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FName, Value, Name)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<FName, UGorgeousObjectVariable*> Value;
 };
 
@@ -416,7 +416,7 @@ class GORGEOUSCORERUNTIME_API UString_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FString, Value, String)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<FString, UGorgeousObjectVariable*> Value;
 };
 
@@ -425,7 +425,7 @@ class GORGEOUSCORERUNTIME_API UTransform_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FTransform, Value, Transform)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<FTransform, UGorgeousObjectVariable*> Value;
 };
 
@@ -434,7 +434,7 @@ class GORGEOUSCORERUNTIME_API UVector_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FVector, Value, Vector)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TMap<FVector, UGorgeousObjectVariable*> Value;
 };
 
@@ -456,7 +456,7 @@ class GORGEOUSCORERUNTIME_API UObject_STOTOV : public USetObjectTypeObjectVariab
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UObject*>, Value, ObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<UObject*> Value;
 };
 
@@ -465,7 +465,7 @@ class GORGEOUSCORERUNTIME_API UClass_STOTOV : public USetObjectTypeObjectVariabl
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UClass*>, Value, ObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<UClass*> Value;
 };
 
@@ -474,7 +474,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_STOTOV : public USetObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<TSoftObjectPtr<UObject>> Value;
 };
 
@@ -483,7 +483,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_STOTOV : public USetObjectTypeObjectVar
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<TSoftClassPtr<UObject>> Value;
 };
 
@@ -493,7 +493,7 @@ class GORGEOUSCORERUNTIME_API UByte_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<uint8>, Value, Byte)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<uint8> Value;
 };
 
@@ -502,7 +502,7 @@ class GORGEOUSCORERUNTIME_API UFloat_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<double>, Value, Float)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<double> Value;
 };
 
@@ -511,7 +511,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int64>, Value, Integer64)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<int64> Value;
 };
 
@@ -520,7 +520,7 @@ class GORGEOUSCORERUNTIME_API UInteger_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int32>, Value, Integer)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<int32> Value;
 };
 
@@ -529,7 +529,7 @@ class GORGEOUSCORERUNTIME_API UName_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FName>, Value, Name)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<FName> Value;
 };
 
@@ -538,7 +538,7 @@ class GORGEOUSCORERUNTIME_API UString_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FString>, Value, String)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<FString> Value;
 };
 
@@ -547,7 +547,7 @@ class GORGEOUSCORERUNTIME_API UTransform_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FTransform>, Value, Transform)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<FTransform> Value;
 };
 
@@ -556,6 +556,6 @@ class GORGEOUSCORERUNTIME_API UVector_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FVector>, Value, Vector)
-    UPROPERTY(VisibleAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
     TSet<FVector> Value;
 };

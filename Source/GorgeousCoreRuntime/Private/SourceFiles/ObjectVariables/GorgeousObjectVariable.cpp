@@ -62,6 +62,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 
 void UGorgeousObjectVariable::InvokeInstancedFunctionality()
 {
+	UGorgeousRootObjectVariable::GetRootObjectVariable()->RegisterWithRegistry(this);
 }
 
 template <typename InTCppType, typename TInPropertyBaseClass>
