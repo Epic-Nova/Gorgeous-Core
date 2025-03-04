@@ -38,10 +38,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	/**
 	 * Default constructor. Generates a new unique identifier.
 	 */
-	FGorgeousFunctionalStructure_S()
-	{
-		Identifier = FGuid::NewGuid();
-	}
+	FGorgeousFunctionalStructure_S(): Identifier(FGuid::NewGuid()) {}
 
 	/**
 	 * Virtual destructor.
