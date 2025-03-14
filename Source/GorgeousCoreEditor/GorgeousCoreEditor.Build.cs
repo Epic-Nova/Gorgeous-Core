@@ -24,6 +24,7 @@ public class GorgeousCoreEditor : ModuleRules
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "ModuleCore"),
+            Path.Combine(privateIncludePath, "HeaderFiles"),
         });
         
         PrivateIncludePaths.AddRange(new string[]

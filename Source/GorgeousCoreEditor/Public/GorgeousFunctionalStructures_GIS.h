@@ -29,7 +29,7 @@
  *
  * @note This subsystem provides a centralized way to handle functional structure registrations.
  */
-UCLASS(BlueprintType, DisplayName = "Gorgeous Functional Structures")
+UCLASS(BlueprintType, DisplayName = "Functional Structures")
 class UGorgeousFunctionalStructures_GIS : public UEditorSubsystem
 {
 	GENERATED_BODY()

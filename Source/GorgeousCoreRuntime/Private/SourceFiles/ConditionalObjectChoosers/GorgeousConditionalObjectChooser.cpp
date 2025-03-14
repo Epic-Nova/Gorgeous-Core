@@ -19,7 +19,7 @@ UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() co
 {
 	if (UGorgeousObjectVariable* ObjectVariable = Conditions[ConditionCheck->CheckCondition()])
 	{
-		ObjectVariable->InvokeInstancedFunctionality();
+		ObjectVariable->InvokeInstancedFunctionality(FGuid::NewGuid());
 		return ObjectVariable;
 	}
 	return nullptr;

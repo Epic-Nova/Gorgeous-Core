@@ -52,7 +52,7 @@ public:
 	 *
 	 * @return A shared reference to the newly created instance.
 	 */
-	static TSharedRef<IPropertyTypeCustomization> MakeInstance();
+	GORGEOUSCOREEDITOR_API static TSharedRef<IPropertyTypeCustomization> MakeInstance();
 
 	/**
 	 * Customizes the header row of the property in the details panel.

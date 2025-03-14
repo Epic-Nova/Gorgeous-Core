@@ -46,7 +46,7 @@ enum class EConditionalChooserMode_E : uint8
 };
 
 
-UENUM(BlueprintType, DisplayName = "Conditional Gamepla yTagChooser Fight Mode", meta = (ShortTooltip = "Determines the behaviour of how to proceed when more than one gameplay tag is present in the container"))
+UENUM(BlueprintType, DisplayName = "Conditional Gameplay Tag Chooser Fight Mode", meta = (ShortTooltip = "Determines the behaviour of how to proceed when more than one gameplay tag is present in the container"))
 enum class EConditionalGameplayTagChooserFightMode_E : uint8
 {
     FIRST = 0 UMETA(DisplayName = "First", ToolTip = "Returns the first one found from the gameplay tag container."),

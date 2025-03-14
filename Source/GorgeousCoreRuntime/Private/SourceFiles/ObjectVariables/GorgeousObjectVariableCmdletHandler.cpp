@@ -34,16 +34,16 @@ void UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands()
 void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FString>& Args)
 {
 	std::function<void(UGorgeousObjectVariable*, int32)> PrintEntry;
-	PrintEntry = [&PrintEntry](UGorgeousObjectVariable* Variable, int32 IndentLevel)
+	PrintEntry = [&PrintEntry](UGorgeousObjectVariable* Variable, const int32 IndentLevel)
 	{
 		if (!Variable) return;
 
 		const FString Indent = FString::ChrN(IndentLevel * 4, ' ');
-		const FString LogMessage = FString::Printf(TEXT("%s- %s"), *Indent, *Variable->GetName());
+		const FString LogMessage = FString::Printf(TEXT("%s- %s"), *Indent, *Variable->UniqueIdentifier.ToString());
 
 		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(LogMessage, TEXT("GorgeousVariableHierarchy"), 5.0f, false, true, GWorld);
 
-		for (UGorgeousObjectVariable* Child : Variable->VariableRegistry)
+		for (TObjectPtr Child : Variable->VariableRegistry)
 		{
 			PrintEntry(Child, IndentLevel + 1);
 		}

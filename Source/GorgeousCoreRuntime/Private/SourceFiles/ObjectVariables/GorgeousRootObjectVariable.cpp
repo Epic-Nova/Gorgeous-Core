@@ -45,8 +45,8 @@ TArray<UGorgeousObjectVariable*> UGorgeousRootObjectVariable::GetVariableHierarc
 		if (IsValid(Variable) && !Registry.Contains(Variable))
 		{
 			Registry.Add(Variable);
-
-			for (TObjectPtr Child : Variable->VariableRegistry)
+			
+			for (UGorgeousObjectVariable* Child : Variable->VariableRegistry)
 			{
 				if (IsValid(Child))
 				{
@@ -124,6 +124,12 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 	SearchAndRemoveFromChildren(RootVariableRegistry);
 }
 
+bool UGorgeousRootObjectVariable::IsVariableRegistered(UGorgeousObjectVariable* Variable)
+{
+	return GetVariableHierarchyRegistry().Contains(Variable);
+}
+
+
 void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 {
 	const std::function CleanRegistry =
@@ -160,7 +166,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 
 void UGorgeousRootObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
 {
-	if (NewObjectVariable)
+	if (NewObjectVariable && !IsVariableRegistered(NewObjectVariable))
 	{
 		RootVariableRegistry.Add(NewObjectVariable);
 	}
