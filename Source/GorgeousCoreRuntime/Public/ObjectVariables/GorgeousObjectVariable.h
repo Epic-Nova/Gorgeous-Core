@@ -19,6 +19,7 @@
 #include "GameFramework/Info.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
+#include "Interfaces/GorgeousObjectVariableInteraction_I.h"
 #include "ObjectVariables/Helpers/Macros/GorgeousObjectVariableHelperMacros.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesSetter_I.h"
@@ -54,6 +55,7 @@
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, ClassGroup = "Gorgeous Core|Gorgeous Object Variables", DisplayName = "Gorgeous Object Variable", Category = "Gorgeous Core|Gorgeous Object Variables",
 	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables."))
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UGorgeousBaseWorldContextUObject,
+public IGorgeousObjectVariableInteraction_I,
 public IGorgeousSingleObjectVariablesGetter_I, public IGorgeousSingleObjectVariablesSetter_I,
 public IGorgeousArrayObjectVariablesGetter_I, public IGorgeousArrayObjectVariablesSetter_I,
 public IGorgeousMapObjectVariablesGetter_I, public IGorgeousMapObjectVariablesSetter_I,
@@ -104,19 +106,27 @@ public:
     template<typename InTCppType, typename TInPropertyBaseClass>
     bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const;
 
+
+	// Sets the new parent oft this object variable.
+	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
+	
+	//Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variable|Overrides")
+	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
+	
     /**
      * Constructs a new object variable and registers it within the given registry depending on the parent given.
      *
      * @param Class the class that the object variable should derive from
      * @param Identifier the unique identifier of the object variable
-     * @param Parent THe parent of this object variable. The chain can be followed up to the root object variable
+     * @param Parent The parent of this object variable. The chain can be followed up to the root object variable
      * @param bShouldPersist Weather this object variable should be persistent across level switches
      * @return a new variable in object format
      *
-     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out a the construction is handled differently
+     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
      */
-    UFUNCTION(BlueprintCallable, meta = (WorldContext = "WorldContextObject"), Category = "Gorgeous Core|Gorgeous Object Variables")
-    UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent, bool bShouldPersist);
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
+    UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
 	
 	/**
 	 * The unique identifier of the object variable.
@@ -136,14 +146,13 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
-	virtual void InvokeInstancedFunctionality();
 
 protected:
 
 	/**
 	 * The parent of the object variable.
 	 */
-	UPROPERTY(VisibleInstanceOnly, SaveGame, Category = "Default")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	UGorgeousObjectVariable* Parent;
 	
 private:
@@ -211,6 +220,8 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FString>, String, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FTransform>, Transform, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FVector>, Vector, Set)
+
+	virtual FGuid GetUniqueIdentifierForObjectVariable_Implementation() override;
 };
 
 

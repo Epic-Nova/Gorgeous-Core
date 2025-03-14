@@ -26,6 +26,16 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
 
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
+
+#include "FunctionalStructures/GorgeousFunctionalStructure.h"
+
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"

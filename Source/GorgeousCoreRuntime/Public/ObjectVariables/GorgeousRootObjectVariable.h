@@ -77,6 +77,15 @@ public:
     static void RemoveVariableFromRegistry(UGorgeousObjectVariable* VariableToRemove);
 
     /**
+     * Checks if a given object variable is already registered with the registry
+     * 
+     * @param Variable The variable to check for existance in the registry
+     * @return True if the variable is contained either in the root registry ot the registry of any other variable, false otherwise.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+   static bool IsVariableRegistered(UGorgeousObjectVariable* Variable);
+
+    /**
      * Cleans up the registry, optionally performing a full cleanup.
      *
      * @param bFullCleanup Whether to perform a full cleanup.

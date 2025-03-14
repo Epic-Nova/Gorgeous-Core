@@ -20,11 +20,6 @@
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
 
-uint8 UGorgeousGameplayTagCondition::EvaluateCustomRule()
-{
-	return 0;
-}
-
 uint8 UGorgeousGameplayTagCondition::CheckCondition()
 {
 	if (GetGameplayTagContainer().IsEmpty())

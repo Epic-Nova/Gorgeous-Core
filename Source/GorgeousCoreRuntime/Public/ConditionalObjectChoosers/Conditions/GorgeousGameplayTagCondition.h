@@ -32,7 +32,7 @@
  * @note This condition can be used in conditional object choosers to select objects based on gameplay tag logic.
  */
 UCLASS(Blueprintable, BlueprintType, HideCategories = "Condition")
-class UGorgeousGameplayTagCondition : public UGorgeousCondition
+class UGorgeousGameplayTagCondition final : public UGorgeousCondition
 {
 	GENERATED_BODY()
 
@@ -52,7 +52,7 @@ public:
 	FName GameplayTagContainerUPropertyName;
 	
 	/**
-	 * The conditional mapping, when Key is present in the container then it's Value is returned for the Condition arrray.
+	 * The conditional mapping, when Key is present in the container then it's Value is returned for the Condition array.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Gameplay Tag Condition")
 	TMap<FGameplayTagContainerWrapper_S, int32> GameplayTagConditionMapping;
@@ -64,8 +64,8 @@ public:
 	EConditionalGameplayTagChooserFightMode_E GameplayTagChooserFightMode;
 
 
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
-	virtual uint8 EvaluateCustomRule();
+	UFUNCTION(BlueprintImplementableEvent, BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
+	uint8 EvaluateCustomRule();
 	
 	/**
 	 * Evaluates the gameplay tag condition based on the selected mode.

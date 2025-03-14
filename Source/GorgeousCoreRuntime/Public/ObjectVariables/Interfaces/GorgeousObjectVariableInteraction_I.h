@@ -48,9 +48,8 @@ public:
 	/**
 	 * Gets the unique identifier for an object variable.
 	 *
-	 * @param ObjectVariable The object variable to get the identifier for.
 	 * @return The unique identifier as an FGuid.
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables")
-	FGuid GetUniqueIdentifierForObjectVariable(UObject* ObjectVariable);
+	FGuid GetUniqueIdentifierForObjectVariable();
 };

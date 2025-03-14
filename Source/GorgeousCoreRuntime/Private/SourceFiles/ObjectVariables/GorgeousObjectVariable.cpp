@@ -25,44 +25,62 @@ UGorgeousObjectVariable::UGorgeousObjectVariable(): VariableRegistry(TArray<TObj
                                                     bPersistent(false),
                                                     Parent(nullptr) {}
 
-void UGorgeousObjectVariable::RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
+void UGorgeousObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
 {
-	VariableRegistry.Add(NewObjectVariable);
+	if (NewObjectVariable && !UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
+	{
+		VariableRegistry.Add(NewObjectVariable);
+	}
 }
 
-UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, bool bShouldPersist)
+UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist)
 {
 	if (!Class && Class->IsValidLowLevel())
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.New.Invalid_Class");
+		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.Registration.Invalid_Class");
 		return nullptr;
 	}
-	
+
 	if (!InParent)
 	{
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable();
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.New.No_Parent");
+		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
-	NewObjectVariable->AddToRoot();
-	
+
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
 	NewObjectVariable->UniqueIdentifier = NewObjectVariableIdentifier;
+	
+	NewObjectVariable->AddToRoot();
 	NewObjectVariable->Parent = InParent;
 	NewObjectVariable->bPersistent = bShouldPersist;
 	InParent->RegisterWithRegistry(NewObjectVariable);
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(FString::Printf(TEXT("Successfully registered new object variable with identifier: %s where the parent is: %s (%s)"),
-		*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.New");
+	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(FString::Printf(TEXT("Successfully registered object variable with identifier: %s where the parent is: %s (%s)"),
+	*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.Registration.Successful");
 	
 	return NewObjectVariable;
 }
 
-void UGorgeousObjectVariable::InvokeInstancedFunctionality()
+FGuid UGorgeousObjectVariable::GetUniqueIdentifierForObjectVariable_Implementation()
 {
-	UGorgeousRootObjectVariable::GetRootObjectVariable()->RegisterWithRegistry(this);
+	return UniqueIdentifier;
+}
+
+void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUniqueIdentifier)
+{
+	if (!UGorgeousRootObjectVariable::IsVariableRegistered(this) && NewUniqueIdentifier.IsValid())
+	{
+		if (!Parent)
+		{
+			Parent = UGorgeousRootObjectVariable::GetRootObjectVariable();
+			UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		}
+		UniqueIdentifier = NewUniqueIdentifier;
+		Parent->RegisterWithRegistry(this);
+	}
 }
 
 template <typename InTCppType, typename TInPropertyBaseClass>
