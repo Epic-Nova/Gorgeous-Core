@@ -97,7 +97,7 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 		{
 			for (int32 i = 0; i < Registry.Num(); ++i)
 			{
-				if (VariableToRemove && Registry[i] == VariableToRemove)
+				if (VariableToRemove && IsValid(VariableToRemove) && IsValid(Registry[i]) && Registry[i] == VariableToRemove)
 				{
 					Registry.RemoveAt(i);
 					if (VariableToRemove->IsRooted())
