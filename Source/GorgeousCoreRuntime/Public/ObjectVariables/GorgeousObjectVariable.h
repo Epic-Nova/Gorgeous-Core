@@ -111,7 +111,7 @@ public:
 	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
 	
 	//Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variable|Overrides")
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Overrides")
 	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
 	
     /**
@@ -127,6 +127,10 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
     UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
+
+
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
+	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent = nullptr);
 	
 	/**
 	 * The unique identifier of the object variable.

@@ -48,12 +48,12 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
-
+	NewObjectVariable->AddToRoot();
+	
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
 	NewObjectVariable->UniqueIdentifier = NewObjectVariableIdentifier;
 	
-	NewObjectVariable->AddToRoot();
 	NewObjectVariable->Parent = InParent;
 	NewObjectVariable->bPersistent = bShouldPersist;
 	InParent->RegisterWithRegistry(NewObjectVariable);
@@ -62,6 +62,36 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.Registration.Successful");
 	
 	return NewObjectVariable;
+}
+
+UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObjectVariable(
+	const TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent)
+{
+	if (!Class)
+	{
+		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+		return nullptr;
+	}
+
+	if (!InParent)
+	{
+		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable();
+		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+	}
+	
+	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(InParent, Class, NAME_None, RF_Transactional);
+	NewInstance->UniqueIdentifier = FGuid::NewGuid();
+	NewInstance->Parent = InParent;
+	
+	if (NewInstance)
+	{
+		Modify();
+
+		UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage("Created new transactional instance.", "GT.ObjectVariables.Transactional.Success");
+		return NewInstance;
+	}
+	UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+	return nullptr;
 }
 
 FGuid UGorgeousObjectVariable::GetUniqueIdentifierForObjectVariable_Implementation()

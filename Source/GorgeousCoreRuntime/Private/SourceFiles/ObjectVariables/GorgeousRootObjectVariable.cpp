@@ -100,6 +100,10 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 				if (VariableToRemove && Registry[i] == VariableToRemove)
 				{
 					Registry.RemoveAt(i);
+					if (VariableToRemove->IsRooted())
+					{
+						VariableToRemove->RemoveFromRoot();
+					}
 					VariableToRemove->ConditionalBeginDestroy();
 					return;
 				}
