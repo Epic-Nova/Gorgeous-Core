@@ -92,7 +92,27 @@ public:
      * @param Value The value to set.
      */
     template<typename InTCppType, typename TInPropertyBaseClass>
-    void SetDynamicProperty(const FName PropertyName, const InTCppType& Value);
+    void SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
+    {
+    	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); PropertyName.IsValid())
+    	{
+    		// Handle UObject* properties separately
+    		if constexpr (std::is_base_of_v<UObject, InTCppType>)
+    		{
+    			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+    			{
+    				ObjectProperty->SetObjectPropertyValue_InContainer(this, Value);
+    			}
+    		}
+    		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+    		{
+    			if (TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+    			{
+    				TypedProperty->SetPropertyValue_InContainer(this, Value);
+    			}
+    		}
+    	}
+    }
 
     /**
      * Gets a dynamic property of the object variable.
@@ -104,7 +124,30 @@ public:
      * @return True if the property was successfully retrieved, false otherwise.
      */
     template<typename InTCppType, typename TInPropertyBaseClass>
-    bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const;
+    bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const
+    {
+    	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); Property && PropertyName.IsValid())
+    	{
+    		// Handle UObject* properties separately
+    		if constexpr (std::is_base_of_v<UObject, InTCppType>)
+    		{
+    			if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+    			{
+    				OutValue = Cast<InTCppType>(ObjectProperty->GetObjectPropertyValue_InContainer(this));
+    				return true;
+    			}
+    		}
+    		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+    		{
+    			if (const TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
+    			{
+    				OutValue = TypedProperty->GetPropertyValue_InContainer(this);
+    				return true;
+    			}
+    		}
+    	}
+    	return false;
+    }
 
 
 	// Sets the new parent oft this object variable.
