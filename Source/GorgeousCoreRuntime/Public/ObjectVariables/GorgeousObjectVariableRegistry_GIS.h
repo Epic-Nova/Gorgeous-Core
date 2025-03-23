@@ -34,6 +34,7 @@ class UWorld;
  * - Handling level removal events to clean up persistent variables.
  *
  * @note This subsystem provides a centralized place for managing object variables across the game instance.
+ * @todo Bind a delegate to when live coding is completed and then clean the root object variable registry. For some reason the core crashes the editor after a live coding compile
  */
 UCLASS(NotBlueprintable, NotBlueprintType)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRegistry_GIS : public UGameInstanceSubsystem
