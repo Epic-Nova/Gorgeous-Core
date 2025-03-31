@@ -91,6 +91,8 @@ public:
      * @param PropertyName The name of the property.
      * @param Value The value to set.
      */
+//grepper unreal wildcard
+	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     void SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
     {
@@ -113,7 +115,8 @@ public:
     		}
     	}
     }
-
+	
+//end grepper
     /**
      * Gets a dynamic property of the object variable.
      *
@@ -123,6 +126,8 @@ public:
      * @param OutValue The output value of the property.
      * @return True if the property was successfully retrieved, false otherwise.
      */
+//grepper unreal wildcard
+	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const
     {
@@ -148,7 +153,7 @@ public:
     	}
     	return false;
     }
-
+//end grepper
 
 	// Sets the new parent oft this object variable.
 	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
