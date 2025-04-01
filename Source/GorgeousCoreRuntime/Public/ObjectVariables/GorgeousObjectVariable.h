@@ -91,7 +91,7 @@ public:
      * @param PropertyName The name of the property.
      * @param Value The value to set.
      */
-//grepper unreal wildcard
+//grepper cpp unreal wildcard
 	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     void SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
@@ -126,7 +126,7 @@ public:
      * @param OutValue The output value of the property.
      * @return True if the property was successfully retrieved, false otherwise.
      */
-//grepper unreal wildcard
+//grepper cpp unreal wildcard
 	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const
