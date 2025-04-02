@@ -66,5 +66,6 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	 * @param PropertyHandle The property handle.
 	 */
 	virtual void PreEditChangeProperty(TSharedRef<IPropertyHandle> PropertyHandle) {};
+	
 #endif //WITH_EDITOR
 };

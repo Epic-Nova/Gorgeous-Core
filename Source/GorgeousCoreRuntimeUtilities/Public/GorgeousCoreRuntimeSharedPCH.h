@@ -35,6 +35,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 
 #include "CoreUObject.h"
+#include "UObject/Interface.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Info.h"
 

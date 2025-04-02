@@ -14,10 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
-//<-------------------------=== Module Includes ===-------------------------->
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousConditionalObjectChooserStructures.generated.h"
 //<-------------------------------------------------------------------------->
@@ -31,6 +27,7 @@
  * - Implements operator== for equality comparison.
  * - Implements GetTypeHash for efficient hashing in associative containers.
  *
+ * @author Nils Bergemann
  * @note This struct is necessary because FGameplayTagContainer does not inherently support comparison or hashing, which are required for use as keys in TMap and TSet.
  */
 USTRUCT(Blueprintable)

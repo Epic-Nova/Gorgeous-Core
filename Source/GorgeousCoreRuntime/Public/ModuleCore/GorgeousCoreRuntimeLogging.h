@@ -8,6 +8,9 @@
 |                   Epic Nova is an independent entity,                     |
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
+
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousCoreRuntime, Log, All);

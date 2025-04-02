@@ -24,8 +24,6 @@
  * It's responsible for loading runtime components and referenced third-party libraries.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.1
  */
 class FGorgeousCoreRuntimeUtilitiesModule final : public IGorgeousThingsModuleInterface
 {

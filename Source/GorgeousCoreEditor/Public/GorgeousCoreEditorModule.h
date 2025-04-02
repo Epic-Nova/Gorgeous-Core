@@ -22,8 +22,6 @@
  * This module defines the editor module of the Gorgeous Things plugin.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.1
  */
 class FGorgeousCoreEditorModule final : public IGorgeousThingsModuleInterface
 {

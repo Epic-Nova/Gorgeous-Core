@@ -8,12 +8,7 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
-//<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
-
 #include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
-//<-------------------------------------------------------------------------->
 
 //=============================================================================
 // UGorgeousCondition Implementation

@@ -14,8 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "CoreMinimal.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableEnums.generated.h"
 //<-------------------------------------------------------------------------->
@@ -25,7 +23,6 @@
  *
  * @brief Enum that defines the variable count of the object variable.
  * @author Nils Bergemann
- * @since Beginning
  */
 UENUM(BlueprintType, DisplayName = "Object Variable Count", meta = (ShortTooltip = "The count of the object variable."))
 enum class EObjectVariableCount_E : uint8

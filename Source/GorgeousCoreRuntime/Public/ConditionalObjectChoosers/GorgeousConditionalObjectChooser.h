@@ -29,6 +29,7 @@
  * - Conditions: An array of GorgeousObjectVariables to choose from.
  * - DecideCondition function to select the appropriate object variable.
  *
+ * @author Nils Bergemann
  * @note This class allows for dynamic object selection based on specified conditions.
  */
 UCLASS(Blueprintable, BlueprintType)
