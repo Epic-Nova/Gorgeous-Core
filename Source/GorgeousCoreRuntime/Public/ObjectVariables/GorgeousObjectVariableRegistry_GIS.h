@@ -17,6 +17,7 @@
 //<-------------------------=== Engine Includes ===-------------------------->
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousRootObjectVariable.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableRegistry_GIS.generated.h"
 //<-------------------------------------------------------------------------->

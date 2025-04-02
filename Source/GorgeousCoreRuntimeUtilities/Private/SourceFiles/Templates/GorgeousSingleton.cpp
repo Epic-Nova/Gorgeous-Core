@@ -8,7 +8,32 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "GorgeousSingleton.h"
 
-DEFINE_LOG_CATEGORY(LogGorgeousCoreRuntime);
-DEFINE_LOG_CATEGORY(LogGorgeousCoreRuntimeUtilities);
+//=============================================================================
+// UGorgeousSingleton Implementation
+//=============================================================================
+
+UGorgeousSingleton* UGorgeousSingleton::SingletonInstance = nullptr;
+
+template<typename T>
+T* UGorgeousSingleton::GetSingleton()
+{
+	static_assert(TIsDerivedFrom<T, UGorgeousSingleton>::IsDerived, "The type provided is not derived from UGorgeousSingletonTemplate.");
+
+	if (!SingletonInstance)
+	{
+		SingletonInstance = NewObject<T>();
+		SingletonInstance->AddToRoot();
+	}
+	return Cast<T>(SingletonInstance);
+}
+
+void UGorgeousSingleton::DestroySingleton()
+{
+	if (SingletonInstance)
+	{
+		SingletonInstance->RemoveFromRoot();
+		SingletonInstance = nullptr;
+	}
+}

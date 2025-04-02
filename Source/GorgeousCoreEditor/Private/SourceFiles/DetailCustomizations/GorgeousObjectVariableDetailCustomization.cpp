@@ -14,8 +14,15 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Engine Includes ===-------------------------->
 #include "DetailWidgetRow.h"
+#include "EdGraphSchema_K2.h"
+#include "Editor.h"
+#include "GraphEditor.h"
 #include "IDetailChildrenBuilder.h"
 #include "Blueprint/UserWidget.h"
+#include "EdGraph/EdGraph.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/Input/SComboBox.h"
+#include "Widgets/Text/STextBlock.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================

@@ -13,24 +13,46 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
 #include <HAL/FileManager.h>
+//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousConversationHelper.h"
+//<-------------------------------------------------------------------------->
 
-static FORCEINLINE bool IsGorgeousDirectoryPresent(FString DirectoryPath)
+/**
+ * Checks if a given directory exists inside the gorgeous folder structure.
+ * 
+ * @param DirectoryPath The relatative path that should be checked
+ * @return True if the directory exists, false otherwise
+ */
+static FORCEINLINE bool IsGorgeousDirectoryPresent(const FString& DirectoryPath)
 {
-	return IFileManager::Get().DirectoryExists(*GorgeousPathToRelativePath(DirectoryPath));
+	return IFileManager::Get().DirectoryExists(*RelativePathToGorgeousPath(DirectoryPath));
 }
 
-static FORCEINLINE bool MakeGorgeousDirectory(FString DirectoryPath)
+/**
+ * Creates a gorgeous directory under the specified relative file path.
+ * 
+ * @param DirectoryPath The directory that should be created. 
+ * @return True if the directory was created, false otherwise.
+ */
+static FORCEINLINE bool MakeGorgeousDirectory(const FString& DirectoryPath)
 {
-	return IFileManager::Get().MakeDirectory(*GorgeousPathToRelativePath(DirectoryPath));
+	return IFileManager::Get().MakeDirectory(*RelativePathToGorgeousPath(DirectoryPath));
 }
 
-static FORCEINLINE bool DeleteGorgeousDirectory(FString DirectoryPath)
+/**
+ * Deletes a gorgeous directory under the specified relative file path.
+ * 
+ * @param DirectoryPath The directory that should be deleted.
+ * @return True if the directory was deleted, false otherwise.
+ */
+static FORCEINLINE bool DeleteGorgeousDirectory(const FString& DirectoryPath)
 {
 	if(IsGorgeousDirectoryPresent(DirectoryPath))
 	{
-		return IFileManager::Get().DeleteDirectory(*GorgeousPathToRelativePath(DirectoryPath), true);
+		return IFileManager::Get().DeleteDirectory(*RelativePathToGorgeousPath(DirectoryPath), true);
 	}
 	return false;
 }

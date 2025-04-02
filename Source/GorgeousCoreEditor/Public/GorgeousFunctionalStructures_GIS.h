@@ -15,6 +15,7 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
+#include "EditorSubsystem.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousFunctionalStructures_GIS.generated.h"

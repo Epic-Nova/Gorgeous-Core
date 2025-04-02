@@ -10,6 +10,9 @@
 <==========================================================================*/
 #include "GorgeousBaseWorldContextUObject.h"
 
+//=============================================================================
+// UGorgeousBaseWorldContextUObject Implementation
+//=============================================================================
 
 UWorld* UGorgeousBaseWorldContextUObject::GetWorld() const
 {

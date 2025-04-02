@@ -25,4 +25,9 @@ void FGorgeousCoreEditorUtilitiesModule::ShutdownModule()
 	UE_LOG(LogTemp, Warning, TEXT("FGorgeousCoreEditorUtilitiesModule has shut down!"));
 }
 
+TArray<FName> FGorgeousCoreEditorUtilitiesModule::GetDependentPlugins()
+{
+	return TArray<FName>();
+}
+
 IMPLEMENT_MODULE(FGorgeousCoreEditorUtilitiesModule, GorgeousCoreEditorUtilities)

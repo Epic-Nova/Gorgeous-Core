@@ -13,9 +13,4 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
-/**
- * static FORCEINLINE FString ReadGorgeousDatabase(FString Table, FString Identifier)
-{
-	return "";
-}
- */
+//@TODO: Planned for future version of the core that implements the gorgeous marketplace with a mysql extension cache (ReadGorgeousDatabase, WriteGorgeousDatabase, ...)

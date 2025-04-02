@@ -10,6 +10,10 @@
 <==========================================================================*/
 #include "GorgeousCoreRuntimeUtilitiesModule.h"
 
+//=============================================================================
+// FGorgeousCoreRuntimeUtilitiesModule Implementation
+//=============================================================================
+
 void FGorgeousCoreRuntimeUtilitiesModule::StartupModule()
 {
 	UE_LOG(LogTemp, Warning, TEXT("GorgeousCoreRuntimeUtilitiesModule has started!"));

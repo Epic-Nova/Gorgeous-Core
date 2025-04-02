@@ -39,4 +39,9 @@ void FGorgeousCoreRuntimeModule::ShutdownModule()
 	UE_LOG(LogTemp, Warning, TEXT("FGorgeousCoreRuntimeModule has shut down!"));
 }
 
+TArray<FName> FGorgeousCoreRuntimeModule::GetDependentPlugins()
+{
+	return TArray<FName>();
+}
+
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeModule, GorgeousCoreRuntime)

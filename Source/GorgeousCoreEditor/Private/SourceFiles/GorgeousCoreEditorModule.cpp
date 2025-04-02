@@ -42,4 +42,9 @@ void FGorgeousCoreEditorModule::ShutdownModule()
 	}*/
 }
 
+TArray<FName> FGorgeousCoreEditorModule::GetDependentPlugins()
+{
+	return TArray<FName>();
+}
+
 IMPLEMENT_MODULE(FGorgeousCoreEditorModule, GorgeousCoreEditor)

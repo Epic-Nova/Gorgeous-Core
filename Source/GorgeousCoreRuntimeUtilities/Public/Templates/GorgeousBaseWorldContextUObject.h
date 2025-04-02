@@ -35,9 +35,12 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public
 {
 	GENERATED_BODY()
 
-
 public:
-
+	/**
+	 * Sets the cached owner of this object. This is used as an absolute failsafe to ensure the consistent availability of the world to the current active instance.
+	 * 
+	 * @param NewCachedOwner the new chaced owner that has the capability to a valid GetWorld() call.
+	 */
 	void SetCachedOwner(const TObjectPtr<UObject>& NewCachedOwner) const { CachedOwner = NewCachedOwner; }
 	
 protected:
