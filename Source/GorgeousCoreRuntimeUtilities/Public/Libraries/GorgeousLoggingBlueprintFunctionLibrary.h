@@ -14,12 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "CoreMinimal.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
-#include "GameplayTagContainer.h"
-//<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousCoreRuntimeUtilitiesEnums.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousLoggingBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
@@ -40,22 +34,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousLoggingBlueprintFunctionLibrary 
     GENERATED_BODY()
 
 public:
-
-    /**
-     * Logs a message with customizable parameters.
-     *
-     * @param Message The message to log.
-     * @param Importancy The importance of the message.
-     * @param LoggingKey A unique key to manage the log message.
-     * @param Duration The duration to display the message on screen.
-     * @param bPrintToScreen Whether to print the message to the screen.
-     * @param bPrintToLog Whether to print the message to the log.
-     * @param bOverrideLoggingIfPresent Whether to override an existing log message with the same key.
-     * @param WorldContextObject The world context object.
-     */
-    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogMessage(UPARAM(ref) const FString& Message, EGorgeousLoggingImportancy Importancy, FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, bool bOverrideLoggingIfPresent = true, UObject* WorldContextObject = nullptr);
-
+    
     /**
      * Logs an information message.
      *

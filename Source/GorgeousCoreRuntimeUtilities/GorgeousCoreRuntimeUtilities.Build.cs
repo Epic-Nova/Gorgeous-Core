@@ -17,19 +17,17 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
     public GorgeousCoreRuntimeUtilities(ReadOnlyTargetRules Target) : base(Target)
     {
         var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
-        var privateIncludePath = Path.Combine(ModuleDirectory, "Private");
-
+        
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        SharedPCHHeaderFile = Path.Combine(publicIncludePath, "GorgeousCoreRuntimeSharedPCH.h");
+        PrivatePCHHeaderFile = SharedPCHHeaderFile;
+        
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "ModuleCore"),
             Path.Combine(publicIncludePath, "Libraries"),
             Path.Combine(publicIncludePath, "Templates"),
-        });
-        
-        PrivateIncludePaths.AddRange(new string[]
-        {
-            Path.Combine(privateIncludePath, "HeaderFiles"),
         });
 	
         PublicDependencyModuleNames.AddRange(new string[]
@@ -41,7 +39,5 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "Kismet",
                 "GameplayTags"
             });
-
-        PrivateDependencyModuleNames.AddRange(new string[] {  });
     }
 }

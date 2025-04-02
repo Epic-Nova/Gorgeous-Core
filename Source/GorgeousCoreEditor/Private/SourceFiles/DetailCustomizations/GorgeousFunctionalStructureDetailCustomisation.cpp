@@ -18,7 +18,7 @@
 #include "PropertyEditorModule.h"
 #include "IDetailChildrenBuilder.h"
 //<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+#include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
 //<-------------------------------------------------------------------------->
 

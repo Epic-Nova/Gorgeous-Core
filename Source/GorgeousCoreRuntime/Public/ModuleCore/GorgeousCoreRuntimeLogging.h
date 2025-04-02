@@ -9,3 +9,5 @@
 |      that is has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 #pragma once
+
+DEFINE_LOG_CATEGORY_STATIC(LogGorgeousCoreRuntime, Log, All);

@@ -13,10 +13,4 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
-
-/**
- * static FORCEINLINE FString ReadMessageFromDatabaseWithIdentifier(FString Identifier)
-{
-	return FString();
-}
- */
+//@TODO: Planned for future versions of the core with support for multiple languages, even in the logging strings. (ReadMessageFromDatabaseWithIdentifier)

@@ -9,6 +9,8 @@
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
+//@TODO: This is a WIP file. To learn more about what's to come and why this file exists. Check out the current roadmap of Gorgeous Things under our github repository: https://github.com/orgs/Epic-Nova/projects/12
+
 /*=======================>
 | Dependencies & Pragmas |
 <=======================*/
@@ -77,7 +79,7 @@ public struct GorgeousBuildSettings
 /**
  * This standalone build file for Unreal Engine 4/5 is designed to provide a clean and well structured build file for all build products.
  *
- * It is designed to be used with any Unreal Engine plugin and project but was originally designed for the Gorgeous Things Plugin.
+ * It is designed to be used with any Unreal Engine plugin and project but was originally designed for the Gorgeous Things Plugin family.
  *
  * -------------------------------------------- Features -------------------------------------------
  * Provides pre configured UBT definitions, functions and settings to:
@@ -87,9 +89,9 @@ public struct GorgeousBuildSettings
  * - Provide a worry free opt in setup for external modules.
  * - Provide preprocessor macros to every gorgeous plugin to grant the ability for cross functionality sharing and extending.
  *
- * @author (Original Author of the Build File)
- * @since (Date/Version of Creation)
- * @version (Current Version of the Build File)
+ * @author Nils Bergemann
+ * @since Beginning
+ * @version 0.0.1
  *
  * @todo boolean flag that can be set to specify that a gorgeous plugin includes an utilities module either for editor or runtime or both
  * @todo Every Module coming from a Gorgeous Things extension should depend on this build file.

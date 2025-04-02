@@ -14,7 +14,7 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
-#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+#include "GorgeousCoreUtilitiesMinimalShared.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================

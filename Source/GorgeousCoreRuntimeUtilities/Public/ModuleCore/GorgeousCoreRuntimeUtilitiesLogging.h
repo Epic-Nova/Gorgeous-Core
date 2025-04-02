@@ -14,5 +14,4 @@
 //<-------------------------------------------------------------------------->
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousThings, Log, All);
-DECLARE_LOG_CATEGORY_EXTERN(LogGorgeousCoreRuntime, Log, All);
-DECLARE_LOG_CATEGORY_EXTERN(LogGorgeousCoreRuntimeUtilities, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogGorgeousCoreRuntimeUtilities, Log, All);

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -10,38 +10,34 @@
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE									|
+|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                    |
 | --------------------------------------------------------------------------------------------------------------------- |
-|							ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                                    |
-|	TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntimeUtilities" MODULE       |
+|									USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                     |
 <======================================================================================================================*/
 
 //<=============================--- Pragmas ---==============================>
 #pragma once
 //<-------------------------------------------------------------------------->
 
-MONOLITHIC_HEADER_BOILERPLATE()
+/*==============================>
+| Engine Includes               |
+<==============================*/
+#include "CoreMinimal.h"
+#include "Engine/Engine.h"
+#include "UObject/UnrealTypePrivate.h"
+#include "TimerManager.h"
+#include "GameplayTags.h"
+#include "Misc/MonolithicHeaderBoilerplate.h"
 
-#include "GorgeousCoreRuntimeUtilitiesEnums.h"
-#include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "Interfaces/IPluginManager.h"
 
-//Helper Includes
-#include "Helpers/GorgeousConversationHelper.h"
-#include "Helpers/GorgeousDatabaseHelper.h"
-#include "Helpers/GorgeousDirectoryHelper.h"
-#include "Helpers/GorgeousFileHelper.h"
-#include "Helpers/GorgeousLanguageHelper.h"
-#include "Helpers/GorgeousLoggingHelper.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/BlueprintFunctionLibrary.h"
 
-//Macro Helper Includes
-#include "Helpers/Macros/GorgeousConnectionHelperMacros.h"
-#include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
-#include "Helpers/Macros/GorgeousPlatformHelperMacros.h"
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "CoreUObject.h"
+#include "GameFramework/Actor.h"
+#include "GameFramework/Info.h"
 
-//Library Includes
-#include "Libraries/GorgeousLoggingBlueprintFunctionLibrary.h"
-
-//Template Includes
-#include "Templates/GorgeousBaseWorldContextUObject.h"
-#include "Templates/GorgeousSingleton.h"
+/*==============================>
+| Module Includes               |
+<==============================*/

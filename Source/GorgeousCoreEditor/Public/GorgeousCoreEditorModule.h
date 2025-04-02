@@ -19,15 +19,11 @@
 //<-------------------------------------------------------------------------->
 
 /**
- * This module defines the editor module of the LogGorgeousThings plugin.
- *
- * Key features include:
- * - StartupModule: Called when the module is loaded.
- * - ShutdownModule: Called when the module is unloaded.
+ * This module defines the editor module of the Gorgeous Things plugin.
  *
  * @author Nils Bergemann
  * @since Beginning
- * @version v1.0
+ * @version v1.1
  */
 class FGorgeousCoreEditorModule final : public IGorgeousThingsModuleInterface
 {
@@ -43,4 +39,20 @@ public:
 	 */
 	virtual void ShutdownModule() override;
 
+	/**
+	 * We return false here because we don't want the core to be participated in any hot reload/live coding actions.
+	 * As long term debugging shows that reloading the gorgeous core module invokes the corruption of the current object variable registry instance, and finally a crash of the current unreal instance.
+	 */
+	virtual bool SupportsDynamicReloading() override
+	{
+		return false;
+	}
+	
+	/**
+	 * Returns an array of names from other gorgeous plugins that this plugin depends on.
+	 * This is used for the shop extension to download the full dependency chain of a gorgeous plugin.
+	 * 
+	 * @return All plugins that provide functionality that is used within this current module.
+	 */
+	virtual TArray<FName> GetDependentPlugins() override;
 };

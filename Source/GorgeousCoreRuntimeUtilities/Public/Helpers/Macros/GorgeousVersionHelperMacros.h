@@ -16,16 +16,15 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Engine Includes ===-------------------------->
 #include "Templates/Casts.h"
+#include "Runtime/Launch/Resources/Version.h"
 #include "Misc/EngineVersion.h"
 //<-------------------------------------------------------------------------->
 
 #define GORGEOUS_ENGINE_VERSION (ENGINE_MAJOR_VERSION * 100 + ENGINE_MINOR_VERSION)
 
-// ---------------------------------------------------------------------------------------------------------------------//
-//																														//
-// If the Unreal Engine version is higher than to the defined engine version, then these macros are active.	            //
-//																														//
-// ---------------------------------------------------------------------------------------------------------------------//	
+/**
+ * If the Unreal Engine version is higher than to the defined engine version, then these macros are active.
+ */
 #if GORGEOUS_ENGINE_VERSION < 423
 #define GORGEOUS_23_HIGHER(...)
 #else
@@ -87,11 +86,9 @@
 #endif
 
 
-// -----------------------------------------------------------------------------------------------------------------//
-//																													//
-// If the Unreal Engine version is lower than to the defined engine version, then these macros are active.	        //
-//																													//
-// -----------------------------------------------------------------------------------------------------------------//	
+/**
+ * If the Unreal Engine version is lower than to the defined engine version, then these macros are active.
+ */
 #if GORGEOUS_ENGINE_VERSION > 423
 #define GORGEOUS_23_LOWER(X)
 #else
@@ -158,13 +155,11 @@
 #define GORGEOUS_55_LOWER(...) __VA_ARGS__
 #endif
 
-// -------------------------------------------------------------------------------------------------------------------------//
-//																															//
-// If the Unreal Engine version is higher than or equal to the defined engine version, then the Switch macros are active.	//
-// If the Unreal Engine version is the same as the defined engine version, the only macros are active.						//
-//																															//
-// -------------------------------------------------------------------------------------------------------------------------//
 
+/**
+ * If the Unreal Engine version is higher than or equal to the defined engine version, then the Switch macros are active.
+ * If the Unreal Engine version is the same as the defined engine version, the only macros are active.
+ */
 #if GORGEOUS_ENGINE_VERSION >= 423
 #define GORGEOUS_23_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_23_ONLY(...) __VA_ARGS__
@@ -253,11 +248,9 @@
 #define GORGEOUS_55_ONLY(...)
 #endif
 
-// ---------------------------------------------------------------------//
-//																		//
-// If the Unreal Engine version is below 4.25 then F is referred to U.	//
-//																		//
-// ---------------------------------------------------------------------//
+/**
+* If the Unreal Engine version is below 4.25 then F is referred to U.
+*/
 #if GORGEOUS_ENGINE_VERSION < 425
 using FProperty = UProperty;
 using FStructProperty = UStructProperty;
@@ -273,11 +266,9 @@ using FMapProperty = UMapProperty;
 using FSetProperty = USetProperty;
 #endif
 
-// -------------------------------------------------------------------------//
-//																			//
-// If the Unreal Engine version is below 5, TObjectPtr is referred to *.	//
-//																			//
-// -------------------------------------------------------------------------//
+/**
+ * If the Unreal Engine version is below 5, TObjectPtr is referred to *.
+ */
 #if GORGEOUS_ENGINE_VERSION < 500
 template<typename T>
 using TObjectPtr = T*;

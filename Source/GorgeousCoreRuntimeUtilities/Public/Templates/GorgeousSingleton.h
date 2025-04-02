@@ -17,7 +17,7 @@
 //<-------------------------=== Engine Includes ===-------------------------->
 #include "UObject/Object.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GorgeousSingletonTemplate.generated.h"
+#include "GorgeousSingleton.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
@@ -31,7 +31,7 @@
  * @note This class provides a generic singleton pattern for UObjects.
  */
 UCLASS()
-class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousSingletonTemplate : public UObject
+class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousSingleton : public UObject
 {
     GENERATED_BODY()
 
@@ -56,12 +56,12 @@ protected:
     /**
      * Protected constructor to prevent direct instantiation.
      */
-    UGorgeousSingletonTemplate() {}
+    UGorgeousSingleton() {}
 
 private:
 
     /**
      * The singleton instance.
      */
-    static UGorgeousSingletonTemplate* SingletonInstance;
+    static UGorgeousSingleton* SingletonInstance;
 };
