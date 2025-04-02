@@ -16,8 +16,8 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCondition.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GameplayTagContainer.h"
 #include "GorgeousGameplayTagCondition.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -29,6 +29,7 @@
  * - CheckCondition function to evaluate the condition.
  * - EvaluateCustomRule function for when a custom ruleset on the gameplay tag conditioning should be performed.
  *
+ * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on gameplay tag logic.
  */
 UCLASS(Blueprintable, BlueprintType, HideCategories = "Condition")
@@ -63,7 +64,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Gameplay Tag Condition")
 	EConditionalGameplayTagChooserFightMode_E GameplayTagChooserFightMode;
 
-
+	/**
+	 * Evaluates a custom specified rule for selecting the condition.
+	 * 
+	 * @return A valid index for a condition.
+	 */
 	UFUNCTION(BlueprintImplementableEvent, BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
 	uint8 EvaluateCustomRule();
 	
@@ -75,6 +80,11 @@ public:
 	virtual uint8 CheckCondition() override;
 
 private:
-
+	
+	/**
+	 * Returns the gameplay tag container from the specified class and property name.
+	 * 
+	 * @return The gameplay tag container from the specified class and property name.
+	 */
 	FGameplayTagContainer GetGameplayTagContainer() const;
 };

@@ -90,8 +90,6 @@ public struct GorgeousBuildSettings
  * - Provide preprocessor macros to every gorgeous plugin to grant the ability for cross functionality sharing and extending.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version 0.0.1
  *
  * @todo boolean flag that can be set to specify that a gorgeous plugin includes an utilities module either for editor or runtime or both
  * @todo Every Module coming from a Gorgeous Things extension should depend on this build file.

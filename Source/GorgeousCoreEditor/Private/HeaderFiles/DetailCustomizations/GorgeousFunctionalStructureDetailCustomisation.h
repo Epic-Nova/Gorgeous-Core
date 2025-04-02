@@ -40,8 +40,6 @@ struct FGorgeousFunctionalStructure_S;
  * - A dedicated instance pointer to the functional structure being customized, enabling direct access and modification.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.0
  */
 class FGorgeousFunctionalStructureDetailCustomisation final : public IPropertyTypeCustomization
 {

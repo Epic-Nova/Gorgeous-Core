@@ -25,8 +25,6 @@
  * It is also responsible for managing the support from 4.26 up to 5.4. Everything under is marked as legacy and partly supported.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.1
  */
 class IGorgeousThingsModuleInterface : public IModuleInterface
 {

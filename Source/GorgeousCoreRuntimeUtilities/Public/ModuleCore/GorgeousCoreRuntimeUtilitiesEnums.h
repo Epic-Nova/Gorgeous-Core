@@ -21,7 +21,6 @@
 /**
  * @brief Enum that defines the importancy of the logging message.
  * @author Nils Bergemann
- * @since Beginning
  */
 UENUM(BlueprintType, DisplayName = "Gorgeous Logging Importancy", meta = (ShortTooltip = "The importancy of the logging message."))
 enum EGorgeousLoggingImportancy

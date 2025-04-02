@@ -273,6 +273,11 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FTransform>, Transform, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FVector>, Vector, Set)
 
+	/**
+	 * Gets the unique identifier for an object variable.
+	 *
+	 * @return The unique identifier as an FGuid.
+	 */
 	virtual FGuid GetUniqueIdentifierForObjectVariable_Implementation() override;
 };
 

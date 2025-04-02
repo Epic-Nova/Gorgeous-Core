@@ -27,6 +27,7 @@
  * - Mode selection from EConditionalChooserMode_E (inherited from UGorgeousCondition).
  * - CheckCondition function to evaluate the condition.
  *
+ * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on object validity.
  */
 UCLASS(Blueprintable, BlueprintType)
@@ -55,5 +56,4 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
 	virtual uint8 CheckCondition() override;
-
 };

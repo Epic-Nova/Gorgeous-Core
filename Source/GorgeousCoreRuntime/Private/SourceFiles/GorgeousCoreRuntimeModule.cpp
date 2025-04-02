@@ -8,13 +8,9 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
 #include "GorgeousCoreRuntimeModule.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "GameplayTagsManager.h"
-#include "Interfaces/IPluginManager.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 //<-------------------------------------------------------------------------->
@@ -25,7 +21,7 @@
 
 void FGorgeousCoreRuntimeModule::StartupModule()
 {
-	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin; probably move this functionality to the interface defined in the utilities module of the core
+	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
 	const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 	check(ThisPlugin.IsValid());
 

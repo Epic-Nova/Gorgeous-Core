@@ -20,21 +20,13 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
+MONOLITHIC_HEADER_BOILERPLATE()
+
 #include "GorgeousCoreRuntimeGlobals.h"
 
 //Object Variable Includes
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
-
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
-
-#include "FunctionalStructures/GorgeousFunctionalStructure.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
@@ -51,3 +43,15 @@
 #include "ObjectVariables/Interfaces/GorgeousMapObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesSetter_I.h"
+
+//Conditional Object Chooser Includes
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
+
+//Functional Structure Includes
+#include "FunctionalStructures/GorgeousFunctionalStructure.h"

@@ -14,9 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "CoreMinimal.h"
-//<-------------------------=== Module Includes ===-------------------------->
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousConditionalObjectChooserEnums.generated.h"
 //<-------------------------------------------------------------------------->
@@ -29,6 +26,7 @@
  * - Single input evaluation (A_ONLY, B_ONLY).
  * - Inverted single input evaluation (N_A_ONLY, N_B_ONLY).
  *
+ * @author Nils Bergemann
  * @note This enum is used to specify how conditions are evaluated in conditional object choosers.
  */
 UENUM(BlueprintType, DisplayName = "Coniditional Chooser Mode", meta = (ShortTooltip = "The mode in what the conditonal check should perform"))
@@ -45,7 +43,17 @@ enum class EConditionalChooserMode_E : uint8
     N_B_ONLY = 8 UMETA(DisplayName = "Not B Only", ToolTip = "Only B is evaluated and then inverted."),
 };
 
-
+/**
+ * Enumeration defining modes for resolving conflicts when multiple gameplay tags are present.
+ *
+ * Key features include:
+ * - Selecting the first, last, or a random tag.
+ * - Allowing custom rule-based selection.
+ *
+ * @author Nils Bergemann
+ * @note This enum is used to specify how a single gameplay tag is chosen from a container
+ * when multiple tags satisfy a condition.
+ */
 UENUM(BlueprintType, DisplayName = "Conditional Gameplay Tag Chooser Fight Mode", meta = (ShortTooltip = "Determines the behaviour of how to proceed when more than one gameplay tag is present in the container"))
 enum class EConditionalGameplayTagChooserFightMode_E : uint8
 {

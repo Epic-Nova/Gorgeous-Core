@@ -24,8 +24,6 @@
  * It's responsible for loading editor components and referenced third-party libraries.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.1
  */
 class FGorgeousCoreEditorUtilitiesModule final : public IGorgeousThingsModuleInterface
 {

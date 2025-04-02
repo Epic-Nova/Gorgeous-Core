@@ -25,8 +25,6 @@
  * It's the most important module of the plugin, as it's responsible for loading the core runtime components and referenced third-party libraries.
  *
  * @author Nils Bergemann
- * @since Beginning
- * @version v1.1
  */
 class FGorgeousCoreRuntimeModule final : public IGorgeousThingsModuleInterface
 {
