@@ -32,7 +32,7 @@
  * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on gameplay tag logic.
  */
-UCLASS(Blueprintable, BlueprintType, HideCategories = "Condition")
+UCLASS(Blueprintable, BlueprintType, HideCategories = "Gorgeous Condition")
 class UGorgeousGameplayTagCondition final : public UGorgeousCondition
 {
 	GENERATED_BODY()
@@ -77,6 +77,7 @@ public:
 	 *
 	 * @return index of the condition.
 	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
 	virtual uint8 CheckCondition() override;
 
 private:

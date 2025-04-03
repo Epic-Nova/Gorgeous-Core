@@ -49,6 +49,7 @@ public:
     /**
      * Gets a set of GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object Variable")
@@ -57,6 +58,7 @@ public:
     /**
      * Gets a set of UObjects.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of UObjects.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
@@ -65,6 +67,7 @@ public:
     /**
      * Gets a set of UClasses.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of UClasses.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
@@ -73,6 +76,7 @@ public:
     /**
      * Gets a set of TSoftObjectPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of TSoftObjectPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
@@ -81,6 +85,7 @@ public:
     /**
      * Gets a set of TSoftClassPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of TSoftClassPtr<UObject>.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Object")
@@ -89,6 +94,7 @@ public:
     /**
      * Gets a set of bytes.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of bytes.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
@@ -97,6 +103,7 @@ public:
     /**
      * Gets a set of doubles.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of doubles.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
@@ -105,6 +112,7 @@ public:
     /**
      * Gets a set of 64-bit integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of 64-bit integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer64")
@@ -113,6 +121,7 @@ public:
     /**
      * Gets a set of integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of integers.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Integer")
@@ -121,6 +130,7 @@ public:
     /**
      * Gets a set of FNames.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of FNames.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Name")
@@ -129,6 +139,7 @@ public:
     /**
      * Gets a set of FStrings.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of FStrings.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
@@ -137,6 +148,7 @@ public:
     /**
      * Gets a set of FTransforms.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of FTransforms.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
@@ -145,6 +157,7 @@ public:
     /**
      * Gets a set of FVectors.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of FVectors.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")

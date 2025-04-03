@@ -49,6 +49,7 @@ public:
     /**
      * Gets a map of GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object Variable")
@@ -57,6 +58,7 @@ public:
     /**
      * Gets a map of UObjects to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of UObjects to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
@@ -65,6 +67,7 @@ public:
     /**
      * Gets a map of UClasses to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of UClasses to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
@@ -73,6 +76,7 @@ public:
     /**
      * Gets a map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
@@ -81,6 +85,7 @@ public:
     /**
      * Gets a map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Object")
@@ -89,6 +94,7 @@ public:
     /**
      * Gets a map of bytes to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of bytes to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
@@ -97,6 +103,7 @@ public:
     /**
      * Gets a map of doubles to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of doubles to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
@@ -105,6 +112,7 @@ public:
     /**
      * Gets a map of 64-bit integers to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of 64-bit integers to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer64")
@@ -113,6 +121,7 @@ public:
     /**
      * Gets a map of integers to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of integers to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Integer")
@@ -121,6 +130,7 @@ public:
     /**
      * Gets a map of FNames to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of FNames to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Name")
@@ -129,6 +139,7 @@ public:
     /**
      * Gets a map of FStrings to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of FStrings to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
@@ -137,6 +148,7 @@ public:
     /**
      * Gets a map of FTransforms to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of FTransforms to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
@@ -145,6 +157,7 @@ public:
     /**
      * Gets a map of FVectors to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of FVectors to GorgeousObjectVariables.
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")

@@ -49,6 +49,7 @@ public:
     /**
      * Sets an array of GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of GorgeousObjectVariables.
      * @return The updated array of GorgeousObjectVariables.
      */
@@ -58,6 +59,7 @@ public:
     /**
      * Sets an array of UObjects.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of UObjects.
      * @return The updated array of UObjects.
      */
@@ -67,6 +69,7 @@ public:
     /**
      * Sets an array of UClasses.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of UClasses.
      * @return The updated array of UClasses.
      */
@@ -76,6 +79,7 @@ public:
     /**
      * Sets an array of TSoftObjectPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of TSoftObjectPtr<UObject>.
      * @return The updated array of TSoftObjectPtr<UObject>.
      */
@@ -85,6 +89,7 @@ public:
     /**
      * Sets an array of TSoftClassPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of TSoftClassPtr<UObject>.
      * @return The updated array of TSoftClassPtr<UObject>.
      */
@@ -94,6 +99,7 @@ public:
     /**
      * Sets an array of booleans.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of booleans.
      * @return The updated array of booleans.
      */
@@ -103,6 +109,7 @@ public:
     /**
      * Sets an array of bytes.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of bytes.
      * @return The updated array of bytes.
      */
@@ -112,6 +119,7 @@ public:
     /**
      * Sets an array of doubles.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of doubles.
      * @return The updated array of doubles.
      */
@@ -121,6 +129,7 @@ public:
     /**
      * Sets an array of integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of integers.
      * @return The updated array of integers.
      */
@@ -130,6 +139,7 @@ public:
     /**
      * Sets an array of 64-bit integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of 64-bit integers.
      * @return The updated array of 64-bit integers.
      */
@@ -139,6 +149,7 @@ public:
     /**
      * Sets an array of FNames.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FNames.
      * @return The updated array of FNames.
      */
@@ -148,6 +159,7 @@ public:
     /**
      * Sets an array of FRotators.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FRotators.
      * @return The updated array of FRotators.
      */
@@ -157,6 +169,7 @@ public:
     /**
      * Sets an array of FStrings.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FStrings.
      * @return The updated array of FStrings.
      */
@@ -166,6 +179,7 @@ public:
     /**
      * Sets an array of FTexts.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FTexts.
      * @return The updated array of FTexts.
      */
@@ -175,6 +189,7 @@ public:
     /**
      * Sets an array of FTransforms.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FTransforms.
      * @return The updated array of FTransforms.
      */
@@ -184,6 +199,7 @@ public:
     /**
      * Sets an array of FVectors.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new array of FVectors.
      * @return The updated array of FVectors.
      */

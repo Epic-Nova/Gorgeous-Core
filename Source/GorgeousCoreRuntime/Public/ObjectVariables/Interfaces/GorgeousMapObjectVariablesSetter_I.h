@@ -49,6 +49,7 @@ public:
     /**
      * Sets a map of GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of GorgeousObjectVariables.
      * @return The updated map of GorgeousObjectVariables.
      */
@@ -58,6 +59,7 @@ public:
     /**
      * Sets a map of UObjects to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of UObjects to GorgeousObjectVariables.
      * @return The updated map of UObjects to GorgeousObjectVariables.
      */
@@ -67,6 +69,7 @@ public:
     /**
     * Sets a map of UClasses to GorgeousObjectVariables.
     *
+    * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
     * @param NewValue The new map of UClasses to GorgeousObjectVariables.
     * @return The updated map of UClasses to GorgeousObjectVariables.
     */
@@ -76,6 +79,7 @@ public:
     /**
      * Sets a map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      * @return The updated map of TSoftObjectPtr<UObject> to GorgeousObjectVariables.
      */
@@ -85,6 +89,7 @@ public:
     /**
      * Sets a map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      * @return The updated map of TSoftClassPtr<UObject> to GorgeousObjectVariables.
      */
@@ -94,6 +99,7 @@ public:
     /**
      * Sets a map of bytes to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of bytes to GorgeousObjectVariables.
      * @return The updated map of bytes to GorgeousObjectVariables.
      */
@@ -103,6 +109,7 @@ public:
     /**
      * Sets a map of doubles to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of doubles to GorgeousObjectVariables.
      * @return The updated map of doubles to GorgeousObjectVariables.
      */
@@ -112,6 +119,7 @@ public:
     /**
      * Sets a map of 64-bit integers to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of 64-bit integers to GorgeousObjectVariables.
      * @return The updated map of 64-bit integers to GorgeousObjectVariables.
      */
@@ -121,6 +129,7 @@ public:
     /**
      * Sets a map of integers to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of integers to GorgeousObjectVariables.
      * @return The updated map of integers to GorgeousObjectVariables.
      */
@@ -130,6 +139,7 @@ public:
     /**
      * Sets a map of FNames to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of FNames to GorgeousObjectVariables.
      * @return The updated map of FNames to GorgeousObjectVariables.
      */
@@ -139,6 +149,7 @@ public:
     /**
      * Sets a map of FStrings to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of FStrings to GorgeousObjectVariables.
      * @return The updated map of FStrings to GorgeousObjectVariables.
      */
@@ -148,6 +159,7 @@ public:
     /**
      * Sets a map of FTransforms to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of FTransforms to GorgeousObjectVariables.
      * @return The updated map of FTransforms to GorgeousObjectVariables.
      */
@@ -157,6 +169,7 @@ public:
     /**
      * Sets a map of FVectors to GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new map of FVectors to GorgeousObjectVariables.
      * @return The updated map of FVectors to GorgeousObjectVariables.
      */

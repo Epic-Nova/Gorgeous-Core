@@ -31,11 +31,6 @@
 			"Name": "GorgeousCoreRuntimeUtilities",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault"
-		},
-		{
-			"Name": "GorgeousCoreEditorUtilities",
-			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
 		}
 	],
 	"Plugins": [
