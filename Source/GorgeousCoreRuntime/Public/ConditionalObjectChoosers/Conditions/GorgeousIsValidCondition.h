@@ -40,13 +40,13 @@ public:
 	/**
 	 * The first object input.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IsValid Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
 	UObject* A;
 
 	/**
 	 * The second object input.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IsValid Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
 	UObject* B;
 
 	/**
@@ -54,6 +54,6 @@ public:
 	 *
 	 * @return 1 if the condition is true, 0 otherwise.
 	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
+	UFUNCTION(BlueprintPure, Category = "Gorgeous IsValid Condition")
 	virtual uint8 CheckCondition() override;
 };

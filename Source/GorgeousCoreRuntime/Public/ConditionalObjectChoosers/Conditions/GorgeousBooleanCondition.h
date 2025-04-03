@@ -40,13 +40,13 @@ public:
 	/**
 	 * The first boolean input.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boolean Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Boolean Condition")
 	bool A;
 
 	/**
 	 * The second boolean input.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boolean Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Boolean Condition")
 	bool B;
 
 	/**
@@ -54,5 +54,6 @@ public:
 	 *
 	 * @return 1 if the condition is true, 0 otherwise.
 	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Boolean Condition")
 	virtual uint8 CheckCondition() override;
 };

@@ -25,20 +25,25 @@
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "UObject/UnrealTypePrivate.h"
+#include "Misc/MonolithicHeaderBoilerplate.h"
 #include "TimerManager.h"
 #include "GameplayTags.h"
-#include "Misc/MonolithicHeaderBoilerplate.h"
 
 #include "Interfaces/IPluginManager.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 
+#include "Modules/ModuleInterface.h"
+
 #include "CoreUObject.h"
 #include "UObject/Interface.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Info.h"
 
+#include "Subsystems/GameInstanceSubsystem.h"
+
 /*==============================>
 | Module Includes               |
 <==============================*/
+#include "IGorgeousThingsModuleInterface.h"

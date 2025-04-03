@@ -39,7 +39,7 @@ public:
 	/**
 	 * The mode of the condition.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Condition")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Condition")
 	EConditionalChooserMode_E Mode;
 
 	/**

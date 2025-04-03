@@ -49,6 +49,7 @@ public:
     /**
      * Sets a set of GorgeousObjectVariables.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of GorgeousObjectVariables.
      * @return The updated set of GorgeousObjectVariables.
      */
@@ -58,6 +59,7 @@ public:
     /**
      * Sets a set of UObjects.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of UObjects.
      * @return The updated set of UObjects.
      */
@@ -67,6 +69,7 @@ public:
     /**
      * Sets a set of UClasses.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of UClasses.
      * @return The updated set of UClasses.
      */
@@ -76,6 +79,7 @@ public:
     /**
      * Sets a set of TSoftObjectPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of TSoftObjectPtr<UObject>.
      * @return The updated set of TSoftObjectPtr<UObject>.
      */
@@ -85,6 +89,7 @@ public:
     /**
      * Sets a set of TSoftClassPtr<UObject>.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of TSoftClassPtr<UObject>.
      * @return The updated set of TSoftClassPtr<UObject>.
      */
@@ -94,6 +99,7 @@ public:
     /**
      * Sets a set of bytes.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of bytes.
      * @return The updated set of bytes.
      */
@@ -103,6 +109,7 @@ public:
     /**
      * Sets a set of doubles.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of doubles.
      * @return The updated set of doubles.
      */
@@ -112,6 +119,7 @@ public:
     /**
      * Sets a set of 64-bit integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of 64-bit integers.
      * @return The updated set of 64-bit integers.
      */
@@ -121,6 +129,7 @@ public:
     /**
      * Sets a set of integers.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of integers.
      * @return The updated set of integers.
      */
@@ -130,6 +139,7 @@ public:
     /**
      * Sets a set of FNames.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of FNames.
      * @return The updated set of FNames.
      */
@@ -139,6 +149,7 @@ public:
     /**
      * Sets a set of FStrings.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of FStrings.
      * @return The updated set of FStrings.
      */
@@ -148,6 +159,7 @@ public:
     /**
      * Sets a set of FTransforms.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of FTransforms.
      * @return The updated set of FTransforms.
      */
@@ -157,6 +169,7 @@ public:
     /**
      * Sets a set of FVectors.
      *
+     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @param NewValue The new set of FVectors.
      * @return The updated set of FVectors.
      */

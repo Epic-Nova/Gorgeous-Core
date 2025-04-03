@@ -8,7 +8,6 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
 #include "GorgeousFunctionalStructureDetailCustomisation.h"
 
 //<=============================--- Includes ---=============================>
@@ -32,7 +31,7 @@ TSharedRef<IPropertyTypeCustomization> FGorgeousFunctionalStructureDetailCustomi
 	return MakeShareable(new FGorgeousFunctionalStructureDetailCustomisation);
 }
 
-void FGorgeousFunctionalStructureDetailCustomisation::CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle,
+void FGorgeousFunctionalStructureDetailCustomisation::CustomizeHeader(const TSharedRef<IPropertyHandle> PropertyHandle,
 	FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
 	HeaderRow.NameContent()

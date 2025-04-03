@@ -14,9 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "CoreMinimal.h"
-#include "GameFramework/Info.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "Interfaces/GorgeousObjectVariableInteraction_I.h"
@@ -92,7 +89,7 @@ public:
      * @param Value The value to set.
      */
 //grepper cpp unreal wildcard
-	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
+	//Gorgeous-Core on [GitHub](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     void SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
     {
@@ -127,7 +124,7 @@ public:
      * @return True if the property was successfully retrieved, false otherwise.
      */
 //grepper cpp unreal wildcard
-	//Gorgeous-Core on [Github](https://github.com/Epic-Nova/Gorgeous-Core)
+	//Gorgeous-Core on [GitHub](https://github.com/Epic-Nova/Gorgeous-Core)
     template<typename InTCppType, typename TInPropertyBaseClass>
     bool GetDynamicProperty(const FName PropertyName, InTCppType& OutValue) const
     {

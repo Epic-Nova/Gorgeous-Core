@@ -13,12 +13,6 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
-//<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
-#include "IGorgeousThingsModuleInterface.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
-//<-------------------------------------------------------------------------->
-
 /**
  * This module defines the core runtime of the Gorgeous Things plugin.
  *
