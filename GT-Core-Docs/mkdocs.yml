@@ -1,0 +1,36 @@
+site_name: Gorgeous Things - Gorgeous Core Documentation
+site_url: https://c.gt.simsalabim.studio
+theme:
+  features:
+    - navigation.footer
+  icon:
+    logo: fontawesome/solid/wand-magic-sparkles
+  name: material
+  palette:
+    # Dark Mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Dark mode
+      primary: indigo
+      accent: light blue
+
+    # Light Mode
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Light mode
+      primary: deep purple
+      accent: purple
+
+markdown_extensions:
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+copyright: Copyright &copy; 2025 Simsalabim Studios by Epic Nova (Nils Bergemann)
