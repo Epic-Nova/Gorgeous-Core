@@ -24,14 +24,6 @@ UGorgeousObjectVariable::UGorgeousObjectVariable(): VariableRegistry(TArray<TObj
                                                     bPersistent(false),
                                                     Parent(nullptr) {}
 
-void UGorgeousObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
-{
-	if (NewObjectVariable && !UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
-	{
-		VariableRegistry.Add(NewObjectVariable);
-	}
-}
-
 UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist)
 {
 	if (!Class && Class->IsValidLowLevel())
@@ -93,11 +85,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	return nullptr;
 }
 
-FGuid UGorgeousObjectVariable::GetUniqueIdentifierForObjectVariable_Implementation()
-{
-	return UniqueIdentifier;
-}
-
 void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUniqueIdentifier)
 {
 	if (!UGorgeousRootObjectVariable::IsVariableRegistered(this) && NewUniqueIdentifier.IsValid())
@@ -110,4 +97,18 @@ void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUnique
 		UniqueIdentifier = NewUniqueIdentifier;
 		Parent->RegisterWithRegistry(this);
 	}
+}
+
+void UGorgeousObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
+{
+	if (NewObjectVariable && !UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
+	{
+		VariableRegistry.Add(NewObjectVariable);
+	}
+
+}
+
+FGuid UGorgeousObjectVariable::GetUniqueIdentifierForObjectVariable_Implementation()
+{
+	return UniqueIdentifier;
 }

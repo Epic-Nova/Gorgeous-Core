@@ -73,6 +73,40 @@ protected:
 
 public:
 
+	/**
+	 * Constructs a new object variable and registers it within the given registry depending on the parent given.
+	 *
+	 * @param Class The class that the object variable should derive from.
+	 * @param Identifier The unique identifier of the object variable.
+	 * @param Parent The parent of this object variable. The chain can be followed up to the root object variable.
+	 * @param bShouldPersist Weather this object variable should be persistent across level switches.
+	 * @return A new variable in object format.
+	 *
+	 * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
+	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
+
+	/**
+	 * Instantiates a new transactional instance of a UGorgeousObjectVariable-derived class.
+	 *
+	 * If no parent is specified, the root object variable will be used as the default parent.
+	 * The created object is marked as transactional and assigned a unique identifier.
+	 *
+	 * @param Class The class type to instantiate. Must be a subclass of UGorgeousObjectVariable.
+	 * @param InParent The optional parent object variable. If null, the root object variable is used instead.
+	 * @return A pointer to the newly instantiated UGorgeousObjectVariable, or nullptr if instantiation failed.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
+	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent = nullptr);
+	
+	//Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Overrides")
+	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
+
+	// Sets the new parent oft this object variable.
+	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
+	
     /**
      * Registers the object variable with the registry.
      *
@@ -151,31 +185,6 @@ public:
     	return false;
     }
 //end grepper
-
-	// Sets the new parent oft this object variable.
-	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
-	
-	//Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Overrides")
-	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
-	
-    /**
-     * Constructs a new object variable and registers it within the given registry depending on the parent given.
-     *
-     * @param Class the class that the object variable should derive from
-     * @param Identifier the unique identifier of the object variable
-     * @param Parent The parent of this object variable. The chain can be followed up to the root object variable
-     * @param bShouldPersist Weather this object variable should be persistent across level switches
-     * @return a new variable in object format
-     *
-     * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
-     */
-    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-    UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
-
-
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent = nullptr);
 	
 	/**
 	 * The unique identifier of the object variable.

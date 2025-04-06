@@ -1,0 +1,2 @@
+# 🔎 About Gorgeous Core 🔎
+

@@ -1,0 +1,1 @@
+# ✨ Object Variable Definitions (Blueprint & C++)

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -10,42 +10,16 @@
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                    |
+|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE									|
 | --------------------------------------------------------------------------------------------------------------------- |
-|									USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                     |
+|								ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED								|
+|		TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE			|
 <======================================================================================================================*/
 
 //<=============================--- Pragmas ---==============================>
 #pragma once
 //<-------------------------------------------------------------------------->
 
-/*==============================>
-| Engine Includes               |
-<==============================*/
-#include "CoreMinimal.h"
-#include "Engine/Engine.h"
-#include "UObject/UnrealTypePrivate.h"
-#include "Misc/MonolithicHeaderBoilerplate.h"
-#include "TimerManager.h"
-#include "GameplayTags.h"
+MONOLITHIC_HEADER_BOILERPLATE()
 
-#include "Interfaces/IPluginManager.h"
-
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/BlueprintFunctionLibrary.h"
-
-#include "Modules/ModuleInterface.h"
-
-#include "Templates/SubclassOf.h"
-
-#include "CoreUObject.h"
-#include "UObject/Interface.h"
-#include "GameFramework/Actor.h"
-#include "GameFramework/Info.h"
-
-#include "Subsystems/GameInstanceSubsystem.h"
-
-/*==============================>
-| Module Includes               |
-<==============================*/
-#include "IGorgeousThingsModuleInterface.h"
+#include "GorgeousFunctionalStructures_GIS.h"
