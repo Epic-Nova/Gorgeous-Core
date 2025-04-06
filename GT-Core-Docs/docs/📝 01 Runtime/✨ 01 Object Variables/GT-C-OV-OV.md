@@ -58,15 +58,17 @@
     
     === "Blueprint"
 
-        >Insert a Unreal Engine interactable code snippet HTML reference here.
-
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/NewObjectVariable.png){ width="100%" }
+        <figcaption>Register new Object Variable with Root Object Variable as the parent.</figcaption>
+        </figure>
 
 ### `InstantiateTransactionalObjectVariable`
 === "📝 Function Details"
 
     <div class="function-description">
 
-    Instantiates a new transactional object variable.
+    Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
 
 
     </div>
@@ -76,7 +78,7 @@
         |   Parameter   |   Type                                    |   Description                                      |
         | :------------ | :---------------------------------------- | :------------------------------------------------- |
         |   `Class`     |   `TSubclassOf<UGorgeousObjectVariable>`  |   The class of the object variable to instantiate. |
-        |   `InParent`  |   `UGorgeousObjectVariable*`              |   The parent of the new instance.                  |
+        |   `Parent`    |   `UGorgeousObjectVariable*`              |   The parent of the new instance.                  |
 
     === "Output"
 
@@ -90,7 +92,7 @@
 
     ??? note "Important"
 
-        Ensure that the `InParent` pointer is valid before calling this function. Registering a null or invalid pointer can lead to unexpected behavior and potential crashes.
+        Ensure that the `Parent` pointer is valid before calling this function. Registering a null or invalid pointer can lead to unexpected behavior and potential crashes.
 
 === "📚 Usage Examples"
 
@@ -105,7 +107,10 @@
     
     === "Blueprint"
 
-        >Insert a Unreal Engine interactable code snippet HTML reference here.
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/InstantiateTransactionalObjectVariable.png){ width="100%" }
+        <figcaption>Creates a new Transactional Object Variable that persists across editor restarts.</figcaption>
+        </figure>
 
 
 ### `InvokeInstancedFunctionality`
@@ -136,42 +141,10 @@
 
     === "Blueprint"
 
-        >Insert a Unreal Engine interactable code snippet HTML reference here.
-
-
-### `SetParent`
-=== "📝 Function Details"
-
-    <div class="function-description">
-
-    Sets the parent of this object variable. Object variables can be organized in a hierarchy, and this function establishes the parent-child relationship.
-
-    </div>
-
-    === "Input"
-
-        |   Parameter    |   Type                       |   Description                             |
-        | :------------- | :--------------------------- | :---------------------------------------- |
-        |   `NewParent`  |   `UGorgeousObjectVariable*` |   The new parent of the object variable.  |
-
-    ??? note "Important"
-
-        Ensure that the `NewParent` pointer is valid before calling this function. Registering a null or invalid pointer can lead to unexpected behavior and potential crashes.
-
-=== "📚 Usage Examples"
-
-    === "C++"
-
-        ```cpp hl_lines="4"
-        UGorgeousObjectVariable* MyObjectVariable = ...;
-
-        bool OutValue;
-        MyObjectVariable->SetParent(MyNewParent);
-        ```
-
-    === "Blueprint"
-
-        >Insert a Unreal Engine interactable code snippet HTML reference here.
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/InvokeInstancedFunctionality.png){ width="100%" }
+        <figcaption>Makes an instanced Object Variable that persists inside an outer eligible for the Variable Registry.</figcaption>
+        </figure>
 
 
 ### `RegisterWithRegistry`
@@ -209,7 +182,48 @@
     
     === "Blueprint"
 
-        >Insert a Unreal Engine interactable code snippet HTML reference here.
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/RegisterWithRegistry.png){ width="100%" }
+        <figcaption>Registers the given Object Variable within the registry of the target object.</figcaption>
+        </figure>
+
+
+### `SetParent`
+=== "📝 Function Details"
+
+    <div class="function-description">
+
+    Sets the parent of this object variable. Object variables can be organized in a hierarchy, and this function establishes the parent-child relationship.
+
+    </div>
+
+    === "Input"
+
+        |   Parameter    |   Type                       |   Description                             |
+        | :------------- | :--------------------------- | :---------------------------------------- |
+        |   `NewParent`  |   `UGorgeousObjectVariable*` |   The new parent of the object variable.  |
+
+    ??? note "Important"
+
+        Ensure that the `NewParent` pointer is valid before calling this function. Registering a null or invalid pointer can lead to unexpected behavior and potential crashes.
+
+=== "📚 Usage Examples"
+
+    === "C++"
+
+        ```cpp hl_lines="4"
+        UGorgeousObjectVariable* MyObjectVariable = ...;
+
+        bool OutValue;
+        MyObjectVariable->SetParent(MyNewParent);
+        ```
+
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/SetParent.png){ width="100%" }
+        <figcaption>Reorganizes the hierarchy for a given object variable and sets the given parent as the new one.</figcaption>
+        </figure>
 
 
 ### `SetDynamicProperty`
