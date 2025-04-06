@@ -88,32 +88,42 @@ public:
 	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
 
 	/**
-	 * Instantiates a new transactional instance of a UGorgeousObjectVariable-derived class.
+	 * Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
 	 *
 	 * If no parent is specified, the root object variable will be used as the default parent.
 	 * The created object is marked as transactional and assigned a unique identifier.
 	 *
 	 * @param Class The class type to instantiate. Must be a subclass of UGorgeousObjectVariable.
-	 * @param InParent The optional parent object variable. If null, the root object variable is used instead.
+	 * @param Parent The optional parent object variable. If null, the root object variable is used instead.
 	 * @return A pointer to the newly instantiated UGorgeousObjectVariable, or nullptr if instantiation failed.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent = nullptr);
-	
-	//Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Overrides")
-	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
+	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* Parent = nullptr);
 
-	// Sets the new parent oft this object variable.
-	void SetParent(UGorgeousObjectVariable* NewParent) { Parent = NewParent; }
+	/**
+	 * //Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
+	 * 
+	 * @param NewUniqueIdentifier The new unique identifier.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+	virtual void InvokeInstancedFunctionality(FGuid NewUniqueIdentifier);
 	
     /**
      * Registers the object variable with the registry.
      *
      * @param NewObjectVariable The object variable to register.
      */
-    virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable);
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable);
 
+	/**
+	 * Sets the new parent oft this object variable.
+	 * 
+	 * @param NewParent The new parent of the object variable.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+	void SetParent(UGorgeousObjectVariable* NewParent);
+	
     /**
      * Sets a dynamic property of the object variable.
      *

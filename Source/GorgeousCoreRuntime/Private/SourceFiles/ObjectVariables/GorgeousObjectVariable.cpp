@@ -99,13 +99,18 @@ void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUnique
 	}
 }
 
-void UGorgeousObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
+void UGorgeousObjectVariable::SetParent(UGorgeousObjectVariable* NewParent)
+{
+	Parent = NewParent;
+	Rename(*GetName(), NewParent);
+}
+
+void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable)
 {
 	if (NewObjectVariable && !UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
 	{
 		VariableRegistry.Add(NewObjectVariable);
 	}
-
 }
 
 FGuid UGorgeousObjectVariable::GetUniqueIdentifierForObjectVariable_Implementation()

@@ -205,7 +205,7 @@ public:
      *
      * @param NewObjectVariable The object variable to register.
      */
-    virtual void RegisterWithRegistry(TObjectPtr<UGorgeousObjectVariable> NewObjectVariable) override;
+    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable) override;
 
 protected:
 
