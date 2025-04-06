@@ -167,7 +167,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage("Registry cleaned!", "GT.ObjectVariables.Registry.Cleaned");
 }
 
-void UGorgeousRootObjectVariable::RegisterWithRegistry(const TObjectPtr<UGorgeousObjectVariable> NewObjectVariable)
+void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable)
 {
 	if (NewObjectVariable && !IsVariableRegistered(NewObjectVariable))
 	{
