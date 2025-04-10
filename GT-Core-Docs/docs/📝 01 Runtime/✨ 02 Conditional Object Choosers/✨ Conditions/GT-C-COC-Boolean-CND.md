@@ -58,6 +58,20 @@
 |   `A`        |   `bool`  |   The first boolean input for the condition evaluation. |
 |   `B`        |   `bool`  |   The second boolean input for the condition evaluation.|
 
+### Condition Modes (Inherited from UGorgeousCondition)
+
+|   Mode        |   Description                                                                      |
+| :------------ | :--------------------------------------------------------------------------------- |
+|   `AND`       |   Both objects A and B must be valid.                                              |
+|   `OR`        |   Either object A or B (or both) must be valid.                                    |
+|   `XOR`       |   Either object A or B must be valid, but not both.                                |
+|   `NAND`      |   Both objects A and B must not be valid together.                                 |
+|   `NOR`       |   Neither object A nor B can be valid.                                             |
+|   `A_ONLY`    |   Only checks if object A is valid.                                                |
+|   `B_ONLY`    |   Only checks if object B is valid.                                                |
+|   `N_A_ONLY`  |   Only checks if object A is not valid.                                            |
+|   `N_B_ONLY`  |   Only checks if object B is not valid.                                            |
+
 <style>
 .function-description {
     margin-top: 0.5em;

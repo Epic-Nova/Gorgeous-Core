@@ -93,8 +93,11 @@ public:
     static void CleanupRegistry(bool bFullCleanup = false);
 
     /**
-     * Sets the value of a property with any type.
+     * Sets the value of a property with any type for an object variable identified by its unique identifier.
      *
+     * This function is not intended to be called from C++, it should only be used in Blueprint.
+     * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
+     * 
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to set.
      * @param Value The value to set.
@@ -147,8 +150,11 @@ public:
     }
 
     /**
-     * Gets the value of a property with any type.
+     * Gets the value of a property with any type from an object variable identified by its unique identifier.
      *
+     * This function is not intended to be called from C++, it should only be used in Blueprint.
+     * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
+     * 
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to get.
      * @param OutValue The output value.

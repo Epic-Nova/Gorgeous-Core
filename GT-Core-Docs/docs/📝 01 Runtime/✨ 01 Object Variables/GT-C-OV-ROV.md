@@ -21,8 +21,8 @@
 
     === "Output"
 
-        |   Parameter     |   Type                      |   Description                                   |
-        | :-------------- | :-------------------------- | :---------------------------------------------- |
+        |   Parameter     |   Type                           |   Description                                         |
+        | :-------------- | :------------------------------- | :---------------------------------------------------- |
         |   `ReturnType`  |   `UGorgeousRootObjectVariable*` |   The singleton instance of the root object variable. |
     
     ??? note "Important"
@@ -33,7 +33,7 @@
 
     === "C++"
 
-        ```cpp hl_lines="3"
+        ```cpp hl_lines="1"
         UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
         
         // Now you can use the root object variable to create new object variables
@@ -59,8 +59,8 @@
 
     === "Output"
 
-        |   Parameter     |   Type                      |   Description                                   |
-        | :-------------- | :-------------------------- | :---------------------------------------------- |
+        |   Parameter     |   Type                      |   Description                                                                    |
+        | :-------------- | :-------------------------- | :------------------------------------------------------------------------------- |
         |   `ReturnType`  |   `TArray<UGorgeousObjectVariable*>` |   An array containing all registered object variables in the hierarchy. |
     
     ??? note "Important"
@@ -71,7 +71,7 @@
 
     === "C++"
 
-        ```cpp hl_lines="3"
+        ```cpp hl_lines="1"
         TArray<UGorgeousObjectVariable*> AllVariables = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
         
         // Process all variables in the hierarchy
@@ -99,9 +99,9 @@
 
     === "Output"
 
-        |   Parameter     |   Type                      |   Description                                   |
-        | :-------------- | :-------------------------- | :---------------------------------------------- |
-        |   `ReturnType`  |   `TArray<UGorgeousObjectVariable*>` |   An array containing all root-level object variables. |
+        |   Parameter     |   Type                               |   Description                                                   |
+        | :-------------- | :----------------------------------- | :-------------------------------------------------------------- |
+        |   `ReturnType`  |   `TArray<UGorgeousObjectVariable*>` |   An array containing all root-level object variables.          |
     
     ??? note "Important"
 
@@ -111,7 +111,7 @@
 
     === "C++"
 
-        ```cpp hl_lines="3"
+        ```cpp hl_lines="1"
         TArray<UGorgeousObjectVariable*> RootVariables = UGorgeousRootObjectVariable::GetRootVariableRegistry();
         
         // Process only root-level variables
@@ -145,7 +145,7 @@
 
     ??? note "Important"
 
-        This function will remove the variable from the registry, but it will not delete the variable itself. The variable will still exist in memory until it is garbage collected.
+        This function exeutes on both the root registry and the registries of all other variables to properly remove the requested object variable from the whole hierarchy.
 
 === "📚 Usage Examples"
 
@@ -175,14 +175,14 @@
 
     === "Input"
 
-        |   Parameter   |   Type                                    |   Description                                      |
-        | :------------ | :---------------------------------------- | :------------------------------------------------- |
+        |   Parameter   |   Type                                    |   Description                                          |
+        | :------------ | :---------------------------------------- | :----------------------------------------------------- |
         |   `Variable`  |   `UGorgeousObjectVariable*`              |   The variable to check for existence in the registry. |
 
     === "Output"
 
-        |   Parameter     |   Type    |   Description                                   |
-        | :-------------- | :-------- | :---------------------------------------------- |
+        |   Parameter     |   Type    |   Description                                          |
+        | :-------------- | :-------- | :----------------------------------------------------- |
         |   `ReturnType`  |   `bool`  |   True if the variable is registered, false otherwise. |
     
     ??? note "Important"
@@ -221,19 +221,19 @@
 
     === "Input"
 
-        |   Parameter     |   Type    |   Description                                   |
-        | :-------------- | :-------- | :---------------------------------------------- |
+        |   Parameter     |   Type    |   Description                                           |
+        | :-------------- | :-------- | :------------------------------------------------------ |
         |   `bFullCleanup`|   `bool`  |   Whether to perform a full cleanup. Defaults to false. |
 
-    ??? note "Important"
+    ??? abstract
 
-        This function is useful for cleaning up the registry, especially when transitioning between levels or when you want to ensure that all variables are properly unregistered.
+        In most cases you won't even need to call this function, due to that this already happens automatically on every level switch and exit of the game/editor play session.
 
 === "📚 Usage Examples"
 
     === "C++"
 
-        ```cpp hl_lines="3"
+        ```cpp hl_lines="2 5"
         // Perform a standard cleanup
         UGorgeousRootObjectVariable::CleanupRegistry();
         
@@ -255,15 +255,20 @@
 
     Sets the value of a property with any type for an object variable identified by its unique identifier.
 
+    !!! warning
+
+        This function is not intended to be called from C++, it should only be used in Blueprint.
+        For a C++ version of this, check out the equivalent **SetDynamicProperty** function in UGorgeousObjectVariable.
+
     </div>
 
     === "Input"
 
-        |   Parameter           |   Type    |   Description                                   |
-        | :-------------------- | :-------- | :---------------------------------------------- |
-        |   `Identifier`        |   `FGuid` |   The unique identifier of the object variable. |
+        |   Parameter             |   Type    |   Description                                                            |
+        | :---------------------- | :-------- | :----------------------------------------------------------------------- |
+        |   `Identifier`          |   `FGuid` |   The unique identifier of the object variable.                          |
         |   `OptionalPropertyName`|   `FName` |   The name of the property to set. Defaults to "Value" if not specified. |
-        |   `Value`             |   `int32` |   The value to set. The actual type depends on the property. |
+        |   `Value`               |   `int32` |   The value to set. The actual type depends on the property.             |
 
     ??? note "Important"
 
@@ -271,15 +276,6 @@
 
 === "📚 Usage Examples"
 
-    === "C++"
-
-        ```cpp hl_lines="3"
-        FGuid VariableIdentifier = ...;
-        
-        // Set a property value
-        UGorgeousRootObjectVariable::SetUniversalVariable(VariableIdentifier, "MyProperty", 42);
-        ```
-    
     === "Blueprint"
 
         <figure markdown="span">
@@ -294,19 +290,24 @@
 
     Gets the value of a property with any type from an object variable identified by its unique identifier.
 
+    !!! warning
+
+        This function is not intended to be called from C++, it should only be used in Blueprint.
+        For a C++ version of this, check out the equivalent **GetDynamicProperty** function in UGorgeousObjectVariable.
+
     </div>
 
     === "Input"
 
-        |   Parameter           |   Type    |   Description                                   |
-        | :-------------------- | :-------- | :---------------------------------------------- |
-        |   `Identifier`        |   `FGuid` |   The unique identifier of the object variable. |
-        |   `OptionalPropertyName`|   `FName` |   The name of the property to get. Defaults to "Value" if not specified. |
+        |   Parameter             |   Type    |   Description                                                              |
+        | :---------------------- | :-------- | :------------------------------------------------------------------------- |
+        |   `Identifier`          |   `FGuid` |   The unique identifier of the object variable.                            |
+        |   `OptionalPropertyName`|   `FName` |   The name of the property to get. Defaults to "Value" if not specified.   |
 
     === "Output"
 
-        |   Parameter     |   Type    |   Description                                   |
-        | :-------------- | :-------- | :---------------------------------------------- |
+        |   Parameter     |   Type    |   Description                                                |
+        | :-------------- | :-------- | :----------------------------------------------------------- |
         |   `OutValue`    |   `int32` |   The output value. The actual type depends on the property. |
 
     ??? note "Important"
@@ -315,16 +316,6 @@
 
 === "📚 Usage Examples"
 
-    === "C++"
-
-        ```cpp hl_lines="3"
-        FGuid VariableIdentifier = ...;
-        int32 OutValue;
-        
-        // Get a property value
-        UGorgeousRootObjectVariable::GetUniversalVariable(VariableIdentifier, "MyProperty", OutValue);
-        ```
-    
     === "Blueprint"
 
         <figure markdown="span">
@@ -345,11 +336,11 @@
 
         |   Parameter           |   Type                                    |   Description                                      |
         | :-------------------- | :---------------------------------------- | :------------------------------------------------- |
-        |   `NewObjectVariable` |   `UGorgeousObjectVariable*`              |   The object variable to register.                  |
+        |   `NewObjectVariable` |   `UGorgeousObjectVariable*`              |   The object variable to register.                 |
 
-    ??? note "Important"
+    ??? example "Usage"
 
-        This function is typically called internally by the system when a new `UGorgeousObjectVariable` is created. However, you might need to call it manually in specific scenarios.
+        This function is typically called internally by the system when a new `UGorgeousObjectVariable` is created. However, you might need to call it manually in specific scenarios, such as when re-registering a variable after a specific event.
 
 === "📚 Usage Examples"
 
@@ -372,10 +363,10 @@
 
 ###   Variable Properties
 
-|   Property             |   Type                                           |   Description                                                                     |
-| :--------------------- | :----------------------------------------------- | :-------------------------------------------------------------------------------- |
-|   `RootVariableRegistry`   |   `static TArray<TObjectPtr<UGorgeousObjectVariable>>`  |   The registry of root-level object variables.                                    |
-|   `SingletonRootInstance`   |   `static TObjectPtr<UGorgeousRootObjectVariable>`  |   The singleton instance of the root object variable.                                    |
+|   Property                |   Type                                                  |   Description                                            |
+| :------------------------ | :------------------------------------------------------ | :------------------------------------------------------- |
+|   `RootVariableRegistry`  |   `static TArray<TObjectPtr<UGorgeousObjectVariable>>`  |   The registry of root-level object variables.           |
+|   `SingletonRootInstance` |   `static TObjectPtr<UGorgeousRootObjectVariable>`      |   The singleton instance of the root object variable.    |
 
 <style>
 .function-description {

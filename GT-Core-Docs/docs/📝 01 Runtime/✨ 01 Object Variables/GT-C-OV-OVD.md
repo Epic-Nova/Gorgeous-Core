@@ -30,7 +30,7 @@
 | `UMapObjectTypeObjectVariable` | Abstract base class for map object variables that hold object type keys. |
 | `USetObjectTypeObjectVariable` | Abstract base class for set object variables that hold object type values. |
 
-## 🚀 Single Object Variables
+## 📊 Single Object Variables
 
 Single object variables hold a single value of a specific type.
 
@@ -59,7 +59,7 @@ Single object variables hold a single value of a specific type.
 | `UTransform_SOV` | Transform Single Object Variable | `FTransform` |
 | `UVector_SOV` | Vector Single Object Variable | `FVector` |
 
-## 🚀 Array Object Variables
+## 📊 Array Object Variables
 
 Array object variables hold an array of values of a specific type.
 
@@ -88,7 +88,7 @@ Array object variables hold an array of values of a specific type.
 | `UTransform_AOV` | Transform Array Object Variable | `TArray<FTransform>` |
 | `UVector_AOV` | Vector Array Object Variable | `TArray<FVector>` |
 
-## 🚀 Map Object Variables
+## 📊 Map Object Variables
 
 Map object variables hold a map where the key is of a specific type and the value is a `UGorgeousObjectVariable`.
 
@@ -114,7 +114,7 @@ Map object variables hold a map where the key is of a specific type and the valu
 | `UTransform_MOV` | Transform Map Object Variable | `FTransform` |
 | `UVector_MOV` | Vector Map Object Variable | `FVector` |
 
-## 🚀 Set Object Variables
+## 📊 Set Object Variables
 
 Set object variables hold a set of values of a specific type.
 
@@ -206,17 +206,18 @@ Set object variables implement similar getter and setter functions for sets, wit
 
 === "C++"
 
-    ```cpp
+    ```cpp hl_lines="8 11"
     // Create a new string object variable
     UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
     FGuid StringVariableIdentifier;
-    UString_SOV* StringVariable = Cast<UString_SOV>(RootObjectVariable->NewObjectVariable(UString_SOV::StaticClass(), StringVariableIdentifier, nullptr, false));
+    UGorgeousObjectVariable* StringVariable = RootObjectVariable->NewObjectVariable(UString_SOV::StaticClass(), StringVariableIdentifier, nullptr, false);
     
     // Set the value
-    StringVariable->SetStringSingleObjectVariable(NAME_None, FString("Hello, World!"));
+    FString Value = FString("Hello, World!");
+    IGorgeousSingleObjectVariablesSetter_I::Execute_SetStringSingleObjectVariable(StringVariable, NAME_None, Value);
     
     // Get the value
-    FString Value = StringVariable->GetStringSingleObjectVariable(NAME_None);
+    FString RetrievedValue = IGorgeousSingleObjectVariablesGetter_I::Execute_GetStringSingleObjectVariable(StringVariable, NAME_None);
     ```
 
 === "Blueprint"
@@ -230,18 +231,18 @@ Set object variables implement similar getter and setter functions for sets, wit
 
 === "C++"
 
-    ```cpp
+    ```cpp hl_lines="8 11"
     // Create a new integer array object variable
     UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
     FGuid IntegerArrayVariableIdentifier;
-    UInteger_AOV* IntegerArrayVariable = Cast<UInteger_AOV>(RootObjectVariable->NewObjectVariable(UInteger_AOV::StaticClass(), IntegerArrayVariableIdentifier, nullptr, false));
+    UGorgeousObjectVariable* IntegerArrayVariable = RootObjectVariable->NewObjectVariable(UInteger_AOV::StaticClass(), IntegerArrayVariableIdentifier, nullptr, false);
     
-    // Add values to the array
+    // Set the value
     TArray<int32> Values = {1, 2, 3, 4, 5};
-    IntegerArrayVariable->SetIntegerArrayObjectVariable(NAME_None, Values);
+    IGorgeousArrayObjectVariablesSetter_I::Execute_SetIntegerArrayObjectVariable(IntegerArrayVariable, NAME_None, Values);
     
-    // Get the array
-    TArray<int32> RetrievedValues = IntegerArrayVariable->GetIntegerArrayObjectVariable(NAME_None);
+    // Get the value
+    TArray<int32> RetrievedValues = IGorgeousArrayObjectVariablesGetter_I::Execute_GetIntegerArrayObjectVariable(IntegerArrayVariable, NAME_None);
     ```
 
 === "Blueprint"
@@ -255,18 +256,25 @@ Set object variables implement similar getter and setter functions for sets, wit
 
 === "C++"
 
-    ```cpp
-    // Create a new string map object variable
-    UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
-    FGuid StringMapVariableIdentifier;
-    UString_MOV* StringMapVariable = Cast<UString_MOV>(RootObjectVariable->NewObjectVariable(UString_MOV::StaticClass(), StringMapVariableIdentifier, nullptr, false));
+    ```cpp hl_lines="15 18"
+	// Create a new string map object variable
+	UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
+	FGuid StringMapVariableIdentifier;
+	UGorgeousObjectVariable* StringMapVariable = RootObjectVariable->NewObjectVariable(UString_MOV::StaticClass(), StringMapVariableIdentifier, nullptr, false);
     
-    // Add key-value pairs to the map
-    StringMapVariable->AddStringMapObjectVariable(NAME_None, "Key1", nullptr);
-    StringMapVariable->AddStringMapObjectVariable(NAME_None, "Key2", nullptr);
+	// Set the value
+	FGuid MapValueVariableIdentifier;
+	UGorgeousObjectVariable* MapValueVariable = RootObjectVariable->NewObjectVariable(UString_SOV::StaticClass(), MapValueVariableIdentifier, StringMapVariable, false);
+	FString MapValue = FString("Hello, World!");
+	IGorgeousSingleObjectVariablesSetter_I::Execute_SetStringSingleObjectVariable(MapValueVariable, NAME_None, MapValue);
+
+	TMap<FString, UGorgeousObjectVariable*> Value = TMap<FString, UGorgeousObjectVariable*>({
+		{ FString("Key1"), MapValueVariable }
+	});
+	IGorgeousMapObjectVariablesSetter_I::Execute_SetStringMapObjectVariable(StringMapVariable, NAME_None, Value);
     
-    // Get the map
-    TMap<FString, UGorgeousObjectVariable*> RetrievedMap = StringMapVariable->GetStringMapObjectVariable(NAME_None);
+	// Get the value
+	TMap<FString, UGorgeousObjectVariable*> RetrievedMap = IGorgeousMapObjectVariablesGetter_I::Execute_GetStringMapObjectVariable(StringMapVariable, NAME_None);
     ```
 
 === "Blueprint"
@@ -280,18 +288,20 @@ Set object variables implement similar getter and setter functions for sets, wit
 
 === "C++"
 
-    ```cpp
+    ```cpp hl_lines="10 13"
     // Create a new name set object variable
     UGorgeousRootObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
     FGuid NameSetVariableIdentifier;
-    UName_STOV* NameSetVariable = Cast<UName_STOV>(RootObjectVariable->NewObjectVariable(UName_STOV::StaticClass(), NameSetVariableIdentifier, nullptr, false));
+    UGorgeousObjectVariable* NameSetVariable = RootObjectVariable->NewObjectVariable(UName_STOV::StaticClass(), NameSetVariableIdentifier, nullptr, false);
     
-    // Add values to the set
-    NameSetVariable->AddNameSetObjectVariable(NAME_None, FName("Name1"));
-    NameSetVariable->AddNameSetObjectVariable(NAME_None, FName("Name2"));
+    // Set the value
+    TSet<FName> Value = TSet<FName>({
+        "Name1"
+    });
+    IGorgeousSetObjectVariablesSetter_I::Execute_SetNameSetObjectVariable(NameSetVariable, NAME_None, Value);
     
-    // Get the set
-    TSet<FName> RetrievedSet = NameSetVariable->GetNameSetObjectVariable(NAME_None);
+     // Get the value
+    TSet<FName> RetrievedSet = IGorgeousSetObjectVariablesGetter_I::Execute_GetNameSetObjectVariable(NameSetVariable, NAME_None);
     ```
 
 === "Blueprint"
@@ -300,6 +310,10 @@ Set object variables implement similar getter and setter functions for sets, wit
     ![Image title](./../../images/GorgeousCore/ObjectVariables/NameSetVariableExample.png){ width="100%" }
     <figcaption>Creating and using a Name Set Object Variable in Blueprint.</figcaption>
     </figure>
+
+!!! tip
+
+    Specifying the OptionalVariableName variable in any interface Set/Get function, allows you to target not just the default "Value" UProperty, but also any UProperty inside the desired UObject that this function is being called on.
 
 ## 🔧 Common Properties
 

@@ -18,9 +18,9 @@
     Constructs a new object variable and registers it within the given registry depending on the parent given.
 
     ??? tip
-        When you call this function from an object variable that is **not** the Root Object Variable, you can create a hierarchical structure. This allows you to organize and manage your variables in a tree-like fashion.
-
+        When you set the parent to an object variable that is **not** the Root Object Variable, you can create a hierarchical structure. This allows you to organize and manage your variables in a tree-like fashion.
     </div>
+
 
     === "Input"
 
@@ -32,10 +32,10 @@
 
     === "Output"
 
-        |   Parameter     |   Type                      |   Description                                   |
-        | :-------------- | :-------------------------- | :---------------------------------------------- |
-        |   `ReturnType`  |   `UGorgeousObjectVariable` |   A new variable in object format.              |
-        |   `Identifier`  |   `FGuid*`                  |   The unique identifier of the object variable. |
+        |   Parameter     |   Type                       |   Description                                   |
+        | :-------------- | :--------------------------- | :---------------------------------------------- |
+        |   `ReturnType`  |   `UGorgeousObjectVariable*` |   A new variable in object format.              |
+        |   `Identifier`  |   `FGuid`                    |   The unique identifier of the object variable. |
     
     ??? note "Important"
 
