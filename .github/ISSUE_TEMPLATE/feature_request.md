@@ -79,7 +79,7 @@ body:
     id: terms
     attributes:
       label: Code of Conduct
-      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/Epic-Nova/Gorgeous-Core/blob/main/CODE_OF_CONDUCT.md).
+      description: By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
       options:
         - label: I agree to follow this project's Code of Conduct
           required: true
@@ -150,4 +150,4 @@ Add any extra resources, screenshots, code snippets, or links to similar tools/l
 > Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) for info on how to get involved.
 
 > [!WARNING]
-> By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT).
+> By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
