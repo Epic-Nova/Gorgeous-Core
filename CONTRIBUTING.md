@@ -23,6 +23,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
     - [Naming Conventions](#naming-conventions)
     - [Code Comments](#code-comments)
     - [Commit Messages](#commit-messages)
+    - [Documentation Pages](#documentation-pages)
 - [Join The Project Team](#join-the-project-team)
 
 ---
@@ -51,7 +52,7 @@ Depending on how large the project is, you may want to outsource the questioning
 - Stack Overflow tag
 - Blog
 - FAQ
-- Roadmap
+- Roadmap => Project board (reference this)
 - E-Mail List
 - Forum
 -->
@@ -104,6 +105,7 @@ Once it's filed:
 Should be reported to: vulnerabilities@epicnova.net
 PGP Key to sent these infomation encrypted: https://github.com/Epic-Nova/Gorgeous-Core/blob/master/SensitiveReportingPublicKey.asc
 -->
+
 ---
 
 ### Suggesting Enhancements
@@ -119,15 +121,13 @@ This section guides you through submitting an enhancement suggestion for Gorgeou
 
 #### How Do I Submit a Good Enhancement Suggestion?
 
-Enhancement suggestions are tracked as [GitHub issues](https://github.com/Epic-Nova/Gorgeous-Core/issues).
+Enhancement suggestions are tracked as [Feature issues](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.md).
 
 - Use a **clear and descriptive title** for the issue to identify the suggestion.
 - Provide a **step-by-step description of the suggested enhancement** in as many details as possible.
 - **Describe the current behavior** and **explain which behavior you expected to see instead** and why. At this point you can also tell which alternatives do not work for you.
 - You may want to **include screenshots or screen recordings** which help you demonstrate the steps or point out the part which the suggestion is related to. You can use [LICEcap](https://www.cockos.com/licecap/) to record GIFs on macOS and Windows, and the built-in [screen recorder in GNOME](https://help.gnome.org/users/gnome-help/stable/screen-shot-record.html.en) or [SimpleScreenRecorder](https://github.com/MaartenBaert/ssr) on Linux. <!-- this should only be included if the project has a GUI -->
 - **Explain why this enhancement would be useful** to most Gorgeous Core users. You may also want to point out the other projects that solved it better and which could serve as inspiration.
-
-<!-- You might want to create an issue template for enhancement suggestions that can be used as a guide and that defines the structure of the information to be included. If you do so, reference it here in the description. -->
 
 ---
 
@@ -136,6 +136,8 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/Epic-N
 include Setup of env, IDE and typical getting started instructions?
 
 Mention here the Labels that we have and when what labels will be added to a pull request
+
+use the styleguide
 -->
 
 ---
@@ -143,6 +145,8 @@ Mention here the Labels that we have and when what labels will be added to a pul
 ### Improving The Documentation
 <!-- TODO
 Updating, improving and correcting the documentation
+
+use the styleguide
 
 -->
 
@@ -165,6 +169,13 @@ Updating, improving and correcting the documentation
 ---
 
 ### Commit Messages
+<!-- TODO
+
+-->
+
+---
+
+### Documentation Pages
 <!-- TODO
 
 -->
