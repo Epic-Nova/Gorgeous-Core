@@ -2,7 +2,7 @@
 
 First off, thanks for taking the time to contribute! ❤️
 
-All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
+All types of contributions are encouraged and valued. See the [Table of Contents](#-table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 > - ⭐ **Star the project** on [GitHub](https://github.com/Epic-Nova/Gorgeous-Core)
@@ -12,19 +12,19 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 ## Table of Contents
 
-- [I Have a Question](#i-have-a-question)
-- [I Want To Contribute](#i-want-to-contribute)
-- [Reporting Bugs](#reporting-bugs)
-- [Reporting Vulnerabilities](#reporting-vulnerabilities)
-- [Suggesting Enhancements](#suggesting-enhancements)
-- [Your First Code Contribution](#your-first-code-contribution)
-- [Improving The Documentation](#improving-the-documentation)
-- [Styleguides](#styleguides)
-- [Naming Conventions](#naming-conventions)
-- [Code Comments](#code-comments)
-- [Commit Messages](#commit-messages)
-- [Documentation Pages](#documentation-pages)
-- [Join The Project Team](#join-the-project-team)
+- [I Have a Question](#-i-have-a-question)
+- [I Want To Contribute](#-i-want-to-contribute)
+- [Reporting Bugs](#-reporting-bugs)
+- [Reporting Vulnerabilities](#-reporting-vulnerabilities)
+- [Suggesting Enhancements](#-suggesting-enhancements)
+- [Your First Code Contribution](#-your-first-code-contribution)
+- [Improving The Documentation](#-improving-the-documentation)
+- [Styleguides](#-styleguides)
+- [Naming Conventions](#-naming-conventions)
+- [Code Comments](#-code-comments)
+- [Commit Messages](#-commit-messages)
+- [Documentation Pages](#-documentation-pages)
+- [Join The Project Team](#-join-the-project-team)
 
 ---
 
@@ -57,7 +57,7 @@ We will then take care of the issue as soon as possible.
 A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - ✅ **Make sure that you are using the latest version.**
-- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://epic-nova.github.io/Gorgeous-Core/). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://epic-nova.github.io/Gorgeous-Core/). If you are looking for support, you might want to check [this section](#-i-have-a-question)).
 - 🔍 **Check the [bug tracker](https://github.com/orgs/Epic-Nova/projects/12/views/5)** to see if a bug report already exists for your bug or error.
 - 🌐 **Search the internet** (including Stack Overflow) to see if users outside of the GitHub community have discussed the issue.
 - Gather information about the bug:
@@ -70,7 +70,7 @@ A good bug report shouldn't leave others needing to chase you up for more inform
 #### 📝 How Do I Submit a Good Bug Report?
 
 > [!IMPORTANT]
-> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#reporting-vulnerabilities).
+> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#-reporting-vulnerabilities).
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
@@ -83,7 +83,7 @@ Once it's filed:
 
 - The project team will label the issue accordingly.
 - A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps and mark the issue as $${\color{gold}Needs Update}$$. Bugs with the $${\color{gold}Needs Update}$$ tag will not be addressed until they are reproduced.
-- If the team is able to reproduce the issue, then the $${\color{steelblue}Triage}$$ tag will be removed to indicate that this is a valid bug report. Also it will be marked possibly with other tags (such as $${\color{darkblue}Noted}$$), and the issue will be left to be [implemented by someone](#your-first-code-contribution).
+- If the team is able to reproduce the issue, then the $${\color{steelblue}Triage}$$ tag will be removed to indicate that this is a valid bug report. Also it will be marked possibly with other tags (such as $${\color{darkblue}Noted}$$), and the issue will be left to be [implemented by someone](#-your-first-code-contribution).
 
 ---
 
@@ -148,9 +148,9 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
     git checkout -b fix/your-bug-fix-name
     ```
     Choose a descriptive name for your branch.
-5.  **Make Your Changes:** Implement your feature, bug fix, or improvement. Follow the [Styleguides](#styleguides) outlined below.
+5.  **Make Your Changes:** Implement your feature, bug fix, or improvement. Follow the [Styleguides](#-styleguides) outlined below.
 6.  **Test Your Changes:** Thoroughly test your changes to ensure they work as expected and don't introduce any regressions.
-7.  **Commit Your Changes:** Commit your changes with a clear and concise commit message following the [Commit Messages](#commit-messages) styleguide:
+7.  **Commit Your Changes:** Commit your changes with a clear and concise commit message following the [Commit Messages](#-commit-messages) styleguide:
     ```bash
     git add .
     git commit -m "Feat: Add new awesome feature"
@@ -222,7 +222,7 @@ We highly value contributions to our documentation! Clear and comprehensive docu
 -   **Improve Examples:** Providing clear and concise examples can greatly enhance the usability of the documentation.
 -   **Translate Documentation:** If you are fluent in other languages, you can help by translating the documentation.
 
-Please ensure that your documentation contributions follow the [Documentation Pages](#documentation-pages) styleguide. Submit your documentation changes as a pull request, just like code contributions.
+Please ensure that your documentation contributions follow the [Documentation Pages](#-documentation-pages) styleguide. Submit your documentation changes as a pull request, just like code contributions.
 
 
 ---
