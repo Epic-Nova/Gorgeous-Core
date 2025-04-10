@@ -141,7 +141,7 @@ How can we reach you if we need more details?
 ## 🙌 _Thanks for helping improve Gorgeous Core!_
 
 > [!NOTE]
-> Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) for info on how to get involved.
+> Check out our [CONTRIBUTING.md](../../CONTRIBUTING.md) for info on how to get involved.
 
 > [!WARNING]
-> By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
+> By submitting this issue, you agree to follow our [Code of Conduct](../../CODE_OF_CONDUCT.md).
