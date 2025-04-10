@@ -59,10 +59,10 @@ Add links, documentation, or references to similar problems you've encountered o
 
 ---
 
-## 🙌 _Thank you for asking your question!_
+## 🙌 _Thanks for helping improve Gorgeous Core!_
 
-> [!NOTE]  
-> Check out our [FAQ.md](../../FAQ.md) for more helpful tips and common troubleshooting.
+> [!NOTE]
+> Check out our [CONTRIBUTING.md](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/CONTRIBUTING.md) for info on how to get involved.
 
-> [!WARNING]  
-> By submitting this issue, you agree to follow our [Code of Conduct](../../CODE_OF_CONDUCT.md).
+> [!WARNING]
+> By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/CODE_OF_CONDUCT.md).
