@@ -66,9 +66,5 @@ Add any extra resources, screenshots, code snippets, or links to similar tools/l
 
 ---
 
-> ⚠️ _Note:_ Gorgeous Core is primarily written in **C++**, but we are considering **C# integrations** through third-party bridges. If your request involves C#, please specify the interoperability scope.
-
----
-
 > 🙌 _Thanks for helping improve Gorgeous Core!_  
 > Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) for info on how to get involved.
