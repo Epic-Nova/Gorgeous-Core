@@ -144,5 +144,10 @@ Add any extra resources, screenshots, code snippets, or links to similar tools/l
 
 ---
 
-> 🙌 _Thanks for helping improve Gorgeous Core!_  
+## 🙌 _Thanks for helping improve Gorgeous Core!_
+
+> [!NOTE]
 > Check out our [CONTRIBUTING.md](./CONTRIBUTING.md) for info on how to get involved.
+
+> [!WARNING]
+> By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT).
