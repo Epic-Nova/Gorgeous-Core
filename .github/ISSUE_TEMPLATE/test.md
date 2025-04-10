@@ -1,5 +1,6 @@
 ---
-name: Bug Report
+name: Test
+about: test
 description: File a bug report.
 title: "[Bug]: "
 labels: ["bug", "triage"]
