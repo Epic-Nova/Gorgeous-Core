@@ -62,7 +62,7 @@ Add links, documentation, or references to similar problems you've encountered o
 ## 🙌 _Thank you for asking your question!_
 
 > [!NOTE]  
-> Check out our [FAQ.md](./FAQ.md) for more helpful tips and common troubleshooting.
+> Check out our [FAQ.md](../../FAQ.md) for more helpful tips and common troubleshooting.
 
 > [!WARNING]  
-> By submitting this issue, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
+> By submitting this issue, you agree to follow our [Code of Conduct](../../CODE_OF_CONDUCT.md).
