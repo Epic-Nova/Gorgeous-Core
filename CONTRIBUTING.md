@@ -12,19 +12,19 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 ## Table of Contents
 
-- [I Have a Question](#❓-i-have-a-question)
-- [I Want To Contribute](#🤝-i-want-to-contribute)
-    - [Reporting Bugs](#🐞-reporting-bugs)
-    - [Reporting Vulnerabilities](#🛡️-reporting-vulnerabilities)
-    - [Suggesting Enhancements](#✨-suggesting-enhancements)
-    - [Your First Code Contribution](#🧑‍💻-your-first-code-contribution)
-    - [Improving The Documentation](#📚-improving-the-documentation)
-- [Styleguides](#🎨-styleguides)
-    - [Naming Conventions](#🏷️-naming-conventions)
-    - [Code Comments](#💬-code-comments)
-    - [Commit Messages](#📝-commit-messages)
-    - [Documentation Pages](#📚-documentation-pages)
-- [Join The Project Team](#👥-join-the-project-team)
+- [I Have a Question](#i-have-a-question)
+- [I Want To Contribute](#i-want-to-contribute)
+- [Reporting Bugs](#reporting-bugs)
+- [Reporting Vulnerabilities](#reporting-vulnerabilities)
+- [Suggesting Enhancements](#suggesting-enhancements)
+- [Your First Code Contribution](#your-first-code-contribution)
+- [Improving The Documentation](#improving-the-documentation)
+- [Styleguides](#styleguides)
+- [Naming Conventions](#naming-conventions)
+- [Code Comments](#code-comments)
+- [Commit Messages](#commit-messages)
+- [Documentation Pages](#documentation-pages)
+- [Join The Project Team](#join-the-project-team)
 
 ---
 
@@ -57,7 +57,7 @@ We will then take care of the issue as soon as possible.
 A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - ✅ **Make sure that you are using the latest version.**
-- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://epic-nova.github.io/Gorgeous-Core/). If you are looking for support, you might want to check [this section](#❓-i-have-a-question)).
+- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://epic-nova.github.io/Gorgeous-Core/). If you are looking for support, you might want to check [this section](#i-have-a-question)).
 - 🔍 **Check the [bug tracker](https://github.com/orgs/Epic-Nova/projects/12/views/5)** to see if a bug report already exists for your bug or error.
 - 🌐 **Search the internet** (including Stack Overflow) to see if users outside of the GitHub community have discussed the issue.
 - Gather information about the bug:
@@ -70,7 +70,7 @@ A good bug report shouldn't leave others needing to chase you up for more inform
 #### 📝 How Do I Submit a Good Bug Report?
 
 > [!IMPORTANT]
-> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#🛡️-reporting-vulnerabilities).
+> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#reporting-vulnerabilities).
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
@@ -82,8 +82,8 @@ We use GitHub issues to track bugs and errors. If you run into an issue with the
 Once it's filed:
 
 - The project team will label the issue accordingly.
-- A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps and mark the issue as <span style="color:#FBCA04">#08 Needs Update</span>. Bugs with the <span style="color:#FBCA04">#08 Needs Update</span> tag will not be addressed until they are reproduced.
-- If the team is able to reproduce the issue, then the <span style="color:#0774b3">#01.1 Triage</span> tag will be removed to indicate that this is a valid bug report. Also it will be marked possibly with other tags (such as <span style="color:#032B63">#01 Noted</span>), and the issue will be left to be [implemented by someone](#🧑‍💻your-first-code-contribution).
+- A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps and mark the issue as $${\color{gold}Needs Update}$$. Bugs with the $${\color{gold}Needs Update}$$ tag will not be addressed until they are reproduced.
+- If the team is able to reproduce the issue, then the $${\color{steelblue}Triage}$$ tag will be removed to indicate that this is a valid bug report. Also it will be marked possibly with other tags (such as $${\color{darkblue}Noted}$$), and the issue will be left to be [implemented by someone](#your-first-code-contribution).
 
 ---
 
@@ -148,9 +148,9 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
     git checkout -b fix/your-bug-fix-name
     ```
     Choose a descriptive name for your branch.
-5.  **Make Your Changes:** Implement your feature, bug fix, or improvement. Follow the [Styleguides](#🎨-styleguides) outlined below.
+5.  **Make Your Changes:** Implement your feature, bug fix, or improvement. Follow the [Styleguides](#styleguides) outlined below.
 6.  **Test Your Changes:** Thoroughly test your changes to ensure they work as expected and don't introduce any regressions.
-7.  **Commit Your Changes:** Commit your changes with a clear and concise commit message following the [Commit Messages](#📝-commit-messages) styleguide:
+7.  **Commit Your Changes:** Commit your changes with a clear and concise commit message following the [Commit Messages](#commit-messages) styleguide:
     ```bash
     git add .
     git commit -m "Feat: Add new awesome feature"
@@ -171,33 +171,45 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
 >
 > Maintainers will use labels on pull requests to indicate their status and priority. Some common labels you might encounter include:
 >
-> -   <span style="color:#032B63">#01 Noted`</span>: Considered important by a contributor, so this request is given a higher priority
-> -   <span style="color:#0774b3">#01.1 Triage`</span>: Initial review required to determine priority and next steps.
-
-> -   <span style="color:#0E8A16">#02 Accepted`</span>: Accepted by a contributor and is currently in the process of being merged
-> -   <span style="color:#0E8A50">#03 Under Review`</span>: Under review by a contributor at the moment
-> -   <span style="color:#0E8A2B">#04 Needs Merge`</span>: Preparations to be merged have been completed and it´s now ready to be merged
-
-> -   <span style="color:#B60205">#05 Bug Fix`</span>: Fixes a bug
-> -   <span style="color:#fc0532">#05.1 Bug Report`</span>: Reports a Bug
-
-> -   <span style="color:#FB9C04">#06 Needs Answer from Author`</span>: Requires consultation with the author
-> -   <span style="color:#C28802">#07 Help Wanted`</span>: Attention is needed
-> -   <span style="color:#FBCA04">#08 Needs Update`</span>: Needs changes because one or more requirements are not met
-
-> -   <span style="color:#0E8A42">#09 Optimization`</span>: Improves the project's quality or stability
-> -   <span style="color:#006B75">#10 New Feature`</span>: Not on the roadmap but it´s a good addition and will maybe added to the roadmap
-> -   <span style="color:#028E9C">#11 Feature`</span>: Already on the roadmap and it´s likely to be implemented with some code modifications
-> -   <span style="color:#02699c">#11.1 Feature Request`</span>: Community-suggested feature, pending review and roadmap consideration.
-> -   <span style="color:#1D76DB">#12 Documentation`</span>: Improvements or additions to the documentation
-> -   <span style="color:#0052CC">#13 Readme`</span>: Improvements or additions in the readme file
-
-> -   <span style="color:#5319E7">#14 Good first Issue`</span>: Good for newcomers
-> -   <span style="color:#D4C5F9">#15 Declined`</span>: Reviewed and rejected as either not meeting the requirements or contributes nothing to the project
-> -   <span style="color:#E0D7F7">#16 Duplicate`</span>: Already exists in itself or in another form
-> -   <span style="color:#C5DEF5">#17 Invalid`</span>: Does not appear to be correct
-
-
+> $${\color{darkblue}Noted}$$: Considered important by a contributor, so this request is given a higher priority
+> 
+> $${\color{steelblue}Triage}$$: Initial review required to determine priority and next steps.
+>
+> $${\color{forestgreen}Accepted}$$: Accepted by a contributor and is currently in the process of being merged
+>
+> $${\color{seagreen}Under Review}$$: Under review by a contributor at the moment
+>
+> $${\color{mediumseagreen}Needs Merge}$$: Preparations to be merged have been completed and it´s now ready to be merged
+>
+> $${\color{firebrick}Bug Fix}$$: Fixes a bug
+>
+> $${\color{crimson}Bug Report}$$: Reports a Bug
+>
+> $${\color{darkorange}Needs Answer from Author}$$: Requires consultation with the author
+>
+> $${\color{goldenrod}Help Wanted}$$: Attention is needed
+>
+> $${\color{gold}Needs Update}$$: Needs changes because one or more requirements are not met
+>
+> $${\color{olive}Optimization}$$: Improves the project's quality or stability
+>
+> $${\color{teal}New Feature}$$: Not on the roadmap but it´s a good addition and will maybe added to the roadmap
+>
+> $${\color{darkcyan}Feature}$$: Already on the roadmap and it´s likely to be implemented with some code modifications
+>
+> $${\color{cadetblue}Feature Request}$$: Community-suggested feature, pending review and roadmap consideration.
+>
+> $${\color{blue}Documentation}$$: Improvements or additions to the documentation
+>
+> $${\color{navy}Readme}$$: Improvements or additions in the readme file
+>
+> $${\color{mediumpurple}Good first Issue}$$: Good for newcomers
+>
+> $${\color{lavender}Declined}$$: Reviewed and rejected as either not meeting the requirements or contributes nothing to the project
+>
+> $${\color{thistle}Duplicate}$$: Already exists in itself or in another form
+>
+> $${\color{lightblue}Invalid}$$: Does not appear to be correct
 
 ---
 
@@ -210,7 +222,7 @@ We highly value contributions to our documentation! Clear and comprehensive docu
 -   **Improve Examples:** Providing clear and concise examples can greatly enhance the usability of the documentation.
 -   **Translate Documentation:** If you are fluent in other languages, you can help by translating the documentation.
 
-Please ensure that your documentation contributions follow the [Documentation Pages](#📚-documentation-pages) styleguide. Submit your documentation changes as a pull request, just like code contributions.
+Please ensure that your documentation contributions follow the [Documentation Pages](#documentation-pages) styleguide. Submit your documentation changes as a pull request, just like code contributions.
 
 
 ---
