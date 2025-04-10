@@ -3,7 +3,7 @@ name: Bug Report
 about: File a bug report for Gorgeous Core.
 description: File a bug report for Gorgeous Core.
 title: "[Bug]: "
-labels: ["#01.1 Triage", "#05 Bug Fix"]
+labels: ["#01.1 Triage", "#05.1 Bug Report"]
 assignees:
   - Epgenix
 body:
