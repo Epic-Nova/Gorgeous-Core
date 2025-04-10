@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Use this template for tracking new features.
+about: Suggest a new feature or enhancement for Gorgeous Core.
 description: Suggest a new feature or enhancement for Gorgeous Core.
 title: "[Feature Request]: "
 labels: ["#01.1 Triage", "#11.1 Feature Request"]
