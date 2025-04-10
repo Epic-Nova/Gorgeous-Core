@@ -15,12 +15,12 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 - [I Have a Question](#-i-have-a-question)
 - [I Want To Contribute](#-i-want-to-contribute)
     - [Reporting Bugs](#-reporting-bugs)
-    - [Reporting Vulnerabilities](#-reporting-vulnerabilities)
+    - [Reporting Vulnerabilities](#%EF%B8%8F-reporting-vulnerabilities)
     - [Suggesting Enhancements](#-suggesting-enhancements)
     - [Your First Code Contribution](#-your-first-code-contribution)
     - [Improving The Documentation](#-improving-the-documentation)
 - [Styleguides](#-styleguides)
-    - [Naming Conventions](#-naming-conventions)
+    - [Naming Conventions](#%EF%B8%8F-naming-conventions)
     - [Code Comments](#-code-comments)
     - [Commit Messages](#-commit-messages)
     - [Documentation Pages](#-documentation-pages)
@@ -70,7 +70,7 @@ A good bug report shouldn't leave others needing to chase you up for more inform
 #### 📝 How Do I Submit a Good Bug Report?
 
 > [!IMPORTANT]
-> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#-reporting-vulnerabilities).
+> 🚨 **You must never report security-related issues, vulnerabilities, or bugs including sensitive information to the issue tracker or elsewhere in public.** How to handle vulnerability reporting is described [here](#%EF%B8%8F-reporting-vulnerabilities).
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
