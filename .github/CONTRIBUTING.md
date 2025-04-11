@@ -37,7 +37,7 @@ Before you ask a question, it is best to search for existing [Issues](https://gi
 
 If you then still feel the need to ask a question and need clarification, we recommend the following:
 
-- Read the [FAQ.md](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/FAQ.md)
+- Read the [FAQ.md](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/FAQ.md)
 - Open an [Question Issue](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=question.md).
 - Write an email to [support@epicnova.net](mailto:support@epicnova.net)
 
@@ -48,7 +48,7 @@ We will then take care of the issue as soon as possible.
 ## 🤝 I Want To Contribute
 
 > [!IMPORTANT]  
-> When contributing to this project, **you must agree that you have authored 100% of the content**, that you have the necessary rights to the content and that the content you contribute may be provided under the project licence.
+> When contributing to this project, **you must agree that you have authored 100% of the content**, that you have the necessary rights to the content and that the content you contribute may be provided under the project license.
 
 ### 🐞 Reporting Bugs
 
@@ -90,15 +90,15 @@ Once it's filed:
 ### 🛡️ Reporting Vulnerabilities
 
 > [!NOTE]
-> Please report security vulnerabilities responsibly to help us ensure the safety and security of our community and users.
+> Please report vulnerabilities responsibly to help us ensure the safety and security of our community and users.
 
-Security vulnerabilities should be reported directly to the project maintainers via a secure and private channel. **Do not disclose security-related issues publicly on the issue tracker or any other public platform.**
+Vulnerabilities should be reported directly to the project maintainers via a secure and private channel. **Do not disclose security-related issues publicly on the issue tracker or any other public platform.**
 
 To report a security vulnerability, please send an email to: [**vulnerabilities@epicnova.net**](mailto:vulnerabilities@epicnova.net)
 
 To ensure the confidentiality of your report, we strongly encourage you to encrypt your communication using our PGP public key. You can find the public key here:
 
-[🔗 **PGP Public Key**](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/SensitiveReportingPublicKey.asc)
+[🔗 **PGP Public Key**](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/SensitiveReportingPublicKey.asc)
 
 By encrypting your report, you can help protect sensitive information during transmission. We appreciate your cooperation in handling security matters responsibly. Our team will acknowledge your report promptly and work diligently to address the issue.
 
@@ -138,7 +138,7 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
     cd Gorgeous-Core
     ```
     Replace `YOUR_USERNAME` with your GitHub username.
-3.  **Set Up Your Development Environment:** Follow the instructions in the project's main [`README.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/README.md) or a dedicated [`DEVELOPMENT.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/DEVELOPMENT.md) file (if it exists) to set up your development environment. This might include installing dependencies, configuring your IDE, and setting up any necessary SDKs.
+3.  **Set Up Your Development Environment:** Follow the instructions in the project's main [`README.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/README.md) or a dedicated [`DEVELOPMENT.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/DEVELOPMENT.md) file (if it exists) to set up your development environment. This might include installing dependencies, configuring your IDE, and setting up any necessary SDKs.
 4.  **Create a New Branch:** Before making any changes, create a new branch for your contribution:
     ```bash
     git checkout -b feature/your-feature-name

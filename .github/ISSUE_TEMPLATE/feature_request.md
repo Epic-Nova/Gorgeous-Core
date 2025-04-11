@@ -147,7 +147,7 @@ Add any extra resources, screenshots, code snippets, or links to similar tools/l
 ## 🙌 _Thanks for helping improve Gorgeous Core!_
 
 > [!NOTE]
-> Check out our [CONTRIBUTING.md](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/CONTRIBUTING.md) for info on how to get involved.
+> Check out our [CONTRIBUTING.md](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/CONTRIBUTING.md) for info on how to get involved.
 
 > [!WARNING]
 > By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/CODE_OF_CONDUCT.md).
