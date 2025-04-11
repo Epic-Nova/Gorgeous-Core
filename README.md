@@ -67,8 +67,8 @@
         <li><a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/DEVELOPMENT.md#-blueprint-only-users-no-c-required">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#-usage">Usage</a></li>
+    <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing">Contributing</a></li>
     <li><a href="#-license">License</a></li>
     <li><a href="#-contact">Contact</a></li>
@@ -180,7 +180,7 @@ If you have ideas to improve Gorgeous Core, feel free to:
 - **Nils Bergemann:**
 
   - [Discord: @Epgenix][Discord-URL]
-  - [Email][developer-mail]
+  - [Email][Developer-Mail]
   - [LinkedIn][LinkedIn-URL]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -238,9 +238,9 @@ Big thanks to:
 
 [Plugin-Screenshot-URL]: images/screenshot.png
 
-[Developer-Mail]: (mailto:nils.bergemann@employee.epicnova.net)
+[Developer-Mail]: mailto:nils.bergemann@employee.epicnova.net
 [LinkedIn-URL]: https://linkedin.com/in/nils-bergemann-6398a5280
 
-[Discord-URL]: (https://discord.com/)
-[Readme-Template-URL]: (https://github.com/othneildrew/Best-README-Template)
-[EpicNova-URL]: (https://epicnova.net)
+[Discord-URL]: https://discord.com/
+[Readme-Template-URL]: https://github.com/othneildrew/Best-README-Template
+[EpicNova-URL]: (https://epicnova.net
