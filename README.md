@@ -1,29 +1,14 @@
 <a id="readme-top"></a>
 
 
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![project_license][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
   <a href="https://github.com/Epic-Nova/Gorgeous-Core">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src=".github/logo.png" alt="Logo" width="80" height="80">
   </a>
+
+  <a href="">![Epic Nova](./.github/EpicNova-Shield.svg)</a>
 <h3 align="center">Gorgeous Things: Gorgeous Core</h3>
 
   <p align="center">
@@ -32,7 +17,7 @@
     <a href="https://epic-nova.github.io/Gorgeous-Core/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/FAQ.md">FAQ</a>
+    <a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/FAQ.md">FAQ</a>
     &middot;
     <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.md">Report Bug</a>
     &middot;
@@ -44,196 +29,218 @@
 
 
 
+<!-- PROJECT SHIELDS -->
+
+<div align="center">
+  <h2>Built With</h2>
+
+  <a href="">[![Unreal Engine][UnrealEngine-Shield-URL]][Unreal-URL]</a>
+  <a href="">![C++][CPP-Shield-URL]</a>
+  <a href="">![C#][CSharp-Shield-URL]</a>
+
+</div>
+
+<div align="center">
+  <h2>Stats</h2>
+
+  <a href="">[![Contributors][Contributors-Shield-URL]][Contributors-URL]</a>
+  <a href="">[![Forks][Forks-Shield-URL]][Forks-URL]</a>
+  <a href="">[![Stargazers][Stars-Shield-URL]][Stars-URL]</a>
+  <a href="">[![Issues][Issues-Shield-URL]][Issues-URL]</a>
+  <a href="">[![project_license][License-Shield-URL]][License-URL]</a>
+
+</div>
+
+
+
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
+      <a href="#-about-the-project">About The Project</a>
     </li>
     <li>
-      <a href="#getting-started">Getting Started</a>
+      <a href="./.github/DEVELOPMENT.md">Getting Started</a>
       <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/DEVELOPMENT.md#-getting-started-with-unreal-engine">Prerequisites</a></li>
+        <li><a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/DEVELOPMENT.md#-blueprint-only-users-no-c-required">Installation</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
+    <li><a href="#-contributing">Contributing</a></li>
+    <li><a href="#-license">License</a></li>
+    <li><a href="#-contact">Contact</a></li>
+    <li><a href="#-acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
 
 
 
 <!-- ABOUT THE PROJECT -->
-## About The Project
+## 🧩 About The Project
+<div align="center">
+  <a href="">[![Product Name Screen Shot][Plugin-Screenshot-URL]](https://example.com)</a>
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
-Here's a blank template to get started. To avoid retyping too much info, do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`, `project_license`
+**Gorgeous Core** is a foundational plugin designed to provide essential utilities and tools for enhancing programming workflows. It serves as the **backbone for other plugins** in the **Gorgeous Things family**, offering core functionalities that can be extended and customized.
 
+</div>
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
-### Built With
-
-[![Unreal Engine][UnrealEngine]][Unreal-url]
-![C++][CPP]
-![C#][CSharp]
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- GETTING STARTED -->
-## Getting Started
-
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
-### Prerequisites
-
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
-
-### Installation
-
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/github_username/repo_name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-5. Change git remote url to avoid accidental pushes to base project
-   ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
-   ```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+---
 
 
 
 <!-- USAGE EXAMPLES -->
-## Usage
+## 🛠️ Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+You’ll find practical usage examples inside the plugin’s ```Content``` **folder**. These demonstrate how to integrate and work with the features offered by Gorgeous Core.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+Examples include:
+
+  - 📁 **Blueprint utilities**
+  - 🧪 **Test scenes**
+  - 🔧 **Core systems usage**
+
+*For more documentation and advanced scenarios, check the [Documentation](https://epic-nova.github.io/Gorgeous-Core/).*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
 
 
 
 <!-- ROADMAP -->
-## Roadmap
+## 🗺️ Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
+📌 You can follow our **live roadmap** and submit ideas or feedback here: [👉 Gorgeous Core Roadmap on GitHub Projects](https://github.com/orgs/Epic-Nova/projects/12/views/4)
 
-See the [open issues](https://github.com/github_username/repo_name/issues) for a full list of proposed features (and known issues).
+*For a full list of upcoming features and bugs, check the [open issues](https://github.com/Epic-Nova/Gorgeous-Core/issues).*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
 
 
 
 <!-- CONTRIBUTING -->
-## Contributing
+## 🤝 Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+Contributions are what make the open source community such an amazing place to learn, inspire, and create — and **any contributions are truly appreciated.**
 
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
+If you have ideas to improve Gorgeous Core, feel free to:
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+  - 🛠 Fork the repository
+  - 🧪 Implement your feature or fix
+  - 📬 Submit a pull request
+  - 📣 Or open an **[Bug Report](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.md)**, **[Feature Request](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.md)** or **[Question issue](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=question.md)**.
+
+> [!TIP]
+> 📄 For detailed contribution guidelines, please see [CONTRIBUTING.md](./.github/CONTRIBUTING.md)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-### Top contributors:
+### 🏆 Top contributors:
 
-<a href="https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Epic-Nova/Gorgeous-Core" alt="contrib.rocks image" />
-</a>
+<div align="center">
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=Epic-Nova/Gorgeous-Core" alt="contrib.rocks image" />
+  </a>
+</div>
+
+---
 
 
 
 <!-- LICENSE -->
-## License
+## 📄 License
 
-Distributed under the project_license. See `LICENSE.txt` for more information.
+### Distributed under the **MIT License.** See [`LICENSE`](./LICENSE) for more information.
+
+---
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
 
 
 
 <!-- CONTACT -->
-## Contact
+## 📬 Contact
 
-Your Name - [@twitter_handle](https://twitter.com/twitter_handle) - email@email_client.com
+### 🔗 Connect with Us:
+- **Community Server** - [Discord: Gorgeous Things](https://discord.gg/BzqXxBVe5N) - Join our vibrant community!
+- **General Support** - [Epic Nova Support](support@epicnova.net) - For questions or assistance.
+- **Report Harmful Content** - [Epic Nova Enforcement Team](enforcement@epicnova.net) - See something harmful? Let us know
+- **Vulnerability Reporting** - [Mail: Epic Nova Vulnerability Support](vulnerabilities@epicnova.net) - If you discover a potential security issue.
 
-Project Link: [https://github.com/Epic-Nova/Gorgeous-Core](https://github.com/Epic-Nova/Gorgeous-Core)
+### 👨‍💻 Developer Contact:
+- **Nils Bergemann:**
+
+  - [Discord: @Epgenix][Discord-URL]
+  - [Email][developer-mail]
+  - [LinkedIn][LinkedIn-URL]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-SUPPORT SECTION HERE OR SOMEWHERE ELSE IN THIS DOC
+---
+
+
+
+<!-- SUPPORT -->
+## 💖 Support
+
+If you find this project useful or just want to support ongoing development, consider giving the repo a ⭐, sharing it with others, or contributing to the codebase!
+
+For business inquiries, collaborations, or plugin licensing, feel free to reach out via the [contact section](#-contact) above.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+
 
 <!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
+## 🙏 Acknowledgments
 
-* [README Template](https://github.com/othneildrew/Best-README-Template)
-* []()
-* []()
+Big thanks to:
+* [README Template][Readme-Template-URL]
+* [Epic Nova][EpicNova-URL] – for handling all things publishing, financing, and business-side support for Simsalabim Studios. 💼🚀
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[contributors-url]: https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors
+[Contributors-Shield-URL]: https://img.shields.io/github/contributors/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
+[Contributors-URL]: https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors
 
-[forks-shield]: https://img.shields.io/github/forks/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[forks-url]: https://github.com/Epic-Nova/Gorgeous-Core/network/members
+[Forks-Shield-URL]: https://img.shields.io/github/forks/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
+[Forks-URL]: https://github.com/Epic-Nova/Gorgeous-Core/network/members
 
-[stars-shield]: https://img.shields.io/github/stars/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[stars-url]: https://github.com/Epic-Nova/Gorgeous-Core/stargazers
+[Stars-Shield-URL]: https://img.shields.io/github/stars/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
+[Stars-URL]: https://github.com/Epic-Nova/Gorgeous-Core/stargazers
 
-[issues-shield]: https://img.shields.io/github/issues/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[issues-url]: https://github.com/Epic-Nova/Gorgeous-Core/issues
+[Issues-Shield-URL]: https://img.shields.io/github/issues/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
+[Issues-URL]: https://github.com/Epic-Nova/Gorgeous-Core/issues
 
-[license-shield]: https://img.shields.io/github/license/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[license-url]: https://github.com/Epic-Nova/Gorgeous-Core/blob/master/LICENSE
+[License-Shield-URL]: https://img.shields.io/github/license/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
+[License-URL]: https://github.com/Epic-Nova/Gorgeous-Core/blob/master/LICENSE
 
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://linkedin.com/in/nils-bergemann-6398a5280
+[UnrealEngine-Shield-URL]: https://img.shields.io/badge/unrealengine-%23313131.svg?style=for-the-badge&logo=unrealengine&logoColor=white
+[Unreal-URL]: https://unrealengine.com
 
-[product-screenshot]: images/screenshot.png
+[CPP-Shield-URL]: https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white
+[CSharp-Shield-URL]: https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white
 
-[UnrealEngine]: https://img.shields.io/badge/unrealengine-%23313131.svg?style=for-the-badge&logo=unrealengine&logoColor=white
-[Unreal-url]: https://unrealengine.com
+[Plugin-Screenshot-URL]: images/screenshot.png
 
-[CPP]: https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white
-[CSharp]: https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white
+[Developer-Mail]: (mailto:nils.bergemann@employee.epicnova.net)
+[LinkedIn-URL]: https://linkedin.com/in/nils-bergemann-6398a5280
+
+[Discord-URL]: (https://discord.com/)
+[Readme-Template-URL]: (https://github.com/othneildrew/Best-README-Template)
+[EpicNova-URL]: (https://epicnova.net)

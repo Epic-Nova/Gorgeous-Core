@@ -33,12 +33,13 @@ If you're not planning to compile code and only want to **use the plugin in Blue
 Download the latest **compiled plugin binaries** from the [Releases](https://github.com/Epic-Nova/Gorgeous-Core/releases) section of this repository.
 
 - Choose the `.zip` file that matches your **Unreal Engine version**.
-- Unzip the contents into your project’s `Plugins/` folder (create one if it doesn’t exist).
+- Unzip the contents into your project’s `Plugins/GorgeousThings` folder (create one if it doesn’t exist).
 
 ```md
 YourProject/
 └── Plugins/
-    └── GorgeousCore/
+    └── GorgeousThings/
+        └── GorgeousCore/
 ```
 
 ### ✅ Step 2: Enable the Plugin
@@ -93,6 +94,8 @@ Make sure these components are also installed:
 > [!TIP]
 > 💡 Don't worry if you missed something — the engine will prompt you when you try to compile.
 
+---
+
 #### 🍎 For macOS Users
 
 For macOS, you’ll need to install **Xcode** to work with Unreal Engine. Follow these steps:
@@ -131,12 +134,13 @@ Rider offers:
 
 ### 📁 Step 3: Download Plugin Source
 
-Clone or download this repository, and copy the **`GorgeousCore/`** folder into your project’s **`Plugins/`** directory:
+Clone or download this repository, and copy the **`GorgeousCore/`** folder into your project’s **`Plugins/GorgeousThings`** directory:
 
 ```bash
 YourProject/
 └── Plugins/
-    └── GorgeousCore/  ← put source files here
+    └── GorgeousThings/
+        └── GorgeousCore/  ← put source files here
 ```
 
 ---
@@ -153,6 +157,8 @@ Generate Visual Studio project files
 > [!TIP]
 > If you're using **Rider**, open the .uproject and let it handle the setup.
 
+---
+
 #### 🍎 For macOS Users
 
 On macOS, you'll need to generate project files **using the Unreal Engine terminal commands**. Follow these steps:
@@ -167,7 +173,6 @@ On macOS, you'll need to generate project files **using the Unreal Engine termin
     sh "/Users/Shared/Epic\ Games/UE_5.XX/Engine/Build/BatchFiles/Mac/GenerateProjectFiles.sh"
         -project="/path/to/your/project/YourProject.uproject" -game
     ```
-
 > [!NOTE]
 > 💡 Replace `/path/to/your/project` with the actual paths on your system.
 
