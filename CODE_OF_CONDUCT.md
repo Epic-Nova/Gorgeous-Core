@@ -1,134 +1,139 @@
 
-# Contributor Covenant Code of Conduct
+# 🧾 Contributor Covenant Code of Conduct
 
-## Our Pledge
+Welcome to the Gorgeous Core Community! We believe in fostering a space that’s welcoming, respectful, and inclusive for everyone. Please take a moment to read our Code of Conduct before participating.
 
-We as members, contributors, and leaders pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, caste, color, religion, or sexual
-identity and orientation.
+> 🧠 **Why This Exists:**
+> We want every contributor and community member to feel safe and valued. This code helps ensure that.
 
-We pledge to act and interact in ways that contribute to an open, welcoming,
-diverse, inclusive, and healthy community.
+---
 
-## Our Standards
+## 🤝 Our Pledge
 
-Examples of behavior that contributes to a positive environment for our
-community include:
+We, as contributors and maintainers, pledge to make participation in our community a **harassment-free experience** for everyone — regardless of:
 
-* Demonstrating empathy and kindness toward other people
-* Being respectful of differing opinions, viewpoints, and experiences
-* Giving and gracefully accepting constructive feedback
-* Accepting responsibility and apologizing to those affected by our mistakes,
-  and learning from the experience
-* Focusing on what is best not just for us as individuals, but for the overall
-  community
+  - Age
+  - Body size
+  - Visible or invisible disability
+  - Ethnicity
+  - Sex characteristics
+  - Gender identity and expression
+  - Level of experience
+  - Education
+  - Socio-economic status
+  - Nationality
+  - Personal appearance
+  - Race
+  - Caste
+  - Color
+  - Religion
+  - Sexual identity and orientation
 
-Examples of unacceptable behavior include:
+We pledge to **act and interact** in ways that build an open, diverse, inclusive, and healthy community.
 
-* The use of sexualized language or imagery, and sexual attention or advances of
-  any kind
-* Trolling, insulting or derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or email address,
-  without their explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+---
 
-## Enforcement Responsibilities
+## ✅ Our Standards
 
-Community leaders are responsible for clarifying and enforcing our standards of
-acceptable behavior and will take appropriate and fair corrective action in
-response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
+Here’s what we encourage:
 
-Community leaders have the right and responsibility to remove, edit, or reject
-comments, commits, code, wiki edits, issues, and other contributions that are
-not aligned to this Code of Conduct, and will communicate reasons for moderation
-decisions when appropriate.
+  - 🌱 **Empathy and kindness** toward others
+  - 🧠 Respect for different opinions and experiences
+  - 🛠️ Constructive feedback — given and received gracefully
+  - 🙋 Owning mistakes and learning from them
+  - 🌍 Thinking about the good of the community as a whole
 
-## Scope
+---
 
-This Code of Conduct applies within all community spaces, and also applies when
-an individual is officially representing the community in public spaces.
-Examples of representing our community include using an official email address,
-posting via an official social media account, or acting as an appointed
-representative at an online or offline event.
+## 🚫 Not OK: Unacceptable Behavior
 
-## Enforcement
+These actions are **not tolerated**:
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-[enforcement@epicnova.net](mailto:enforcement@epicnova.net).
-All complaints will be reviewed and investigated promptly and fairly.
+  - ❌ Sexualized language or imagery
+  - ❌ Unwanted attention or advances
+  - ❌ Trolling, insults, or political attacks
+  - ❌ Harassment (public or private)
+  - ❌ Doxxing or publishing private info without consent
+  - ❌ Anything inappropriate in a professional setting
 
-All community leaders are obligated to respect the privacy and security of the
-reporter of any incident.
+---
 
-## Enforcement Guidelines
+## 🛡️ Enforcement Responsibilities
 
-Community leaders will follow these Community Impact Guidelines in determining
-the consequences for any action they deem in violation of this Code of Conduct:
+Community leaders are responsible for:
 
-### 1. Correction
+  - Clarifying and enforcing standards
+  - Taking fair corrective actions for harmful behavior
+  - Editing, removing, or rejecting contributions that violate this code
 
-**Community Impact**: Use of inappropriate language or other behavior deemed
-unprofessional or unwelcome in the community.
+They will always **communicate the reasons** behind decisions when appropriate.
 
-**Consequence**: A private, written warning from community leaders, providing
-clarity around the nature of the violation and an explanation of why the
-behavior was inappropriate. A public apology may be requested.
+---
 
-### 2. Warning
+## 🌐 Scope
 
-**Community Impact**: A violation through a single incident or series of
-actions.
+This Code of Conduct applies:
 
-**Consequence**: A warning with consequences for continued behavior. No
-interaction with the people involved, including unsolicited interaction with
-those enforcing the Code of Conduct, for a specified period of time. This
-includes avoiding interactions in community spaces as well as external channels
-like social media. Violating these terms may lead to a temporary or permanent
-ban.
+  - **Everywhere** in the community (repos, issues, forums, Discord, etc.)
+  - Whenever someone represents the community officially
+    (e.g. posting as part of the team, at events, via official accounts)
+  
+---
 
-### 3. Temporary Ban
+## 📢 Reporting Issues
 
-**Community Impact**: A serious violation of community standards, including
-sustained inappropriate behavior.
+See something harmful? Let us know:
 
-**Consequence**: A temporary ban from any sort of interaction or public
-communication with the community for a specified period of time. No public or
-private interaction with the people involved, including unsolicited interaction
-with those enforcing the Code of Conduct, is allowed during this period.
-Violating these terms may lead to a permanent ban.
+📧 [enforcement@epicnova.net](mailto:enforcement@epicnova.net)
 
-### 4. Permanent Ban
+We take every report seriously and ensure **confidentiality** for reporters.
 
-**Community Impact**: Demonstrating a pattern of violation of community
-standards, including sustained inappropriate behavior, harassment of an
-individual, or aggression toward or disparagement of classes of individuals.
+---
 
-**Consequence**: A permanent ban from any sort of public interaction within the
-community.
+## 🧭 Enforcement Guidelines
 
-## Attribution
+Community leaders use the following guidelines to respond to violations:
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage],
-version 2.1, available at
-[https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
+### 1️⃣ Correction
 
-Community Impact Guidelines were inspired by
-[Mozilla's code of conduct enforcement ladder][Mozilla CoC].
+- **Impact:** Inappropriate language or unprofessional conduct
+- **Response:** Private warning, explanation, and request to improve
 
-For answers to common questions about this code of conduct, see the FAQ at
-[https://www.contributor-covenant.org/faq][FAQ]. Translations are available at
-[https://www.contributor-covenant.org/translations][translations].
+---
 
-[homepage]: https://www.contributor-covenant.org
-[v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
-[Mozilla CoC]: https://github.com/mozilla/diversity
-[FAQ]: https://www.contributor-covenant.org/faq
-[translations]: https://www.contributor-covenant.org/translations
+### 2️⃣ Warning
 
+- **Impact:** Clear violation through a single or repeated action
+- **Response:** Formal warning + restricted interaction for a time
+
+---
+
+### 3️⃣ Temporary Ban
+
+- **Impact:** Serious violation, sustained misbehavior
+- **Response:** Temporary removal from all community activities
+
+---
+
+### 4️⃣ Permanent Ban
+
+- **Impact**: Ongoing, targeted, or egregious harm to the community
+- **Response:** Permanent removal from public interaction
+
+---
+
+## 🧾 Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
+
+Also inspired by:
+  - [Mozilla CoC Enforcement Ladder](https://github.com/mozilla/diversity)
+
+🔗 **Additional resources**:
+  - [FAQ](https://www.contributor-covenant.org/faq)
+  - [Translations](https://www.contributor-covenant.org/translations)
+
+## 🙌 Thank You!
+
+Thanks for helping us make the **Gorgeous Core** community awesome for everyone.
+Your voice matters — let’s build something great together. 🌌
