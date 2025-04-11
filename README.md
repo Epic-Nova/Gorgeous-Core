@@ -243,4 +243,4 @@ Big thanks to:
 
 [Discord-URL]: https://discord.com/
 [Readme-Template-URL]: https://github.com/othneildrew/Best-README-Template
-[EpicNova-URL]: (https://epicnova.net
+[EpicNova-URL]: https://epicnova.net
