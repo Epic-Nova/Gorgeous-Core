@@ -2,7 +2,7 @@
 
 First off, thanks for taking the time to contribute! ❤️
 
-All types of contributions are encouraged and valued. See the [Table of Contents](#-table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
+All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
 > And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 > - ⭐ **Star the project** on [GitHub](https://github.com/Epic-Nova/Gorgeous-Core)
@@ -138,7 +138,7 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
     cd Gorgeous-Core
     ```
     Replace `YOUR_USERNAME` with your GitHub username.
-3.  **Set Up Your Development Environment:** Follow the instructions in the project's main `README.md` or a dedicated `DEVELOPMENT.md` file (if it exists) to set up your development environment. This might include installing dependencies, configuring your IDE, and setting up any necessary SDKs.
+3.  **Set Up Your Development Environment:** Follow the instructions in the project's main [`README.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/README.md) or a dedicated [`DEVELOPMENT.md`](https://github.com/Epic-Nova/Gorgeous-Core/blob/master/DEVELOPMENT.md) file (if it exists) to set up your development environment. This might include installing dependencies, configuring your IDE, and setting up any necessary SDKs.
 4.  **Create a New Branch:** Before making any changes, create a new branch for your contribution:
     ```bash
     git checkout -b feature/your-feature-name
@@ -169,7 +169,7 @@ We appreciate your interest in contributing code to Gorgeous Core! Here's a quic
 
 > **Labels on Pull Requests:**
 >
-> Maintainers will use labels on pull requests to indicate their status and priority. Some common labels you might encounter include:
+> Maintainers will use labels on pull requests to indicate their status and priority. Some labels you might encounter include:
 >
 > $${\color{darkblue}Noted}$$: Considered important by a contributor, so this request is given a higher priority
 > 
