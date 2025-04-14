@@ -5,10 +5,10 @@
 <br />
 <div align="center">
   <a href="https://github.com/Epic-Nova/Gorgeous-Core">
-    <img src=".github/logo.png" alt="Logo" width="80" height="80">
+    <img src=".github/Logo.png" alt="Logo" width="256" height="256">
   </a>
-
-  <a href="">![Epic Nova](./.github/EpicNova-Shield.svg)</a>
+  
+  <a href="https://epicnova.net">![Epic Nova](./.github/EpicNova-Shield.svg)</a>
 <h3 align="center">Gorgeous Things: Gorgeous Core</h3>
 
   <p align="center">
@@ -81,7 +81,7 @@
 <!-- ABOUT THE PROJECT -->
 ## 🧩 About The Project
 <div align="center">
-  <a href="">[![Product Name Screen Shot][Plugin-Screenshot-URL]](https://example.com)</a>
+  <img src="./.github/ProjectBanner.png">
 
 
 **Gorgeous Core** is a foundational plugin designed to provide essential utilities and tools for enhancing programming workflows. It serves as the **backbone for other plugins** in the **Gorgeous Things family**, offering core functionalities that can be extended and customized.
@@ -236,7 +236,7 @@ Big thanks to:
 [CPP-Shield-URL]: https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white
 [CSharp-Shield-URL]: https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white
 
-[Plugin-Screenshot-URL]: images/screenshot.png
+[Plugin-Screenshot-URL]: https://example.com
 
 [Developer-Mail]: mailto:nils.bergemann@employee.epicnova.net
 [LinkedIn-URL]: https://linkedin.com/in/nils-bergemann-6398a5280
