@@ -2,7 +2,7 @@
 	"FileVersion": 3,
 	"Version": 1,
 	"VersionName": "GT-C-0.1-General",
-	"FriendlyName": "GorgeousThings",
+	"FriendlyName": "Gorgeous Core",
 	"Description": "Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.",
 	"Category": "Universal",
 	"CreatedBy": "Simsalabim Studios",
