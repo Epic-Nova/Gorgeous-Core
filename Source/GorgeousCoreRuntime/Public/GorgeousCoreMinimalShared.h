@@ -32,7 +32,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
 
-#include "ObjectVariables/Helpers/Macros/GorgeousObjectVariableHelperMacros.h"
+#include "ObjectVariables/Helpers/GorgeousObjectVariableHelperMacros.h"
 
 #include "ObjectVariables/Interfaces/GorgeousObjectVariableInteraction_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
@@ -55,3 +55,11 @@ MONOLITHIC_HEADER_BOILERPLATE()
 
 //Functional Structure Includes
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
+
+//Quality of Life Includes
+#include "QualityOfLife/GorgeousGameInstance.h"
+#include "QualityOfLife/GorgeousGameMode.h"
+#include "QualityOfLife/GorgeousGameState.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
+#include "QualityOfLife/GorgeousPlayerState.h"
+#include "QualityOfLife/GorgeousWorldSettings.h"

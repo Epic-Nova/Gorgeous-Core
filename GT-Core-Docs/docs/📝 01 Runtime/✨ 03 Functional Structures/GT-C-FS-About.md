@@ -1,1 +1,0 @@
-# 🔎 About Functional Structures

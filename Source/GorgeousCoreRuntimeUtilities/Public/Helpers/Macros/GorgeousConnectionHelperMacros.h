@@ -13,4 +13,7 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
+/**
+ * Endpoint URL for the Gorgeous API.
+ */
 #define GORGEOUS_API_ENDPOINT "https://api.gt.simsalabim.studio"

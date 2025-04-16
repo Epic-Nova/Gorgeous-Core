@@ -30,7 +30,7 @@
  * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on object validity.
  */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(MinimalAPI, Blueprintable, BlueprintType)
 class UGorgeousIsValidCondition : public UGorgeousCondition
 {
 	GENERATED_BODY()

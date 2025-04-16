@@ -9,7 +9,6 @@
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
-
 using System.IO;
 using UnrealBuildTool;
 
@@ -23,40 +22,52 @@ public class GorgeousCoreEditor : ModuleRules
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,
-            Path.Combine(publicIncludePath, "ModuleCore"),
-            Path.Combine(privateIncludePath, "HeaderFiles"),
+            Path.Combine(publicIncludePath, "FunctionalStructures"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "DetailCustomisations")
         });
         
         PrivateIncludePaths.AddRange(new string[]
         {
             Path.Combine(privateIncludePath, "HeaderFiles"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "DetailCustomizations"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "DetailCustomisations"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "EditorSubsystem" });
+        PublicDependencyModuleNames.AddRange(new[]
+        {
+            "Core", 
+            "CoreUObject", 
+            "Engine", 
+            "InputCore", 
+            "EditorSubsystem"
+        });
         
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
-                "PropertyEditor", 
-                "SlateCore", 
                 "Slate", 
+                "SlateCore", 
+                "Projects",
+                "UnrealEd", 
+                "EditorStyle",
+                "BlueprintGraph",
+                "PropertyEditor", 
+                "MessageLog",
                 "UMG", 
                 "Kismet",
-                "Projects",
-                "EditorStyle",
-                "UnrealEd", 
-                "BlueprintGraph",
                 "HTTP",
                 "Json",
                 "JsonUtilities",
-                "MessageLog",
                 "ContentBrowser",
                 "DeveloperSettings"
             });
         
         AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
         
-        PrivateDependencyModuleNames.AddRange(new[] { "GorgeousCoreRuntime", "GorgeousCoreRuntimeUtilities" });
+        PrivateDependencyModuleNames.AddRange(new[]
+        {
+            "GorgeousCoreEditorUtilities",
+            "GorgeousCoreRuntime", 
+            "GorgeousCoreRuntimeUtilities"
+        });
     }
 }

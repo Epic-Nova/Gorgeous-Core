@@ -27,6 +27,7 @@
  * - Mode selection from EConditionalChooserMode_E.
  * - CheckCondition function to evaluate the condition.
  *
+ * @author Nils Bergemann
  * @note This class serves as a base for specific condition implementations.
  */
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)

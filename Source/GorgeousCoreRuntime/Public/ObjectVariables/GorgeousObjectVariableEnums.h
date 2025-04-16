@@ -20,8 +20,6 @@
 
 /**
  * Enum that defines the variable count of the object variable.
- *
- * @brief Enum that defines the variable count of the object variable.
  * @author Nils Bergemann
  */
 UENUM(BlueprintType, DisplayName = "Object Variable Count", meta = (ShortTooltip = "The count of the object variable."))

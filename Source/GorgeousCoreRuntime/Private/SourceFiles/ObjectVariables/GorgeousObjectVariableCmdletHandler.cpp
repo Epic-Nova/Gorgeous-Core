@@ -38,7 +38,7 @@ void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FS
 		if (!Variable) return;
 
 		const FString Indent = FString::ChrN(IndentLevel * 4, ' ');
-		const FString LogMessage = FString::Printf(TEXT("%s- %s"), *Indent, *Variable->UniqueIdentifier.ToString());
+		const FString LogMessage = FString::Printf(TEXT("%s- %s --- Outer: %s"), *Indent, *Variable->UniqueIdentifier.ToString(), *(Variable->GetOuter() ? Variable->GetOuter()->GetName() : TEXT("")));
 
 		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(LogMessage, TEXT("GorgeousVariableHierarchy"), 5.0f, false, true, GWorld);
 

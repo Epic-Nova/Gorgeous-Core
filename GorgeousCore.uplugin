@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "GT-C-0.1-General",
+	"VersionName": "GT-C-0.8-General",
 	"FriendlyName": "Gorgeous Core",
 	"Description": "Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.",
 	"Category": "Universal",
@@ -30,6 +30,11 @@
 		{
 			"Name": "GorgeousCoreRuntimeUtilities",
 			"Type": "Runtime",
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "GorgeousCoreEditorUtilities",
+			"Type": "Editor",
 			"LoadingPhase": "PreDefault"
 		}
 	],

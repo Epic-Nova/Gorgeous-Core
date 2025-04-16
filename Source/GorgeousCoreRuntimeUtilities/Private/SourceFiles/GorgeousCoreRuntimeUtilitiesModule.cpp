@@ -14,14 +14,8 @@
 // FGorgeousCoreRuntimeUtilitiesModule Implementation
 //=============================================================================
 
-void FGorgeousCoreRuntimeUtilitiesModule::StartupModule()
-{
-	UE_LOG(LogTemp, Warning, TEXT("GorgeousCoreRuntimeUtilitiesModule has started!"));
-}
+void FGorgeousCoreRuntimeUtilitiesModule::StartupModule() {}
 
-void FGorgeousCoreRuntimeUtilitiesModule::ShutdownModule()
-{
-	UE_LOG(LogTemp, Warning, TEXT("GorgeousCoreRuntimeUtilitiesModule has shut down!"));
-}
+void FGorgeousCoreRuntimeUtilitiesModule::ShutdownModule() {}
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeUtilitiesModule, GorgeousCoreRuntimeUtilities)

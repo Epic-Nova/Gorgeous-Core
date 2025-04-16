@@ -32,7 +32,7 @@
  * @author Nils Bergemann
  * @note This class allows for dynamic object selection based on specified conditions.
  */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(MinimalAPI, Blueprintable, BlueprintType)
 class UGorgeousConditionalObjectChooser : public UObject
 {
 	GENERATED_BODY()
@@ -56,6 +56,6 @@ public:
 	/**
 	 * The array of object variables to choose from.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, meta = (ExposeOnSpawn), Category = "Conditional Object Chooser")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser")
 	TArray<UGorgeousObjectVariable*> Conditions;
 };

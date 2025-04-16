@@ -4,6 +4,9 @@ site_url: https://c.gt.simsalabim.studio
 site_author: Nils Bergemann
 site_description: >-
   The documentation for the Gorgeous Core plugin, that provides master functionality to other Gorgeous plugins that are part of this family.
+repo_name: Gorgeous Core
+repo_url: https://github.com/Epic-Nova/Gorgeous-Core
+edit_uri: edit/master/GT-Core-Docs/docs/
 
 #Copyright
 copyright: Copyright &copy; 2025 Simsalabim Studios by Epic Nova (Nils Bergemann)
@@ -14,8 +17,15 @@ theme:
     - navigation.footer
     - content.code.copy
     - content.code.select
+    - navigation.top
+    - navigation.tabs
+    - navigation.instant
+    - content.action.edit
+    - search.suggest
+    - search.share
   icon:
     logo: fontawesome/solid/wand-magic-sparkles
+    repo: fontawesome/brands/github
   name: material
   palette:
     # Dark Mode
@@ -57,3 +67,44 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
+
+# Plugins
+plugins:
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - git-authors
+  - search
+
+nav:
+  - 🏠 Home:
+    - 🔎 About Gorgeous Core 🔎: GorgeousCore/GT-C-About.md
+    - 🆕 Patchnotes 🆕: GorgeousCore/GT-C-Patchnotes.md
+    - 🛠️ Technical 🛠️: GorgeousCore/GT-C-Technical.md
+    - 🔜 What to Come 🔜: GorgeousCore/GT-C-What_To_Come.md
+  - 📝 Runtime: 
+    - 🧩 About this Module 🧩: Runtime/GT-C-Runtime-About.md
+    - 📊 Object Variables:
+      - 🔎 About Object Variables: Runtime/ObjectVariables/GT-C-OV-About.md
+      - 📊 Object Variable (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-OV.md
+      - 📖 Object Variable Definitions (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-OVD.md
+      - 🌱 Root Object Variable (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-ROV.md
+    - 👉 Conditional Object Choosers:
+      - 🔎 About Conditional Object Choosers: Runtime/ConditionalObjectChoosers/GT-C-COC-About.md
+      - 👉 Chooser (Blueprint & C++): Runtime/ConditionalObjectChoosers/GT-C-COC-C.md
+      - 📑 Conditions:
+        - 🚦 Boolean Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-Boolean-CND.md
+        - ✅ IsValid Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-IsValid-CND.md
+        - 🏷️ GameplayTag Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-GameplayTag-CND.md
+    - ♻️ Quality of Life:
+      - 📜 Game Instance: Runtime/QualityOfLife/GT-C-QOF-GI.md
+      - 📜 Game Mode: Runtime/QualityOfLife/GT-C-QOF-GM.md
+      - 📜 Game State: Runtime/QualityOfLife/GT-C-QOF-GS.md
+      - 📜 Player Controller: Runtime/QualityOfLife/GT-C-QOF-PC.md
+      - 📜 Player State: Runtime/QualityOfLife/GT-C-QOF-PS.md
+      - 📜 World Settings: Runtime/QualityOfLife/GT-C-QOF-WS.md
+  - 📝Runtime Utilities:
+    - 🧩 About this Module 🧩: RuntimeUtilities/GT-C-Runtime_Utilities-About.md
+  - 📝 Editor:
+    - 🧩 About this Module 🧩: Editor/GT-C-Editor-About.md
+  - 📝 Editor Utilities: 
+    - 🧩 About this Module 🧩: EditorUtilities/GT-C-Editor_Utilities-About.md

@@ -20,10 +20,20 @@
 #include "Misc/EngineVersion.h"
 //<-------------------------------------------------------------------------->
 
+/*======================================================================================================================>
+| --------------------------------------------------------------------------------------------------------------------- |
+|													MACRO HELL															|
+| --------------------------------------------------------------------------------------------------------------------- |
+<======================================================================================================================*/
+
+/**
+ * Multiplies the major engine version by 100 and adds the minor version for better usage in the macros below.
+ */
 #define GORGEOUS_ENGINE_VERSION (ENGINE_MAJOR_VERSION * 100 + ENGINE_MINOR_VERSION)
 
 /**
  * If the Unreal Engine version is higher than to the defined engine version, then these macros are active.
+ * These macros allow for conditional compilation based on the Unreal Engine version.
  */
 #if GORGEOUS_ENGINE_VERSION < 423
 #define GORGEOUS_23_HIGHER(...)
@@ -88,6 +98,7 @@
 
 /**
  * If the Unreal Engine version is lower than to the defined engine version, then these macros are active.
+ * These macros allow for conditional compilation based on the Unreal Engine version.
  */
 #if GORGEOUS_ENGINE_VERSION > 423
 #define GORGEOUS_23_LOWER(X)
@@ -159,6 +170,7 @@
 /**
  * If the Unreal Engine version is higher than or equal to the defined engine version, then the Switch macros are active.
  * If the Unreal Engine version is the same as the defined engine version, the only macros are active.
+ * These macros allow for conditional compilation based on the Unreal Engine version.
  */
 #if GORGEOUS_ENGINE_VERSION >= 423
 #define GORGEOUS_23_SWITCH(Before, AfterEqual) AfterEqual

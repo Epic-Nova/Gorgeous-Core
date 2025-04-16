@@ -37,7 +37,7 @@ namespace GorgeousLogging
 	 * @param WorldContextObject The world context object.
 	 */
 	FORCEINLINE static void LogMessage_Internal(UPARAM(ref) const FString& Message,
-	                                            const EGorgeousLoggingImportancy Importancy, const FString& LoggingKey,
+	                                            const EGorgeousLoggingImportance Importancy, const FString& LoggingKey,
 	                                            const float Duration = 5.0f, const bool bPrintToScreen = true,
 	                                            const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true,
 	                                            const UObject* WorldContextObject = nullptr)
