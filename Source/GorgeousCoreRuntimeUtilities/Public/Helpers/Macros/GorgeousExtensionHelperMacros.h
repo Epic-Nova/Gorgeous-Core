@@ -13,4 +13,9 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
+/**
+ * Checks if the specified Gorgeous Plugin by checking for the existence of a predefined macro
+ * 
+ * @param PluginName The name of the plugin that should be checked for its existence.
+ */
 #define GORGEOUS_PLUGIN_INSTALLED(PluginName) (PluginName##_INSTALLED == 1)

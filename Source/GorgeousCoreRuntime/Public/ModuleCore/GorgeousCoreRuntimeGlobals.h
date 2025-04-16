@@ -14,6 +14,9 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
+//<-------------------------=== Module Includes ===-------------------------->
+#include "QualityOfLife/GorgeousGameInstance.h"
+#include "QualityOfLife/GorgeousWorldSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousCoreRuntimeGlobals.generated.h"
 //<-------------------------------------------------------------------------->
@@ -49,3 +52,34 @@ protected:
 	 */
 	explicit UGorgeousInterface() {}
 };
+
+/**
+ * Globals class for the Gorgeous Core Runtime module.
+ *
+ * Exposes static functions and properties that are used throughout the module.
+ */
+UCLASS(BlueprintType, DisplayName = "Gorgeous Core Globals")
+class UGorgeousCoreRuntimeGlobals : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	/**
+	 *	Returns the reference to the Gorgeous Game Instance,
+	 *	Requires to set UGorgeousGameInstance or a child of it to be set in the Project Settings to work.
+	 * 
+	 * @return The current instance of the Gorgeous Game Instance.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static UGorgeousGameInstance* GetGorgeousGameInstance(const UObject* WorldContextObject);
+
+	/**
+	 *	Returns the reference to the Gorgeous World Settings,
+	 *	Requires to set AGorgeousWorldSettings or a child of it to be set in the Project Settings to work.
+	 * 
+	 * @return The current instance of the Gorgeous World Settings.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static AGorgeousWorldSettings* GetGorgeousWorldSettings(const UObject* WorldContextObject);
+};
+

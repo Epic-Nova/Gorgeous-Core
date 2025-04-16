@@ -22,4 +22,5 @@
 
 MONOLITHIC_HEADER_BOILERPLATE()
 
-#include "GorgeousFunctionalStructures_GIS.h"
+//Functional Structure Includes
+#include "FunctionalStructures/GorgeousFunctionalStructuresHelperMacros.h"

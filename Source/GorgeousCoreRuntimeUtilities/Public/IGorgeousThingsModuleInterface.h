@@ -36,7 +36,7 @@ public:
 	virtual void ShutdownModule() override = 0;
 
 	/**
-	 * Returns an array of names from other gorgeous plugins that this plugin depends on.
+	 * Returns an array of names from other gorgeous plugins that this module depends on.
 	 * This is used for the shop extension to download the full dependency chain of a gorgeous plugin.
 	 * 
 	 * @return All plugins that provide functionality that is used within this current module.

@@ -17,7 +17,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "Interfaces/GorgeousObjectVariableInteraction_I.h"
-#include "ObjectVariables/Helpers/Macros/GorgeousObjectVariableHelperMacros.h"
+#include "ObjectVariables/Helpers/GorgeousObjectVariableHelperMacros.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesGetter_I.h"
@@ -59,10 +59,7 @@ public IGorgeousMapObjectVariablesGetter_I, public IGorgeousMapObjectVariablesSe
 public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSetter_I
 {
 	GENERATED_BODY()
-	
-	/*==============================>
-	| Functions Overrides & Events	|
-	<==============================*/
+
 protected:
 	
 	/** The Class Constructor for the Base Object Variable is used to set Default Values. */
@@ -101,7 +98,7 @@ public:
 	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* Parent = nullptr);
 
 	/**
-	 * //Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
+	 * Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
 	 * 
 	 * @param NewUniqueIdentifier The new unique identifier.
 	 */

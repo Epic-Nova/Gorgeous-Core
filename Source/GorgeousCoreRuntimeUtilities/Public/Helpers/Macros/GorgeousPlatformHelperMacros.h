@@ -14,6 +14,18 @@
 //<-------------------------------------------------------------------------->
 
 #if PLATFORM_WINDOWS
+
+/**
+ * Allows the compilation of the code inside This when the platform is Windows, for every other platform Other is used.
+ * 
+ * @param This The code for when the platform is Windows
+ * @param Other The code for when the platform is anything except Windows
+ */
 #define GORGEOUS_WINDOWS(This, Other) This
+
+/**
+ * Allows the compilation of the code inside this macro only if the current platform is Windows.
+ */
 #define GORGEOUS_WINDOWS_ONLY(...) __VA_ARGS__
+
 #endif

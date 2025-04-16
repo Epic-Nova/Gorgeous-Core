@@ -19,11 +19,11 @@
 //<-------------------------------------------------------------------------->
 
 /**
- * @brief Enum that defines the importancy of the logging message.
+ * Enum that defines the importance of the logging message.
  * @author Nils Bergemann
  */
 UENUM(BlueprintType, DisplayName = "Gorgeous Logging Importancy", meta = (ShortTooltip = "The importancy of the logging message."))
-enum EGorgeousLoggingImportancy
+enum EGorgeousLoggingImportance
 {
 	Logging_Information = 0 UMETA(DisplayName = "Information", ToolTip = "Informational message."),
 	Logging_Success = 1 UMETA(DisplayName = "Success", ToolTip = "Success message."),

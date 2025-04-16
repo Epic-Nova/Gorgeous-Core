@@ -28,9 +28,10 @@
  * - Mode selection from EConditionalChooserMode_E.
  * - CheckCondition function to evaluate the condition.
  *
+ * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on boolean logic.
  */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(MinimalAPI, Blueprintable, BlueprintType)
 class UGorgeousBooleanCondition : public UGorgeousCondition
 {
 	GENERATED_BODY()
