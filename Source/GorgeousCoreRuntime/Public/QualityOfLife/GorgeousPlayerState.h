@@ -48,6 +48,7 @@ public:
 	 */
 	virtual void BeginPlay() override;
 
+#if WITH_EDITOR
 	/** 
 	 * Handles property changes during the editor post-edit phase.
 	 * 
@@ -57,7 +58,8 @@ public:
 	 * @param PropertyChangedEvent The event triggered by the property change.
 	 */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
+#endif WITH_EDITOR
+	
 	//<-------------------------------------------------------------------------->
 
 	/** 

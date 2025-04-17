@@ -26,4 +26,6 @@ void UGorgeousGameInstance::Init()
 	Super::Init();
 }
 
+#if WITH_EDITOR
 UE_DECLARE_QOF_CLASS_POST_EDIT_CHANGE_PROPERTY(UGorgeousGameInstance)
+#endif WITH_EDITOR

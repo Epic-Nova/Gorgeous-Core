@@ -36,8 +36,13 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "CoreUObject", 
                 "Engine",
                 "InputCore",
-                "Kismet",
-                "GameplayTags"
+                "GameplayTags",
+                "Projects"
             });
+        
+        if (Target.bBuildEditor)
+        {
+            PublicDependencyModuleNames.Add("Kismet");
+        }
     }
 }
