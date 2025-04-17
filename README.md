@@ -14,7 +14,7 @@
   <p align="center">
     Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.
     <br />
-    <a href="https://epic-nova.github.io/Gorgeous-Core/"><strong>Explore the docs »</strong></a>
+    <a href="https://c.docs.gt.simsalabim.studio/"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/FAQ.md">FAQ</a>
@@ -104,7 +104,7 @@ Examples include:
   - 🧪 **Test scenes**
   - 🔧 **Core systems usage**
 
-*For more documentation and advanced scenarios, check the [Documentation](https://epic-nova.github.io/Gorgeous-Core/).*
+*For more documentation and advanced scenarios, check the [Documentation](https://c.docs.gt.simsalabim.studio/).*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

@@ -31,7 +31,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 ## ❓ I Have a Question
 
 > [!NOTE]
-> If you want to ask a question, we assume that you have read the available [Documentation](https://epic-nova.github.io/Gorgeous-Core/).
+> If you want to ask a question, we assume that you have read the available [Documentation](https://c.docs.gt.simsalabim.studio/).
 
 Before you ask a question, it is best to search for existing [Issues](https://github.com/Epic-Nova/Gorgeous-Core/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
@@ -57,7 +57,7 @@ We will then take care of the issue as soon as possible.
 A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
 - ✅ **Make sure that you are using the latest version.**
-- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://epic-nova.github.io/Gorgeous-Core/). If you are looking for support, you might want to check [this section](#-i-have-a-question)).
+- 🤔 **Determine if your bug is really a bug** and not an error on your side, e.g., using incompatible environment components/versions. (Make sure that you have read the [documentation](https://c.docs.gt.simsalabim.studio/). If you are looking for support, you might want to check [this section](#-i-have-a-question)).
 - 🔍 **Check the [bug tracker](https://github.com/orgs/Epic-Nova/projects/12/views/5)** to see if a bug report already exists for your bug or error.
 - 🌐 **Search the internet** (including Stack Overflow) to see if users outside of the GitHub community have discussed the issue.
 - Gather information about the bug:
@@ -111,7 +111,7 @@ This section guides you through submitting an enhancement suggestion for Gorgeou
 #### 🤔 Before Submitting an Enhancement
 
 - ✅ **Make sure that you are using the latest version.**
-- 📖 **Read the [documentation](https://epic-nova.github.io/Gorgeous-Core/) carefully** and find out if the functionality is already covered, maybe by an individual configuration.
+- 📖 **Read the [documentation](https://c.docs.gt.simsalabim.studio/) carefully** and find out if the functionality is already covered, maybe by an individual configuration.
 - 🔍 **Perform a [search](https://github.com/orgs/Epic-Nova/projects/12/views/4)** to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
 - 💡 **Find out whether your idea fits with the scope and aims of the project.** It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset.
 
