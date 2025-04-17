@@ -19,6 +19,10 @@ public class GorgeousCoreEditor : ModuleRules
         var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
         var privateIncludePath = Path.Combine(ModuleDirectory, "Private");
 
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
+        PrivatePCHHeaderFile = SharedPCHHeaderFile;
+        
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,

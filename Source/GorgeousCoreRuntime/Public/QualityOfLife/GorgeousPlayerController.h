@@ -47,7 +47,8 @@ public:
 	 * functionality or data, such as setting up player input or other gameplay-related elements.
 	 */
 	virtual void BeginPlay() override;
-	
+
+#if WITH_EDITOR
 	/** 
 	 * Handles property changes during the editor post-edit phase.
 	 * 
@@ -57,7 +58,8 @@ public:
 	 * @param PropertyChangedEvent The event that triggered the property change.
 	 */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
+#endif WITH_EDITOR
+	
 	//<-------------------------------------------------------------------------->
 
 	/** 
