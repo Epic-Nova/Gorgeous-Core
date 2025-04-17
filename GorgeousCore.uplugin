@@ -20,7 +20,11 @@
 		{
 			"Name": "GorgeousCoreRuntime",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"BlacklistPlatforms": [
+				"Android",
+				"IOS"
+			]
 		},
 		{
 			"Name": "GorgeousCoreEditor",
@@ -30,7 +34,11 @@
 		{
 			"Name": "GorgeousCoreRuntimeUtilities",
 			"Type": "Runtime",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "PreDefault",
+			"BlacklistPlatforms": [
+				"Android",
+				"IOS"
+			]
 		},
 		{
 			"Name": "GorgeousCoreEditorUtilities",
