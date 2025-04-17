@@ -13,6 +13,8 @@ copyright: Copyright &copy; 2025 Simsalabim Studios by Epic Nova (Nils Bergemann
 
 #Configuration
 theme:
+  logo: images/GT-C-Logo-Transparent.png
+  favicon: images/GT-C-Logo-64x64.png
   features:
     - navigation.footer
     - content.code.copy
@@ -24,7 +26,6 @@ theme:
     - search.suggest
     - search.share
   icon:
-    logo: fontawesome/solid/wand-magic-sparkles
     repo: fontawesome/brands/github
   name: material
   palette:
@@ -108,3 +109,6 @@ nav:
     - 🧩 About this Module 🧩: Editor/GT-C-Editor-About.md
   - 📝 Editor Utilities: 
     - 🧩 About this Module 🧩: EditorUtilities/GT-C-Editor_Utilities-About.md
+
+extra_css:
+  - stylesheets/extra.css
