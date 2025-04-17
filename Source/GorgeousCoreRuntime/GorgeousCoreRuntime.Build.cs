@@ -22,6 +22,10 @@ public class GorgeousCoreRuntime : ModuleRules
         
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
+        PrivatePCHHeaderFile = SharedPCHHeaderFile;
+
+        PrecompileForTargets = PrecompileTargetsType.Any;
+        bPrecompile = true;
 
         PublicIncludePaths.AddRange(new string[]
         {

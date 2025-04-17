@@ -47,6 +47,7 @@ public:
 	 */
 	virtual void Init() override;
 
+#if WITH_EDITOR
 	/** 
 	 * Handles property changes for the game instance during the editor post-edit phase.
 	 * 
@@ -57,7 +58,8 @@ public:
 	 * @param PropertyChangedEvent The event triggered by the property change.
 	 */
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-
+#endif WITH_EDITOR
+	
 	//<-------------------------------------------------------------------------->
 	
 	/** 
