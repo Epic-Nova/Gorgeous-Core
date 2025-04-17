@@ -38,7 +38,7 @@ struct FGameplayTagContainerWrapper_S
 	/**
 	 * The underlying Gameplay Tag Container.
 	 */
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Gorgeous Conditional Object Chooser")
 	FGameplayTagContainer Container;
 
 	/**

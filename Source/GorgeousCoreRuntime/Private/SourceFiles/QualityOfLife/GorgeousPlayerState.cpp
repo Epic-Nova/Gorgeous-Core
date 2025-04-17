@@ -26,4 +26,6 @@ void AGorgeousPlayerState::BeginPlay()
 	Super::BeginPlay();
 }
 
+#if WITH_EDITOR
 UE_DECLARE_QOF_CLASS_POST_EDIT_CHANGE_PROPERTY(AGorgeousPlayerState)
+#endif WITH_EDITOR
