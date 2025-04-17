@@ -5,7 +5,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/Epic-Nova/Gorgeous-Core">
-    <img src=".github/Logo.png" alt="Logo" width="256" height="256">
+    <img src=".github/Logo.png" alt="Logo" width="128" height="128">
   </a>
   
   <a href="https://epicnova.net">![Epic Nova](./.github/EpicNova-Shield.svg)</a>
