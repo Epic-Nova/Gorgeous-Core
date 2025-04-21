@@ -17,10 +17,10 @@
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
-// UGorgeousAssetRegistration Implementation
+// UGorgeousAssetRegistration_ES Implementation
 //=============================================================================
 
-void UGorgeousAssetRegistration::RegisterNewAsset(FGorgeousAssetTypeActionInfo_S& AssetTypeActionInfo, const TArray<EAssetTypeCategories::Type>& AssetTypeCategories)
+void UGorgeousAssetRegistration_ES::RegisterNewAsset(FGorgeousAssetTypeActionInfo_S& AssetTypeActionInfo, const TArray<EAssetTypeCategories::Type>& AssetTypeCategories)
 {
 	if(!FModuleManager::Get().IsModuleLoaded("AssetTools")) return;
     
@@ -33,7 +33,7 @@ void UGorgeousAssetRegistration::RegisterNewAsset(FGorgeousAssetTypeActionInfo_S
 	AssetTools.RegisterAssetTypeActions(GorgeousAssets[NewFactoryIndex].ToSharedRef());
 }
 
-void UGorgeousAssetRegistration::RegisterNewCategory(const FText& CategoryDisplayName, EAssetTypeCategories::Type& NewAssetTypeCategory)
+void UGorgeousAssetRegistration_ES::RegisterNewCategory(const FText& CategoryDisplayName, EAssetTypeCategories::Type& NewAssetTypeCategory)
 {
 	if(!FModuleManager::Get().IsModuleLoaded("AssetTools")) return;
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();

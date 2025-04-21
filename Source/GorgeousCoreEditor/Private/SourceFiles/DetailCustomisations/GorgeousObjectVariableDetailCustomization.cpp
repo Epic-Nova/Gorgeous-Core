@@ -134,6 +134,11 @@ void FGorgeousObjectVariableDetailCustomization::CustomizeChildren(const TShared
 	];
 }
 
+void FGorgeousObjectVariableDetailCustomization::GenerateObjectVariableWidget()
+{
+	//@TODO
+}
+
 //Ready out the parsed enum entries and creates a entry for every enum inside a combo box dropdown: Doesn't work
 template <typename TEnum>
 TSharedRef<SWidget> FGorgeousObjectVariableDetailCustomization::GenerateEnumDropdown(FText LabelText, const UEnum* EnumType, TFunction<void(TEnum)> OnSelectionChangedCallback)

@@ -24,7 +24,7 @@
 
 void FGorgeousCoreEditorModule::StartupModule()
 {
-	UGorgeousAssetRegistration* AssetRegistration = GEditor->GetEditorSubsystem<UGorgeousAssetRegistration>();
+	UGorgeousAssetRegistration_ES* AssetRegistration = GEditor->GetEditorSubsystem<UGorgeousAssetRegistration_ES>();
 
 	EAssetTypeCategories::Type GorgeousThingsAssetCategory;
 	AssetRegistration->RegisterNewCategory(INVTEXT("Gorgeous Things"), GorgeousThingsAssetCategory);

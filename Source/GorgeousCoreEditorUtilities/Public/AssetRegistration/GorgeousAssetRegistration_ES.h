@@ -43,7 +43,7 @@ class UGorgeousFactory;
  * @author Nils Bergemann
  */
 UCLASS(DisplayName = "Gorgeous Asset Registration")
-class GORGEOUSCOREEDITORUTILITIES_API UGorgeousAssetRegistration : public UEditorSubsystem
+class GORGEOUSCOREEDITORUTILITIES_API UGorgeousAssetRegistration_ES : public UEditorSubsystem
 {
 	GENERATED_BODY()
 	

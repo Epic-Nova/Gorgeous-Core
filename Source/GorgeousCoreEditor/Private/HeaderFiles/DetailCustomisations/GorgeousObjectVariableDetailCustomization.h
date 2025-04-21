@@ -61,6 +61,9 @@ public:
 
 private:
 
+    //@TODO
+    void GenerateObjectVariableWidget();
+
     /**
      * Generates a dropdown widget for enum selection.
      *

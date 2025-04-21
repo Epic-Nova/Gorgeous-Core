@@ -47,6 +47,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/NewObjectVariable.png){ width="100%" }
+        <figcaption>Register new Object Variable with Root Object Variable as the parent.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="4"
@@ -55,13 +62,7 @@
         FGuid MyNewObjectVariableIdentifier;
         UGorgeousObjectVariable* MyNewObjectVariable = RootObjectVariable->NewObjectVariable(UString_SOV::StaticClass(), MyNewObjectVariableIdentifier, nullptr, false);
         ```
-    
-    === "Blueprint"
 
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/NewObjectVariable.png){ width="100%" }
-        <figcaption>Register new Object Variable with Root Object Variable as the parent.</figcaption>
-        </figure>
 
 ### `InstantiateTransactionalObjectVariable`
 === "📝 Function Details"
@@ -96,6 +97,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/InstantiateTransactionalObjectVariable.png){ width="100%" }
+        <figcaption>Creates a new Transactional Object Variable that persists across editor restarts.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="4"
@@ -105,13 +113,6 @@
         UGorgeousObjectVariable* MyNewObjectVariable = RootObjectVariable->InstantiateTransactionalObjectVariable(UString_SOV::StaticClass(), nullptr);
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/InstantiateTransactionalObjectVariable.png){ width="100%" }
-        <figcaption>Creates a new Transactional Object Variable that persists across editor restarts.</figcaption>
-        </figure>
-
 
 ### `InvokeInstancedFunctionality`
 === "📝 Function Details"
@@ -130,6 +131,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/InvokeInstancedFunctionality.png){ width="100%" }
+        <figcaption>Makes an instanced Object Variable that persists inside an outer eligible for the Variable Registry.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="4"
@@ -138,13 +146,6 @@
         bool OutValue;
         MyObjectVariable->InvokeInstancedFunctionality(FGuid::NewGuid());
         ```
-
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/InvokeInstancedFunctionality.png){ width="100%" }
-        <figcaption>Makes an instanced Object Variable that persists inside an outer eligible for the Variable Registry.</figcaption>
-        </figure>
 
 
 ### `RegisterWithRegistry`
@@ -172,20 +173,20 @@
 
 === "📚 Usage Examples"
 
-    === "C++"
-
-        ```cpp hl_lines="3"
-        UGorgeousObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
-
-        RootObjectVariable->RegisterWithRegistry(MyObjectVariable);
-        ```
-    
     === "Blueprint"
 
         <figure markdown="span">
         ![Image title](./../../images/GorgeousCore/ObjectVariables/RegisterWithRegistry.png){ width="100%" }
         <figcaption>Registers the given Object Variable within the registry of the target object.</figcaption>
         </figure>
+
+    === "C++"
+
+        ```cpp hl_lines="3"
+        UGorgeousObjectVariable* RootObjectVariable = UGorgeousRootObjectVariable::GetRootObjectVariable();
+
+        RootObjectVariable->RegisterWithRegistry(MyObjectVariable);
+        ```  
 
 
 ### `SetParent`
@@ -209,6 +210,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ObjectVariables/SetParent.png){ width="100%" }
+        <figcaption>Reorganizes the hierarchy for a given object variable and sets the given parent as the new one.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="4"
@@ -217,13 +225,6 @@
         bool OutValue;
         MyObjectVariable->SetParent(MyNewParent);
         ```
-
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/SetParent.png){ width="100%" }
-        <figcaption>Reorganizes the hierarchy for a given object variable and sets the given parent as the new one.</figcaption>
-        </figure>
 
 
 ### `SetDynamicProperty`

@@ -41,13 +41,6 @@
         BooleanCondition->B = false;
         uint8 Result = BooleanCondition->CheckCondition();
         ```
-    
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/Conditions/CheckCondition.png){ width="100%" }
-        <figcaption>Evaluates the Boolean condition based on inputs A and B.</figcaption>
-        </figure>
 
 ---
 

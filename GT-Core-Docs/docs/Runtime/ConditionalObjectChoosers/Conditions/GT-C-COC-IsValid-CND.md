@@ -42,13 +42,6 @@
         uint8 Result = ValidityCondition->CheckCondition();
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/Conditions/IsValidCheckCondition.png){ width="100%" }
-        <figcaption>Evaluates if the provided objects are valid based on the selected mode.</figcaption>
-        </figure>
-
 ---
 
 ###   Variable Properties
