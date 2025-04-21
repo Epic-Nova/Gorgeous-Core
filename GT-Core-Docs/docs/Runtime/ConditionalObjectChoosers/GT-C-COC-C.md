@@ -31,6 +31,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/DecideCondition.png){ width="100%" }
+        <figcaption>Get the selected Object Variable based on condition evaluation.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="4"
@@ -40,13 +47,6 @@
         UGorgeousObjectVariable* SelectedVariable = ConditionalChooser->DecideCondition();
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/DecideCondition.png){ width="100%" }
-        <figcaption>Get the selected Object Variable based on condition evaluation.</figcaption>
-        </figure>
-
 ---
 
 ###   Variable Properties

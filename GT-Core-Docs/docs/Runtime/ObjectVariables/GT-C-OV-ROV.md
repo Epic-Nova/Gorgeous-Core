@@ -31,6 +31,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/GetRootObjectVariable.png){ width="100%" }
+        <figcaption>Get the singleton instance of the Root Object Variable.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="1"
@@ -40,13 +47,6 @@
         FGuid MyNewObjectVariableIdentifier;
         UGorgeousObjectVariable* MyNewObjectVariable = RootObjectVariable->NewObjectVariable(UString_SOV::StaticClass(), MyNewObjectVariableIdentifier, nullptr, false);
         ```
-    
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/GetRootObjectVariable.png){ width="100%" }
-        <figcaption>Get the singleton instance of the Root Object Variable.</figcaption>
-        </figure>
 
 ### `GetVariableHierarchyRegistry`
 === "📝 Function Details"
@@ -69,6 +69,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/GetVariableHierarchyRegistry.png){ width="100%" }
+        <figcaption>Get all object variables in the hierarchy as a flat array.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="1"
@@ -81,13 +88,6 @@
         }
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/GetVariableHierarchyRegistry.png){ width="100%" }
-        <figcaption>Get all object variables in the hierarchy as a flat array.</figcaption>
-        </figure>
-
 ### `GetRootVariableRegistry`
 === "📝 Function Details"
 
@@ -109,6 +109,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/GetRootVariableRegistry.png){ width="100%" }
+        <figcaption>Get only the root-level object variables.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="1"
@@ -121,13 +128,6 @@
         }
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/GetRootVariableRegistry.png){ width="100%" }
-        <figcaption>Get only the root-level object variables.</figcaption>
-        </figure>
-
 ### `RemoveVariableFromRegistry`
 === "📝 Function Details"
 
@@ -149,6 +149,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/RemoveVariableFromRegistry.png){ width="100%" }
+        <figcaption>Remove an object variable from the registry.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="3"
@@ -157,12 +164,6 @@
         UGorgeousRootObjectVariable::RemoveVariableFromRegistry(VariableToRemove);
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/RemoveVariableFromRegistry.png){ width="100%" }
-        <figcaption>Remove an object variable from the registry.</figcaption>
-        </figure>
 
 ### `IsVariableRegistered`
 === "📝 Function Details"
@@ -191,6 +192,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/IsVariableRegistered.png){ width="100%" }
+        <figcaption>Check if an object variable is already registered.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="3"
@@ -203,12 +211,6 @@
         }
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/IsVariableRegistered.png){ width="100%" }
-        <figcaption>Check if an object variable is already registered.</figcaption>
-        </figure>
 
 ### `CleanupRegistry`
 === "📝 Function Details"
@@ -231,6 +233,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/CleanupRegistry.png){ width="100%" }
+        <figcaption>Clean up the object variable registry.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="2 5"
@@ -241,12 +250,6 @@
         UGorgeousRootObjectVariable::CleanupRegistry(true);
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/CleanupRegistry.png){ width="100%" }
-        <figcaption>Clean up the object variable registry.</figcaption>
-        </figure>
 
 ### `SetUniversalVariable`
 === "📝 Function Details"
@@ -279,7 +282,7 @@
     === "Blueprint"
 
         <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/SetUniversalVariable.png){ width="100%" }
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/SetUniversalVariable.png){ width="100%" }
         <figcaption>Set a property value for an object variable by its identifier.</figcaption>
         </figure>
 
@@ -319,7 +322,7 @@
     === "Blueprint"
 
         <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/GetUniversalVariable.png){ width="100%" }
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/GetUniversalVariable.png){ width="100%" }
         <figcaption>Get a property value from an object variable by its identifier.</figcaption>
         </figure>
 
@@ -344,6 +347,13 @@
 
 === "📚 Usage Examples"
 
+    === "Blueprint"
+
+        <figure markdown="span">
+        ![Image title](./../../images/GorgeousCore/RootObjectVariable/RegisterWithRegistry.png){ width="100%" }
+        <figcaption>Register a new object variable with the root registry.</figcaption>
+        </figure>
+
     === "C++"
 
         ```cpp hl_lines="3"
@@ -352,12 +362,6 @@
         UGorgeousRootObjectVariable::GetRootObjectVariable()->RegisterWithRegistry(MyNewVariable);
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ObjectVariables/RegisterWithRegistry.png){ width="100%" }
-        <figcaption>Register a new object variable with the root registry.</figcaption>
-        </figure>
 
 ---
 

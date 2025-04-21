@@ -204,6 +204,13 @@ Set object variables implement similar getter and setter functions for sets, wit
 
 ### Creating and Using a Single Object Variable
 
+=== "Blueprint"
+
+    <figure markdown="span">
+    ![Image title](./../../images/GorgeousCore/ObjectVariableDefinitions/StringVariableExample.png){ width="100%" }
+    <figcaption>Creating and using a String Single Object Variable in Blueprint.</figcaption>
+    </figure>
+
 === "C++"
 
     ```cpp hl_lines="8 11"
@@ -220,14 +227,15 @@ Set object variables implement similar getter and setter functions for sets, wit
     FString RetrievedValue = IGorgeousSingleObjectVariablesGetter_I::Execute_GetStringSingleObjectVariable(StringVariable, NAME_None);
     ```
 
+
+### Creating and Using an Array Object Variable
+
 === "Blueprint"
 
     <figure markdown="span">
-    ![Image title](./../../images/GorgeousCore/ObjectVariables/StringVariableExample.png){ width="100%" }
-    <figcaption>Creating and using a String Single Object Variable in Blueprint.</figcaption>
+    ![Image title](./../../images/GorgeousCore/ObjectVariableDefinitions/IntegerArrayVariableExample.png){ width="100%" }
+    <figcaption>Creating and using an Integer Array Object Variable in Blueprint.</figcaption>
     </figure>
-
-### Creating and Using an Array Object Variable
 
 === "C++"
 
@@ -245,14 +253,15 @@ Set object variables implement similar getter and setter functions for sets, wit
     TArray<int32> RetrievedValues = IGorgeousArrayObjectVariablesGetter_I::Execute_GetIntegerArrayObjectVariable(IntegerArrayVariable, NAME_None);
     ```
 
+
+### Creating and Using a Map Object Variable
+
 === "Blueprint"
 
     <figure markdown="span">
-    ![Image title](./../../images/GorgeousCore/ObjectVariables/IntegerArrayVariableExample.png){ width="100%" }
-    <figcaption>Creating and using an Integer Array Object Variable in Blueprint.</figcaption>
+    ![Image title](./../../images/GorgeousCore/ObjectVariableDefinitions/StringMapVariableExample.png){ width="100%" }
+    <figcaption>Creating and using a String Map Object Variable in Blueprint.</figcaption>
     </figure>
-
-### Creating and Using a Map Object Variable
 
 === "C++"
 
@@ -277,14 +286,15 @@ Set object variables implement similar getter and setter functions for sets, wit
 	TMap<FString, UGorgeousObjectVariable*> RetrievedMap = IGorgeousMapObjectVariablesGetter_I::Execute_GetStringMapObjectVariable(StringMapVariable, NAME_None);
     ```
 
+
+### Creating and Using a Set Object Variable
+
 === "Blueprint"
 
     <figure markdown="span">
-    ![Image title](./../../images/GorgeousCore/ObjectVariables/StringMapVariableExample.png){ width="100%" }
-    <figcaption>Creating and using a String Map Object Variable in Blueprint.</figcaption>
+    ![Image title](./../../images/GorgeousCore/ObjectVariableDefinitions/NameSetVariableExample.png){ width="100%" }
+    <figcaption>Creating and using a Name Set Object Variable in Blueprint.</figcaption>
     </figure>
-
-### Creating and Using a Set Object Variable
 
 === "C++"
 
@@ -304,12 +314,6 @@ Set object variables implement similar getter and setter functions for sets, wit
     TSet<FName> RetrievedSet = IGorgeousSetObjectVariablesGetter_I::Execute_GetNameSetObjectVariable(NameSetVariable, NAME_None);
     ```
 
-=== "Blueprint"
-
-    <figure markdown="span">
-    ![Image title](./../../images/GorgeousCore/ObjectVariables/NameSetVariableExample.png){ width="100%" }
-    <figcaption>Creating and using a Name Set Object Variable in Blueprint.</figcaption>
-    </figure>
 
 !!! tip
 

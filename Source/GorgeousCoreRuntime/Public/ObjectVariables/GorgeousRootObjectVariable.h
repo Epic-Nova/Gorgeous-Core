@@ -49,7 +49,7 @@ public:
      *
      * @return The root object variable instance.
      */
-    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Root Object Variable")
     static UGorgeousRootObjectVariable* GetRootObjectVariable();
 
     /**
@@ -57,7 +57,7 @@ public:
      *
      * @return An array of all registered object variables.
      */
-    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Root Object Variable")
     static TArray<UGorgeousObjectVariable*> GetVariableHierarchyRegistry();
 
     /**
@@ -65,7 +65,7 @@ public:
      *
      * @return An array of root-level object variables.
      */
-    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Root Object Variable")
     static TArray<UGorgeousObjectVariable*> GetRootVariableRegistry();
 
     /**
@@ -73,7 +73,7 @@ public:
      *
      * @param VariableToRemove The variable to remove.
      */
-    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Root Object Variable")
     static void RemoveVariableFromRegistry(UGorgeousObjectVariable* VariableToRemove);
 
     /**
@@ -82,7 +82,7 @@ public:
      * @param Variable The variable to check for existance in the registry
      * @return True if the variable is contained either in the root registry ot the registry of any other variable, false otherwise.
      */
-    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
+   UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Root Object Variable")
    static bool IsVariableRegistered(UGorgeousObjectVariable* Variable);
 
     /**
@@ -90,7 +90,8 @@ public:
      *
      * @param bFullCleanup Whether to perform a full cleanup.
      */
-    static void CleanupRegistry(bool bFullCleanup = false);
+   UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Root Object Variable")
+   static void CleanupRegistry(bool bFullCleanup = false);
 
     /**
      * Sets the value of a property with any type for an object variable identified by its unique identifier.

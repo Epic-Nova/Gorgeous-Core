@@ -43,13 +43,6 @@
         uint8 Result = TagCondition->CheckCondition();
         ```
     
-    === "Blueprint"
-
-        <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/Conditions/GameplayTagCheckCondition.png){ width="100%" }
-        <figcaption>Evaluates the gameplay tag condition based on the tags in the referenced container.</figcaption>
-        </figure>
-
 ### `EvaluateCustomRule`
 === "📝 Function Details"
 
@@ -74,7 +67,7 @@
     === "Blueprint"
 
         <figure markdown="span">
-        ![Image title](./../../images/GorgeousCore/ConditionalObjectChoosers/Conditions/EvaluateCustomRule.png){ width="100%" }
+        ![Image title](./../../../images/GorgeousCore/ConditionalObjectChoosers/EvaluateCustomRule.png){ width="100%" }
         <figcaption>A blueprint implementation of the custom rule evaluation function.</figcaption>
         </figure>
 
