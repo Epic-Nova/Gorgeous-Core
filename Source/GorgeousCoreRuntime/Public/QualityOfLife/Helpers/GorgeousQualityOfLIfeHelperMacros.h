@@ -44,15 +44,16 @@
 	void Class::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) \
 	{ \
 		Super::PostEditChangeProperty(PropertyChangedEvent); \
-		\
-		if (const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None; PropertyName == GET_MEMBER_NAME_CHECKED(Class, AdditionalGorgeousData)) \
+		const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None; \
 		{ \
-			if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) \
+			if (PropertyName == GET_MEMBER_NAME_CHECKED(Class, AdditionalGorgeousData) && PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) \
 			{ \
 				TArray<UGorgeousObjectVariable*> ObjectVariables; \
 				AdditionalGorgeousData.GenerateValueArray(ObjectVariables); \
-				\
-				ObjectVariables.Last()->UniqueIdentifier = FGuid::NewGuid(); \
+				if (ObjectVariables.Last()) \
+				{ \
+					ObjectVariables.Last()->UniqueIdentifier = FGuid::NewGuid(); \
+				} \
 			} \
 		} \
 	}
