@@ -54,6 +54,7 @@ public class GorgeousCoreEditor : ModuleRules
                 "UnrealEd", 
                 "EditorStyle",
                 "BlueprintGraph",
+                "GraphEditor",
                 "PropertyEditor", 
                 "MessageLog",
                 "UMG", 

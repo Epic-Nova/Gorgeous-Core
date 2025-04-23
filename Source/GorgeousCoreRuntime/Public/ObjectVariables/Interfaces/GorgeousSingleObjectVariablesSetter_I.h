@@ -116,6 +116,16 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Byte")
     uint8 SetByteSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) uint8& NewValue);
 
+	/**
+	 * Sets a float.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new float.
+	 * @return The updated float.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
+	float SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) float& NewValue);
+	
     /**
      * Sets a double.
      *
@@ -123,8 +133,8 @@ public:
      * @param NewValue The new double.
      * @return The updated double.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
-    double SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) double& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Double")
+    double SetDoubleSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) double& NewValue);
 
     /**
      * Sets a 64-bit integer.

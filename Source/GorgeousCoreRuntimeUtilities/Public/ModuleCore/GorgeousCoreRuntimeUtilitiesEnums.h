@@ -30,5 +30,5 @@ enum EGorgeousLoggingImportance
 	Logging_Warning = 2 UMETA(DisplayName = "Warning", ToolTip = "Warning message."),
 	Logging_Error = 3 UMETA(DisplayName = "Error", ToolTip = "Error message."),
 	Logging_Fatal = 4 UMETA(DisplayName = "Fatal", ToolTip = "Fatal error message."),
-	Logging_Max = 5 UMETA(Hidden)
+	Logging_MAX = 5 UMETA(Hidden)
 };

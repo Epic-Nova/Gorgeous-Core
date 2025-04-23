@@ -100,14 +100,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
     TSet<uint8> GetByteSetObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets a set of floats.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return A set of floats.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
+	TSet<float> GetFloatSetObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets a set of doubles.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of doubles.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-    TSet<double> GetFloatSetObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Double")
+    TSet<double> GetDoubleSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of 64-bit integers.

@@ -109,14 +109,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Byte")
     TArray<uint8> GetByteArrayObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets an array of floats.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return An array of floats.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
+	TArray<float> GetFloatArrayObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets an array of doubles.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return An array of doubles.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
-    TArray<double> GetFloatArrayObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Double")
+    TArray<double> GetDoubleArrayObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets an array of integers.

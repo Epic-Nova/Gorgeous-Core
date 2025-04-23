@@ -41,5 +41,15 @@ public class GorgeousCoreRuntime : ModuleRules
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTags", "Projects" });
         
         PrivateDependencyModuleNames.Add("GorgeousCoreRuntimeUtilities");
+        
+        if (Target.bBuildEditor)
+        {
+            PublicDependencyModuleNames.AddRange(new string[] {
+                "BlueprintGraph", 
+                "KismetCompiler", 
+                "Kismet", 
+                "UnrealEd"
+            });
+        }
     }
 }

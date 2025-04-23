@@ -20,9 +20,9 @@
 // UGorgeousObjectVariable Implementation
 //=============================================================================
 
-UGorgeousObjectVariable::UGorgeousObjectVariable(): VariableRegistry(TArray<TObjectPtr<UGorgeousObjectVariable>>()),
-                                                    bPersistent(false),
-                                                    Parent(nullptr) {}
+UGorgeousObjectVariable::UGorgeousObjectVariable(): VariableRegistry(TArray<TObjectPtr<UGorgeousObjectVariable>>())
+													, bPersistent(false)
+													,Parent(nullptr) {}
 
 UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist)
 {
@@ -56,7 +56,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 }
 
 UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObjectVariable(
-	const TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent)
+	const TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent, UObject* Outer)
 {
 	if (!Class)
 	{
@@ -70,7 +70,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
 	}
 	
-	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(InParent, Class, NAME_None, RF_Transactional);
+	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(Outer ? Outer : InParent, Class, NAME_None, RF_Transactional);
 	NewInstance->UniqueIdentifier = FGuid::NewGuid();
 	NewInstance->Parent = InParent;
 	

@@ -11,6 +11,8 @@
 #include "GorgeousCoreEditorModule.h"
 
 //<=============================--- Includes ---=============================>
+//<-------------------------=== Engine Includes ===-------------------------->
+#include "PropertyEditorModule.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"

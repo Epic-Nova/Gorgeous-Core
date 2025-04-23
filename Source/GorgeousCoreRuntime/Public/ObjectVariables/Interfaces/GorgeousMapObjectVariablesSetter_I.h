@@ -106,6 +106,16 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
     TMap<uint8, UGorgeousObjectVariable*> SetByteMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<uint8, UGorgeousObjectVariable*>& NewValue);
 
+	/**
+	 * Sets a map of floats to GorgeousObjectVariables.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new map of floats to GorgeousObjectVariables.
+	 * @return The updated map of floats to GorgeousObjectVariables.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
+	TMap<float, UGorgeousObjectVariable*> SetFloatMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<float, UGorgeousObjectVariable*>& NewValue);
+	
     /**
      * Sets a map of doubles to GorgeousObjectVariables.
      *
@@ -113,8 +123,8 @@ public:
      * @param NewValue The new map of doubles to GorgeousObjectVariables.
      * @return The updated map of doubles to GorgeousObjectVariables.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-    TMap<double, UGorgeousObjectVariable*> SetFloatMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Double")
+    TMap<double, UGorgeousObjectVariable*> SetDoubleMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
 
     /**
      * Sets a map of 64-bit integers to GorgeousObjectVariables.

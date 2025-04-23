@@ -23,7 +23,7 @@
  * @author Nils Bergemann
  */
 UENUM(BlueprintType, DisplayName = "Object Variable Count", meta = (ShortTooltip = "The count of the object variable."))
-enum class EObjectVariableCount_E : uint8
+enum class EObjectVariableContainerType_E : uint8
 {
 	ESingle = 0 UMETA(DisplayName = "Single", ToolTip = "A single object variable."),
 	EArray = 1 UMETA(DisplayName = "Array", ToolTip = "An array of object variables."),
@@ -33,5 +33,5 @@ enum class EObjectVariableCount_E : uint8
 	EStack = 5 UMETA(DisplayName = "Stack", ToolTip = "A stack of object variables."),
 	EDeque = 6 UMETA(DisplayName = "Deque", ToolTip = "A deque of object variables."),
 	EMultiMap = 7 UMETA(DisplayName = "Multi Map", ToolTip = "A multi map of object variables. That means that the map can have multiple values for a single key."),
-	EObjectVariableCount_Max UMETA(Hidden)
+	EObjectVariableCount_MAX UMETA(Hidden)
 };
