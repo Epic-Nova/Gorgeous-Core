@@ -100,14 +100,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
     TMap<uint8, UGorgeousObjectVariable*> GetByteMapObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets a map of floats to GorgeousObjectVariables.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return A map of floats to GorgeousObjectVariables.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
+	TMap<float, UGorgeousObjectVariable*> GetFloatMapObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets a map of doubles to GorgeousObjectVariables.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of doubles to GorgeousObjectVariables.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-    TMap<double, UGorgeousObjectVariable*> GetFloatMapObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Double")
+    TMap<double, UGorgeousObjectVariable*> GetDoubleMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of 64-bit integers to GorgeousObjectVariables.

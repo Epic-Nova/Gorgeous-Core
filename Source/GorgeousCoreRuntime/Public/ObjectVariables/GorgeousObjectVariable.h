@@ -16,6 +16,7 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
+#include "GorgeousObjectVariableStructures.h"
 #include "Interfaces/GorgeousObjectVariableInteraction_I.h"
 #include "ObjectVariables/Helpers/GorgeousObjectVariableHelperMacros.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
@@ -60,6 +61,10 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 {
 	GENERATED_BODY()
 
+	//<================--- Friend Classes ---================>
+	friend class FMyCustomObjectCustomization;
+	//<------------------------------------------------------>
+
 protected:
 	
 	/** The Class Constructor for the Base Object Variable is used to set Default Values. */
@@ -92,10 +97,11 @@ public:
 	 *
 	 * @param Class The class type to instantiate. Must be a subclass of UGorgeousObjectVariable.
 	 * @param Parent The optional parent object variable. If null, the root object variable is used instead.
+	 * @param Outer The outer that should be used to store this transactional object variable.
 	 * @return A pointer to the newly instantiated UGorgeousObjectVariable, or nullptr if instantiation failed.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* Parent = nullptr);
+	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* Parent = nullptr, UObject* Outer = nullptr);
 
 	/**
 	 * Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
@@ -192,6 +198,17 @@ public:
     	return false;
     }
 //end grepper
+
+#if WITH_EDITOR
+
+	/**
+	 * Returns the in the constructor configured settings for the getter and setter nodes.
+	 * 
+	 * @return The pin configuration of this object variable.
+	 */
+	FObjectVariablePinConfiguration_S GetObjectVariablePinConfiguration() const { return PinConfiguration; }
+	
+#endif WITH_EDITOR
 	
 	/**
 	 * The unique identifier of the object variable.
@@ -211,7 +228,6 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
-
 protected:
 
 	/**
@@ -219,6 +235,23 @@ protected:
 	 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	UGorgeousObjectVariable* Parent;
+
+#if WITH_EDITORONLY_DATA
+	
+	/**
+	 * Configuration values that provides the editor with information how to handle and display various object variables.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true))
+	FObjectVariablePinConfiguration_S PinConfiguration;
+
+	
+	/**
+	 * The Ptr to the transactional default value object of this object variable
+	 */
+	UPROPERTY()
+	TWeakObjectPtr<UGorgeousObjectVariable> DefaultValuePtr;
+	
+#endif WITH_EDITORONLY_DATA
 	
 private:
 	
@@ -229,7 +262,8 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(bool, Boolean, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(uint8, Byte, Single)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(double, Float, Single)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(float, Float, Single)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(double, Double, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(int64, Integer64, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(int32, Integer, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FName, Name, Single)
@@ -247,7 +281,8 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftClassPtr<UObject>>, SoftObjectClass, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<bool>, Boolean, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<uint8>, Byte, Array)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<double>, Float, Array)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<float>, Float, Array)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<double>, Double, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int64>, Integer64, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int32>, Integer, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FName>, Name, Array)
@@ -263,7 +298,8 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(uint8, Byte)
-	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(double, Float)
+	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(float, Float)
+	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(double, Double)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(int64, Integer64)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(int32, Integer)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(FName, Name)
@@ -278,7 +314,8 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<TSoftObjectPtr<UObject>>, SoftObjectObject, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<TSoftClassPtr<UObject>>, SoftObjectClass, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<uint8>, Byte, Set)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<double>, Float, Set)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<float>, Float, Set)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<double>, Double, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<int64>, Integer64, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<int32>, Integer, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FName>, Name, Set)

@@ -51,19 +51,19 @@ struct FGorgeousAssetTypeActionInfo_S
 
 	/** Display name of the asset type. */
 	UPROPERTY()
-	FText Name = FText::GetEmpty();
+	FText Name;
 
 	/** The class this asset type represents. */
 	UPROPERTY()
-	UClass* SupportedClass = nullptr;
+	UClass* SupportedClass;
 
 	/** Color used to represent the asset in the content browser. */
 	UPROPERTY()
-	FColor TypeColor = FColor::White;
+	FColor TypeColor;
 
 	/** Bitmask representing editor categories this asset belongs to. */
 	UPROPERTY()
-	uint32 Categories = 0;
+	uint32 Categories;
 
 	/** Submenus under which this asset should appear in the "Add New" menu. */
 	UPROPERTY()
@@ -106,23 +106,23 @@ struct FGorgeousFactoryInfo_S
 
 	/** The class manufactured by this factory. */
 	UPROPERTY()
-	TSubclassOf<UObject> SupportedClass = nullptr;
+	TSubclassOf<UObject> SupportedClass;
 
 	/** True if the associated editor should be opened after creating a new object. */
 	UPROPERTY()
-	bool bEditAfterNew = false;
+	bool bEditAfterNew;
 
 	/** True if the factory imports objects from files. */
 	UPROPERTY()
-	bool bEditorImport = false;
+	bool bEditorImport;
 
 	/** True if the factory supports object creation from scratch. */
 	UPROPERTY()
-	bool bCreateNew = false;
+	bool bCreateNew;
 
 	/** True if the factory supports importing from text. */
 	UPROPERTY()
-	bool bText = false;
+	bool bText;
 };
 
 /**

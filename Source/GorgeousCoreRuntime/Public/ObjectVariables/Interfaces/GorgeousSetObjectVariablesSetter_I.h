@@ -105,7 +105,17 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
     TSet<uint8> SetByteSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<uint8>& NewValue);
-
+	
+	/**
+	 * Sets a set of floats.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new set of floats.
+	 * @return The updated set of floats.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
+	TSet<float> SetFloatSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<float>& NewValue);
+	
     /**
      * Sets a set of doubles.
      *
@@ -113,8 +123,8 @@ public:
      * @param NewValue The new set of doubles.
      * @return The updated set of doubles.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-    TSet<double> SetFloatSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<double>& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Double")
+    TSet<double> SetDoubleSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<double>& NewValue);
 
     /**
      * Sets a set of 64-bit integers.

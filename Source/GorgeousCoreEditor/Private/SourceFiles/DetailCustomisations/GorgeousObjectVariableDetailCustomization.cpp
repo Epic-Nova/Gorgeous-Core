@@ -100,11 +100,11 @@ void FGorgeousObjectVariableDetailCustomization::CustomizeHeader(const TSharedRe
 		.AutoHeight()
 		.Padding(5)
 		[
-			GenerateEnumDropdown<EObjectVariableCount_E>(
+			GenerateEnumDropdown<EObjectVariableContainerType_E>(
 				LOCTEXT("ObjectVariableCountLabel", "Variable Count"),
-				StaticEnum<EObjectVariableCount_E>(),
-				[](EObjectVariableCount_E NewSelection) {
-					UE_LOG(LogTemp, Log, TEXT("Selected Variable Count: %s"), *StaticEnum<EObjectVariableCount_E>()->GetNameStringByValue((int64)NewSelection));
+				StaticEnum<EObjectVariableContainerType_E>(),
+				[](EObjectVariableContainerType_E NewSelection) {
+					UE_LOG(LogTemp, Log, TEXT("Selected Variable Count: %s"), *StaticEnum<EObjectVariableContainerType_E>()->GetNameStringByValue((int64)NewSelection));
 				}
 			)
 		]*/
@@ -151,7 +151,7 @@ TSharedRef<SWidget> FGorgeousObjectVariableDetailCustomization::GenerateEnumDrop
 
     // Populate options for the dropdown
     TArray<TSharedPtr<FString>> EnumOptions;
-    for (int32 i = 0; i < EnumType->GetMaxEnumValue() - 1; ++i) // Skip _Max
+    for (int32 i = 0; i < EnumType->GetMaxEnumValue() - 1; ++i) // Skip _MAX
     {
     	FString EnumName = EnumType->GetDisplayNameTextByIndex(i).ToString();
     	EnumOptions.Add(MakeShared<FString>(EnumName));

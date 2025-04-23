@@ -116,6 +116,16 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Byte")
     TArray<uint8> SetByteArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<uint8>& NewValue);
 
+	/**
+	 * Sets an array of floats.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new array of floats.
+	 * @return The updated array of floats.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
+	TArray<float> SetFloatArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<float>& NewValue);
+	
     /**
      * Sets an array of doubles.
      *
@@ -123,8 +133,8 @@ public:
      * @param NewValue The new array of doubles.
      * @return The updated array of doubles.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
-    TArray<double> SetFloatArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<double>& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Double")
+    TArray<double> SetDoubleArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<double>& NewValue);
 
     /**
      * Sets an array of integers.
