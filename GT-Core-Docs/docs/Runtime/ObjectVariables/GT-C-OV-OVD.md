@@ -49,7 +49,8 @@ Single object variables hold a single value of a specific type.
 |-------|-------------|------------|
 | `UBoolean_SOV` | Boolean Single Object Variable | `bool` |
 | `UByte_SOV` | Byte Single Object Variable | `uint8` |
-| `UFloat_SOV` | Float Single Object Variable | `double` |
+| `UFloat_SOV` | Float Single Object Variable | `float` |
+| `UDouble_SOV` | Double Single Object Variable | `double` |
 | `UInteger64_SOV` | Integer64 Single Object Variable | `int64` |
 | `UInteger_SOV` | Integer Single Object Variable | `int32` |
 | `UName_SOV` | Name Single Object Variable | `FName` |
@@ -78,7 +79,8 @@ Array object variables hold an array of values of a specific type.
 |-------|-------------|------------|
 | `UBoolean_AOV` | Boolean Array Object Variable | `TArray<bool>` |
 | `UByte_AOV` | Byte Array Object Variable | `TArray<uint8>` |
-| `UFloat_AOV` | Float Array Object Variable | `TArray<double>` |
+| `UFloat_AOV` | Float Array Object Variable | `TArray<float>` |
+| `UDouble_AOV` | Double Array Object Variable | `TArray<double>` |
 | `UInteger64_AOV` | Integer64 Array Object Variable | `TArray<int64>` |
 | `UInteger_AOV` | Integer Array Object Variable | `TArray<int32>` |
 | `UName_AOV` | Name Array Object Variable | `TArray<FName>` |
@@ -106,7 +108,8 @@ Map object variables hold a map where the key is of a specific type and the valu
 | Class | Description | Key Type |
 |-------|-------------|----------|
 | `UByte_MOV` | Byte Map Object Variable | `uint8` |
-| `UFloat_MOV` | Float Map Object Variable | `double` |
+| `UFloat_MOV` | Float Map Object Variable | `float` |
+| `UDouble_MOV` | Double Map Object Variable | `double` |
 | `UInteger64_MOV` | Integer64 Map Object Variable | `int64` |
 | `UInteger_MOV` | Integer Map Object Variable | `int32` |
 | `UName_MOV` | Name Map Object Variable | `FName` |
@@ -132,7 +135,8 @@ Set object variables hold a set of values of a specific type.
 | Class | Description | Value Type |
 |-------|-------------|------------|
 | `UByte_STOV` | Byte Set Object Variable | `TSet<uint8>` |
-| `UFloat_STOV` | Float Set Object Variable | `TSet<double>` |
+| `UFloat_STOV` | Float Set Object Variable | `TSet<float>` |
+| `UDouble_STOV` | Double Set Object Variable | `TSet<double>` |
 | `UInteger64_STOV` | Integer64 Set Object Variable | `TSet<int64>` |
 | `UInteger_STOV` | Integer Set Object Variable | `TSet<int32>` |
 | `UName_STOV` | Name Set Object Variable | `TSet<FName>` |
@@ -157,7 +161,8 @@ Each object variable class implements specific interfaces that provide getter an
 | `GetSoftObjectClassSingleObjectVariable` | Gets a TSoftClassPtr<UObject> | `TSoftClassPtr<UObject>` |
 | `GetBooleanSingleObjectVariable` | Gets a boolean | `bool` |
 | `GetByteSingleObjectVariable` | Gets a byte | `uint8` |
-| `GetFloatSingleObjectVariable` | Gets a double | `double` |
+| `GetFloatSingleObjectVariable` | Gets a float | `float` |
+| `GetDoubleSingleObjectVariable` | Gets a double | `double` |
 | `GetInteger64SingleObjectVariable` | Gets a 64-bit integer | `int64` |
 | `GetIntegerSingleObjectVariable` | Gets an integer | `int32` |
 | `GetNameSingleObjectVariable` | Gets an FName | `FName` |
@@ -178,7 +183,8 @@ Each object variable class implements specific interfaces that provide getter an
 | `SetSoftObjectClassSingleObjectVariable` | Sets a TSoftClassPtr<UObject> | `TSoftClassPtr<UObject>` |
 | `SetBooleanSingleObjectVariable` | Sets a boolean | `bool` |
 | `SetByteSingleObjectVariable` | Sets a byte | `uint8` |
-| `SetFloatSingleObjectVariable` | Sets a double | `double` |
+| `SetFloatSingleObjectVariable` | Sets a float | `float` |
+| `SetDoubleSingleObjectVariable` | Sets a double | `double` |
 | `SetInteger64SingleObjectVariable` | Sets a 64-bit integer | `int64` |
 | `SetIntegerSingleObjectVariable` | Sets an integer | `int32` |
 | `SetNameSingleObjectVariable` | Sets an FName | `FName` |
