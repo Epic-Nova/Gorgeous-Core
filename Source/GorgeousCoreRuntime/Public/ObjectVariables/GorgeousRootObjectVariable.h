@@ -32,7 +32,7 @@
  *
  * @note This class provides a centralized and efficient way to manage object variables within the game.
  */
-UCLASS(BlueprintType)
+UCLASS()
 class GORGEOUSCORERUNTIME_API UGorgeousRootObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
