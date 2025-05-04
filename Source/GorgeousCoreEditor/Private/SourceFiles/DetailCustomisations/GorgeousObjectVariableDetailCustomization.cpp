@@ -64,24 +64,32 @@ void FGorgeousObjectVariableDetailCustomization::CustomizeHeader(const TSharedRe
 	//@TODO: When constructing these widgets the detail customizer should search every registered object variable and fill them here in aswell
 	HeaderRow.ValueContent()
 	[
-		//Blueprint Graph
-		SNew(SBox)
-		.HeightOverride(400)
-		.WidthOverride(600)
+		SNew(SVerticalBox)
+		+SVerticalBox::Slot()
 		[
-			GraphEditor
+			//Blueprint Graph
+			SNew(SBox)
+			.HeightOverride(400)
+			.WidthOverride(600)
+			[
+				GraphEditor
+			]
 		]
-
-		//Webbrowser
-		/*SNew(SBorder)
-		.BorderBackgroundColor(FSlateColor(FLinearColor(1.0f, 0.2f, 0.2f, 1.0f))) // Custom Red Background
-		.Padding(5)
+		+SVerticalBox::Slot()
 		[
-			SNew(STextBlock)
-			.Text(FText::FromString("Defenetly no Web Browser in the Details Panel"))
-		]*/
+			//Webbrowser
+			SNew(SBorder)
+			.BorderBackgroundColor(FSlateColor(FLinearColor(1.0f, 0.2f, 0.2f, 1.0f))) // Custom Red Background
+			.Padding(5)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString("Defenetly no Web Browser in the Details Panel"))
+			]
+		]
+	];
+}
 
-		//Combo boxes: Original Opproach
+//Combo boxes: Original Opproach
 		/*SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
@@ -107,9 +115,9 @@ void FGorgeousObjectVariableDetailCustomization::CustomizeHeader(const TSharedRe
 					UE_LOG(LogTemp, Log, TEXT("Selected Variable Count: %s"), *StaticEnum<EObjectVariableContainerType_E>()->GetNameStringByValue((int64)NewSelection));
 				}
 			)
-		]*/
+		]
 	];
-}
+}*/
 
 void FGorgeousObjectVariableDetailCustomization::CustomizeChildren(const TSharedRef<IPropertyHandle> PropertyHandle,
 	IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)

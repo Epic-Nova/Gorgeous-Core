@@ -28,14 +28,14 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 {
 	if (!Class && Class->IsValidLowLevel())
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.Registration.Invalid_Class");
+		GT_E_LOG("GT.ObjectVariables.Registration.Successful", TEXT("You are trying to register a object variable without a valid class, check if the class is valid!"));
 		return nullptr;
 	}
 
 	if (!InParent)
 	{
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable();
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		GT_I_LOG("GT.ObjectVariables.No_Parent", TEXT("No parent were specified, therefore the root object variable will be used as the parent"));
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
@@ -49,8 +49,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	NewObjectVariable->bPersistent = bShouldPersist;
 	InParent->RegisterWithRegistry(NewObjectVariable);
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(FString::Printf(TEXT("Successfully registered object variable with identifier: %s where the parent is: %s (%s)"),
-	*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.Registration.Successful");
+	GT_S_LOG("GT.ObjectVariables.Registration.Successful", TEXT("Successfully registered object variable with identifier: %s where the parent is: %s (%s)"),
+		 *Identifier.ToString(), 
+		 *InParent->GetName(), 
+		 *InParent->UniqueIdentifier.ToString());
 	
 	return NewObjectVariable;
 }
@@ -60,14 +62,14 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 {
 	if (!Class)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+		GT_E_LOG("GT.ObjectVariables.Transactional.Failed", TEXT("Failed to create new transactional instance"));
 		return nullptr;
 	}
 
 	if (!InParent)
 	{
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable();
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		GT_I_LOG("GT.ObjectVariables.No_Parent", TEXT("No parent were specified, therefore the root object variable will be used as the parent"));
 	}
 	
 	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(Outer ? Outer : InParent, Class, NAME_None, RF_Transactional);
@@ -78,10 +80,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	{
 		Modify();
 
-		UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage("Created new transactional instance.", "GT.ObjectVariables.Transactional.Success");
+		GT_S_LOG("GT.ObjectVariables.Transactional.Success", TEXT("Created new transactional instance."));
 		return NewInstance;
 	}
-	UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+	GT_E_LOG("GT.ObjectVariables.Transactional.Failed", TEXT("Failed to create new transactional instance"));
 	return nullptr;
 }
 
@@ -92,7 +94,7 @@ void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUnique
 		if (!Parent)
 		{
 			Parent = UGorgeousRootObjectVariable::GetRootObjectVariable();
-			UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+			GT_I_LOG("GT.ObjectVariables.No_Parent", TEXT("No parent were specified, therefore the root object variable will be used as the parent"));
 		}
 		UniqueIdentifier = NewUniqueIdentifier;
 		Parent->RegisterWithRegistry(this);
