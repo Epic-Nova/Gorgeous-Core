@@ -172,9 +172,9 @@ If you have ideas to improve Gorgeous Core, feel free to:
 
 ### 🔗 Connect with Us:
 - **Community Server** - [Discord: Gorgeous Things](https://discord.gg/BzqXxBVe5N) - Join our vibrant community!
-- **General Support** - [Epic Nova Support](support@epicnova.net) - For questions or assistance.
-- **Report Harmful Content** - [Epic Nova Enforcement Team](enforcement@epicnova.net) - See something harmful? Let us know
-- **Vulnerability Reporting** - [Mail: Epic Nova Vulnerability Support](vulnerabilities@epicnova.net) - If you discover a potential security issue.
+- **General Support** - [Epic Nova Support](mailto:support@epicnova.net) - For questions or assistance.
+- **Report Harmful Content** - [Epic Nova Enforcement Team](mailto:enforcement@epicnova.net) - See something harmful? Let us know
+- **Vulnerability Reporting** - [Epic Nova Vulnerability Support](mailto:vulnerabilities@epicnova.net) - If you discover a potential security issue.
 
 ### 👨‍💻 Developer Contact:
 - **Nils Bergemann:**
