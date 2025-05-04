@@ -48,12 +48,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
 	UObject* B;
-
+	
 	/**
 	 * Checks if the object inputs are valid based on the selected mode.
 	 *
 	 * @return 1 if the condition is true, 0 otherwise.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous IsValid Condition")
-	virtual uint8 CheckCondition() override;
+	virtual uint8 CheckCondition_Implementation() override;
 };

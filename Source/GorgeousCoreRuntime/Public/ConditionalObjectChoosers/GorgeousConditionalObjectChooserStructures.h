@@ -36,15 +36,16 @@ struct FGameplayTagContainerWrapper_S
 	GENERATED_BODY()
 
 	/**
+	 * Default constructor. Initializes an empty container.
+	 */
+	FGameplayTagContainerWrapper_S()
+		: Container() {}
+	
+	/**
 	 * The underlying Gameplay Tag Container.
 	 */
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Conditional Object Chooser")
 	FGameplayTagContainer Container;
-
-	/**
-	 * Default constructor. Initializes an empty container.
-	 */
-	FGameplayTagContainerWrapper_S() : Container() {}
 
 	/**
 	 * Constructs the wrapper using an existing Gameplay Tag Container.

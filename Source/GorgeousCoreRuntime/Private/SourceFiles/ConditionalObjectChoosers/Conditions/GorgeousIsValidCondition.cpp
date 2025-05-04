@@ -18,7 +18,7 @@
 //=============================================================================
 // UGorgeousIsValidCondition Implementation
 //=============================================================================
-uint8 UGorgeousIsValidCondition::CheckCondition()
+uint8 UGorgeousIsValidCondition::CheckCondition_Implementation()
 {
 	switch (Mode)
 	{

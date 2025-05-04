@@ -125,6 +125,7 @@ namespace GorgeousLogging
         }
 
         // Print to the screen if enabled
+	    check(GEngine);
         if (bPrintToScreen && GEngine)
         {
             FColor TextColor;

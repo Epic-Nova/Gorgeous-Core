@@ -19,7 +19,7 @@
 // UGorgeousBooleanCondition Implementation
 //=============================================================================
 
-uint8 UGorgeousBooleanCondition::CheckCondition()
+uint8 UGorgeousBooleanCondition::CheckCondition_Implementation()
 {
 	switch (Mode)
 	{

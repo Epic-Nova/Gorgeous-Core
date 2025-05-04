@@ -19,7 +19,7 @@
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
 
-uint8 UGorgeousGameplayTagCondition::CheckCondition()
+uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 {
 	if (GetGameplayTagContainer().IsEmpty())
 	{

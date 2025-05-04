@@ -77,7 +77,7 @@ public:
 	 * @return index of the condition.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
-	virtual uint8 CheckCondition() override;
+	virtual uint8 CheckCondition_Implementation() override;
 
 private:
 	

@@ -16,6 +16,10 @@
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
 #include "QualityOfLife/GorgeousGameInstance.h"
+#include "QualityOfLife/GorgeousGameMode.h"
+#include "QualityOfLife/GorgeousGameState.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
+#include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousCoreRuntimeGlobals.generated.h"
@@ -72,6 +76,42 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
 	static UGorgeousGameInstance* GetGorgeousGameInstance(const UObject* WorldContextObject);
+
+	/**
+	 *	Returns the reference to the Gorgeous Game Mode,
+	 *	Requires to set AGorgeousGameMode or a child of it to be set in the Project Settings to work.
+	 * 
+	 * @return The current instance of the Gorgeous Game Mode.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static AGorgeousGameMode* GetGorgeousGameMode(const UObject* WorldContextObject);
+
+	/**
+	 *	Returns the reference to the Gorgeous Game State,
+	 *	Requires to set AGorgeousGameState or a child of it to be set in the Game Mode to work.
+	 * 
+	 * @return The current instance of the Gorgeous Game State.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static AGorgeousGameState* GetGorgeousGameState(const UObject* WorldContextObject);
+
+	/**
+	 *	Returns the reference to the Gorgeous Player Controller,
+	 *	Requires to set AGorgeousPlayerController or a child of it to be set in the Game Mode to work.
+	 * 
+	 * @return The current instance of the Gorgeous Player Controller.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static AGorgeousPlayerController* GetGorgeousPlayerController(const UObject* WorldContextObject, const int32 PlayerIndex);
+
+	/**
+	 *	Returns the reference to the Gorgeous Player State,
+	 *	Requires to set AGorgeousPlayerController or a child of it to be set in the Game Mode to work.
+	 * 
+	 * @return The current instance of the Gorgeous Player State.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
+	static AGorgeousPlayerState* GetGorgeousPlayerState(const UObject* WorldContextObject, const int32 PlayerStateIndex);
 
 	/**
 	 *	Returns the reference to the Gorgeous World Settings,
