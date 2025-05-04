@@ -76,10 +76,11 @@
 
     === "Input"
 
-        |   Parameter   |   Type                                    |   Description                                      |
-        | :------------ | :---------------------------------------- | :------------------------------------------------- |
-        |   `Class`     |   `TSubclassOf<UGorgeousObjectVariable>`  |   The class of the object variable to instantiate. |
-        |   `Parent`    |   `UGorgeousObjectVariable*`              |   The parent of the new instance.                  |
+        |   Parameter   |   Type                                    |   Description                                                                 |
+        | :------------ | :---------------------------------------- | :---------------------------------------------------------------------------- |
+        |   `Class`     |   `TSubclassOf<UGorgeousObjectVariable>`  |   The class of the object variable to instantiate.                            |
+        |   `Parent`    |   `UGorgeousObjectVariable*`              |   The parent of the new instance.                                             |
+        |   `Outer`     |   `UObject*`                              |   The outer that should be used to store this transactional object variable.  |
 
     === "Output"
 

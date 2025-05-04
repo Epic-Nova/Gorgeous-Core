@@ -39,6 +39,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
+	SetCachedOwner(InParent);
 	NewObjectVariable->AddToRoot();
 	
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
