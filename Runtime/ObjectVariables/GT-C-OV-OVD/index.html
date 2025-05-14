@@ -1,0 +1,3003 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The documentation for the Gorgeous Core plugin, that provides master functionality to other Gorgeous plugins that are part of this family.">
+      
+      
+        <meta name="author" content="Nils Bergemann">
+      
+      
+        <link rel="canonical" href="https://c.docs.gt.simsalabim.studio/Runtime/ObjectVariables/GT-C-OV-OVD/">
+      
+      
+        <link rel="prev" href="../GT-C-OV-OV/">
+      
+      
+        <link rel="next" href="../GT-C-OV-ROV/">
+      
+      
+      <link rel="icon" href="../../../images/GT-C-Logo-64x64.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
+    
+    
+      
+        <title>📖 Object Variable Definitions (Blueprint & C++) - Gorgeous Things - Gorgeous Core Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="light-blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#object-variable-definitions-blueprint-c" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Gorgeous Things - Gorgeous Core Documentation" class="md-header__button md-logo" aria-label="Gorgeous Things - Gorgeous Core Documentation" data-md-component="logo">
+      
+  <img src="../../../images/GT-C-Logo-Transparent.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Gorgeous Things - Gorgeous Core Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              📖 Object Variable Definitions (Blueprint & C++)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="light-blue"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="deep-purple" data-md-color-accent="purple"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Epic-Nova/Gorgeous-Core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Gorgeous Core
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../GorgeousCore/GT-C-About/" class="md-tabs__link">
+          
+  
+  
+  🏠 Home
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../GT-C-Runtime-About/" class="md-tabs__link">
+          
+  
+  
+  📝 Runtime
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../RuntimeUtilities/GT-C-Runtime_Utilities-About/" class="md-tabs__link">
+          
+  
+  
+  📝Runtime Utilities
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../Editor/GT-C-Editor-About/" class="md-tabs__link">
+          
+  
+  
+  📝 Editor
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../EditorUtilities/GT-C-Editor_Utilities-About/" class="md-tabs__link">
+          
+  
+  
+  📝 Editor Utilities
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Gorgeous Things - Gorgeous Core Documentation" class="md-nav__button md-logo" aria-label="Gorgeous Things - Gorgeous Core Documentation" data-md-component="logo">
+      
+  <img src="../../../images/GT-C-Logo-Transparent.png" alt="logo">
+
+    </a>
+    Gorgeous Things - Gorgeous Core Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Epic-Nova/Gorgeous-Core" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Gorgeous Core
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    🏠 Home
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            🏠 Home
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../GorgeousCore/GT-C-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🔎 About Gorgeous Core 🔎
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../GorgeousCore/GT-C-Patchnotes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🆕 Patchnotes 🆕
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../GorgeousCore/GT-C-Technical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🛠️ Technical 🛠️
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../GorgeousCore/GT-C-What_To_Come/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🔜 What to Come 🔜
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    📝 Runtime
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            📝 Runtime
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../GT-C-Runtime-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🧩 About this Module 🧩
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2_2" id="__nav_2_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    📊 Object Variables
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            📊 Object Variables
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../GT-C-OV-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🔎 About Object Variables
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../GT-C-OV-OV/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📊 Object Variable (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    📖 Object Variable Definitions (Blueprint & C++)
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    📖 Object Variable Definitions (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variable-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Variable Categories
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Variable Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base Classes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-type-base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Base Classes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Single Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Single Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-single-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Single Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-single-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Single Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#array-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Array Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Array Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-array-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Array Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-array-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Array Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Map Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Map Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-map-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Map Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-map-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Map Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Set Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Set Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-set-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Set Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-set-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Set Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Interface Functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Interface Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single Object Variable Interface Functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single Object Variable Interface Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#getter-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getter Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setter-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setter Functions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#array-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Array Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#map-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Map Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      📚 Usage Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📚 Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-single-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Single Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-an-array-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using an Array Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-map-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Map Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-set-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Set Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔧 Common Properties
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔍 Implementation Details
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../GT-C-OV-ROV/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🌱 Root Object Variable (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3" id="__nav_2_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    👉 Conditional Object Choosers
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            👉 Conditional Object Choosers
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ConditionalObjectChoosers/GT-C-COC-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🔎 About Conditional Object Choosers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ConditionalObjectChoosers/GT-C-COC-C/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    👉 Chooser (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_3_3" id="__nav_2_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    📑 Conditions
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_2_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            📑 Conditions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ConditionalObjectChoosers/Conditions/GT-C-COC-Boolean-CND/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🚦 Boolean Condition (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ConditionalObjectChoosers/Conditions/GT-C-COC-IsValid-CND/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ✅ IsValid Condition (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ConditionalObjectChoosers/Conditions/GT-C-COC-GameplayTag-CND/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🏷️ GameplayTag Condition (Blueprint & C++)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    ♻️ Quality of Life
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2_4">
+            <span class="md-nav__icon md-icon"></span>
+            ♻️ Quality of Life
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-GI/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 Game Instance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-GM/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 Game Mode
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-GS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 Game State
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-PC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 Player Controller
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-PS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 Player State
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../QualityOfLife/GT-C-QOF-WS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    📜 World Settings
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    📝Runtime Utilities
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            📝Runtime Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../RuntimeUtilities/GT-C-Runtime_Utilities-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🧩 About this Module 🧩
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    📝 Editor
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            📝 Editor
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../Editor/GT-C-Editor-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🧩 About this Module 🧩
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    📝 Editor Utilities
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            📝 Editor Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../EditorUtilities/GT-C-Editor_Utilities-About/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    🧩 About this Module 🧩
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#variable-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Variable Categories
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Variable Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Base Classes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#object-type-base-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Base Classes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#single-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Single Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Single Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-single-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Single Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-single-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Single Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#array-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Array Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Array Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-array-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Array Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-array-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Array Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Map Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Map Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-map-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Map Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-map-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Map Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-object-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      📊 Set Object Variables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📊 Set Object Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#object-type-set-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Object Type Set Variables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#primitive-type-set-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Primitive Type Set Variables
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚀 Interface Functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚀 Interface Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Single Object Variable Interface Functions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Single Object Variable Interface Functions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#getter-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getter Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setter-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setter Functions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#array-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Array Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#map-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Map Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-object-variable-interface-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Set Object Variable Interface Functions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      📚 Usage Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="📚 Usage Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-single-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Single Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-an-array-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using an Array Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-map-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Map Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-and-using-a-set-object-variable" class="md-nav__link">
+    <span class="md-ellipsis">
+      Creating and Using a Set Object Variable
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔧 Common Properties
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔍 Implementation Details
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Epic-Nova/Gorgeous-Core/edit/master/GT-Core-Docs/docs/Runtime/ObjectVariables/GT-C-OV-OVD.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="object-variable-definitions-blueprint-c">✨ Object Variable Definitions (Blueprint &amp; C++)</h1>
+<details class="info" open="open">
+<summary>Short Description</summary>
+<p>The <code>GorgeousObjectVariableDefinitions.h</code> file defines a comprehensive set of object variable classes that extend the base <code>UGorgeousObjectVariable</code> class. These classes provide specialized implementations for different data types and collection types (single, array, map, set).</p>
+</details>
+<details class="info">
+<summary>Long Description</summary>
+<p>The object variable definitions provide a structured way to represent various data types as UObjects within the Gorgeous Things ecosystem. These classes are organized into categories based on their data type and collection type, making it easy to find and use the appropriate variable class for your needs.</p>
+<p>Each object variable class implements specific interfaces that provide getter and setter functions for the data they store. This allows for consistent access patterns across different variable types and enables easy integration with Blueprints.</p>
+</details>
+<h2 id="variable-categories">🚀 Variable Categories</h2>
+<h3 id="base-classes">Base Classes</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>USingleObjectVariable</code></td>
+<td>Abstract base class for single object variables.</td>
+</tr>
+<tr>
+<td><code>UArrayObjectVariable</code></td>
+<td>Abstract base class for array object variables.</td>
+</tr>
+<tr>
+<td><code>UMapObjectVariable</code></td>
+<td>Abstract base class for map object variables.</td>
+</tr>
+<tr>
+<td><code>USetObjectVariable</code></td>
+<td>Abstract base class for set object variables.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="object-type-base-classes">Object Type Base Classes</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>USingleObjectTypeObjectVariable</code></td>
+<td>Abstract base class for single object variables that hold object type values.</td>
+</tr>
+<tr>
+<td><code>UArrayObjectTypeObjectVariable</code></td>
+<td>Abstract base class for array object variables that hold object type values.</td>
+</tr>
+<tr>
+<td><code>UMapObjectTypeObjectVariable</code></td>
+<td>Abstract base class for map object variables that hold object type keys.</td>
+</tr>
+<tr>
+<td><code>USetObjectTypeObjectVariable</code></td>
+<td>Abstract base class for set object variables that hold object type values.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="single-object-variables">📊 Single Object Variables</h2>
+<p>Single object variables hold a single value of a specific type.</p>
+<h3 id="object-type-single-variables">Object Type Single Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UObject_SOTOV</code></td>
+<td>Object Single Object Variable</td>
+<td><code>UObject*</code></td>
+</tr>
+<tr>
+<td><code>UClass_SOTOV</code></td>
+<td>Class Single Object Variable</td>
+<td><code>UClass*</code></td>
+</tr>
+<tr>
+<td><code>USoftObject_SOTOV</code></td>
+<td>Soft Object Single Object Variable</td>
+<td><code>TSoftObjectPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftClass_SOTOV</code></td>
+<td>Soft Class Single Object Variable</td>
+<td><code>TSoftClassPtr&lt;UObject&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="primitive-type-single-variables">Primitive Type Single Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UBoolean_SOV</code></td>
+<td>Boolean Single Object Variable</td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td><code>UByte_SOV</code></td>
+<td>Byte Single Object Variable</td>
+<td><code>uint8</code></td>
+</tr>
+<tr>
+<td><code>UFloat_SOV</code></td>
+<td>Float Single Object Variable</td>
+<td><code>double</code></td>
+</tr>
+<tr>
+<td><code>UInteger64_SOV</code></td>
+<td>Integer64 Single Object Variable</td>
+<td><code>int64</code></td>
+</tr>
+<tr>
+<td><code>UInteger_SOV</code></td>
+<td>Integer Single Object Variable</td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>UName_SOV</code></td>
+<td>Name Single Object Variable</td>
+<td><code>FName</code></td>
+</tr>
+<tr>
+<td><code>URotator_SOV</code></td>
+<td>Rotator Single Object Variable</td>
+<td><code>FRotator</code></td>
+</tr>
+<tr>
+<td><code>UString_SOV</code></td>
+<td>String Single Object Variable</td>
+<td><code>FString</code></td>
+</tr>
+<tr>
+<td><code>UText_SOV</code></td>
+<td>Text Single Object Variable</td>
+<td><code>FText</code></td>
+</tr>
+<tr>
+<td><code>UTransform_SOV</code></td>
+<td>Transform Single Object Variable</td>
+<td><code>FTransform</code></td>
+</tr>
+<tr>
+<td><code>UVector_SOV</code></td>
+<td>Vector Single Object Variable</td>
+<td><code>FVector</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="array-object-variables">📊 Array Object Variables</h2>
+<p>Array object variables hold an array of values of a specific type.</p>
+<h3 id="object-type-array-variables">Object Type Array Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UObject_AOTOV</code></td>
+<td>Object Array Object Variable</td>
+<td><code>TArray&lt;UObject*&gt;</code></td>
+</tr>
+<tr>
+<td><code>UClass_AOTOV</code></td>
+<td>Class Array Object Variable</td>
+<td><code>TArray&lt;UClass*&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftObject_AOTOV</code></td>
+<td>Soft Object Array Object Variable</td>
+<td><code>TArray&lt;TSoftObjectPtr&lt;UObject&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftClass_AOTOV</code></td>
+<td>Soft Class Array Object Variable</td>
+<td><code>TArray&lt;TSoftClassPtr&lt;UObject&gt;&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="primitive-type-array-variables">Primitive Type Array Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UBoolean_AOV</code></td>
+<td>Boolean Array Object Variable</td>
+<td><code>TArray&lt;bool&gt;</code></td>
+</tr>
+<tr>
+<td><code>UByte_AOV</code></td>
+<td>Byte Array Object Variable</td>
+<td><code>TArray&lt;uint8&gt;</code></td>
+</tr>
+<tr>
+<td><code>UFloat_AOV</code></td>
+<td>Float Array Object Variable</td>
+<td><code>TArray&lt;double&gt;</code></td>
+</tr>
+<tr>
+<td><code>UInteger64_AOV</code></td>
+<td>Integer64 Array Object Variable</td>
+<td><code>TArray&lt;int64&gt;</code></td>
+</tr>
+<tr>
+<td><code>UInteger_AOV</code></td>
+<td>Integer Array Object Variable</td>
+<td><code>TArray&lt;int32&gt;</code></td>
+</tr>
+<tr>
+<td><code>UName_AOV</code></td>
+<td>Name Array Object Variable</td>
+<td><code>TArray&lt;FName&gt;</code></td>
+</tr>
+<tr>
+<td><code>URotator_AOV</code></td>
+<td>Rotator Array Object Variable</td>
+<td><code>TArray&lt;FRotator&gt;</code></td>
+</tr>
+<tr>
+<td><code>UString_AOV</code></td>
+<td>String Array Object Variable</td>
+<td><code>TArray&lt;FString&gt;</code></td>
+</tr>
+<tr>
+<td><code>UText_AOV</code></td>
+<td>Text Array Object Variable</td>
+<td><code>TArray&lt;FText&gt;</code></td>
+</tr>
+<tr>
+<td><code>UTransform_AOV</code></td>
+<td>Transform Array Object Variable</td>
+<td><code>TArray&lt;FTransform&gt;</code></td>
+</tr>
+<tr>
+<td><code>UVector_AOV</code></td>
+<td>Vector Array Object Variable</td>
+<td><code>TArray&lt;FVector&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="map-object-variables">📊 Map Object Variables</h2>
+<p>Map object variables hold a map where the key is of a specific type and the value is a <code>UGorgeousObjectVariable</code>.</p>
+<h3 id="object-type-map-variables">Object Type Map Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Key Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UObject_MOTOV</code></td>
+<td>Object Map Object Variable</td>
+<td><code>UObject*</code></td>
+</tr>
+<tr>
+<td><code>UClass_MOTOV</code></td>
+<td>Class Map Object Variable</td>
+<td><code>UClass*</code></td>
+</tr>
+<tr>
+<td><code>USoftObject_MOTOV</code></td>
+<td>Soft Object Map Object Variable</td>
+<td><code>TSoftObjectPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftClass_MOTOV</code></td>
+<td>Soft Class Map Object Variable</td>
+<td><code>TSoftClassPtr&lt;UObject&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="primitive-type-map-variables">Primitive Type Map Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Key Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UByte_MOV</code></td>
+<td>Byte Map Object Variable</td>
+<td><code>uint8</code></td>
+</tr>
+<tr>
+<td><code>UFloat_MOV</code></td>
+<td>Float Map Object Variable</td>
+<td><code>double</code></td>
+</tr>
+<tr>
+<td><code>UInteger64_MOV</code></td>
+<td>Integer64 Map Object Variable</td>
+<td><code>int64</code></td>
+</tr>
+<tr>
+<td><code>UInteger_MOV</code></td>
+<td>Integer Map Object Variable</td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>UName_MOV</code></td>
+<td>Name Map Object Variable</td>
+<td><code>FName</code></td>
+</tr>
+<tr>
+<td><code>UString_MOV</code></td>
+<td>String Map Object Variable</td>
+<td><code>FString</code></td>
+</tr>
+<tr>
+<td><code>UTransform_MOV</code></td>
+<td>Transform Map Object Variable</td>
+<td><code>FTransform</code></td>
+</tr>
+<tr>
+<td><code>UVector_MOV</code></td>
+<td>Vector Map Object Variable</td>
+<td><code>FVector</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="set-object-variables">📊 Set Object Variables</h2>
+<p>Set object variables hold a set of values of a specific type.</p>
+<h3 id="object-type-set-variables">Object Type Set Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UObject_STOTOV</code></td>
+<td>Object Set Object Variable</td>
+<td><code>TSet&lt;UObject*&gt;</code></td>
+</tr>
+<tr>
+<td><code>UClass_STOTOV</code></td>
+<td>Class Set Object Variable</td>
+<td><code>TSet&lt;UClass*&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftObject_STOTOV</code></td>
+<td>Soft Object Set Object Variable</td>
+<td><code>TSet&lt;TSoftObjectPtr&lt;UObject&gt;&gt;</code></td>
+</tr>
+<tr>
+<td><code>USoftClass_STOTOV</code></td>
+<td>Soft Class Set Object Variable</td>
+<td><code>TSet&lt;TSoftClassPtr&lt;UObject&gt;&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="primitive-type-set-variables">Primitive Type Set Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Value Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UByte_STOV</code></td>
+<td>Byte Set Object Variable</td>
+<td><code>TSet&lt;uint8&gt;</code></td>
+</tr>
+<tr>
+<td><code>UFloat_STOV</code></td>
+<td>Float Set Object Variable</td>
+<td><code>TSet&lt;double&gt;</code></td>
+</tr>
+<tr>
+<td><code>UInteger64_STOV</code></td>
+<td>Integer64 Set Object Variable</td>
+<td><code>TSet&lt;int64&gt;</code></td>
+</tr>
+<tr>
+<td><code>UInteger_STOV</code></td>
+<td>Integer Set Object Variable</td>
+<td><code>TSet&lt;int32&gt;</code></td>
+</tr>
+<tr>
+<td><code>UName_STOV</code></td>
+<td>Name Set Object Variable</td>
+<td><code>TSet&lt;FName&gt;</code></td>
+</tr>
+<tr>
+<td><code>UString_STOV</code></td>
+<td>String Set Object Variable</td>
+<td><code>TSet&lt;FString&gt;</code></td>
+</tr>
+<tr>
+<td><code>UTransform_STOV</code></td>
+<td>Transform Set Object Variable</td>
+<td><code>TSet&lt;FTransform&gt;</code></td>
+</tr>
+<tr>
+<td><code>UVector_STOV</code></td>
+<td>Vector Set Object Variable</td>
+<td><code>TSet&lt;FVector&gt;</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="interface-functions">🚀 Interface Functions</h2>
+<p>Each object variable class implements specific interfaces that provide getter and setter functions for the data they store. These functions are automatically generated using the <code>UE_DEFINE_OBJECT_VARIABLE_*_INTERFACE</code> macros.</p>
+<h3 id="single-object-variable-interface-functions">Single Object Variable Interface Functions</h3>
+<h4 id="getter-functions">Getter Functions</h4>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+<th>Return Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GetObjectVariableSingleObjectVariable</code></td>
+<td>Gets a GorgeousObjectVariable</td>
+<td><code>UGorgeousObjectVariable*</code></td>
+</tr>
+<tr>
+<td><code>GetObjectObjectSingleObjectVariable</code></td>
+<td>Gets a UObject</td>
+<td><code>UObject*</code></td>
+</tr>
+<tr>
+<td><code>GetObjectClassSingleObjectVariable</code></td>
+<td>Gets a UClass</td>
+<td><code>UClass*</code></td>
+</tr>
+<tr>
+<td><code>GetSoftObjectObjectSingleObjectVariable</code></td>
+<td>Gets a TSoftObjectPtr<UObject></td>
+<td><code>TSoftObjectPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>GetSoftObjectClassSingleObjectVariable</code></td>
+<td>Gets a TSoftClassPtr<UObject></td>
+<td><code>TSoftClassPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>GetBooleanSingleObjectVariable</code></td>
+<td>Gets a boolean</td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td><code>GetByteSingleObjectVariable</code></td>
+<td>Gets a byte</td>
+<td><code>uint8</code></td>
+</tr>
+<tr>
+<td><code>GetFloatSingleObjectVariable</code></td>
+<td>Gets a double</td>
+<td><code>double</code></td>
+</tr>
+<tr>
+<td><code>GetInteger64SingleObjectVariable</code></td>
+<td>Gets a 64-bit integer</td>
+<td><code>int64</code></td>
+</tr>
+<tr>
+<td><code>GetIntegerSingleObjectVariable</code></td>
+<td>Gets an integer</td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>GetNameSingleObjectVariable</code></td>
+<td>Gets an FName</td>
+<td><code>FName</code></td>
+</tr>
+<tr>
+<td><code>GetRotatorSingleObjectVariable</code></td>
+<td>Gets an FRotator</td>
+<td><code>FRotator</code></td>
+</tr>
+<tr>
+<td><code>GetStringSingleObjectVariable</code></td>
+<td>Gets an FString</td>
+<td><code>FString</code></td>
+</tr>
+<tr>
+<td><code>GetTextSingleObjectVariable</code></td>
+<td>Gets an FText</td>
+<td><code>FText</code></td>
+</tr>
+<tr>
+<td><code>GetTransformSingleObjectVariable</code></td>
+<td>Gets an FTransform</td>
+<td><code>FTransform</code></td>
+</tr>
+<tr>
+<td><code>GetVectorSingleObjectVariable</code></td>
+<td>Gets an FVector</td>
+<td><code>FVector</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="setter-functions">Setter Functions</h4>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+<th>Return Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SetObjectVariableSingleObjectVariable</code></td>
+<td>Sets a GorgeousObjectVariable</td>
+<td><code>UGorgeousObjectVariable*</code></td>
+</tr>
+<tr>
+<td><code>SetObjectObjectSingleObjectVariable</code></td>
+<td>Sets a UObject</td>
+<td><code>UObject*</code></td>
+</tr>
+<tr>
+<td><code>SetObjectClassSingleObjectVariable</code></td>
+<td>Sets a UClass</td>
+<td><code>UClass*</code></td>
+</tr>
+<tr>
+<td><code>SetSoftObjectObjectSingleObjectVariable</code></td>
+<td>Sets a TSoftObjectPtr<UObject></td>
+<td><code>TSoftObjectPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>SetSoftObjectClassSingleObjectVariable</code></td>
+<td>Sets a TSoftClassPtr<UObject></td>
+<td><code>TSoftClassPtr&lt;UObject&gt;</code></td>
+</tr>
+<tr>
+<td><code>SetBooleanSingleObjectVariable</code></td>
+<td>Sets a boolean</td>
+<td><code>bool</code></td>
+</tr>
+<tr>
+<td><code>SetByteSingleObjectVariable</code></td>
+<td>Sets a byte</td>
+<td><code>uint8</code></td>
+</tr>
+<tr>
+<td><code>SetFloatSingleObjectVariable</code></td>
+<td>Sets a double</td>
+<td><code>double</code></td>
+</tr>
+<tr>
+<td><code>SetInteger64SingleObjectVariable</code></td>
+<td>Sets a 64-bit integer</td>
+<td><code>int64</code></td>
+</tr>
+<tr>
+<td><code>SetIntegerSingleObjectVariable</code></td>
+<td>Sets an integer</td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>SetNameSingleObjectVariable</code></td>
+<td>Sets an FName</td>
+<td><code>FName</code></td>
+</tr>
+<tr>
+<td><code>SetRotatorSingleObjectVariable</code></td>
+<td>Sets an FRotator</td>
+<td><code>FRotator</code></td>
+</tr>
+<tr>
+<td><code>SetStringSingleObjectVariable</code></td>
+<td>Sets an FString</td>
+<td><code>FString</code></td>
+</tr>
+<tr>
+<td><code>SetTextSingleObjectVariable</code></td>
+<td>Sets an FText</td>
+<td><code>FText</code></td>
+</tr>
+<tr>
+<td><code>SetTransformSingleObjectVariable</code></td>
+<td>Sets an FTransform</td>
+<td><code>FTransform</code></td>
+</tr>
+<tr>
+<td><code>SetVectorSingleObjectVariable</code></td>
+<td>Sets an FVector</td>
+<td><code>FVector</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="array-object-variable-interface-functions">Array Object Variable Interface Functions</h3>
+<p>Array object variables implement similar getter and setter functions for arrays, with additional functions for array-specific operations such as adding, removing, and finding elements.</p>
+<h3 id="map-object-variable-interface-functions">Map Object Variable Interface Functions</h3>
+<p>Map object variables implement similar getter and setter functions for maps, with additional functions for map-specific operations such as adding, removing, and finding key-value pairs.</p>
+<h3 id="set-object-variable-interface-functions">Set Object Variable Interface Functions</h3>
+<p>Set object variables implement similar getter and setter functions for sets, with additional functions for set-specific operations such as adding, removing, and finding elements.</p>
+<h2 id="usage-examples">📚 Usage Examples</h2>
+<h3 id="creating-and-using-a-single-object-variable">Creating and Using a Single Object Variable</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Blueprint</label><label for="__tabbed_1_2">C++</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><figure markdown="span">
+<img alt="Image title" src="../../../images/GorgeousCore/ObjectVariableDefinitions/StringVariableExample.png" width="100%" />
+<figcaption>Creating and using a String Single Object Variable in Blueprint.</figcaption>
+</figure></p>
+</div>
+<div class="tabbed-block">
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// Create a new string object variable</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">UGorgeousRootObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UGorgeousRootObjectVariable</span><span class="o">::</span><span class="n">GetRootObjectVariable</span><span class="p">();</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">FGuid</span><span class="w"> </span><span class="n">StringVariableIdentifier</span><span class="p">;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">UGorgeousObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">StringVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="o">-&gt;</span><span class="n">NewObjectVariable</span><span class="p">(</span><span class="n">UString_SOV</span><span class="o">::</span><span class="n">StaticClass</span><span class="p">(),</span><span class="w"> </span><span class="n">StringVariableIdentifier</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">// Set the value</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">FString</span><span class="w"> </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FString</span><span class="p">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p">);</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="hll"><span class="n">IGorgeousSingleObjectVariablesSetter_I</span><span class="o">::</span><span class="n">Execute_SetStringSingleObjectVariable</span><span class="p">(</span><span class="n">StringVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">);</span>
+</span></span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1">// Get the value</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="hll"><span class="n">FString</span><span class="w"> </span><span class="n">RetrievedValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IGorgeousSingleObjectVariablesGetter_I</span><span class="o">::</span><span class="n">Execute_GetStringSingleObjectVariable</span><span class="p">(</span><span class="n">StringVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">);</span>
+</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="creating-and-using-an-array-object-variable">Creating and Using an Array Object Variable</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Blueprint</label><label for="__tabbed_2_2">C++</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><figure markdown="span">
+<img alt="Image title" src="../../../images/GorgeousCore/ObjectVariableDefinitions/IntegerArrayVariableExample.png" width="100%" />
+<figcaption>Creating and using an Integer Array Object Variable in Blueprint.</figcaption>
+</figure></p>
+</div>
+<div class="tabbed-block">
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Create a new integer array object variable</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">UGorgeousRootObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UGorgeousRootObjectVariable</span><span class="o">::</span><span class="n">GetRootObjectVariable</span><span class="p">();</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">FGuid</span><span class="w"> </span><span class="n">IntegerArrayVariableIdentifier</span><span class="p">;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">UGorgeousObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">IntegerArrayVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="o">-&gt;</span><span class="n">NewObjectVariable</span><span class="p">(</span><span class="n">UInteger_AOV</span><span class="o">::</span><span class="n">StaticClass</span><span class="p">(),</span><span class="w"> </span><span class="n">IntegerArrayVariableIdentifier</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1">// Set the value</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">TArray</span><span class="o">&lt;</span><span class="n">int32</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Values</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">};</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="hll"><span class="n">IGorgeousArrayObjectVariablesSetter_I</span><span class="o">::</span><span class="n">Execute_SetIntegerArrayObjectVariable</span><span class="p">(</span><span class="n">IntegerArrayVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">,</span><span class="w"> </span><span class="n">Values</span><span class="p">);</span>
+</span></span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1">// Get the value</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="hll"><span class="n">TArray</span><span class="o">&lt;</span><span class="n">int32</span><span class="o">&gt;</span><span class="w"> </span><span class="n">RetrievedValues</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IGorgeousArrayObjectVariablesGetter_I</span><span class="o">::</span><span class="n">Execute_GetIntegerArrayObjectVariable</span><span class="p">(</span><span class="n">IntegerArrayVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">);</span>
+</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="creating-and-using-a-map-object-variable">Creating and Using a Map Object Variable</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Blueprint</label><label for="__tabbed_3_2">C++</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><figure markdown="span">
+<img alt="Image title" src="../../../images/GorgeousCore/ObjectVariableDefinitions/StringMapVariableExample.png" width="100%" />
+<figcaption>Creating and using a String Map Object Variable in Blueprint.</figcaption>
+</figure></p>
+</div>
+<div class="tabbed-block">
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Create a new string map object variable</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">UGorgeousRootObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UGorgeousRootObjectVariable</span><span class="o">::</span><span class="n">GetRootObjectVariable</span><span class="p">();</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">FGuid</span><span class="w"> </span><span class="n">StringMapVariableIdentifier</span><span class="p">;</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">UGorgeousObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">StringMapVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="o">-&gt;</span><span class="n">NewObjectVariable</span><span class="p">(</span><span class="n">UString_MOV</span><span class="o">::</span><span class="n">StaticClass</span><span class="p">(),</span><span class="w"> </span><span class="n">StringMapVariableIdentifier</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">// Set the value</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">FGuid</span><span class="w"> </span><span class="n">MapValueVariableIdentifier</span><span class="p">;</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">UGorgeousObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">MapValueVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="o">-&gt;</span><span class="n">NewObjectVariable</span><span class="p">(</span><span class="n">UString_SOV</span><span class="o">::</span><span class="n">StaticClass</span><span class="p">(),</span><span class="w"> </span><span class="n">MapValueVariableIdentifier</span><span class="p">,</span><span class="w"> </span><span class="n">StringMapVariable</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">FString</span><span class="w"> </span><span class="n">MapValue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FString</span><span class="p">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p">);</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">IGorgeousSingleObjectVariablesSetter_I</span><span class="o">::</span><span class="n">Execute_SetStringSingleObjectVariable</span><span class="p">(</span><span class="n">MapValueVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">,</span><span class="w"> </span><span class="n">MapValue</span><span class="p">);</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">TMap</span><span class="o">&lt;</span><span class="n">FString</span><span class="p">,</span><span class="w"> </span><span class="n">UGorgeousObjectVariable</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TMap</span><span class="o">&lt;</span><span class="n">FString</span><span class="p">,</span><span class="w"> </span><span class="n">UGorgeousObjectVariable</span><span class="o">*&gt;</span><span class="p">({</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="n">FString</span><span class="p">(</span><span class="s">&quot;Key1&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">MapValueVariable</span><span class="w"> </span><span class="p">}</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="p">});</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="hll"><span class="n">IGorgeousMapObjectVariablesSetter_I</span><span class="o">::</span><span class="n">Execute_SetStringMapObjectVariable</span><span class="p">(</span><span class="n">StringMapVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">);</span>
+</span></span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="c1">// Get the value</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="hll"><span class="n">TMap</span><span class="o">&lt;</span><span class="n">FString</span><span class="p">,</span><span class="w"> </span><span class="n">UGorgeousObjectVariable</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">RetrievedMap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IGorgeousMapObjectVariablesGetter_I</span><span class="o">::</span><span class="n">Execute_GetStringMapObjectVariable</span><span class="p">(</span><span class="n">StringMapVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">);</span>
+</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<h3 id="creating-and-using-a-set-object-variable">Creating and Using a Set Object Variable</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Blueprint</label><label for="__tabbed_4_2">C++</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><figure markdown="span">
+<img alt="Image title" src="../../../images/GorgeousCore/ObjectVariableDefinitions/NameSetVariableExample.png" width="100%" />
+<figcaption>Creating and using a Name Set Object Variable in Blueprint.</figcaption>
+</figure></p>
+</div>
+<div class="tabbed-block">
+<div class="language-cpp highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1">// Create a new name set object variable</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">UGorgeousRootObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UGorgeousRootObjectVariable</span><span class="o">::</span><span class="n">GetRootObjectVariable</span><span class="p">();</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">FGuid</span><span class="w"> </span><span class="n">NameSetVariableIdentifier</span><span class="p">;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">UGorgeousObjectVariable</span><span class="o">*</span><span class="w"> </span><span class="n">NameSetVariable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RootObjectVariable</span><span class="o">-&gt;</span><span class="n">NewObjectVariable</span><span class="p">(</span><span class="n">UName_STOV</span><span class="o">::</span><span class="n">StaticClass</span><span class="p">(),</span><span class="w"> </span><span class="n">NameSetVariableIdentifier</span><span class="p">,</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1">// Set the value</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">TSet</span><span class="o">&lt;</span><span class="n">FName</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TSet</span><span class="o">&lt;</span><span class="n">FName</span><span class="o">&gt;</span><span class="p">({</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="s">&quot;Name1&quot;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="p">});</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="hll"><span class="n">IGorgeousSetObjectVariablesSetter_I</span><span class="o">::</span><span class="n">Execute_SetNameSetObjectVariable</span><span class="p">(</span><span class="n">NameSetVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">,</span><span class="w"> </span><span class="n">Value</span><span class="p">);</span>
+</span></span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w"> </span><span class="c1">// Get the value</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="hll"><span class="n">TSet</span><span class="o">&lt;</span><span class="n">FName</span><span class="o">&gt;</span><span class="w"> </span><span class="n">RetrievedSet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IGorgeousSetObjectVariablesGetter_I</span><span class="o">::</span><span class="n">Execute_GetNameSetObjectVariable</span><span class="p">(</span><span class="n">NameSetVariable</span><span class="p">,</span><span class="w"> </span><span class="n">NAME_None</span><span class="p">);</span>
+</span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Specifying the OptionalVariableName variable in any interface Set/Get function, allows you to target not just the default "Value" UProperty, but also any UProperty inside the desired UObject that this function is being called on.</p>
+</div>
+<h2 id="common-properties">🔧 Common Properties</h2>
+<p>All object variable classes inherit the following properties from <code>UGorgeousObjectVariable</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>UniqueIdentifier</code></td>
+<td><code>FGuid</code></td>
+<td>A unique identifier for the object variable.</td>
+</tr>
+<tr>
+<td><code>VariableRegistry</code></td>
+<td><code>TArray&lt;TObjectPtr&lt;UGorgeousObjectVariable&gt;&gt;</code></td>
+<td>The registry of child object variables.</td>
+</tr>
+<tr>
+<td><code>bPersistent</code></td>
+<td><code>bool</code></td>
+<td>Indicates whether the variable persists across level transitions.</td>
+</tr>
+<tr>
+<td><code>Parent</code></td>
+<td><code>UGorgeousObjectVariable*</code></td>
+<td>The parent object variable in the hierarchy.</td>
+</tr>
+</tbody>
+</table>
+<p>Each object variable class also has a <code>Value</code> property of the appropriate type for storing the actual data.</p>
+<h2 id="implementation-details">🔍 Implementation Details</h2>
+<p>The object variable classes use the following macros to automatically generate getter and setter functions:</p>
+<ul>
+<li><code>UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION</code> - For single object variables</li>
+<li><code>UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION</code> - For array and set object variables</li>
+<li><code>UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION</code> - For map object variables</li>
+</ul>
+<p>These macros simplify the process of defining how object variables interact with different data types and ensure consistent behavior across all variable types.</p>
+<style>
+.function-description {
+    margin-top: 0.5em;
+    font-style: italic;
+    color: #555;
+}
+</style>
+
+
+
+
+
+
+
+  
+    
+  
+  
+    
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="May 14, 2025 09:14:36">May 14, 2025</span>
+  </span>
+
+    
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Created">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14.47 15.08 11 13V7h1.5v5.25l3.08 1.83c-.41.28-.79.62-1.11 1m-1.39 4.84c-.36.05-.71.08-1.08.08-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8c0 .37-.03.72-.08 1.08.69.1 1.33.32 1.92.64.1-.56.16-1.13.16-1.72 0-5.5-4.5-10-10-10S2 6.5 2 12s4.47 10 10 10c.59 0 1.16-.06 1.72-.16-.32-.59-.54-1.23-.64-1.92M18 15v3h-3v2h3v3h2v-3h3v-2h-3v-3z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="May 14, 2025 09:14:36">May 14, 2025</span>
+  </span>
+
+    
+    
+      
+  
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Contributors">
+      
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4"/></svg>
+      
+    </span>
+    <nav>
+      
+        <a href="mailto:nils.bergemann@employee.epicnova.net">Nils Bergemann</a>
+    </nav>
+  </span>
+
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../GT-C-OV-OV/" class="md-footer__link md-footer__link--prev" aria-label="Previous: 📊 Object Variable (Blueprint &amp; C++)">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                📊 Object Variable (Blueprint & C++)
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../GT-C-OV-ROV/" class="md-footer__link md-footer__link--next" aria-label="Next: 🌱 Root Object Variable (Blueprint &amp; C++)">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                🌱 Root Object Variable (Blueprint & C++)
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Simsalabim Studios by Epic Nova (Nils Bergemann)
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.footer", "content.code.copy", "content.code.select", "navigation.top", "navigation.tabs", "navigation.instant", "content.action.edit", "search.suggest", "search.share"], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.13a4f30d.min.js"></script>
+      
+    
+  </body>
+</html>
