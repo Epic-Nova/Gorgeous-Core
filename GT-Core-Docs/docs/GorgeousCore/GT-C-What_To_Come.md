@@ -65,7 +65,10 @@ The object variable system is a highly dynamic system that provides a way of add
   * Automatic cleanup of non-persistent variables after level switches
   * Persistence based on owner object lifecycle
 
-> **Note:** This workflow will replace the structures currently representing default values, addressing memory allocation inefficiencies where the entire memory space is allocated even when only a single value is used.
+
+???+ info
+
+    This workflow will replace the structures currently representing default values, addressing memory allocation inefficiencies where the entire memory space is allocated even when only a single value is used.
 
 ### Functional Structures
 
@@ -103,31 +106,33 @@ The build system improvements aim to simplify module development:
   * Internal Target.cs simplification tool
   * Support for third-party library integration
 
-> **Note:** These improvements will be available not just for Gorgeous plugins but for any Unreal Engine project, providing a tool that simplifies coding quality while maintaining usability.
+???+ info
+
+    These improvements will be available not just for Gorgeous plugins but for any Unreal Engine project, providing a tool that simplifies coding quality while maintaining usability.
 
 ## 🛠️ Implementation Timeline
 
 While specific release dates are not yet determined, the implementation will follow this general order:
 
-1. **Phase 1: Core Functionality**
-   * Basic object variable system enhancements
-   * Initial functional structures implementation
-   * Foundation for conditional object choosers
+**Phase 1: Core Functionality**
+    * Basic object variable system enhancements
+    * Initial functional structures implementation
+    * Foundation for conditional object choosers
 
-2. **Phase 2: Editor Integration**
-   * Custom details customization
-   * Improved property editing
-   * Visualization tools
+**Phase 2: Editor Integration**
+    * Custom details customization
+    * Improved property editing
+    * Visualization tools
 
-3. **Phase 3: Advanced Features**
-   * Nesting and persistence
-   * Universal access functions
-   * Conditional object chooser implementation
+**Phase 3: Advanced Features**
+    * Nesting and persistence
+    * Universal access functions
+    * Conditional object chooser implementation
 
-4. **Phase 4: Build System**
-   * Dependency management tools
-   * Build.cs and Target.cs simplification
-   * Third-party integration support
+**Phase 4: Build System**
+    * Dependency management tools
+    * Build.cs and Target.cs simplification
+    * Third-party integration support
 
 ## 🤝 Contributing
 
