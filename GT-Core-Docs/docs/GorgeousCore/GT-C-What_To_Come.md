@@ -79,8 +79,10 @@ Functional Structures enhance the capabilities of standard Unreal Engine structu
   * Callbacks when structure members are changed
   * Improved editor integration
 
-> **Note:** This feature will be particularly useful for the dialogue system, allowing for dynamic asset selection based on property changes.
+???+ info
 
+    This feature will be particularly useful for the dialogue system, allowing for dynamic asset selection based on property changes.
+    
 ### Conditional Object Choosers
 
 Conditional Object Choosers provide a flexible way to select objects based on conditions:
