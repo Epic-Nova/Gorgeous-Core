@@ -117,24 +117,24 @@ The build system improvements aim to simplify module development:
 While specific release dates are not yet determined, the implementation will follow this general order:
 
 **Phase 1: Core Functionality**
-    * Basic object variable system enhancements
-    * Initial functional structures implementation
-    * Foundation for conditional object choosers
+1. Basic object variable system enhancements
+2. Initial functional structures implementation
+3. Foundation for conditional object choosers
 
 **Phase 2: Editor Integration**
-    * Custom details customization
-    * Improved property editing
-    * Visualization tools
+1. Custom details customization
+2. Improved property editing
+3. Visualization tools
 
 **Phase 3: Advanced Features**
-    * Nesting and persistence
-    * Universal access functions
-    * Conditional object chooser implementation
+1. Nesting and persistence
+2. Universal access functions
+3. Conditional object chooser implementation
 
 **Phase 4: Build System**
-    * Dependency management tools
-    * Build.cs and Target.cs simplification
-    * Third-party integration support
+1. Dependency management tools
+2. Build.cs and Target.cs simplification
+3. Third-party integration support
 
 ## 🤝 Contributing
 
