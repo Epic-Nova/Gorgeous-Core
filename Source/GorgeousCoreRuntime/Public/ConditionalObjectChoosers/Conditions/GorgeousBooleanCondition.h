@@ -49,12 +49,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Boolean Condition")
 	bool B;
-
+	
 	/**
 	 * Evaluates the boolean condition based on the selected mode.
 	 *
 	 * @return 1 if the condition is true, 0 otherwise.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Boolean Condition")
-	virtual uint8 CheckCondition() override;
+	virtual uint8 CheckCondition_Implementation() override;
 };

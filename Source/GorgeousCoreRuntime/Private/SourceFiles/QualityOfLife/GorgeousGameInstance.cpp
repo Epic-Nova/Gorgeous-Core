@@ -12,6 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
+#include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/Helpers/GorgeousQualityOfLIfeHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
@@ -21,6 +22,8 @@
 
 void UGorgeousGameInstance::Init()
 {
+	UGorgeousRootObjectVariable::GetRootObjectVariable()->SetCachedOwner(this);
+
 	UE_DECLARE_QOF_CLASS_INIT_INVOKE_ADDITIONAL_DATA
 	
 	Super::Init();

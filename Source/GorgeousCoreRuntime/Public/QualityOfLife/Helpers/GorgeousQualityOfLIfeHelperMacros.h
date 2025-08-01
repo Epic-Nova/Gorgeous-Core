@@ -46,7 +46,7 @@
 		Super::PostEditChangeProperty(PropertyChangedEvent); \
 		const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None; \
 		{ \
-			if (PropertyName == GET_MEMBER_NAME_CHECKED(Class, AdditionalGorgeousData) && PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) \
+			if (PropertyName == GET_MEMBER_NAME_CHECKED(Class, AdditionalGorgeousData) && PropertyChangedEvent.ChangeType == EPropertyChangeType::ValueSet) \
 			{ \
 				TArray<UGorgeousObjectVariable*> ObjectVariables; \
 				AdditionalGorgeousData.GenerateValueArray(ObjectVariables); \
