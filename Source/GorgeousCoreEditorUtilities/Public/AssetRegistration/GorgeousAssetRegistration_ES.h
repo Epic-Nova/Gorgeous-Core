@@ -41,6 +41,7 @@ class UGorgeousFactory;
  * - Dynamically adding Gorgeous asset menus to the Content Browser.
  *
  * @author Nils Bergemann
+ * @since v0.9
  */
 UCLASS(DisplayName = "Gorgeous Asset Registration")
 class GORGEOUSCOREEDITORUTILITIES_API UGorgeousAssetRegistration_ES : public UEditorSubsystem

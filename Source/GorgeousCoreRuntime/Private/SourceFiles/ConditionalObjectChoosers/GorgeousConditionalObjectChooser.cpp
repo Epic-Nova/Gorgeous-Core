@@ -18,7 +18,7 @@ UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() co
 {
 	if (UGorgeousObjectVariable* ObjectVariable = Conditions[ConditionCheck->CheckCondition()])
 	{
-		ObjectVariable->InvokeInstancedFunctionality(FGuid::NewGuid());
+		ObjectVariable->InvokeInstancedFunctionality(ObjectVariable->UniqueIdentifier.IsValid() ? ObjectVariable->UniqueIdentifier : FGuid::NewGuid());
 		return ObjectVariable;
 	}
 	return nullptr;

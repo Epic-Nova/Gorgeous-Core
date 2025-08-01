@@ -13,7 +13,8 @@
 //=============================================================================
 // UGorgeousCondition Implementation
 //=============================================================================
-uint8 UGorgeousCondition::CheckCondition()
+
+uint8 UGorgeousCondition::CheckCondition_Implementation()
 {
 	return 0;
 }

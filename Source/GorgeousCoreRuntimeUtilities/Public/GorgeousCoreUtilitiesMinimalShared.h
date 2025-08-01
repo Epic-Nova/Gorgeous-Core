@@ -36,6 +36,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 //Macro Helper Includes
 #include "Helpers/Macros/GorgeousConnectionHelperMacros.h"
 #include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousPlatformHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 

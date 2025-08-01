@@ -44,9 +44,10 @@ public:
 	EConditionalChooserMode_E Mode;
 
 	/**
-	 * Checks the condition and returns a result.
+	 * Checks the blueprint overwritten condition and returns a result.
 	 *
 	 * @return The result of the condition check.
 	 */
-	virtual uint8 CheckCondition();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Condition")
+	uint8 CheckCondition();
 };
