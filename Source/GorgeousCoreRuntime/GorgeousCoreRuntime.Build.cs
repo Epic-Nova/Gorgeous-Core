@@ -38,9 +38,7 @@ public class GorgeousCoreRuntime : ModuleRules
             Path.Combine(privateIncludePath, "HeaderFiles"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTags", "Projects" });
-        
-        PrivateDependencyModuleNames.Add("GorgeousCoreRuntimeUtilities");
+        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTags", "Projects", "GorgeousCoreRuntimeUtilities" });
         
         if (Target.bBuildEditor)
         {
