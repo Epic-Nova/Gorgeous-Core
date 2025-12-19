@@ -8,10 +8,9 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#include "ModuleCore/GorgeousAutoReplicationRPCExamples.h"
-
+#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCExamples.h"
+#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
-#include "ModuleCore/GorgeousAutoReplicationRPCPayloadLibrary.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
 FGorgeousRPCPayload UGorgeousAutoReplicationRPCExamples::BuildExampleDamagePayload(UObject* Context, const float DamageValue, const FString& DamageLabel)

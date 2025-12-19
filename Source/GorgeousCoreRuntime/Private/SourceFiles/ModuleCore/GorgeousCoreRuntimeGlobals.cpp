@@ -9,10 +9,10 @@
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeGlobals.h"
-#include "ModuleCore/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"

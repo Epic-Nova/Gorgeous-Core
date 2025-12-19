@@ -10,11 +10,13 @@
 <==========================================================================*/
 
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
+#include "AutoReplication/GorgeousAutoReplicationGraph.h"
 
 UGorgeousAutoReplicationSettings::UGorgeousAutoReplicationSettings(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
-	, bEnableIris(true)
+	, bEnableIris(false)
 	, bEnableReplicationGraph(true)
+	, AutoReplicationGraphClass(TSoftClassPtr<UReplicationGraph>(UGorgeousAutoReplicationGraph::StaticClass()))
 	, bForceIrisAtRuntime(false)
 	, bForceReplicationGraphAtRuntime(false)
 {

@@ -9,7 +9,7 @@
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
 
-#include "ModuleCore/GorgeousAutoReplicationNetworkingLibrary.h"
+#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationNetworkingLibrary.h"
 
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformProcess.h"

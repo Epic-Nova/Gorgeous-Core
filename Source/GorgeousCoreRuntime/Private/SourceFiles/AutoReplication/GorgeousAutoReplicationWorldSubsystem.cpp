@@ -8,10 +8,10 @@
 
 namespace
 {
-bool IsGameLikeWorld(const UWorld* World)
-{
-	return World && World->IsGameWorld();
-}
+	bool IsGameLikeWorld(const UWorld* World)
+	{
+		return World && World->IsGameWorld();
+	}
 }
 
 void UGorgeousAutoReplicationWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)

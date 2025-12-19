@@ -62,6 +62,7 @@ public class GorgeousCoreEditor : ModuleRules
                 "MessageLog",
                 "UMG", 
                 "Kismet",
+                "KismetCompiler",
                 "HTTP",
                 "Json",
                 "JsonUtilities",

@@ -17,7 +17,7 @@
 #include "Misc/ConfigCacheIni.h"
 #include "Misc/ScopeExit.h"
 #include "Net/NetworkMetricsConfig.h"
-#include "GorgeousObjectVariablePerfTestTypes.h"
+#include "UnitTests/GorgeousObjectVariablePerfTestTypes.h"
 #include "UnitTests/Harness/GorgeousHarnessGameInstance.h"
 #include "UnitTests/Harness/GorgeousHarnessGameMode.h"
 #include "UObject/StrongObjectPtr.h"
