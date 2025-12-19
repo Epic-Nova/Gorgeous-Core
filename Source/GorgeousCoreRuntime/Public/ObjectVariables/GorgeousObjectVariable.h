@@ -251,12 +251,13 @@ public:
 	 * @param Identifier The unique identifier of the object variable.
 	 * @param Parent The parent of this object variable. The chain can be followed up to the root object variable.
 	 * @param bShouldPersist Weather this object variable should be persistent across level switches.
+	 * @param DisplayNameOverride An optional display name override for the object variable.
 	 * @return A new variable in object format.
 	 *
 	 * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false);
+	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "");
 
 	/**
 	 * Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
@@ -492,6 +493,18 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
 	FString GetDisplayNameOrFallback() const;
 
+
+#if WITH_EDITOR
+
+	/**
+	 * Returns the in the constructor configured settings for the getter and setter nodes.
+	 * 
+	 * @return The pin configuration of this object variable.
+	 */
+	FObjectVariablePinConfiguration_S GetObjectVariablePinConfiguration() const { return PinConfiguration; }
+	
+#endif WITH_EDITOR
+	
 	/** Multicast dispatcher triggered for every executed AutoReplication RPC payload. */
 	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Object Variable|Networking")
 	FGorgeousAutoReplicationRPCPayloadEvent OnAutoReplicationRPCPayload;
@@ -597,17 +610,6 @@ protected:
     	return false;
     }
 //end grepper
-
-#if WITH_EDITOR
-
-	/**
-	 * Returns the in the constructor configured settings for the getter and setter nodes.
-	 * 
-	 * @return The pin configuration of this object variable.
-	 */
-	FObjectVariablePinConfiguration_S GetObjectVariablePinConfiguration() const { return PinConfiguration; }
-	
-#endif WITH_EDITOR
 	
 public:
 	/**

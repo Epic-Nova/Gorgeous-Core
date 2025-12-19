@@ -32,23 +32,23 @@ public:
 	UGorgeousAutoReplicationSettings(const FObjectInitializer& ObjectInitializer);
 
 	/** True if Iris should be initialized for object variables when available. */
-	UPROPERTY(Config, EditAnywhere, Category = "Backends")
+	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableReplicationGraph", EditConditionHides))
 	bool bEnableIris;
 
 	/** True if a dedicated replication graph should be created for auto-replicated objects. */
-	UPROPERTY(Config, EditAnywhere, Category = "Backends")
+	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableIris", EditConditionHides))
 	bool bEnableReplicationGraph;
 
 	/** Optional class that overrides the default auto-replication graph implementation. */
-	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "bEnableReplicationGraph"))
+	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "bEnableReplicationGraph", EditConditionHides))
 	TSoftClassPtr<UReplicationGraph> AutoReplicationGraphClass;
 
 	/** If true, apply an explicit runtime override to enable Iris regardless of other runtime toggles. */
-	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Iris At Runtime"))
+	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Iris At Runtime", EditCondition = "bEnableIris", EditConditionHides))
 	bool bForceIrisAtRuntime;
 
 	/** If true, apply an explicit runtime override to enable the replication graph regardless of other runtime toggles. */
-	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Replication Graph At Runtime"))
+	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Replication Graph At Runtime", EditCondition = "bEnableReplicationGraph", EditConditionHides))
 	bool bForceReplicationGraphAtRuntime;
 
      /** Default stream configuration applied to every object variable unless overridden. */

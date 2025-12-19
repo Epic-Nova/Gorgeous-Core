@@ -14,7 +14,7 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
-#include "ModuleCore/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"

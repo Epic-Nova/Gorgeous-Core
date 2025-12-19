@@ -1,4 +1,4 @@
-﻿#include "GorgeousCoreLicenseHelper.h"
+﻿#include "Helpers/GorgeousLicenseHelper.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformFilemanager.h"

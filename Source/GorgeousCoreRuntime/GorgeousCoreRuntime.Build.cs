@@ -70,5 +70,7 @@ public class GorgeousCoreRuntime : ModuleRules
             PublicDefinitions.Add("GORGEOUSCORE_WITH_IRIS=0");
             PublicDefinitions.Add("GORGEOUSCORE_WITH_REPLICATION_GRAPH=1");
         }
+        
+        throw new System.NotImplementedException("Gorgeous Core Runtime module is not finished yet and lacks important features. Please be patient until the full release of v0.9");
     }
 }

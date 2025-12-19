@@ -8,8 +8,7 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-#include "ModuleCore/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-
+#include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"

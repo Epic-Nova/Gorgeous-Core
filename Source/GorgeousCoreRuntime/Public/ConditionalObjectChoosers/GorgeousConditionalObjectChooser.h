@@ -48,6 +48,13 @@ public:
 	UGorgeousObjectVariable* DecideCondition() const;
 
 	/**
+	 * Removes invalid or placeholder references from the condition check and conditions array.
+	 * Safe to call from editor utility or construction scripts to repair corrupted assets.
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Gorgeous Conditional Object Chooser")
+	void CleanupInvalidEntries();
+
+	/**
 	 * The condition check object.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", Setter = SetConditionCheck, meta = (AllowAbstract = "true"))

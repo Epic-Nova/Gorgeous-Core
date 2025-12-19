@@ -1,10 +1,10 @@
 #include "Automation/GorgeousAutomationTestMatrix.h"
 #include "Automation/AutoReplicationTestMatrixCore.h"
+#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
 #include "UnitTests/Harness/GorgeousServerClientHarness.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
-#include "ModuleCore/GorgeousAutoReplicationRPCPayloadLibrary.h"
 #include "Misc/ScopeExit.h"
 #include "UnitTests/Helpers/GorgeousNetworkEmulationHelpers.h"
 

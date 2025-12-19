@@ -97,10 +97,10 @@ void FGorgeousCoreEditorModule::StartupModule()
 		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
 	}
 	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Character"), AGorgeousCharacter::StaticClass(),
+		/*FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Character"), AGorgeousCharacter::StaticClass(),
 			FColor::Blue, { INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life") });
 
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, { GorgeousThingsAssetCategory });
+		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, { GorgeousThingsAssetCategory });*/
 	}
 	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(

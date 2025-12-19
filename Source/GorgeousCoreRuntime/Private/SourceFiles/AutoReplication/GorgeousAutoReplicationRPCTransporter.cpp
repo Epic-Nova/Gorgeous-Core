@@ -12,8 +12,8 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
-#include "ModuleCore/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "Engine/World.h"
 #include "Engine/Player.h"
 #include "GameFramework/Actor.h"

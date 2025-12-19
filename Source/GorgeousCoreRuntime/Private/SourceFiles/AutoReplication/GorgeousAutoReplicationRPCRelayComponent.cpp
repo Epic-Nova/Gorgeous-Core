@@ -11,7 +11,7 @@
 
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 
-#include "ModuleCore/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "Engine/World.h"
 
 UGorgeousAutoReplicationRPCRelayComponent::UGorgeousAutoReplicationRPCRelayComponent()
