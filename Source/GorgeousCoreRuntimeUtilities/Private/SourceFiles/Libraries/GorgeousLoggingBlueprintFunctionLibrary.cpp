@@ -48,3 +48,18 @@ void UGorgeousLoggingBlueprintFunctionLibrary::LogFatalMessage(const FString Mes
 {
     GorgeousLogging::LogMessage_Internal(Message, Logging_Fatal, LoggingKey, 0.0f, true, true, true, WorldContextObject);
 }
+
+void UGorgeousLoggingBlueprintFunctionLibrary::SetLoggingKeySuppressed(FName LoggingKey, bool bShouldSuppress)
+{
+    GorgeousLogging::SetLoggingKeySuppressed(LoggingKey, bShouldSuppress);
+}
+
+bool UGorgeousLoggingBlueprintFunctionLibrary::IsLoggingKeySuppressed(FName LoggingKey)
+{
+    return GorgeousLogging::IsLoggingKeySuppressed(LoggingKey);
+}
+
+void UGorgeousLoggingBlueprintFunctionLibrary::ClearAllLoggingSuppressions()
+{
+    GorgeousLogging::ClearAllLoggingSuppressions();
+}

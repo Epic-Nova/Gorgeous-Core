@@ -15,14 +15,56 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
+#include "CoreMinimal.h"
+#include "Engine/Engine.h"
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "Containers/Set.h"
+#include "Modules/ModuleManager.h"
 //<-------------------------------------------------------------------------->
 
 namespace GorgeousLogging
 {
     // The messages that were logged and are currently on cooldown with their gameplay tag as key.
     static TMap<FGameplayTag, FString> LoggedMessages;
+    static TSet<FName> SuppressedLoggingKeys;
+
+    FORCEINLINE static bool CanUseGameplayTags()
+    {
+        return !IsEngineExitRequested() && FModuleManager::Get().IsModuleLoaded(TEXT("GameplayTags"));
+    }
+
+    FORCEINLINE static bool ShouldSuppressKey(const FName& LoggingKey)
+    {
+        return LoggingKey != NAME_None && SuppressedLoggingKeys.Contains(LoggingKey);
+    }
+
+    FORCEINLINE static void SetLoggingKeySuppressed(const FName& LoggingKey, const bool bShouldSuppress)
+    {
+        if (LoggingKey == NAME_None)
+        {
+            return;
+        }
+
+        if (bShouldSuppress)
+        {
+            SuppressedLoggingKeys.Add(LoggingKey);
+        }
+        else
+        {
+            SuppressedLoggingKeys.Remove(LoggingKey);
+        }
+    }
+
+    FORCEINLINE static bool IsLoggingKeySuppressed(const FName& LoggingKey)
+    {
+        return ShouldSuppressKey(LoggingKey);
+    }
+
+    FORCEINLINE static void ClearAllLoggingSuppressions()
+    {
+        SuppressedLoggingKeys.Reset();
+    }
     
 	/**
 	 * Logs a message with customizable parameters.
@@ -42,7 +84,16 @@ namespace GorgeousLogging
 	                                            const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true,
 	                                            const UObject* WorldContextObject = nullptr)
 	{
-	    FGameplayTag GameplayLoggingKey = FGameplayTag::RequestGameplayTag(*LoggingKey, false);
+        const FName LoggingKeyName = LoggingKey.IsEmpty() ? NAME_None : FName(*LoggingKey);
+        if (ShouldSuppressKey(LoggingKeyName))
+        {
+            return;
+        }
+
+        const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
+        FGameplayTag GameplayLoggingKey = bShouldUseGameplayTags
+            ? FGameplayTag::RequestGameplayTag(*LoggingKey, false)
+            : FGameplayTag();
 
         // If this logging key is already present AND we're not overriding, skip logging to avoid duplication
         if (GameplayLoggingKey.IsValid() && LoggedMessages.Contains(GameplayLoggingKey) && !bOverrideLoggingIfPresent)
@@ -65,7 +116,10 @@ namespace GorgeousLogging
 
 
             // Schedule removal of the key after the duration.
-            if (const UWorld* World = GEngine->GetWorldFromContextObjectChecked(WorldContextObject))
+            const UWorld* World = (GEngine && WorldContextObject)
+                ? GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull)
+                : nullptr;
+            if (World)
             {
                 FTimerHandle TimerHandle;
                 World->GetTimerManager().SetTimer(
@@ -125,7 +179,6 @@ namespace GorgeousLogging
         }
 
         // Print to the screen if enabled
-	    check(GEngine);
         if (bPrintToScreen && GEngine)
         {
             FColor TextColor;
@@ -156,8 +209,10 @@ namespace GorgeousLogging
                     break;
             }
 
-            // Generate a unique key using GameplayLoggingKey
-            const uint64 UniqueKey = GetTypeHash(GameplayLoggingKey.GetTagName());
+            // Generate a unique key using GameplayLoggingKey when available, otherwise fall back to the logging key name
+            const uint64 UniqueKey = GameplayLoggingKey.IsValid()
+                ? GetTypeHash(GameplayLoggingKey.GetTagName())
+                : GetTypeHash(LoggingKeyName);
             
             const FVector2D DefaultTextScale(1.0f, 1.0f);
             constexpr bool bNewerOnTop = true;

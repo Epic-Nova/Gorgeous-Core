@@ -16,7 +16,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
-#include "DetailCustomisations/GorgeousObjectVariableDetailCustomization.h"
+#include "../HeaderFiles/PropertyTypeCustomizations/GorgeousObjectVariablePropertyTypeCustomization.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -96,12 +96,17 @@ void FGorgeousCoreEditorModule::StartupModule()
 	
 		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
 	}
-	
-	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	{
+		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Character"), AGorgeousCharacter::StaticClass(),
+			FColor::Blue, { INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life") });
+
+		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, { GorgeousThingsAssetCategory });
+	}
+	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 		UGorgeousObjectVariable::StaticClass()->GetFName(),
 		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariableDetailCustomization::MakeInstance));
-	PropertyEditorModule.NotifyCustomizationModuleChanged();
+	PropertyEditorModule.NotifyCustomizationModuleChanged();*/
 }
 
 void FGorgeousCoreEditorModule::ShutdownModule()

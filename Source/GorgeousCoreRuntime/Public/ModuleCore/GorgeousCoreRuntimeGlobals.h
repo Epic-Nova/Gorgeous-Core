@@ -15,15 +15,14 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
-#include "QualityOfLife/GorgeousGameInstance.h"
-#include "QualityOfLife/GorgeousGameMode.h"
-#include "QualityOfLife/GorgeousGameState.h"
-#include "QualityOfLife/GorgeousPlayerController.h"
-#include "QualityOfLife/GorgeousPlayerState.h"
-#include "QualityOfLife/GorgeousWorldSettings.h"
+#include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
+#include "AutoReplication/GorgeousAutoReplicationTypes.h"
+#include "ReplicationGraph.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousCoreRuntimeGlobals.generated.h"
 //<-------------------------------------------------------------------------->
+
+class UGorgeousAutoReplicationRPCRequestAsyncAction;
 
 /**
  * Class extended by all other classes that are part of the Gorgeous Things ecosystem.
@@ -68,51 +67,7 @@ class UGorgeousCoreRuntimeGlobals : public UObject
 	GENERATED_BODY()
 
 public:
-	/**
-	 *	Returns the reference to the Gorgeous Game Instance,
-	 *	Requires to set UGorgeousGameInstance or a child of it to be set in the Project Settings to work.
-	 * 
-	 * @return The current instance of the Gorgeous Game Instance.
-	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static UGorgeousGameInstance* GetGorgeousGameInstance(const UObject* WorldContextObject);
-
-	/**
-	 *	Returns the reference to the Gorgeous Game Mode,
-	 *	Requires to set AGorgeousGameMode or a child of it to be set in the Project Settings to work.
-	 * 
-	 * @return The current instance of the Gorgeous Game Mode.
-	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static AGorgeousGameMode* GetGorgeousGameMode(const UObject* WorldContextObject);
-
-	/**
-	 *	Returns the reference to the Gorgeous Game State,
-	 *	Requires to set AGorgeousGameState or a child of it to be set in the Game Mode to work.
-	 * 
-	 * @return The current instance of the Gorgeous Game State.
-	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static AGorgeousGameState* GetGorgeousGameState(const UObject* WorldContextObject);
-
-	/**
-	 *	Returns the reference to the Gorgeous Player Controller,
-	 *	Requires to set AGorgeousPlayerController or a child of it to be set in the Game Mode to work.
-	 * 
-	 * @return The current instance of the Gorgeous Player Controller.
-	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static AGorgeousPlayerController* GetGorgeousPlayerController(const UObject* WorldContextObject, const int32 PlayerIndex);
-
-	/**
-	 *	Returns the reference to the Gorgeous Player State,
-	 *	Requires to set AGorgeousPlayerController or a child of it to be set in the Game Mode to work.
-	 * 
-	 * @return The current instance of the Gorgeous Player State.
-	 */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static AGorgeousPlayerState* GetGorgeousPlayerState(const UObject* WorldContextObject, const int32 PlayerStateIndex);
-
+	
 	/**
 	 *	Returns the reference to the Gorgeous World Settings,
 	 *	Requires to set AGorgeousWorldSettings or a child of it to be set in the Project Settings to work.
@@ -121,5 +76,114 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
 	static AGorgeousWorldSettings* GetGorgeousWorldSettings(const UObject* WorldContextObject);
+
+	/** Resolves an object variable by its globally registered display name. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Object Variables")
+	static UGorgeousObjectVariable* GetNamedObjectVariable(FName DisplayName, bool bLogWarning = true);
+
+	/** Resolves a UObject reference stored inside a named object variable (expects an Object Single OV). */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Object Variables")
+	static UObject* GetNamedObjectReference(FName DisplayName, bool bLogWarning = true);
+
+	/** Fetches a registered QoL object reference using a constrained dropdown that updates the return type. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life", meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "QualityOfLifeClass", CompactNodeTitle = "Get QoL Reference"))
+	static UObject* GetQualityOfLifeReference(const UObject* WorldContextObject,
+		UPARAM(meta = (MustImplement = "/Script/GorgeousCoreRuntime.GorgeousQualityOfLifeNodeTarget_I", AllowAbstract = "false"))
+		TSubclassOf<UObject> QualityOfLifeClass);
+
+
+
+
+
+#pragma region AutoReplication_Networking_Functions
+	/** Fetches the network-aware AutoReplication value stored under the provided key on the given AutoReplication context. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject"))
+	static bool GetNetGorgeousAutoReplicationValue(UObject* WorldContextObject, FName Key, UGorgeousObjectVariable*& OutValue, UObject* AutoReplicationOwner = nullptr);
+
+	/** Sets a AutoReplication value through the mixin, routing through replication when available. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject"))
+	static bool SetNetGorgeousAutoReplicationValue(UObject* WorldContextObject, FName Key, UGorgeousObjectVariable* NewValue, UObject* AutoReplicationOwner = nullptr);
+
+	/** Queues an asynchronous AutoReplication RPC request driven by the owning mixin. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject", DeprecatedFunction, DeprecationMessage = "Use the Request AutoReplication RPC async action node to receive dispatcher callbacks."))
+	static bool RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
+
+	/** Queues an asynchronous AutoReplication RPC using the async action utility, exposing completion delegates. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject"))
+	static UGorgeousAutoReplicationRPCRequestAsyncAction* RequestAutoReplicationRPCAsync(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
+
+
+	/** Returns true when any RPC requests are waiting to be processed on the provided context. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Networking", meta = (WorldContext = "WorldContextObject"))
+	static bool HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner = nullptr);
+
+	/** Pops the next queued RPC so Blueprint logic can respond asynchronously. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Networking", meta = (WorldContext = "WorldContextObject"))
+	static bool DequeuePendingAutoReplicationRPC(UObject* WorldContextObject, FGorgeousQueuedRPC& OutRPC, UObject* AutoReplicationOwner = nullptr);
+
+	/** Returns the default AutoReplication stream config currently applied to newly created variables. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static FGorgeousAutoReplicationStreamConfig GetDefaultAutoReplicationStreamConfig();
+
+	/** Overrides the default stream config applied to variables that do not specify their own settings. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static void SetDefaultAutoReplicationStreamConfig(const FGorgeousAutoReplicationStreamConfig& NewConfig);
+
+	/** Adds or updates a developer-settings override for a specific AutoReplication entry key. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static void SetAutoReplicationStreamOverride(FName EntryKey, const FGorgeousAutoReplicationStreamConfig& NewConfig);
+
+	/** Reads a developer-settings override for a specific AutoReplication entry key. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static bool GetAutoReplicationStreamOverride(FName EntryKey, FGorgeousAutoReplicationStreamConfig& OutConfig);
+
+	/** Removes the developer-settings override for the provided entry key. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static void ClearAutoReplicationStreamOverride(FName EntryKey);
+
+	/** Enables or disables Iris/ReplicationGraph backends at runtime via developer settings. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void SetAutoReplicationBackendsEnabled(const UObject* WorldContextObject, bool bEnableIris, bool bEnableReplicationGraph);
+
+	/** Returns true if Iris initialization is currently enabled for AutoReplication. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static bool IsAutoReplicationIrisEnabled();
+
+	/** Returns true if the AutoReplication-specific replication graph is enabled. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")
+	static bool IsAutoReplicationReplicationGraphEnabled();
+
+	/** Blueprint: Force-enable or -disable Iris at runtime (override developer settings). */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void SetAutoReplicationUseIrisOverride(const UObject* WorldContextObject, bool bEnable);
+
+	/** Blueprint: Clear the Iris runtime override (revert to developer settings). */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void ClearAutoReplicationUseIrisOverride(const UObject* WorldContextObject);
+
+	/** Blueprint: Force-enable or -disable the replication graph at runtime (override developer settings). */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void SetAutoReplicationReplicationGraphOverride(const UObject* WorldContextObject, bool bEnable);
+
+	/** Blueprint: Clear the replication graph runtime override (revert to developer settings). */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void ClearAutoReplicationReplicationGraphOverride(const UObject* WorldContextObject);
+
+	/** Blueprint: Set the auto-replication graph class override. Pass a class derived from UReplicationGraph. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void SetAutoReplicationGraphClassOverride(const UObject* WorldContextObject, TSubclassOf<UReplicationGraph> GraphClass);
+
+	/** Blueprint: Clear the auto-replication graph class override. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static void ClearAutoReplicationGraphClassOverride(const UObject* WorldContextObject);
+
+	/** Resolves the effective stream config for a given AutoReplication entry, factoring in Blueprint overrides and developer settings. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Configuration", meta = (WorldContext = "WorldContextObject"))
+	static bool GetEffectiveAutoReplicationStreamConfig(UObject* WorldContextObject, FName EntryKey, FGorgeousAutoReplicationStreamConfig& OutConfig, UObject* AutoReplicationOwner = nullptr);
+
+	/** Applies configured AutoReplication settings and forces the coordinator to initialize for the provided world. */
+	static void InitializeAutoReplicationForWorld(class UWorld* World);
+
+#pragma endregion AutoReplication_Networking_Functions
 };
 

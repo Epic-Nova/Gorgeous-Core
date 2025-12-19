@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -17,6 +17,9 @@
 //<-------------------------------------------------------------------------->
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousGameInstance.generated.h"
 //<-------------------------------------------------------------------------->
@@ -32,10 +35,19 @@
  */
 UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
+	, public IGorgeousAutoReplicationRPCResponder_I
+	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 
 public:
+
+	UGorgeousGameInstance();
+
+	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
+
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 
 	//<============================--- Overrides ---=============================>
 
@@ -46,31 +58,38 @@ public:
 	 * to add custom initialization logic for the game instance, such as loading resources or setting up settings.
 	 */
 	virtual void Init() override;
-
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes for the game instance during the editor post-edit phase.
-	 * 
-	 * This function is triggered whenever a property of the game instance is changed in the editor. 
-	 * The `PostEditChangeProperty` override ensures that changes to specific properties, such as `AdditionalGorgeousData`, 
-	 * are handled, including updating the `UniqueIdentifier` of newly added data.
-	 * 
-	 * @param PropertyChangedEvent The event triggered by the property change.
-	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
+	virtual void Shutdown() override;
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
 	
 	//<-------------------------------------------------------------------------->
 	
+	/** Enables the networking pathway for AutoReplication data so entries register with the replicated array at runtime. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance|Networking")
+	bool bActivateNetworkingCapabilities;
+
 	/** 
 	 * Additional settings/configuration data for the current game instance.
-	 * 
-	 * This property holds a map of additional settings and configuration data relevant to the current game instance.
-	 * Examples of data stored here may include the cached save game, current game settings, or other game-specific data.
-	 * Each entry in the map is associated with a unique name and is represented by an `UGorgeousObjectVariable`.
-	 * 
-	 * @note This data is editable within the editor and can be used to store settings that are dynamically accessed during runtime.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous Game Instance")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance")
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game Instance|Networking")
+	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	/** Local backing store for replicated AutoReplication slots (game instances never replicate but the mixin expects valid storage). */
+	UPROPERTY(Transient)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	/** Helper that wires mixin flows across all AutoReplication entry points. */
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+
+private:
+	void EnsureRootVariablesFallbackToGameInstance();
+	void HandleRootRegistryChanged();
+
+	bool bIsEnsuringRootFallback = false; // prevent reentrant root fallback loops from delegate broadcasts
+	FDelegateHandle RootRegistryChangedHandle;
 };

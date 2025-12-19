@@ -37,5 +37,16 @@ void UGorgeousObjectVariableRegistry_GIS::Deinitialize()
 
 void UGorgeousObjectVariableRegistry_GIS::OnLevelRemoved(ULevel* Level, UWorld* World)
 {
+	if (UGameInstance* OwningGameInstance = GetGameInstance())
+	{
+		const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
+		for (const FName& RootName : RegisteredRootNames)
+		{
+			if (UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName))
+			{
+				UGorgeousRootObjectVariable::PromoteRootRegistryOwner(RootName, OwningGameInstance);
+			}
+		}
+	}
 	UGorgeousRootObjectVariable::CleanupRegistry();
 }

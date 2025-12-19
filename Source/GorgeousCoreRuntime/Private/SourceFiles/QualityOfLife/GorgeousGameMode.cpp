@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -12,20 +12,27 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
-#include "QualityOfLife/Helpers/GorgeousQualityOfLIfeHelperMacros.h"
+#include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
+#include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
+#include "AutoReplication/Helpers/GorgeousAutoReplicationHelperMacros.h"
+//<-------------------------=== Engine Includes ===-------------------------->
+#include "Net/UnrealNetwork.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // AGorgeousGameMode Implementation
 //=============================================================================
 
-void AGorgeousGameMode::BeginPlay()
-{
-	UE_DECLARE_QOF_CLASS_INIT_INVOKE_ADDITIONAL_DATA
-	
-	Super::BeginPlay();
-}
+UE_QOL_DEFINE_CONSTRUCTOR(AGorgeousGameMode, true)
 
-#if WITH_EDITOR
-UE_DECLARE_QOF_CLASS_POST_EDIT_CHANGE_PROPERTY(AGorgeousGameMode)
-#endif WITH_EDITOR
+UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousGameMode)
+
+UE_QOL_DEFINE_BEGIN_PLAY(AGorgeousGameMode)
+
+UE_QOL_DEFINE_POST_INIT_AND_LOAD(AGorgeousGameMode)
+
+UE_DECLARE_AUTOREPLICATION_CLASS_GET_LIFETIME_REPLICATED_PROPS(AGorgeousGameMode)
+
+UE_DECLARE_AUTOREPLICATION_CLASS_ON_REP_VARIABLES(AGorgeousGameMode)
+
+

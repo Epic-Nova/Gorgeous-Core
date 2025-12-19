@@ -23,6 +23,9 @@ public class GorgeousCoreEditorUtilities : ModuleRules
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
         PrivatePCHHeaderFile = SharedPCHHeaderFile;
         
+        PrecompileForTargets = PrecompileTargetsType.Any;
+        bUsePrecompiled = false;
+        
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,

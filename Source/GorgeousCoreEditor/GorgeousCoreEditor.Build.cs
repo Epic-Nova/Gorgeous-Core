@@ -22,18 +22,21 @@ public class GorgeousCoreEditor : ModuleRules
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
         PrivatePCHHeaderFile = SharedPCHHeaderFile;
-        
+
+        PrecompileForTargets = PrecompileTargetsType.Any;
+        bUsePrecompiled = false;
+
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "DetailCustomisations")
+            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations")
         });
         
         PrivateIncludePaths.AddRange(new string[]
         {
             Path.Combine(privateIncludePath, "HeaderFiles"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "DetailCustomisations"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations"),
         });
         
         PublicDependencyModuleNames.AddRange(new[]

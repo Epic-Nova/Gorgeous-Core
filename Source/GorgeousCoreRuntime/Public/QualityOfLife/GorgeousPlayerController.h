@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -18,9 +18,25 @@
 #include "GameFramework/PlayerController.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousPlayerController.generated.h"
 //<-------------------------------------------------------------------------->
+
+#if WITH_DEV_AUTOMATION_TESTS
+struct FGorgeousAutomationRPCWitnessEntry
+{
+	FName HandlerName = NAME_None;
+	int32 Sequence = 0;
+	FString Stamp;
+	TEnumAsByte<ENetRole> NetRole = ROLE_None;
+	TEnumAsByte<ENetMode> NetMode = NM_Standalone;
+	double TimestampSeconds = 0.0;
+};
+#endif
 
 /**
  * A custom subclass of APlayerController used to manage player input and data.
@@ -33,10 +49,23 @@
  */
 UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerController : public APlayerController
+	, public IGorgeousAutoReplicationRPCResponder_I
+	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 	
 public:
+
+AGorgeousPlayerController();
+FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
+
+#if WITH_DEV_AUTOMATION_TESTS
+	const TArray<FGorgeousAutomationRPCWitnessEntry>& GetAutomationRPCWitnessEntries() const { return AutomationRPCWitnessEntries; }
+	void ResetAutomationRPCWitnessEntries();
+#endif
 	
 	//<============================--- Overrides ---=============================>
 	
@@ -47,29 +76,51 @@ public:
 	 * functionality or data, such as setting up player input or other gameplay-related elements.
 	 */
 	virtual void BeginPlay() override;
-
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes during the editor post-edit phase.
-	 * 
-	 * This function is called when properties are changed in the editor. It can be used to handle specific logic when
-	 * properties like `AdditionalGorgeousData` are modified during development.
-	 * 
-	 * @param PropertyChangedEvent The event that triggered the property change.
-	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
 	
 	//<-------------------------------------------------------------------------->
 
+	UFUNCTION()
+	void Automation_ServerToClient(int32 Sequence, const FString& Stamp);
+
+	UFUNCTION()
+	void Automation_ClientToServer(int32 Sequence, const FString& Stamp);
+
+	UFUNCTION()
+	void Automation_Multicast(int32 Sequence, const FString& Stamp);
+
+	/** Enables networking features for this controller's AutoReplication data. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking")
+	bool bActivateNetworkingCapabilities;
+
 	/** 
 	 * Additional data for the current class.
-	 * 
-	 * This property holds additional data for the player controller, such as input configurations or player attributes.
-	 * It allows for dynamic management of player-specific settings during gameplay and can be accessed or modified as needed.
-	 * 
-	 * @note This data is editable in the editor, allowing for customization of the player controller’s attributes.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous Player Controller")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData; 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller")
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+
+protected:
+
+	/** Component responsible for relaying RPC results back to the authority. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UGorgeousAutoReplicationRPCRelayComponent> AutoReplicationRPCRelay;
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Player Controller|Networking")
+	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+
+	UFUNCTION()
+	void OnRep_GorgeousAutoReplicationVariables();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+#if WITH_DEV_AUTOMATION_TESTS
+	void RecordAutomationRPCWitness(FName HandlerName, int32 Sequence, const FString& Stamp);
+	TArray<FGorgeousAutomationRPCWitnessEntry> AutomationRPCWitnessEntries;
+#endif
 };

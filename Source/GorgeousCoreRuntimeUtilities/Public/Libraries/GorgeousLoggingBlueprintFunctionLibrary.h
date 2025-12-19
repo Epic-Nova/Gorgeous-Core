@@ -92,5 +92,17 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
     static void LogFatalMessage(const FString Message, FString LoggingKey, UObject* WorldContextObject = nullptr);
+
+    /** Enables or disables log emission for the specified logging key. */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging")
+    static void SetLoggingKeySuppressed(FName LoggingKey, bool bShouldSuppress);
+
+    /** Returns true when the logging key is currently suppressed. */
+    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Logging")
+    static bool IsLoggingKeySuppressed(FName LoggingKey);
+
+    /** Clears all runtime logging suppressions. */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging")
+    static void ClearAllLoggingSuppressions();
 };
 

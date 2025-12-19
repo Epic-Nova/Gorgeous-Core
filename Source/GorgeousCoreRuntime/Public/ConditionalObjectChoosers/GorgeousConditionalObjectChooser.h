@@ -50,12 +50,27 @@ public:
 	/**
 	 * The condition check object.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser")
-	UGorgeousCondition* ConditionCheck;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", Setter = SetConditionCheck, meta = (AllowAbstract = "true"))
+	TObjectPtr<UGorgeousCondition> ConditionCheck = nullptr;
 
 	/**
 	 * The array of object variables to choose from.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser")
-	TArray<UGorgeousObjectVariable*> Conditions;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", meta = (AllowAbstract = "true"))
+	TArray<TObjectPtr<UGorgeousObjectVariable>> Conditions;
+
+private:
+
+	// Sanitizes serialized data after load to drop placeholders created by circular blueprint dependencies.
+	virtual void PostLoad() override;
+
+	// Sanitizes during load so placeholders are nulled before dependency repair runs.
+	virtual void Serialize(FArchive& Ar) override;
+
+	/**
+	 * Sets the condition check variable and ensures that the variable is not this object.
+	 * @param NewConditionCheck The new condition check to set.
+	 */
+	void SetConditionCheck(UGorgeousCondition* NewConditionCheck);
+	
 };

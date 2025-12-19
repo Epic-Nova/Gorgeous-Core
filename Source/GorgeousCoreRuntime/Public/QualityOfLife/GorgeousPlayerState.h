@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -18,6 +18,9 @@
 #include "GameFramework/PlayerState.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousPlayerState.generated.h"
 //<-------------------------------------------------------------------------->
@@ -33,10 +36,19 @@
  */
 UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
+, public IGorgeousAutoReplicationRPCResponder_I
+, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 	
-public:
+	public:
+	
+	AGorgeousPlayerState();
+
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
 	
 	//<============================--- Overrides ---=============================>
 	
@@ -47,30 +59,33 @@ public:
 	 * managing metadata, or initializing any relevant data related to the player.
 	 */
 	virtual void BeginPlay() override;
-
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes during the editor post-edit phase.
-	 * 
-	 * This function is called when properties are changed in the editor. It can be used to handle any special logic 
-	 * when properties like `AdditionalGorgeousData` are modified during development.
-	 * 
-	 * @param PropertyChangedEvent The event triggered by the property change.
-	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
 	
 	//<-------------------------------------------------------------------------->
 
+	/** Enables mixin networking for this player state. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State|Networking")
+	bool bActivateNetworkingCapabilities;
+
 	/** 
 	 * Additional data for the current class.
-	 * 
-	 * This property holds additional data relevant to the player state, such as player metadata, stats, or custom information.
-	 * It is stored as a map, allowing for dynamic access to key-value pairs.
-	 * 
-	 * @note The data is editable in the editor and can be modified at runtime as needed, providing flexibility for handling 
-	 * player-specific attributes or settings.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous Player State")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData; 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State")
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Player State|Networking")
+	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+
+	UFUNCTION()
+	void OnRep_GorgeousAutoReplicationVariables();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

@@ -25,7 +25,7 @@ public class GorgeousCoreRuntime : ModuleRules
         PrivatePCHHeaderFile = SharedPCHHeaderFile;
 
         PrecompileForTargets = PrecompileTargetsType.Any;
-        bPrecompile = true;
+        bUsePrecompiled = false;
 
         PublicIncludePaths.AddRange(new string[]
         {
@@ -38,10 +38,17 @@ public class GorgeousCoreRuntime : ModuleRules
             Path.Combine(privateIncludePath, "HeaderFiles"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTags", "Projects" });
-        
-        PrivateDependencyModuleNames.Add("GorgeousCoreRuntimeUtilities");
-        
+        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "InputCore", "GameplayTags", "Projects", "EngineSettings", "ReplicationGraph" });
+
+        PrivateDependencyModuleNames.AddRange(new[]
+        {
+            "GorgeousCoreRuntimeUtilities",
+            "NetCore",
+            "DeveloperSettings",
+            "ReplicationGraph", 
+            "TraceServices",
+        });
+
         if (Target.bBuildEditor)
         {
             PublicDependencyModuleNames.AddRange(new string[] {
@@ -50,6 +57,18 @@ public class GorgeousCoreRuntime : ModuleRules
                 "Kismet", 
                 "UnrealEd"
             });
+        }
+
+        if (Target.bUseIris)
+        {
+            SetupIrisSupport(Target);
+            PublicDefinitions.Add("GORGEOUSCORE_WITH_IRIS=1");
+            PublicDefinitions.Add("GORGEOUSCORE_WITH_REPLICATION_GRAPH=0");
+        }
+        else
+        {
+            PublicDefinitions.Add("GORGEOUSCORE_WITH_IRIS=0");
+            PublicDefinitions.Add("GORGEOUSCORE_WITH_REPLICATION_GRAPH=1");
         }
     }
 }
