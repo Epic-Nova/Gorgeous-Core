@@ -30,7 +30,7 @@ class UWorld;
  * - Overrides GetWorld() to provide world context.
  * - Caches owner object for efficient world retrieval.
  */
- UCLASS(Abstract, Blueprintable, BlueprintType)
+UCLASS(Abstract, Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public UObject
 {
 	GENERATED_BODY()
@@ -42,10 +42,9 @@ public:
 	 * @param NewCachedOwner the new chaced owner that has the capability to a valid GetWorld() call.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
-	void SetCachedOwner(const TObjectPtr<UObject>& NewCachedOwner) const { CachedOwner = NewCachedOwner; }
-	
-protected:
+	void SetCachedOwner(UObject* NewCachedOwner) const { CachedOwner = NewCachedOwner; }
 
+protected:
 	/**
 	 * Gets the world context for this object.
 	 *
@@ -57,5 +56,5 @@ protected:
 	 * Cached owner object used to determine the world context.
 	 */
 	UPROPERTY()
-	mutable TObjectPtr<UObject> CachedOwner;
+	mutable UObject* CachedOwner;
 };

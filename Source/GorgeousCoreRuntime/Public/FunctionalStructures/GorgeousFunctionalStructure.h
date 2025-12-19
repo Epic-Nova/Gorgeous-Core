@@ -14,7 +14,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousFunctionalStructure.generated.h"
 //<-------------------------------------------------------------------------->
@@ -35,10 +34,19 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 {
 	GENERATED_BODY()
 
+	//<================--- Friend Classes ---================>
+	friend class FGorgeousFunctionalStructurePropertyTypeCustomization;
+	//<------------------------------------------------------>
+
 	/**
 	 * Default constructor. Generates a new unique identifier.
 	 */
-	FGorgeousFunctionalStructure_S(): Identifier(FGuid::NewGuid()) {}
+	FGorgeousFunctionalStructure_S()
+	{
+		Identifier.Invalidate();
+		OwnerObject = nullptr;
+	}
+
 
 	/**
 	 * Virtual destructor.
@@ -66,6 +74,26 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	 * @param PropertyHandle The property handle.
 	 */
 	virtual void PreEditChangeProperty(TSharedRef<IPropertyHandle> PropertyHandle) {};
+
+	/**
+	 * Gives the chance for default value allocation after initialisation.
+	 * 
+	 * @param OuterOwner The owner UObject of this structure.
+	 */
+	virtual void AllocateDefaultValues(UObject* OuterOwner) {};
 	
 #endif //WITH_EDITOR
+
+protected:
+
+#if WITH_EDITORONLY_DATA
+	
+	/**
+	 * The outer object that holds this structure. Can be used for Instanced UPROPERTY's.
+	 * @TODO: Currenty not implemented, planned for future use.
+	 */
+	UPROPERTY(VisibleAnywhere, Category = "Functional Structure")
+	UObject* OwnerObject;
+
+#endif WITH_EDITORONLY_DATA
 };

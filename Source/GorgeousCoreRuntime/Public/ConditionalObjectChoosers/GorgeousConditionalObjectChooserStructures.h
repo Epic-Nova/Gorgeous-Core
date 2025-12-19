@@ -23,7 +23,6 @@
  *
  * This struct is primarily intended to enable the use of Gameplay Tag Containers as keys in
  * TSet or TMap by providing an explicit `GetTypeHash` implementation and equality operator.
- * It can also be exposed to Blueprints if needed via the `Blueprintable` specifier.
  *
  * @note While FGameplayTagContainer already supports comparison, this wrapper adds better support
  *       for hash-based containers.
@@ -38,8 +37,7 @@ struct FGameplayTagContainerWrapper_S
 	/**
 	 * Default constructor. Initializes an empty container.
 	 */
-	FGameplayTagContainerWrapper_S()
-		: Container() {}
+	FGameplayTagContainerWrapper_S() : Container() {}
 	
 	/**
 	 * The underlying Gameplay Tag Container.

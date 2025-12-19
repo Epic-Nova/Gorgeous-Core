@@ -37,6 +37,7 @@ public:
 	/**
 	 * We return false here because we don't want the core to be participated in any hot reload/live coding actions.
 	 * As long term debugging shows that reloading the gorgeous core module invokes the corruption of the current object variable registry instance, and finally a crash of the current unreal instance.
+	 * @TODO: Maybe we can make this possible in the future with some more advanced handling of the object variable registry.
 	 */
 	virtual bool SupportsDynamicReloading() override
 	{

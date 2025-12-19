@@ -35,8 +35,11 @@
 #include "Engine/GameInstance.h"
 
 #include "CoreUObject.h"
+#include "UObject/UObjectGlobals.h"
 #include "UObject/Interface.h"
 #include "UObject/UnrealTypePrivate.h"
+
+#include "Engine/DataAsset.h"
 
 #include "Misc/MonolithicHeaderBoilerplate.h"
 
@@ -55,6 +58,13 @@
 
 #include "GameFramework/Actor.h"
 #include "GameFramework/Info.h"
+
+#include "GameFramework/Controller.h"
+#include "GameFramework/Character.h"
+
+#include "GameFramework/SpringArmComponent.h"
+
+#include "Camera/CameraComponent.h"
 
 
 /*==============================>

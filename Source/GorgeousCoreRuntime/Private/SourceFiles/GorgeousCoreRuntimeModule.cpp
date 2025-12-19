@@ -10,6 +10,10 @@
 <==========================================================================*/
 #include "GorgeousCoreRuntimeModule.h"
 
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Automation/GorgeousAutomationTestMatrix.h"
+#endif
+
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
@@ -28,11 +32,20 @@ void FGorgeousCoreRuntimeModule::StartupModule()
 	UGameplayTagsManager::Get().AddTagIniSearchPath(ThisPlugin->GetBaseDir() / TEXT("Config") / TEXT("Tags"));
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
+
+#if WITH_DEV_AUTOMATION_TESTS
+	// Ensure scenarios defined inside this module register with the automation matrix once all statics are loaded.
+	FGorgeousAutomationScenarioRegistrar::ActivateAll();
+#endif
 }
 
 void FGorgeousCoreRuntimeModule::ShutdownModule()
 {
 	UE_LOG(LogTemp, Warning, TEXT("FGorgeousCoreRuntimeModule has shut down!"));
+
+#if WITH_DEV_AUTOMATION_TESTS
+	FGorgeousAutomationScenarioRegistrar::DeactivateAll();
+#endif
 }
 
 TArray<FName> FGorgeousCoreRuntimeModule::GetDependentPlugins()

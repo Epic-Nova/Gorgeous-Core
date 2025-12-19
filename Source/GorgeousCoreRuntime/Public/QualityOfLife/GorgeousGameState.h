@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -15,27 +15,40 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Engine Includes ===-------------------------->
-#include "GameFramework/GameStateBase.h"
+#include "GameFramework/GameState.h"
 //<-------------------------=== Module Includes ===-------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousGameState.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * A custom subclass of AGameStateBase used to manage game state-specific logic and settings.
+ * A custom subclass of AGameState used to manage game state-specific logic and settings.
  * 
- * This class extends AGameStateBase to provide additional functionality tailored for the GorgeousCore runtime.
+ * This class extends AGameState to provide additional functionality tailored for the GorgeousCore runtime.
  * It is used to manage game state-specific data and logic, such as match data and other relevant information 
  * during gameplay. The class provides overrides for the `BeginPlay()` and `PostEditChangeProperty()` functions,
  * enabling custom behavior during the start of the game state and when properties are modified in the editor.
  */
 UCLASS(Blueprintable, BlueprintType)
-class GORGEOUSCORERUNTIME_API AGorgeousGameState : public AGameStateBase
+class GORGEOUSCORERUNTIME_API AGorgeousGameState : public AGameState
+, public IGorgeousAutoReplicationRPCResponder_I
+	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 	
 public:
+
+	AGorgeousGameState();
+
+	
+	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
+
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 	
 	//<============================--- Overrides ---=============================>
 	
@@ -46,29 +59,34 @@ public:
 	 * logic for initializing the game state, such as setting up match conditions or managing state variables.
 	 */
 	virtual void BeginPlay() override;
-
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes for the game state during the editor post-edit phase.
-	 * 
-	 * This function is triggered whenever a property of the game state is changed in the editor. 
-	 * The `PostEditChangeProperty` override ensures that changes to properties like `AdditionalGorgeousData` are handled appropriately.
-	 * 
-	 * @param PropertyChangedEvent The event triggered by the property change.
-	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
 	
 	//<-------------------------------------------------------------------------->
 
+	/** Enables mixin networking path for this game state. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State|Networking")
+	bool bActivateNetworkingCapabilities;
+
 	/** 
 	 * Additional data for the current class.
-	 * 
-	 * This property holds a map of additional data specific to the game state. Examples of data include match data, 
-	 * round information, or any other state-related variables that need to be dynamically accessed during gameplay.
-	 * 
-	 * @note This data is editable in the editor and can be used to store and manage game state settings or other dynamic information.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous Game State")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData; 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State")
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Networking")
+	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+
+	UFUNCTION()
+	void OnRep_GorgeousAutoReplicationVariables();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
+
