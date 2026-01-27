@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousCoreRuntimeUtilitiesEnums.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -22,7 +22,7 @@
  * Enum that defines the importance of the logging message.
  * @author Nils Bergemann
  */
-UENUM(BlueprintType, DisplayName = "Gorgeous Logging Importancy", meta = (ShortTooltip = "The importancy of the logging message."))
+UENUM(BlueprintType, meta = (DisplayName = "Gorgeous Logging Importance", ShortTooltip = "The importance of the logging message."))
 enum EGorgeousLoggingImportance
 {
 	Logging_Information = 0 UMETA(DisplayName = "Information", ToolTip = "Informational message."),

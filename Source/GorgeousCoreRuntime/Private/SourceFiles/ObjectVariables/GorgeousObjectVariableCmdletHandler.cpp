@@ -5,16 +5,17 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -99,7 +100,7 @@ namespace
 	static void LogCommandUsage(const TCHAR* CommandLabel, const TCHAR* UsageSuffix, const TCHAR* ContextTag)
 	{
 		const FString Usage = FString::Printf(TEXT("Usage: %s %s"), CommandLabel, UsageSuffix);
-		UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(Usage, ContextTag);
+		GT_W_LOG_MESSAGE(Usage, ContextTag);
 	}
 
 	static bool ConsumeRootArgument(
@@ -122,15 +123,14 @@ namespace
 		bOutAllRoots = false;
 		if (!FGorgeousVariableHierarchyHandler::TryParseRootName(Args[ArgIndex], OutRootName, bOutAllRoots))
 		{
-			UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(
-				FString::Printf(TEXT("Unknown root '%s'."), *Args[ArgIndex]), ContextTag);
+			GT_W_LOG_MESSAGE(FString::Printf(TEXT("Unknown root '%s'."), *Args[ArgIndex]), ContextTag);
 			FGorgeousVariableHierarchyHandler::LogAvailableRoots(ContextTag);
 			return false;
 		}
 
 		if (bOutAllRoots && !bAllowAllRoots)
 		{
-			UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(TEXT("The 'all' root selector is not supported for this command."), ContextTag);
+			GT_W_LOG_MESSAGE(TEXT("The 'all' root selector is not supported for this command."), ContextTag);
 			return false;
 		}
 
@@ -277,7 +277,7 @@ void FGorgeousVariableHierarchyHandler::LogAvailableRoots(const TCHAR* ContextTa
 		? FString::JoinBy(RegisteredRoots, TEXT(", "), [](const FName& Name) { return Name.ToString(); })
 		: FString(TEXT("<none>"));
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(
+	GT_I_LOG_MESSAGE_FULL(
 		FString::Printf(TEXT("Registered roots: %s"), *RootListing),
 		ContextTag,
 		5.0f,
@@ -338,7 +338,7 @@ void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FS
 			*(Variable->GetOuter() ? Variable->GetOuter()->GetName() : TEXT("")),
 			*ReplicationState);
 
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(LogMessage, TEXT("GorgeousVariableHierarchy"), 5.0f, false, true, GWorld);
+		GT_I_LOG_MESSAGE_FULL(LogMessage, TEXT("GorgeousVariableHierarchy"), 5.0f, false, true, GWorld);
 	};
 
 	if (bAllRoots)
@@ -372,7 +372,7 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 
 	if (!Result)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(
+		GT_W_LOG_MESSAGE(
 			FString::Printf(TEXT("No Gorgeous Object Variable found for '%s' under root %s."), *Query, *RootName.ToString()),
 			TEXT("GorgeousVariableLookup"));
 		return;
@@ -387,7 +387,7 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 		*ReplicationState,
 		Result->bPersistent ? TEXT("Yes") : TEXT("No"));
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(Report, TEXT("GorgeousVariableLookup"), 5.0f, false, true, GWorld);
+	GT_I_LOG_MESSAGE_FULL(Report, TEXT("GorgeousVariableLookup"), 5.0f, false, true, GWorld);
 }
 
 void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArray<FString>& Args)
@@ -406,7 +406,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		Scope = FGorgeousVariableHierarchyHandler::ResolveVariableToken(Args[ArgIndex], RootName);
 		if (!Scope)
 		{
-			UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(
+			GT_W_LOG_MESSAGE(
 				FString::Printf(TEXT("No Gorgeous Object Variable found for '%s' under root %s."), *Args[ArgIndex], *RootName.ToString()),
 				TEXT("GorgeousVariableStats"));
 			return;
@@ -418,7 +418,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		: FGorgeousVariableHierarchyHandler::GatherStatsForRoot(RootName);
 	if (Stats.TotalCount == 0)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(
+		GT_I_LOG_MESSAGE_FULL(
 			FString::Printf(TEXT("No Gorgeous Object Variables registered under root %s."), *RootName.ToString()),
 			TEXT("GorgeousVariableStats"), 5.0f, false, true, GWorld);
 		return;
@@ -433,7 +433,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		Stats.ReplicationActiveCount,
 		Stats.LegacyRegisteredCount);
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(Report, TEXT("GorgeousVariableStats"), 5.0f, false, true, GWorld);
+	GT_I_LOG_MESSAGE_FULL(Report, TEXT("GorgeousVariableStats"), 5.0f, false, true, GWorld);
 }
 
 void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<FString>& Args)
@@ -441,7 +441,7 @@ void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<
 	const EGorgeousObjectVariableOrphanResolution CurrentMode = UGorgeousRootObjectVariable::GetDefaultOrphanResolution();
 	if (Args.Num() == 0)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(
+		GT_I_LOG_MESSAGE_FULL(
 			FString::Printf(TEXT("Current orphan policy: %s"), *DescribeOrphanResolution(CurrentMode)),
 			TEXT("GorgeousVariableOrphans"), 5.0f, false, true, GWorld);
 		return;
@@ -460,19 +460,19 @@ void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<
 	}
 	else
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(TEXT("Usage: gorgeous.ov.orphans [reparent|destroy]"), TEXT("GorgeousVariableOrphans"));
+		GT_W_LOG_MESSAGE(TEXT("Usage: gorgeous.ov.orphans [reparent|destroy]"), TEXT("GorgeousVariableOrphans"));
 		return;
 	}
 
 	if (DesiredMode == CurrentMode)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage(
+		GT_I_LOG_MESSAGE_FULL(
 			TEXT("Orphan policy unchanged."), TEXT("GorgeousVariableOrphans"), 5.0f, false, true, GWorld);
 		return;
 	}
 
 	UGorgeousRootObjectVariable::SetDefaultOrphanResolution(DesiredMode);
-	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(
+	GT_S_LOG_MESSAGE(
 		FString::Printf(TEXT("Orphan policy set to %s."), *DescribeOrphanResolution(DesiredMode)),
 		TEXT("GorgeousVariableOrphans"));
 }

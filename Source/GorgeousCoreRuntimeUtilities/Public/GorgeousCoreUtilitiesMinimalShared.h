@@ -5,16 +5,17 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE									|
+|                                  TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                 |
 | --------------------------------------------------------------------------------------------------------------------- |
-|							ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                                    |
-|	TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntimeUtilities" MODULE       |
+|                                ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                               |
+|     TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntimeUtilities" MODULE     |
 <======================================================================================================================*/
+
 
 //<=============================--- Pragmas ---==============================>
 #pragma once
@@ -31,6 +32,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Helpers/GorgeousDirectoryHelper.h"
 #include "Helpers/GorgeousFileHelper.h"
 #include "Helpers/GorgeousLanguageHelper.h"
+#include "Helpers/GorgeousLicenseHelper.h"
 #include "Helpers/GorgeousLoggingHelper.h"
 
 //Macro Helper Includes
@@ -41,6 +43,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
 //Library Includes
+#include "Libraries/GorgeousAudioBlueprintFunctionLibrary.h"
 #include "Libraries/GorgeousLoggingBlueprintFunctionLibrary.h"
 
 //Template Includes

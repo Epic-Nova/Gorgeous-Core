@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -15,12 +15,13 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------------------------------------------------------->
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousGameInstance.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -61,6 +62,7 @@ public:
 	virtual void Shutdown() override;
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	//<-------------------------------------------------------------------------->
 	
@@ -68,11 +70,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/** 
+	/**
 	 * Additional settings/configuration data for the current game instance.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance")
 	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+
+	/** Serialized trunk that keeps authoritative default payloads for object variables authored on this instance. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Instance|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
 protected:
 

@@ -5,14 +5,14 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                    |
+|                                  TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                 |
 | --------------------------------------------------------------------------------------------------------------------- |
-|									USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                     |
+|                                    USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                    |
 <======================================================================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -65,9 +65,3 @@
 #include "GameFramework/SpringArmComponent.h"
 
 #include "Camera/CameraComponent.h"
-
-
-/*==============================>
-| Module Includes               |
-<==============================*/
-#include "IGorgeousThingsModuleInterface.h"

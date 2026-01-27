@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,15 +14,17 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariableEnums.h"
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #if WITH_EDITOR
 #include "EdGraphSchema_K2.h"
 #endif
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousObjectVariableStructures.generated.h"
 //<-------------------------------------------------------------------------->
+
+class UGorgeousObjectVariable;
 
 #if WITH_EDITORONLY_DATA
 
@@ -136,6 +138,14 @@ struct FObjectVariablePinConfiguration_S
 			case EObjectVariableContainerType_E::ESet:
 				UnrealContainerType = EPinContainerType::Set;
 				break;
+			case EObjectVariableContainerType_E::EQueue:
+			case EObjectVariableContainerType_E::EStack:
+			case EObjectVariableContainerType_E::EDeque:
+				UnrealContainerType = EPinContainerType::Array;
+				break;
+			case EObjectVariableContainerType_E::EMultiMap:
+				UnrealContainerType = EPinContainerType::Map;
+				break;
 			default: UnrealContainerType = EPinContainerType::None;
 		}
 
@@ -164,3 +174,18 @@ struct FObjectVariablePinConfiguration_S
 };
 
 #endif WITH_EDITORONLY_DATA
+
+/**
+ * Multi-map value wrapper for object variables.
+ *
+ * @author Nils Bergemann
+ */
+USTRUCT(BlueprintType)
+struct GORGEOUSCORERUNTIME_API FObjectVariableMultiMapValue
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Gorgeous Object Variables")
+	TArray<UGorgeousObjectVariable*> Values;
+};

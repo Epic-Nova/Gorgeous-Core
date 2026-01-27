@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 using System.IO;
@@ -30,10 +30,10 @@ public class GorgeousCoreEditorUtilities : ModuleRules
         {
             publicIncludePath,
         });
-        
-        PrivateIncludePaths.AddRange(new string[]
+
+        PrivateIncludePaths.AddRange(new[]
         {
-            Path.Combine(privateIncludePath, "HeaderFiles"),
+            privateIncludePath
         });
         
         PublicDependencyModuleNames.AddRange(new[]
@@ -42,7 +42,8 @@ public class GorgeousCoreEditorUtilities : ModuleRules
             "CoreUObject", 
             "Engine", 
             "InputCore", 
-            "EditorSubsystem"
+            "EditorSubsystem",
+            "DeveloperToolSettings"
         });
         
         PrivateDependencyModuleNames.AddRange(
@@ -53,16 +54,21 @@ public class GorgeousCoreEditorUtilities : ModuleRules
                 "Projects",
                 "UnrealEd", 
                 "EditorStyle",
+                "ToolMenus",
                 "BlueprintGraph",
                 "PropertyEditor", 
                 "MessageLog",
+                "DataValidation",
+                "AssetRegistry",
+                "AssetTools",
                 "UMG", 
                 "Kismet",
                 "HTTP",
                 "Json",
                 "JsonUtilities",
                 "ContentBrowser",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "GameplayTags"
             });
     
         

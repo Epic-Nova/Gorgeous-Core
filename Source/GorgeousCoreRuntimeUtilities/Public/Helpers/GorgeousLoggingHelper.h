@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,14 +14,152 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "Helpers/GorgeousLogRouting.h"
 #include "Containers/Set.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Modules/ModuleManager.h"
+#if WITH_EDITOR
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Styling/CoreStyle.h"
+#endif
 //<-------------------------------------------------------------------------->
+
+	/**
+	 * Struct containing all customizable options for toast notifications.
+	 */
+	struct FGorgeousToastParams
+	{
+		/** The title displayed at the top of the toast notification. */
+		FString Title;
+		/** The detailed message or description shown below the title. */
+		FString Message;
+        /** Icon style: 0 = information, 1 = warning, 2 = success, 3 = error. */
+        int32 ToastIconKind = 3;
+		/** Duration in seconds the toast will be visible before auto-dismissing. */
+		float ExpireDuration = 8.0f;
+		/** Whether to use the throbber animation (spinner). */
+		bool bUseThrobber = false;
+		/** Whether to display icons. */
+		bool bUseIcons = true;
+		/** Whether the notification auto-dismisses (true) or requires user interaction (false). */
+		bool bFireAndForget = true;
+	};
+
+	// Queue for notifications that need to be shown when editor is ready
+	static TArray<FGorgeousToastParams> QueuedToastNotifications;
+	static bool bToastNotificationsFlushed = false;
+
+	/**
+	 * Immediately displays a toast notification without queuing.
+	 * Internal use - prefer ShowToastNotification which handles queuing.
+	 *
+	 * @param Params Struct containing all notification parameters.
+	 */
+	FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
+	{
+#if WITH_EDITOR
+		auto& NotificationManager = FSlateNotificationManager::Get();
+		
+		FNotificationInfo Info(FText::FromString(Params.Title));
+		Info.SubText = FText::FromString(Params.Message);
+		Info.bFireAndForget = Params.bFireAndForget;
+		Info.ExpireDuration = Params.ExpireDuration;
+		Info.bUseThrobber = Params.bUseThrobber;
+		Info.bUseSuccessFailIcons = Params.bUseIcons;
+		
+        switch (Params.ToastIconKind)
+        {
+            case 0:
+                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
+                break;
+            case 1:
+                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.WarningWithColor"));
+                break;
+            case 2:
+                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.SuccessWithColor"));
+                break;
+            case 3:
+            default:
+                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
+                break;
+        }
+		
+		NotificationManager.AddNotification(Info);
+#endif
+	}
+
+	/**
+	 * Attempts to flush all queued toast notifications if the editor is ready.
+	 * Called automatically when notifications are queued.
+	 */
+	FORCEINLINE static void TryFlushQueuedToastNotifications()
+	{
+#if WITH_EDITOR
+		if (!FSlateNotificationManager::Get().AreNotificationsAllowed())
+		{
+			// Schedule retry
+			FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float DeltaTime)
+			{
+				TryFlushQueuedToastNotifications();
+				return false;
+			}), 0.5f);
+			return;
+		}
+		
+		bToastNotificationsFlushed = true;
+		
+		for (const FGorgeousToastParams& Params : QueuedToastNotifications)
+		{
+			ShowToastNotificationImmediate(Params);
+		}
+		
+		QueuedToastNotifications.Empty();
+#endif
+	}
+
+	/**
+	 * Shows a toast notification with full customization.
+	 * Use this when you need complete control over the notification appearance.
+	 *
+	 * @param Params Struct containing all notification parameters.
+	 */
+	FORCEINLINE static void ShowToastNotification(const FGorgeousToastParams& Params)
+	{
+#if WITH_EDITOR
+		// Queue if editor not ready yet
+		if (!bToastNotificationsFlushed)
+		{
+			QueuedToastNotifications.Add(Params);
+			TryFlushQueuedToastNotifications();
+			return;
+		}
+
+		ShowToastNotificationImmediate(Params);
+#endif
+	}
+
+	/**
+	 * Shows a toast notification with minimal parameters.
+	 * Convenience function for quick error/warning notifications.
+	 *
+	 * @param Title The title of the notification.
+	 * @param Message The message to display.
+     * @param ToastIconKind Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
+	 */
+    FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
+	{
+		FGorgeousToastParams Params;
+		Params.Title = Title;
+		Params.Message = Message;
+        Params.ToastIconKind = ToastIconKind;
+		ShowToastNotification(Params);
+	}
 
 namespace GorgeousLogging
 {
@@ -65,6 +203,65 @@ namespace GorgeousLogging
     {
         SuppressedLoggingKeys.Reset();
     }
+
+    struct FGorgeousLoggingSettingsSnapshot
+    {
+        bool bEnableGorgeousMessageLog = true;
+        FName MessageLogListingName = TEXT("Gorgeous Things");
+        EGorgeousLoggingImportance MinMessageLogVerbosity = Logging_Information;
+        bool bMirrorToOutputLog = true;
+        bool bShowOnScreen = true;
+    };
+
+    FORCEINLINE static FGorgeousLoggingSettingsSnapshot GetLoggingSettingsSnapshot()
+    {
+        FGorgeousLoggingSettingsSnapshot Snapshot;
+
+        if (!GConfig)
+        {
+            return Snapshot;
+        }
+
+        const TCHAR* SettingsSection = TEXT("/Script/GorgeousCoreRuntime.GorgeousLoggingDeveloperSettings");
+
+        bool bBoolValue = false;
+        if (GConfig->GetBool(SettingsSection, TEXT("bEnableGorgeousMessageLog"), bBoolValue, GGameIni))
+        {
+            Snapshot.bEnableGorgeousMessageLog = bBoolValue;
+        }
+        if (GConfig->GetBool(SettingsSection, TEXT("bMirrorToOutputLog"), bBoolValue, GGameIni))
+        {
+            Snapshot.bMirrorToOutputLog = bBoolValue;
+        }
+        if (GConfig->GetBool(SettingsSection, TEXT("bShowOnScreen"), bBoolValue, GGameIni))
+        {
+            Snapshot.bShowOnScreen = bBoolValue;
+        }
+
+        FString ListingName;
+        if (GConfig->GetString(SettingsSection, TEXT("MessageLogListingName"), ListingName, GGameIni) && !ListingName.IsEmpty())
+        {
+            Snapshot.MessageLogListingName = FName(*ListingName);
+        }
+
+        int32 VerbosityValue = Snapshot.MinMessageLogVerbosity;
+        if (GConfig->GetInt(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityValue, GGameIni))
+        {
+            Snapshot.MinMessageLogVerbosity = static_cast<EGorgeousLoggingImportance>(VerbosityValue);
+        }
+
+        return Snapshot;
+    }
+
+    FORCEINLINE static void ShowToastNotification(const ::FGorgeousToastParams& Params)
+    {
+        ::ShowToastNotification(Params);
+    }
+
+    FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
+    {
+        ::ShowToastNotification(Title, Message, ToastIconKind);
+    }
     
 	/**
 	 * Logs a message with customizable parameters.
@@ -76,19 +273,28 @@ namespace GorgeousLogging
 	 * @param bPrintToScreen Whether to print the message to the screen.
 	 * @param bPrintToLog Whether to print the message to the log.
 	 * @param bOverrideLoggingIfPresent Whether to override an existing log message with the same key.
+     * @param bShowAsToast Whether to show this log as a toast notification.
 	 * @param WorldContextObject The world context object.
+	 * @param Hyperlink Optional hyperlink data for the log message.
 	 */
-	FORCEINLINE static void LogMessage_Internal(UPARAM(ref) const FString& Message,
-	                                            const EGorgeousLoggingImportance Importancy, const FString& LoggingKey,
-	                                            const float Duration = 5.0f, const bool bPrintToScreen = true,
-	                                            const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true,
-	                                            const UObject* WorldContextObject = nullptr)
+	FORCEINLINE static void LogMessage_Internal(UPARAM(ref) const FText& Message,
+                                                const EGorgeousLoggingImportance Importancy, const FString& LoggingKey,
+                                                const float Duration = 5.0f, const bool bPrintToScreen = true,
+                                                const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true,
+                                                const bool bShowAsToast = false, const UObject* WorldContextObject = nullptr,
+                                                const FGorgeousLogHyperlink* Hyperlink = nullptr)
 	{
         const FName LoggingKeyName = LoggingKey.IsEmpty() ? NAME_None : FName(*LoggingKey);
         if (ShouldSuppressKey(LoggingKeyName))
         {
             return;
         }
+
+        const FGorgeousLoggingSettingsSnapshot Settings = GetLoggingSettingsSnapshot();
+        const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(Settings.MinMessageLogVerbosity);
+        const bool bShouldSendToMessageLog = Settings.bEnableGorgeousMessageLog && bAllowedBySettings;
+        const bool bShouldPrintToLog = bPrintToLog && Settings.bMirrorToOutputLog;
+        const bool bShouldPrintToScreen = bPrintToScreen && Settings.bShowOnScreen;
 
         const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
         FGameplayTag GameplayLoggingKey = bShouldUseGameplayTags
@@ -112,7 +318,7 @@ namespace GorgeousLogging
                 GEngine->RemoveOnScreenDebugMessage(UniqueKey); 
             }
 
-            LoggedMessages.Add(GameplayLoggingKey, Message);
+            LoggedMessages.Add(GameplayLoggingKey, Message.ToString());
 
 
             // Schedule removal of the key after the duration.
@@ -134,40 +340,40 @@ namespace GorgeousLogging
             }
         }
         
-        const FString FinalMessage = FString::Printf(TEXT("[%s] %s"), *LoggingKey, *Message);
+        const FString FinalMessage = FString::Printf(TEXT("[%s] %s"), *LoggingKey, *Message.ToString());
         
         switch (Importancy)
         {
             case Logging_Information:
-                if (bPrintToLog)
+                if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Log, TEXT("%s"), *FinalMessage);
                 }
                 break;
 
             case Logging_Success:
-                if (bPrintToLog)
+                if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Display, TEXT("%s"), *FinalMessage);
                 }
                 break;
 
             case Logging_Warning:
-                if (bPrintToLog)
+                if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Warning, TEXT("%s"), *FinalMessage);
                 }
                 break;
 
             case Logging_Error:
-                if (bPrintToLog)
+                if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Error, TEXT("%s"), *FinalMessage);
                 }
                 break;
 
             case Logging_Fatal:
-                if (bPrintToLog)
+                if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Fatal, TEXT("%s"), *FinalMessage);
                 }
@@ -179,7 +385,7 @@ namespace GorgeousLogging
         }
 
         // Print to the screen if enabled
-        if (bPrintToScreen && GEngine)
+        if (bShouldPrintToScreen && GEngine)
         {
             FColor TextColor;
             switch (Importancy)
@@ -227,5 +433,35 @@ namespace GorgeousLogging
                 DefaultTextScale
             );
         }
+
+#if WITH_EDITOR
+        if (bShouldSendToMessageLog)
+        {
+            FGorgeousLogEntry Entry;
+            Entry.Message = FinalMessage;
+            Entry.LoggingKey = LoggingKeyName;
+            Entry.Importance = Importancy;
+            Entry.Duration = Duration;
+            Entry.bPrintToScreen = bShouldPrintToScreen;
+            Entry.bPrintToLog = bShouldPrintToLog;
+            Entry.WorldContextObject = WorldContextObject;
+            if (Hyperlink && Hyperlink->IsValid())
+            {
+                Entry.Hyperlink = *Hyperlink;
+            }
+            GetGorgeousLogEntryDelegate().Broadcast(Entry);
+        }
+
+        if (bShowAsToast)
+        {
+            const FString ToastTitle = LoggingKey.IsEmpty()
+                ? Settings.MessageLogListingName.ToString()
+                : LoggingKey;
+            const int32 ToastIconKind = (Importancy == Logging_Error || Importancy == Logging_Fatal)
+                ? 3
+                : (Importancy == Logging_Warning ? 1 : (Importancy == Logging_Success ? 2 : 0));
+            ::ShowToastNotification(ToastTitle, Message.ToString(), ToastIconKind);
+        }
+#endif
 	}
 }

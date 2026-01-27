@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -23,7 +23,7 @@ class UGorgeousAutoReplicationGraph;
 class UReplicationGraph;
 
 /** Centralized developer settings that configure the Auto Replication backends. */
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Gorgeous Auto Replication"))
+UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Core ↪ Auto Replication"))
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -62,7 +62,9 @@ public:
 	static const UGorgeousAutoReplicationSettings* Get();
 
 #if WITH_EDITOR
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Core"); }
-	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionName", "Auto Replication"); }
+	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
+	virtual FName GetSectionName() const override { return TEXT("10_Core|Auto Replication"); }
+	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionName", "Core ↪ Auto Replication"); }
+	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionDescription", "Configure Iris and Replication Graph backends for auto-replicated objects."); }
 #endif
 };

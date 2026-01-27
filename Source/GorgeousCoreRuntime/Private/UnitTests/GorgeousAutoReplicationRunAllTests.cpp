@@ -1,22 +1,22 @@
-#include "Automation/GorgeousAutomationTestMatrix.h"
-#include "Automation/AutoReplicationTestMatrixCore.h"
+#include "InsightMatrix/GorgeousInsightTestMatrix.h"
+#include "InsightMatrix/GorgeousInsightHarness.h"
 #include "UnitTests/Helpers/GorgeousNetworkEmulationHelpers.h"
 #include "Misc/Parse.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-static FGorgeousAutomationScenarioDescriptor MakeAutoReplication_RunAll()
+static FGorgeousInsightScenarioDescriptor MakeAutoReplication_RunAll()
 {
-	FGorgeousAutomationScenarioDescriptor D;
+	FGorgeousInsightScenarioDescriptor D;
 	D.ScenarioName = TEXT("AutoReplication.RunAll");
 	D.DisplayName = TEXT("AutoReplication: Run Entire Suite");
 	D.Description = TEXT("Executes every other registered AutoReplication scenario sequentially.");
 	D.Tags = { TEXT("suite"), TEXT("runall") };
 	D.Priority = 200;
 	D.bEnabledByDefault = true;
-	D.Runner = [](const FGorgeousAutomationScenarioContext& Context) -> FGorgeousAutomationScenarioResult
+	D.Runner = [](const FGorgeousInsightScenarioContext& Context) -> FGorgeousInsightScenarioResult
 	{
-		FGorgeousAutomationScenarioResult Result;
+		FGorgeousInsightScenarioResult Result;
 
 		int32 RequestedNetProfile = INDEX_NONE;
 		if (!Context.ParameterString.IsEmpty())
@@ -28,21 +28,21 @@ static FGorgeousAutomationScenarioDescriptor MakeAutoReplication_RunAll()
 		const FGorgeousNetworkEmulation::FRuntimeProfile SuiteRuntime = FGorgeousNetworkEmulation::EnsureSuitePresetApplied(&Result);
 		FGorgeousNetworkEmulation::AppendRuntimeMetrics(SuiteRuntime, Result, TEXT("suite.netemu."));
 
-		const TArray<FGorgeousAutomationScenarioDescriptor> Registered = FGorgeousAutomationTestMatrix::GetRegisteredScenarios();
+		const TArray<FGorgeousInsightScenarioDescriptor> Registered = FGorgeousInsightTestMatrix::GetRegisteredScenarios();
 		int32 ExecutedCount = 0;
 		int32 FailureCount = 0;
 
-		for (const FGorgeousAutomationScenarioDescriptor& Descriptor : Registered)
+		for (const FGorgeousInsightScenarioDescriptor& Descriptor : Registered)
 		{
 			if (Descriptor.ScenarioName == Context.Descriptor.ScenarioName)
 			{
 				continue; // Skip the run-all scenario itself to avoid recursion
 			}
 
-			FGorgeousAutomationScenarioContext ChildContext(Context.Request, Context.ParameterString, Context.VariantIndex, Context.Test, Descriptor);
+			FGorgeousInsightScenarioContext ChildContext(Context.Request, Context.ParameterString, Context.VariantIndex, Context.Test, Descriptor);
 			Context.AddInfo(FString::Printf(TEXT("[RunAll] >>> %s"), *ChildContext.BuildScenarioLabel()));
 
-			const FGorgeousAutomationScenarioResult ChildResult = FGorgeousAutomationTestMatrix::ExecuteScenario(Descriptor, ChildContext);
+			const FGorgeousInsightScenarioResult ChildResult = FGorgeousInsightTestMatrix::ExecuteScenario(Descriptor, ChildContext);
 			++ExecutedCount;
 
 			const FString SummaryLine = FString::Printf(TEXT("%s -> %s (Errors=%d | Warnings=%d | Notes=%d | Metrics=%d)"),
@@ -79,12 +79,12 @@ static FGorgeousAutomationScenarioDescriptor MakeAutoReplication_RunAll()
 			Result.AddWarning(FString::Printf(TEXT("%d/%d child scenarios failed."), FailureCount, ExecutedCount));
 		}
 
-		FGorgeousAutoReplicationTestMatrixCore::SaveScenarioResult(Context.Descriptor, Result, TEXT("suite"));
+		FGorgeousInsightHarness::SaveScenarioResult(Context.Descriptor, Result, TEXT("suite"));
 		return Result;
 	};
 	return D;
 }
 
-REGISTER_GORGEOUS_AUTOMATION_SCENARIO(MakeAutoReplication_RunAll());
+REGISTER_GORGEOUS_INSIGHT_SCENARIO(MakeAutoReplication_RunAll());
 
 #endif // WITH_DEV_AUTOMATION_TESTS

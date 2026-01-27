@@ -5,17 +5,17 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "QualityOfLife/GorgeousPlayerController.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
 #include "AutoReplication/Helpers/GorgeousAutoReplicationHelperMacros.h"
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 //<-------------------------------------------------------------------------->
 
@@ -41,6 +41,8 @@ UE_QOL_DEFINE_POST_INIT_AND_LOAD(AGorgeousPlayerController)
 UE_DECLARE_AUTOREPLICATION_CLASS_GET_LIFETIME_REPLICATED_PROPS(AGorgeousPlayerController)
 
 UE_DECLARE_AUTOREPLICATION_CLASS_ON_REP_VARIABLES(AGorgeousPlayerController)
+
+UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(AGorgeousPlayerController)
 
 
 #if WITH_DEV_AUTOMATION_TESTS

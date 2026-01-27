@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousFunctionalStructure.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -39,11 +39,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	//<------------------------------------------------------>
 
 	/**
-	 * Default constructor. Generates a new unique identifier.
+	 * Default constructor.
 	 */
 	FGorgeousFunctionalStructure_S()
 	{
-		Identifier.Invalidate();
+		Identifier = FGuid::NewGuid();
 		OwnerObject = nullptr;
 	}
 
@@ -56,7 +56,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	/**
 	 * Unique identifier for the functional structure.
 	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure", meta = (DisplayPriority = 99))
 	FGuid Identifier;
 
 #if WITH_EDITOR
@@ -90,9 +90,8 @@ protected:
 	
 	/**
 	 * The outer object that holds this structure. Can be used for Instanced UPROPERTY's.
-	 * @TODO: Currenty not implemented, planned for future use.
 	 */
-	UPROPERTY(VisibleAnywhere, Category = "Functional Structure")
+	UPROPERTY(VisibleAnywhere, Category = "Functional Structure", meta = (DisplayPriority = 99))
 	UObject* OwnerObject;
 
 #endif WITH_EDITORONLY_DATA

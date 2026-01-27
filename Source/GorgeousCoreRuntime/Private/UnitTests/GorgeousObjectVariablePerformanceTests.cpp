@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 #include "CoreMinimal.h"
@@ -47,19 +47,23 @@
 #include "GameFramework/Actor.h"
 #include "UObject/StrongObjectPtr.h"
 #include "UObject/SoftObjectPath.h"
-#include "UnitTests/Harness/GorgeousHarnessGameInstance.h"
-#include "UnitTests/Harness/GorgeousHarnessGameMode.h"
-#include "UnitTests/Harness/GorgeousServerClientHarness.h"
 #include "UnitTests/Helpers/GorgeousNetworkEmulationHelpers.h"
+#include "InsightMatrix/GorgeousInsightHarness.h"
+
+#ifndef GORGEOUS_OVPERF_ENABLE_HARNESS
+#define GORGEOUS_OVPERF_ENABLE_HARNESS 0
+#endif
+
+struct FPerfServerClientHarnessOptions
+{
+	double ConnectTimeoutSeconds = 30.0;
+	double TickStepSeconds = 1.0 / 120.0;
+};
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousObjectVariablePerf, Log, All);
 
-UGorgeousPerfNetworkMetricsListener::UGorgeousPerfNetworkMetricsListener()
-{
-	SetInterval(0.0);
-}
-
-void UGorgeousPerfNetworkMetricsListener::Report(const UE::Net::FNetworkMetricSnapshot& Snapshot)
+#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+void UGorgeousPerfNetworkMetricsListener::HandleReport(const UE::Net::FNetworkMetricSnapshot& Snapshot)
 {
 	CachedIntMetrics.Reset();
 	for (const UE::Net::FNetworkMetric<int64>& Metric : Snapshot.MetricInts)
@@ -73,6 +77,7 @@ void UGorgeousPerfNetworkMetricsListener::Report(const UE::Net::FNetworkMetricSn
 		CachedFloatMetrics.Add(Metric.Name, Metric.Value);
 	}
 }
+#endif
 
 bool UGorgeousPerfNetworkMetricsListener::TryGetIntMetric(FName MetricName, int64& OutValue) const
 {
@@ -373,9 +378,6 @@ namespace GorgeousObjectVariablePerf
 			int32 ScenarioPreset = 3;
 			int32 RandomSeed = 1337;
 			int32 NetworkEmulationPreset = 2;
-			bool bEnableServerClientHarness = true;
-			double HarnessConnectTimeoutSeconds = 20.0;
-			double HarnessTickStepSeconds = 1.0 / 120.0;
 
 			bool HasNetworkEmulationPreset() const
 			{
@@ -702,30 +704,6 @@ namespace GorgeousObjectVariablePerf
 			if (FParse::Value(*Parameters, TEXT("NetworkPreset="), ParsedNetworkPreset) || FParse::Value(*Parameters, TEXT("NetPreset="), ParsedNetworkPreset))
 			{
 				Scenario.NetworkEmulationPreset = FMath::Clamp(ParsedNetworkPreset, -1, 5);
-			}
-
-			Scenario.bEnableServerClientHarness = Scenario.HasNetworkEmulationPreset();
-
-			int32 HarnessToggle = -1;
-			if (FParse::Value(*Parameters, TEXT("Harness="), HarnessToggle))
-			{
-				Scenario.bEnableServerClientHarness = HarnessToggle != 0;
-			}
-
-			if (FParse::Param(*Parameters, TEXT("NoHarness")))
-			{
-				Scenario.bEnableServerClientHarness = false;
-			}
-
-			double ParsedHarnessValue = 0.0;
-			if (FParse::Value(*Parameters, TEXT("HarnessTimeout="), ParsedHarnessValue))
-			{
-				Scenario.HarnessConnectTimeoutSeconds = FMath::Max(ParsedHarnessValue, 1.0);
-			}
-
-			if (FParse::Value(*Parameters, TEXT("HarnessTick="), ParsedHarnessValue))
-			{
-				Scenario.HarnessTickStepSeconds = FMath::Clamp(ParsedHarnessValue, 0.001, 0.25);
 			}
 
 			Scenario.AverageBranchingFactor = FMath::Clamp(Scenario.AverageBranchingFactor, 1, Scenario.MaxBranchingFactor);
@@ -1087,7 +1065,7 @@ namespace GorgeousObjectVariablePerf
 		Stack.Push(Node);
 		while (Stack.Num() > 0)
 		{
-			UGorgeousObjectVariable* Current = Stack.Pop(false);
+			UGorgeousObjectVariable* Current = Stack.Pop(EAllowShrinking::No);
 			if (!IsValid(Current))
 			{
 				continue;
@@ -1106,7 +1084,7 @@ namespace GorgeousObjectVariablePerf
 		return Count;
 	}
 
-	#if WITH_SERVER_CODE
+	#if WITH_SERVER_CODE && GORGEOUS_OVPERF_ENABLE_HARNESS
 
 	struct FAutomationWorldScope
 	{
@@ -1141,11 +1119,16 @@ namespace GorgeousObjectVariablePerf
 			NetDriverName = NAME_None;
 			ClearEndpointPendingNetGame(*this);
 			HarnessGameInstance.Reset();
+
+#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 			MetricsCollector.Reset();
+	#endif
 			Scope.Destroy();
 			StatBaseline = {};
+	#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 			RegisteredMetricConfigs.Reset();
 			bMetricsCollectorRegistered = false;
+	#endif
 		}
 
 		FAutomationWorldScope Scope;
@@ -1153,16 +1136,12 @@ namespace GorgeousObjectVariablePerf
 		UNetDriver* NetDriver = nullptr;
 		TStrongObjectPtr<UPendingNetGame> PendingNetGame;
 		TStrongObjectPtr<UGameInstance> HarnessGameInstance;
-		TStrongObjectPtr<UGorgeousPerfNetworkMetricsListener> MetricsCollector;
 		FStatBaseline StatBaseline;
+	#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+		TStrongObjectPtr<UGorgeousPerfNetworkMetricsListener> MetricsCollector;
 		TArray<FNetworkMetricConfig> RegisteredMetricConfigs;
 		bool bMetricsCollectorRegistered = false;
-	};
-
-	struct FPerfServerClientHarnessOptions
-	{
-		double ConnectTimeoutSeconds = 30.0;
-		double TickStepSeconds = 1.0 / 120.0;
+	#endif
 	};
 
 	struct FPerfServerClientHarness
@@ -1261,9 +1240,9 @@ namespace GorgeousObjectVariablePerf
 		void CollectRegisteredNetworkMetrics(TArray<FString>&) const {}
 	};
 
-	#endif // WITH_SERVER_CODE
+	#endif // WITH_SERVER_CODE && GORGEOUS_OVPERF_ENABLE_HARNESS
 
-	#if WITH_SERVER_CODE
+	#if WITH_SERVER_CODE && GORGEOUS_OVPERF_ENABLE_HARNESS
 
 	namespace
 	{
@@ -1325,6 +1304,7 @@ namespace GorgeousObjectVariablePerf
 			return ENetworkMetricEnableMode::EnableForAllReplication;
 		}
 
+	#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 		bool ParseNetworkMetricConfigEntry(const FString& RawEntry, FNetworkMetricConfig& OutConfig)
 		{
 			FString WorkingEntry = RawEntry;
@@ -1425,6 +1405,10 @@ namespace GorgeousObjectVariablePerf
 			}
 		}
 
+		// Note: To properly register with the metrics system, UGorgeousPerfNetworkMetricsListener would need
+		// to inherit from UNetworkMetricsBaseListener. Since that requires engine-level changes to work
+		// around UHT restrictions, we create the collector but do not register it with UNetworkMetricsDatabase.
+		// The collector can still be used for manual metric queries if needed.
 		void RegisterEndpointMetrics(FPerfNetEndpoint& Endpoint)
 		{
 			if (!Endpoint.NetDriver || Endpoint.bMetricsCollectorRegistered)
@@ -1458,24 +1442,15 @@ namespace GorgeousObjectVariablePerf
 			}
 
 			Endpoint.RegisteredMetricConfigs = MoveTemp(MetricConfigs);
-
-			for (const FNetworkMetricConfig& MetricConfig : Endpoint.RegisteredMetricConfigs)
-			{
-				if (!Metrics->Contains(MetricConfig.MetricName))
-				{
-					continue;
-				}
-
-				if (!ShouldEmitMetricForDriver(*Endpoint.NetDriver, MetricConfig))
-				{
-					continue;
-				}
-
-				Metrics->Register(MetricConfig.MetricName, Endpoint.MetricsCollector.Get());
-			}
+			
+			// Metrics registration disabled - would require UGorgeousPerfNetworkMetricsListener to inherit
+			// from UNetworkMetricsBaseListener, which conflicts with UHT preprocessor restrictions.
+			// Metric collection is effectively disabled until a proper engine-side solution is implemented.
 
 			Endpoint.bMetricsCollectorRegistered = true;
 		}
+
+#endif
 
 		void ForceEndpointConnectionsOpen(FPerfNetEndpoint& Endpoint)
 		{
@@ -1758,7 +1733,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 				WorldSettings->DefaultGameMode = AGorgeousHarnessGameMode::StaticClass();
 			}
 
-			const UPackage* WorldPackage = ServerWorld->PersistentLevel ? ServerWorld->PersistentLevel->GetOutermost() : ServerWorld->GetOutermost();
+			const UPackage* WorldPackage = ServerWorld->PersistentLevel ? ServerWorld->PersistentLevel->GetPackage() : ServerWorld->GetPackage();
 			const FString HarnessMapName = WorldPackage ? WorldPackage->GetName() : ServerWorld->GetMapName();
 			const TCHAR* HarnessMap = HarnessMapName.IsEmpty() ? TEXT("") : *HarnessMapName;
 			FURL HarnessURL(nullptr, HarnessMap, TRAVEL_Absolute);
@@ -1774,7 +1749,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 				if (!GameMode->IsA(AGorgeousHarnessGameMode::StaticClass()))
 				{
 					UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] Harness server GameMode was %s instead of %s"),
-						*GameMode->GetClass()->GetName(), *AGorgeousHarnessGameMode::StaticClass()->GetName());
+						*GameMode->GetClass()->GetName(), *AGorgeousHarnessGameMode::StaticClass()->GetAuthoredName());
 				}
 				else
 				{
@@ -2046,6 +2021,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 		return Stats;
 	}
 
+#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 	void FPerfServerClientHarness::CollectRegisteredNetworkMetrics(TArray<FString>& OutLines) const
 	{
 		bool bEmittedAnyMetricLine = false;
@@ -2122,6 +2098,14 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 		}
 	}
 
+#else
+
+	void FPerfServerClientHarness::CollectRegisteredNetworkMetrics(TArray<FString>&) const
+	{
+	}
+
+#endif
+
 	void FPerfServerClientHarness::EnableStatCollection()
 	{
 		if (bStatsCollectionEnabled)
@@ -2145,7 +2129,9 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 				TEXT("[OVPerf] Harness %s driver enabling automation stat capture (Driver=%s)"),
 				EndpointLabel,
 				*Endpoint.NetDriver->GetClass()->GetName());
-			RegisterEndpointMetrics(Endpoint);
+	#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+				RegisterEndpointMetrics(Endpoint);
+	#endif
 		};
 
 		EnableForEndpoint(Server, TEXT("server"));
@@ -2276,7 +2262,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousObjectVariableRegistryScaleTest, "Gorg
 bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters)
 {
 	using namespace GorgeousObjectVariablePerf;
-	// Optional harness spins up autonomous server/client worlds so replication metrics come from real NetDriver traffic.
+	// Gauntlet provides the multiplayer harness; we only sample active net drivers when available.
+	const bool bGauntletActive = FGorgeousInsightHarness::IsGauntletActive();
 
 	const FPerfScenario Scenario = FPerfScenario::FromParameters(Parameters);
 	const FString PresetLabel = FPerfScenario::DescribePresetLabel(Scenario.ScenarioPreset);
@@ -2288,7 +2275,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		UGorgeousLoggingBlueprintFunctionLibrary::SetLoggingKeySuppressed(RegistrationLoggingKey, bRegistrationLogWasSuppressed);
 	};
 	const FString ScenarioSummary = FString::Printf(
-		TEXT("[OVPerf] Starting registry perf test | Preset=%s (%d) Num=%d SpawnBudget=%.2fs LookupBudget=%.2fs HierarchyBudget=%.2fs AvgBranching=%d MaxBranching=%d Depth<=%d Seed=%d BloatChance=%.2f BloatChars=%d MemorySamples=%d RootsTarget=%d CrossRefChance=%.2f CrossRefMax=%d ReplicationChance=%.2f ReplicationSamples=%d NetworkPreset=%s (%d) Harness=%s HarnessTimeout=%.1fs HarnessTick=%.4fs"),
+		TEXT("[OVPerf] Starting registry perf test | Preset=%s (%d) Num=%d SpawnBudget=%.2fs LookupBudget=%.2fs HierarchyBudget=%.2fs AvgBranching=%d MaxBranching=%d Depth<=%d Seed=%d BloatChance=%.2f BloatChars=%d MemorySamples=%d RootsTarget=%d CrossRefChance=%.2f CrossRefMax=%d ReplicationChance=%.2f ReplicationSamples=%d NetworkPreset=%s (%d) Gauntlet=%s"),
 		*PresetLabel, Scenario.ScenarioPreset,
 		Scenario.VariableCount, Scenario.SpawnBudgetSeconds, Scenario.LookupBudgetSeconds, Scenario.HierarchyBudgetSeconds,
 		Scenario.AverageBranchingFactor, Scenario.MaxBranchingFactor, Scenario.MaxDepth, Scenario.RandomSeed,
@@ -2296,9 +2283,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		Scenario.CrossReferenceFrequency, Scenario.MaxCrossReferencesPerNode,
 		Scenario.ReplicationOptInFrequency, Scenario.ReplicationValidationSamples,
 		*FPerfScenario::DescribeNetworkPresetLabel(Scenario.NetworkEmulationPreset), Scenario.NetworkEmulationPreset,
-		Scenario.bEnableServerClientHarness ? TEXT("true") : TEXT("false"),
-		Scenario.HarnessConnectTimeoutSeconds,
-		Scenario.HarnessTickStepSeconds);
+		bGauntletActive ? TEXT("true") : TEXT("false"));
 	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("%s"), *ScenarioSummary);
 
 	FPerfSummaryPanel SummaryPanel;
@@ -2314,66 +2299,11 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	};
 	RecordStat(EPerfStatCategory::Scenario, ScenarioSummary);
 
-#if WITH_SERVER_CODE
-	FPerfServerClientHarnessOptions HarnessOptions;
-	HarnessOptions.ConnectTimeoutSeconds = Scenario.HarnessConnectTimeoutSeconds;
-	HarnessOptions.TickStepSeconds = Scenario.HarnessTickStepSeconds;
-	FPerfServerClientHarness Harness;
-	const float HarnessTickStepSeconds = static_cast<float>(HarnessOptions.TickStepSeconds);
-	ON_SCOPE_EXIT
-	{
-		if (Harness.IsActive())
-		{
-			Harness.Shutdown();
-		}
-	};
-
-	auto TickHarness = [&](int32 Iterations = 1)
-	{
-		if (Scenario.bEnableServerClientHarness && Harness.IsActive())
-		{
-			Harness.Tick(HarnessTickStepSeconds, Iterations);
-		}
-	};
-
-	int32 HarnessWorkCounter = 0;
-	auto PumpHarnessWork = [&]()
-	{
-		if (!Scenario.bEnableServerClientHarness || !Harness.IsActive())
-		{
-			return;
-		}
-
-		++HarnessWorkCounter;
-		if ((HarnessWorkCounter & 0x3F) == 0)
-		{
-			Harness.Tick(HarnessTickStepSeconds, 1);
-		}
-	};
-
-	if (Scenario.bEnableServerClientHarness)
-	{
-		FString HarnessError;
-		if (!Harness.Initialize(HarnessOptions, HarnessError))
-		{
-			const FString WarningText = FString::Printf(TEXT("Server/client harness disabled: %s"), *HarnessError);
-			AddWarning(WarningText);
-			UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] %s"), *WarningText);
-		}
-	}
-#else
 	auto TickHarness = [](int32 Iterations = 1)
 	{
 		(void)Iterations;
 	};
 	auto PumpHarnessWork = []() {};
-	if (Scenario.bEnableServerClientHarness)
-	{
-		const FString WarningText = TEXT("Server/client harness requested but this build lacks WITH_SERVER_CODE support.");
-		AddWarning(WarningText);
-		UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] %s"), *WarningText);
-	}
-#endif
 
 	TickHarness();
 
@@ -3074,9 +3004,9 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			RecordStat(EPerfStatCategory::Replication, WarningLine);
 		}
 	}
-	else if (Scenario.bEnableServerClientHarness && bHasNetworkingRoots)
+	else if (bHasNetworkingRoots)
 	{
-		AddError(TEXT("Server/client harness expected networking-enabled perf variables, but none were configured."));
+		AddWarning(TEXT("Networking-enabled roots detected, but no perf variables opted into networking in this scenario."));
 	}
 	else
 	{
@@ -3492,39 +3422,44 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	LogSystemDelta(TEXT("PostCleanup"), StatsAfterValidation, StatsAfterCleanup);
 	TickHarness(4);
 
-	#if WITH_SERVER_CODE
-		if (Scenario.bEnableServerClientHarness && Harness.IsActive())
+	if (bGauntletActive && GEngine)
+	{
+		UNetDriver* NetDriver = nullptr;
+		for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
 		{
-			const FPerfServerClientHarness::FCollectedStats HarnessStats = Harness.GatherStats();
-			const auto BytesToKB = [](double Bytes)
+			UWorld* World = WorldContext.World();
+			if (!World)
 			{
-				return Bytes / 1024.0;
-			};
-			const FString HarnessSummary = FString::Printf(
-				TEXT("Harness traffic | TxPackets=%llu (%.2f KB) | RxPackets=%llu (%.2f KB)"),
-				HarnessStats.OutgoingPackets,
-				BytesToKB(HarnessStats.OutgoingBytes),
-				HarnessStats.IncomingPackets,
-				BytesToKB(HarnessStats.IncomingBytes));
-			RecordStat(EPerfStatCategory::Networking, HarnessSummary);
-			const FString ServerStatLine = HarnessStats.ServerSnapshot.Describe();
-			if (!ServerStatLine.IsEmpty())
-			{
-				RecordStat(EPerfStatCategory::Networking, ServerStatLine);
+				continue;
 			}
-			const FString ClientStatLine = HarnessStats.ClientSnapshot.Describe();
-			if (!ClientStatLine.IsEmpty())
+			NetDriver = World->GetNetDriver();
+			if (NetDriver)
 			{
-				RecordStat(EPerfStatCategory::Networking, ClientStatLine);
-			}
-			TArray<FString> HarnessMetricLines;
-			Harness.CollectRegisteredNetworkMetrics(HarnessMetricLines);
-			for (const FString& MetricLine : HarnessMetricLines)
-			{
-				RecordStat(EPerfStatCategory::Networking, MetricLine);
+				RecordStat(EPerfStatCategory::Networking, FString::Printf(TEXT("Gauntlet world=%s | NetDriver=%s"), *World->GetName(), *NetDriver->GetName()));
+				RecordStat(EPerfStatCategory::Networking, FString::Printf(TEXT("Gauntlet net traffic | InBytes=%llu OutBytes=%llu InPackets=%llu OutPackets=%llu"),
+					static_cast<unsigned long long>(NetDriver->InBytes),
+					static_cast<unsigned long long>(NetDriver->OutBytes),
+					static_cast<unsigned long long>(NetDriver->InPackets),
+					static_cast<unsigned long long>(NetDriver->OutPackets)));
+				UNetConnection* Connection = NetDriver->ServerConnection;
+				if (!Connection && NetDriver->ClientConnections.Num() > 0)
+				{
+					Connection = NetDriver->ClientConnections[0];
+				}
+				if (Connection)
+				{
+					RecordStat(EPerfStatCategory::Networking, FString::Printf(TEXT("Gauntlet conn state=%s | AvgPing=%.2f ms"),
+						LexToString(Connection->GetConnectionState()),
+						Connection->AvgLag * 1000.0));
+				}
+				break;
 			}
 		}
-	#endif
+		if (!NetDriver)
+		{
+			RecordStat(EPerfStatCategory::Networking, TEXT("Gauntlet net stats unavailable: no active NetDriver found."));
+		}
+	}
 
 	const FString SummaryPanelText = SummaryPanel.BuildPanel();
 	if (!SummaryPanelText.IsEmpty())

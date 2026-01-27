@@ -5,14 +5,15 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
@@ -22,6 +23,8 @@
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Profiling/GorgeousProfiling.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
@@ -37,6 +40,8 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/UnrealType.h"
 #include "Misc/ScopeLock.h"
+#include "HAL/ThreadSafeCounter.h"
+#include "Stats/Stats.h"
 #include "Net/UnrealNetwork.h"
 //<-------------------------------------------------------------------------->
 
@@ -45,6 +50,16 @@
 //=============================================================================
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousObjectVariable, Log, All);
+
+DECLARE_STATS_GROUP(TEXT("Gorgeous Object Variables"), STATGROUP_GorgeousObjectVariables, STATCAT_Advanced);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Created"), STAT_GOV_Created, STATGROUP_GorgeousObjectVariables);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Destroyed"), STAT_GOV_Destroyed, STATGROUP_GorgeousObjectVariables);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Alive"), STAT_GOV_Alive, STATGROUP_GorgeousObjectVariables);
+
+namespace
+{
+	FThreadSafeCounter GObjectVariableAliveCounter;
+}
 
 FGorgeousObjectVariableRootConfiguration::FGorgeousObjectVariableRootConfiguration()
 	: PreferredRootName(NAME_None)
@@ -66,18 +81,6 @@ FGorgeousRootNetworkAccessConfig::FGorgeousRootNetworkAccessConfig()
 	, AccessPolicy(EGorgeousObjectVariableAccessPolicy::Everyone)
 	, ReplicationChannel(NAME_None)
 {
-}
-
-FGorgeousSharedNetworkStackConfig::FGorgeousSharedNetworkStackConfig()
-	: AccessPolicy(EGorgeousObjectVariableAccessPolicy::Everyone)
-	, ReplicationChannel(NAME_None)
-{
-}
-
-void FGorgeousSharedNetworkStackConfig::Reset()
-{
-	AccessPolicy = EGorgeousObjectVariableAccessPolicy::Everyone;
-	ReplicationChannel = NAME_None;
 }
 
 UGorgeousObjectVariable::FReplicatedPropertyDeclaration::FReplicatedPropertyDeclaration()
@@ -110,7 +113,7 @@ void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::InitializeShadowSt
 
 	if (!bShadowInitialized)
 	{
-		const int32 ShadowSize = Property->ElementSize * Property->ArrayDim;
+		const int32 ShadowSize = Property->GetElementSize() * Property->ArrayDim;
 		RepNotifyShadow.SetNumZeroed(ShadowSize > 0 ? ShadowSize : 1);
 		Property->InitializeValue(RepNotifyShadow.GetData());
 		bShadowInitialized = true;
@@ -130,6 +133,11 @@ void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::ResetShadowState()
 	}
 	RepNotifyShadow.Reset();
 	bShadowInitialized = false;
+}
+
+bool UGorgeousObjectVariable::ValidateVariableAssignment(const FName PropertyName, const FProperty* ValueProperty, const void* ValueAddress) const
+{
+	return true;
 }
 
 namespace GorgeousObjectVariable_Private
@@ -443,7 +451,8 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 	Parent(nullptr),
 	AutoReplicationEntryKey(NAME_None),
 	AutoReplicationReplicationIndex(INDEX_NONE),
-	bLegacyReplicationRegistered(false)
+	bLegacyReplicationRegistered(false),
+	bRemovedFromRegistry(false)
 {
 	bReplicationActivationGuard = false;
 
@@ -455,42 +464,14 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 
 UGorgeousObjectVariable::~UGorgeousObjectVariable()
 {
-	if (HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
-	{
-		return;
-	}
-
-	UGorgeousRootObjectVariable* OwningRoot = nullptr;
-	if (UGorgeousRootObjectVariable* AsRoot = Cast<UGorgeousRootObjectVariable>(this))
-	{
-		OwningRoot = AsRoot;
-	}
-	else
-	{
-		UGorgeousObjectVariable* CurrentParent = Parent;
-		while (CurrentParent && !OwningRoot)
-		{
-			OwningRoot = Cast<UGorgeousRootObjectVariable>(CurrentParent);
-			CurrentParent = CurrentParent ? CurrentParent->Parent : nullptr;
-		}
-	}
-
-	if (!OwningRoot)
-	{
-		OwningRoot = UGorgeousRootObjectVariable::TryGetExistingRoot();
-	}
-
-	if (OwningRoot)
-	{
-		OwningRoot->RemoveVariableFromRegistry(this);
-	}
 }
 
 UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist, const FString& DisplayNameOverride)
 {
-	if (!Class && Class->IsValidLowLevel())
+	GORGEOUS_PROFILE_SCOPE(GOV_NewObjectVariable);
+	if (!Class && Class.Get() == nullptr)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.Registration.Invalid_Class");
+		GT_E_LOG_MESSAGE("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.Registration.Invalid_Class");
 		return nullptr;
 	}
 
@@ -502,11 +483,16 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 			DesiredRootName = ClassDefaultObject->GetConfiguredRootName();
 		}
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable(DesiredRootName);
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		GT_I_LOG_MESSAGE("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
 	NewObjectVariable->AddToRoot();
+	INC_DWORD_STAT(STAT_GOV_Created);
+	INC_DWORD_STAT(STAT_GOV_Alive);
+	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
+	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
+	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
 	
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
@@ -516,9 +502,14 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	NewObjectVariable->bPersistent = bShouldPersist;
 	InParent->RegisterWithRegistry(NewObjectVariable);
 	NewObjectVariable->SetDisplayName(DisplayNameOverride);
+	GORGEOUS_TRACE_BOOKMARK(TEXT("ObjectVariable.Create %s (%s)"), *NewObjectVariable->GetName(), *NewObjectVariable->GetClass()->GetName());
 
-	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(FString::Printf(TEXT("Successfully registered object variable with identifier: %s where the parent is: %s (%s)"),
-	*Identifier.ToString(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString()), "GT.ObjectVariables.Registration.Successful");
+	GT_S_LOG("GT.ObjectVariables.Registration.Successful",
+		TEXT("Successfully registered object variable with name %s & identifier: %s where the parent is: %s (%s)"),
+		*NewObjectVariable->GetDisplayNameOrFallback(),
+		*Identifier.ToString(),
+		*InParent->GetName(),
+		*InParent->UniqueIdentifier.ToString());
 	
 	return NewObjectVariable;
 }
@@ -526,9 +517,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObjectVariable(
 	const TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* InParent, UObject* Outer)
 {
+	GORGEOUS_PROFILE_SCOPE(GOV_InstantiateTransactional);
 	if (!Class)
 	{
-		UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+		GT_E_LOG_MESSAGE("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
 		return nullptr;
 	}
 
@@ -540,23 +532,89 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 			DesiredRootName = ClassDefaultObject->GetConfiguredRootName();
 		}
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable(DesiredRootName);
-		UGorgeousLoggingBlueprintFunctionLibrary::LogInformationMessage("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		GT_I_LOG_MESSAGE("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
 	}
 	
 	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(InParent, Class, NAME_None, RF_Transactional);
 	NewInstance->UniqueIdentifier = FGuid::NewGuid();
 	NewInstance->Parent = InParent;
 	NewInstance->SetDisplayName(Class ? Class->GetName() : FString());
+	INC_DWORD_STAT(STAT_GOV_Created);
+	INC_DWORD_STAT(STAT_GOV_Alive);
+	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
+	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
+	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
 	
 	if (NewInstance)
 	{
 		Modify();
 
-		UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage("Created new transactional instance.", "GT.ObjectVariables.Transactional.Success");
+		GT_S_LOG_MESSAGE("Created new transactional instance.", "GT.ObjectVariables.Transactional.Success");
 		return NewInstance;
 	}
-	UGorgeousLoggingBlueprintFunctionLibrary::LogErrorMessage("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+	GT_E_LOG_MESSAGE("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
 	return nullptr;
+}
+
+bool UGorgeousObjectVariable::SerializeToPayload(FGorgeousObjectVariableSerializedPayload& OutPayload) const
+{
+	UGorgeousObjectVariable* MutableThis = const_cast<UGorgeousObjectVariable*>(this);
+	MutableThis->PreSerializeToPayload(OutPayload);
+	return FGorgeousObjectVariableSerialization::WriteObjectToPayload(*MutableThis, OutPayload);
+}
+
+bool UGorgeousObjectVariable::DeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload)
+{
+	if (!InPayload.VariableClass)
+	{
+		return false;
+	}
+
+	if (!GetClass()->IsChildOf(InPayload.VariableClass.Get()))
+	{
+		return false;
+	}
+
+	if (!FGorgeousObjectVariableSerialization::LoadObjectFromPayload(*this, InPayload))
+	{
+		return false;
+	}
+
+	if (InPayload.VariableIdentifier.IsValid())
+	{
+		UniqueIdentifier = InPayload.VariableIdentifier;
+	}
+
+	PostDeserializeFromPayload(InPayload);
+	return true;
+}
+
+void UGorgeousObjectVariable::PreSerializeToPayload(FGorgeousObjectVariableSerializedPayload& OutPayload) const
+{
+	if (!OutPayload.VariableIdentifier.IsValid())
+	{
+		OutPayload.VariableIdentifier = UniqueIdentifier.IsValid() ? UniqueIdentifier : FGuid::NewGuid();
+	}
+
+	if (!OutPayload.VariableClass)
+	{
+		OutPayload.VariableClass = GetClass();
+	}
+
+#if WITH_EDITORONLY_DATA
+	OutPayload.CachedPinConfiguration = PinConfiguration;
+	OutPayload.SelectedContainerType = PinConfiguration.ContainerType;
+#endif
+}
+
+void UGorgeousObjectVariable::PostDeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload)
+{
+#if WITH_EDITORONLY_DATA
+	if (InPayload.CachedPinConfiguration.PinCategory != NAME_None)
+	{
+		PinConfiguration = InPayload.CachedPinConfiguration;
+	}
+#endif
 }
 
 void UGorgeousObjectVariable::InvokeInstancedFunctionality(const FGuid NewUniqueIdentifier)
@@ -609,6 +667,18 @@ void UGorgeousObjectVariable::ApplyReplicatedIdentifier(const FGuid& InIdentifie
 
 void UGorgeousObjectVariable::BeginDestroy()
 {
+	GORGEOUS_PROFILE_SCOPE(GOV_BeginDestroy);
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		INC_DWORD_STAT(STAT_GOV_Destroyed);
+		DEC_DWORD_STAT(STAT_GOV_Alive);
+		const int32 AliveCount = GObjectVariableAliveCounter.Decrement();
+		GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
+		GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesDestroyed, 1);
+		GORGEOUS_TRACE_BOOKMARK(TEXT("ObjectVariable.Destroy %s (%s)"), *GetName(), *GetClass()->GetName());
+		EnsureRemovedFromRegistry();
+	}
+
 	if (SupportsAutoReplicationFeatures())
 	{
 		if (UWorld* TargetWorld = GetWorld())
@@ -620,6 +690,23 @@ void UGorgeousObjectVariable::BeginDestroy()
 	UnregisterLegacyReplication();
 	UGorgeousRootObjectVariable::ReleaseDisplayName(this);
 	Super::BeginDestroy();
+}
+
+void UGorgeousObjectVariable::EnsureRemovedFromRegistry()
+{
+	if (bRemovedFromRegistry)
+	{
+		return;
+	}
+
+	bRemovedFromRegistry = true;
+
+	if (!UGorgeousRootObjectVariable::IsVariableRegistered(this))
+	{
+		return;
+	}
+
+	UGorgeousRootObjectVariable::RemoveVariableFromRegistry(this);
 }
 
 void UGorgeousObjectVariable::SetParent(UGorgeousObjectVariable* NewParent)
@@ -653,7 +740,6 @@ void UGorgeousObjectVariable::SetSharedNetworkStackEnabledInternal(const bool bE
 		if (bUseSharedNetworkStack)
 		{
 			bUseSharedNetworkStack = false;
-			SharedNetworkStackConfig.Reset();
 		}
 		return;
 	}
@@ -667,10 +753,6 @@ void UGorgeousObjectVariable::SetSharedNetworkStackEnabledInternal(const bool bE
 	if (bUseSharedNetworkStack)
 	{
 		RootNetworkConfig = FGorgeousRootNetworkAccessConfig();
-	}
-	else
-	{
-		SharedNetworkStackConfig.Reset();
 	}
 
 	if (bNotifyCoordinator)
@@ -706,7 +788,6 @@ void UGorgeousObjectVariable::SetRootNetworkStackEnabledInternal(const bool bEna
 	if (bDesiredState && bUseSharedNetworkStack)
 	{
 		bUseSharedNetworkStack = false;
-		SharedNetworkStackConfig.Reset();
 	}
 	else if (!bDesiredState)
 	{
@@ -752,9 +833,9 @@ void UGorgeousObjectVariable::SetNetworkAccessPolicy(const EGorgeousObjectVariab
 			bConfigChanged = true;
 		}
 
-		if (SharedNetworkStackConfig.AccessPolicy != NewPolicy)
+		if (RootNetworkConfig.AccessPolicy != NewPolicy)
 		{
-			SharedNetworkStackConfig.AccessPolicy = NewPolicy;
+			RootNetworkConfig.AccessPolicy = NewPolicy;
 			bConfigChanged = true;
 		}
 	}
@@ -931,10 +1012,68 @@ FString UGorgeousObjectVariable::GetDisplayNameOrFallback() const
 
 void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable)
 {
-	if (NewObjectVariable && !UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
+	if (!NewObjectVariable)
+	{
+		return;
+	}
+
+	if (!HandleUniqueRegistrationPolicy(NewObjectVariable))
+	{
+		return;
+	}
+
+	if (!UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
 	{
 		VariableRegistry.Add(NewObjectVariable);
 		UGorgeousRootObjectVariable::TrackRegisteredVariable(NewObjectVariable);
+	}
+}
+
+bool UGorgeousObjectVariable::HandleUniqueRegistrationPolicy(UGorgeousObjectVariable* Candidate)
+{
+	if (!Candidate || !Candidate->bUnique)
+	{
+		return true;
+	}
+
+	const TArray<UGorgeousObjectVariable*> Registry = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(Candidate->GetConfiguredRootName());
+	TArray<UGorgeousObjectVariable*> Collisions;
+	for (UGorgeousObjectVariable* Entry : Registry)
+	{
+		if (!Entry || Entry == Candidate)
+		{
+			continue;
+		}
+
+		if (Entry->GetClass() == Candidate->GetClass() && UGorgeousRootObjectVariable::IsVariableRegistered(Entry))
+		{
+			Collisions.Add(Entry);
+		}
+	}
+
+	if (Collisions.IsEmpty())
+	{
+		return true;
+	}
+
+	switch (Candidate->UniqueRegistrationPolicy)
+	{
+	case EGorgeousObjectVariableUniqueRegistrationPolicy::RemoveAllExisting:
+		for (UGorgeousObjectVariable* Collision : Collisions)
+		{
+			if (!Collision)
+			{
+				continue;
+			}
+
+			UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Collision);
+		}
+		return true;
+
+	case EGorgeousObjectVariableUniqueRegistrationPolicy::CancelRegistration:
+	default:
+		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Registration cancelled for %s because another unique instance already exists."), *Candidate->GetDisplayNameOrFallback());
+		return false;
 	}
 }
 
@@ -1326,17 +1465,12 @@ FName UGorgeousObjectVariable::GetConfiguredRootName() const
 
 EGorgeousObjectVariableAccessPolicy UGorgeousObjectVariable::GetEffectiveAccessPolicy() const
 {
-	const bool bRootStackActive = DoesRootEnforceNetworking() || RootNetworkConfig.bExposeThroughRootNetworkStack;
-	const EGorgeousObjectVariableAccessPolicy BasePolicy = bRootStackActive
-		? RootNetworkConfig.AccessPolicy
-		: (bUseSharedNetworkStack ? SharedNetworkStackConfig.AccessPolicy : RootNetworkConfig.AccessPolicy);
-
-	if (BasePolicy == EGorgeousObjectVariableAccessPolicy::Everyone && AutoReplicationConfig.bRespectAccessPolicy)
+	if (RootNetworkConfig.AccessPolicy == EGorgeousObjectVariableAccessPolicy::Everyone && AutoReplicationConfig.bRespectAccessPolicy)
 	{
 		return ResolveRespectAccessPolicy(const_cast<UGorgeousObjectVariable*>(this));
 	}
 
-	return BasePolicy;
+	return RootNetworkConfig.AccessPolicy;
 }
 
 FName UGorgeousObjectVariable::GetEffectiveNetworkChannel() const
@@ -1347,13 +1481,9 @@ FName UGorgeousObjectVariable::GetEffectiveNetworkChannel() const
 	}
 
 	FName ChannelName = NAME_None;
-	if (DoesRootEnforceNetworking() || RootNetworkConfig.bExposeThroughRootNetworkStack)
+	if (DoesRootEnforceNetworking() || RootNetworkConfig.bExposeThroughRootNetworkStack || bUseSharedNetworkStack)
 	{
 		ChannelName = RootNetworkConfig.ReplicationChannel;
-	}
-	else if (bUseSharedNetworkStack)
-	{
-		ChannelName = SharedNetworkStackConfig.ReplicationChannel;
 	}
 
 	if (ChannelName.IsNone())
@@ -2349,10 +2479,6 @@ void UGorgeousObjectVariable::PostEditChangeProperty(FPropertyChangedEvent& Prop
 		if (RootNetworkConfig.bExposeThroughRootNetworkStack)
 		{
 			SetSharedNetworkStackEnabled(false);
-		}
-		else if (!bUseSharedNetworkStack)
-		{
-			SharedNetworkStackConfig.Reset();
 		}
 	}
 }

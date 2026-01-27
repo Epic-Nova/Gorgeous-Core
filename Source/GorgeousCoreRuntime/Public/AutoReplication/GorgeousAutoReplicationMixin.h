@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 #pragma once
@@ -76,7 +76,7 @@ public:
 	FGorgeousAutoReplicationEntry();
 
 	/** Default value that will be instanced or used when networking is disabled. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication", meta = (GorgeousObjectVariableTrunk = "DefaultObjectVariableTrunk"))
 	TObjectPtr<UGorgeousObjectVariable> DefaultValue;
 
 	/** If true, this entry will register itself with the replicated array when networking is enabled. */

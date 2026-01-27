@@ -5,15 +5,15 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-#include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
+#include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousGameInstance.h"

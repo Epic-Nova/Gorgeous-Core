@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,13 +14,13 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "EditorSubsystem.h"
 #include "AssetTypeCategories.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousAssetTypeAction.h"
 #include "GorgeousAssetRegistrationStructures.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousAssetRegistration_ES.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -30,6 +30,10 @@ class UGorgeousFactory;
 
 /**
  * Editor subsystem for managing and registering custom asset types and categories.
+ *
+ * @deprecated This class is deprecated. Use UAssetDefinitionDefault subclasses instead.
+ * UAssetDefinitionDefault provides automatic registration via UObject reflection and is
+ * the preferred approach in UE5.4+. See GorgeousCoreAssetDefinitions.h for examples.
  *
  * This class acts as the central interface for dynamically registering new asset types,
  * as well as defining custom asset categories within the Unreal Engine editor. It encapsulates
@@ -43,8 +47,8 @@ class UGorgeousFactory;
  * @author Nils Bergemann
  * @since v0.9
  */
-UCLASS(DisplayName = "Gorgeous Asset Registration")
-class GORGEOUSCOREEDITORUTILITIES_API UGorgeousAssetRegistration_ES : public UEditorSubsystem
+UCLASS(DisplayName = "Gorgeous Asset Registration", Deprecated)
+class GORGEOUSCOREEDITORUTILITIES_API UDEPRECATED_GorgeousAssetRegistration_ES : public UEditorSubsystem
 {
 	GENERATED_BODY()
 	
@@ -80,3 +84,6 @@ private:
 	 */
 	TArray<TSharedPtr<FGorgeousAssetTypeAction>> GorgeousAssets;
 };
+
+// Backwards compatibility alias
+using UGorgeousAssetRegistration_ES = UDEPRECATED_GorgeousAssetRegistration_ES;

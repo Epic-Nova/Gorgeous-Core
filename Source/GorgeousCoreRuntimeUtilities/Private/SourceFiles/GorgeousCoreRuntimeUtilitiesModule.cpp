@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeUtilitiesModule.h"
 
@@ -14,8 +14,9 @@
 // FGorgeousCoreRuntimeUtilitiesModule Implementation
 //=============================================================================
 
-void FGorgeousCoreRuntimeUtilitiesModule::StartupModule() {}
-
-void FGorgeousCoreRuntimeUtilitiesModule::ShutdownModule() {}
+int32 FGorgeousCoreRuntimeUtilitiesModule::GetMinimumRequiredCoreVersion() const
+{
+	return 90;
+}
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeUtilitiesModule, GorgeousCoreRuntimeUtilities)

@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,10 +14,10 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Conditions/GorgeousCondition.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousConditionalObjectChooser.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -32,8 +32,8 @@
  * @author Nils Bergemann
  * @note This class allows for dynamic object selection based on specified conditions.
  */
-UCLASS(MinimalAPI, Blueprintable, BlueprintType)
-class UGorgeousConditionalObjectChooser : public UObject
+UCLASS(Blueprintable, BlueprintType)
+class GORGEOUSCORERUNTIME_API UGorgeousConditionalObjectChooser : public UObject
 {
 	GENERATED_BODY()
 

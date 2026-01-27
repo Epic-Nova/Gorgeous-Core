@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/NetDriver.h"
 
-struct FGorgeousAutomationScenarioResult;
+struct FGorgeousInsightScenarioResult;
 
 namespace FGorgeousNetworkEmulation
 {
@@ -37,11 +37,11 @@ struct FRuntimeProfile
 
 bool BuildPreset(int32 PresetIndex, FPresetProfile& OutProfile);
 bool ApplyProfile(const FPresetProfile& Profile, FString& OutWarning);
-FRuntimeProfile ApplyPreset(int32 PresetIndex, FGorgeousAutomationScenarioResult* OptionalResult = nullptr, const TCHAR* NotePrefix = TEXT("netemu"));
+FRuntimeProfile ApplyPreset(int32 PresetIndex, FGorgeousInsightScenarioResult* OptionalResult = nullptr, const TCHAR* NotePrefix = TEXT("netemu"));
 
 void SetSuiteDefaultPreset(int32 PresetIndex);
 bool HasSuiteDefaultPreset();
 int32 GetSuiteDefaultPreset();
-FRuntimeProfile EnsureSuitePresetApplied(FGorgeousAutomationScenarioResult* OptionalResult = nullptr);
-void AppendRuntimeMetrics(const FRuntimeProfile& Runtime, FGorgeousAutomationScenarioResult& Result, const TCHAR* MetricPrefix = TEXT("netemu."));
+FRuntimeProfile EnsureSuitePresetApplied(FGorgeousInsightScenarioResult* OptionalResult = nullptr);
+void AppendRuntimeMetrics(const FRuntimeProfile& Runtime, FGorgeousInsightScenarioResult& Result, const TCHAR* MetricPrefix = TEXT("netemu."));
 }

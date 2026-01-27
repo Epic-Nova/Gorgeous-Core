@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousSetObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -165,24 +165,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
     TSet<FString> SetStringSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FString>& NewValue);
-
-    /**
-     * Sets a set of FTransforms.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new set of FTransforms.
-     * @return The updated set of FTransforms.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
-    TSet<FTransform> SetTransformSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FTransform>& NewValue);
-
-    /**
-     * Sets a set of FVectors.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new set of FVectors.
-     * @return The updated set of FVectors.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
-    TSet<FVector> SetVectorSetObjectVariable(const FName OptionalVariableName, UPARAM(ref) TSet<FVector>& NewValue);
 };

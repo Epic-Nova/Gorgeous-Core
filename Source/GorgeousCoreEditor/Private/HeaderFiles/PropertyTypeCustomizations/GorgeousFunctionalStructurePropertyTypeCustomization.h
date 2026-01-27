@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "IPropertyTypeCustomization.h"
 //<-------------------------------------------------------------------------->
 
@@ -32,10 +32,6 @@ struct FGorgeousFunctionalStructure_S;
  * This customization is particularly useful for structures that require complex logic or
  * dependencies between their properties, as it provides a robust mechanism to handle
  * property changes and trigger corresponding actions.
- *
- * Key features include:
- * - Event-driven updates through Pre- and Post-edit change events.
- * - A dedicated instance pointer to the functional structure being customized, enabling direct access and modification.
  *
  * @author Nils Bergemann
  */

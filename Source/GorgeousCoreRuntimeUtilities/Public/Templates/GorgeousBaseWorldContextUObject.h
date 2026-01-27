@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousBaseWorldContextUObject.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -22,14 +22,23 @@
 class UWorld;
 //<-------------------------------------------------->
 
-/**
- * Provides a UObject with a default handle to the world.
- *
- * Key features include:
- * - Abstract base class for UObjects requiring world context.
- * - Overrides GetWorld() to provide world context.
- * - Caches owner object for efficient world retrieval.
- */
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Base World Context UObject
+| Functional Name: GorgeousBaseWorldContextUObject
+| Parent Class: UObject
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| An abstract base class for UObjects that require access to the world context.
+| This class overrides the GetWorld() method to provide the appropriate UWorld
+| instance based on a cached owner object. It is designed to be extended by
+| other classes that need world context functionality.
+<--------------------------------------------------------------------------->
+<===========================================================================>
+*/
 UCLASS(Abstract, Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public UObject
 {
