@@ -5,12 +5,12 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
-#include "Libraries/GorgeousLoggingBlueprintFunctionLibrary.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Templates/Function.h"
 #include "Misc/CoreMisc.h"
 
@@ -212,6 +212,7 @@ UGorgeousObjectVariable* UGorgeousRootObjectVariable::FindVariableByIdentifier(c
 
 	return nullptr;
 }
+
 
 void UGorgeousRootObjectVariable::SetDefaultOrphanResolution(const EGorgeousObjectVariableOrphanResolution InResolution)
 {
@@ -549,7 +550,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	const FString Message = RemovedCount > 0
 		? FString::Printf(TEXT("Registry cleaned (%d dangling entries removed)."), RemovedCount)
 		: TEXT("Registry scan completed – no dangling entries detected.");
-	UGorgeousLoggingBlueprintFunctionLibrary::LogSuccessMessage(Message, TEXT("GT.ObjectVariables.Registry.Cleaned"));
+	GT_S_LOG_MESSAGE(Message, TEXT("GT.ObjectVariables.Registry.Cleaned"));
 	DefaultOrphanResolution = PreviousResolution;
 }
 
@@ -560,6 +561,11 @@ void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* 
 		return;
 	}
 
+	if (!HandleUniqueRegistrationPolicy(NewObjectVariable))
+	{
+		return;
+	}
+	
 	if (!VariableRegistry.Contains(NewObjectVariable))
 	{
 		VariableRegistry.Add(NewObjectVariable);

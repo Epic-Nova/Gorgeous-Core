@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,18 +14,16 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
+#include "ModuleCore/GorgeousCoreRuntimeUtilitiesEnums.h"
 #include "GorgeousLoggingBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
+ * Blueprint function library for Gorgeous logging functionalities.
  * Provides a set of blueprint callable functions for logging messages with different importances.
  *
- * Key features include:
- * - Logging messages with customizable importances, durations, and output targets.
- * - Convenience functions for logging information, success, warning, error, and fatal messages.
- * - Support for logging keys to manage and override existing log messages.
- *
+ * @author Nils Bergemann
  * @note This class provides a centralized and easy-to-use logging system for blueprints.
  */
 UCLASS()
@@ -34,6 +32,22 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousLoggingBlueprintFunctionLibrary 
     GENERATED_BODY()
 
 public:
+    
+    /**
+     * Logs a message with specified importance.
+     *
+     * @param Message The message to log.
+     * @param Importance The importance level of the log message.
+     * @param LoggingKey A unique key to manage the log message.
+     * @param Duration The duration to display the message on screen.
+     * @param bPrintToScreen Whether to print the message to the screen.
+     * @param bPrintToLog Whether to print the message to the log.
+     * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
+     * @param bShowAsToast Whether to show the message as a toast notification.
+     * @param WorldContextObject The world context object.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
+    static void LogMessage(const FText Message, const EGorgeousLoggingImportance Importance, const FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true, const bool bShowAsToast = false, UObject* WorldContextObject = nullptr);
     
     /**
      * Logs an information message.
@@ -46,7 +60,7 @@ public:
      * @param WorldContextObject The world context object.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogInformationMessage(const FString Message, FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, UObject* WorldContextObject = nullptr);
+    static void LogInformationMessage(const FText Message, FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, UObject* WorldContextObject = nullptr);
 
     /**
      * Logs a success message.
@@ -59,7 +73,7 @@ public:
      * @param WorldContextObject The world context object.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogSuccessMessage(const FString Message, FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, UObject* WorldContextObject = nullptr);
+    static void LogSuccessMessage(const FText Message, FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, UObject* WorldContextObject = nullptr);
 
     /**
      * Logs a warning message.
@@ -70,7 +84,7 @@ public:
      * @param WorldContextObject The world context object.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogWarningMessage(const FString Message, FString LoggingKey, const float Duration = 2.0f, UObject* WorldContextObject = nullptr);
+    static void LogWarningMessage(const FText Message, FString LoggingKey, const float Duration = 2.0f, UObject* WorldContextObject = nullptr);
 
     /**
      * Logs an error message.
@@ -81,7 +95,7 @@ public:
      * @param WorldContextObject The world context object.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogErrorMessage(const FString Message, FString LoggingKey, const float Duration = 2.0f, UObject* WorldContextObject = nullptr);
+    static void LogErrorMessage(const FText Message, FString LoggingKey, const float Duration = 2.0f, UObject* WorldContextObject = nullptr);
 
     /**
      * Logs a fatal message.
@@ -91,15 +105,25 @@ public:
      * @param WorldContextObject The world context object.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
-    static void LogFatalMessage(const FString Message, FString LoggingKey, UObject* WorldContextObject = nullptr);
+    static void LogFatalMessage(const FText Message, FString LoggingKey, UObject* WorldContextObject = nullptr);
 
-    /** Enables or disables log emission for the specified logging key. */
+    /**
+     * Sets whether a logging key should be suppressed.
+     * 
+     * @param LoggingKey The logging key to suppress or unsuppress.
+     * @param bShouldSuppress True to suppress the logging key, false to unsuppress.
+     */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging")
-    static void SetLoggingKeySuppressed(FName LoggingKey, bool bShouldSuppress);
+    static void SetLoggingKeySuppressed(const FName LoggingKey, const bool bShouldSuppress);
 
-    /** Returns true when the logging key is currently suppressed. */
+    /**
+     * Checks if a logging key is currently suppressed.
+     * 
+     * @param LoggingKey The logging key to check.
+     * @return True if the logging key is suppressed, false otherwise.
+     */
     UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Logging")
-    static bool IsLoggingKeySuppressed(FName LoggingKey);
+    static bool IsLoggingKeySuppressed(const FName LoggingKey);
 
     /** Clears all runtime logging suppressions. */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging")

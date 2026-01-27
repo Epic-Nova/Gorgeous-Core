@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,14 +14,15 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "GameFramework/GameMode.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousGameMode.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -60,6 +61,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	//<-------------------------------------------------------------------------->
 
@@ -67,11 +69,15 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Mode|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/** 
+	/**
 	 * Additional data for the current class.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Mode")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+
+	/** Trunk that stores serialized default payloads for this game mode's object variables. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Mode|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
 protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game Mode|Networking")
@@ -83,7 +89,7 @@ protected:
 
 	/** Mixin that keeps the AdditionalGorgeousData map and replicated payload in sync. */
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-
+	
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,14 +14,15 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "GameFramework/PlayerState.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousPlayerState.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -61,6 +62,7 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	//<-------------------------------------------------------------------------->
 
@@ -68,11 +70,15 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/** 
+	/**
 	 * Additional data for the current class.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+
+	/** Trunk that persists serialized default payloads authored on this player state. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player State|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
 protected:
 
@@ -83,7 +89,7 @@ protected:
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-
+	
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

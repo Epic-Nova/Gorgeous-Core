@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousMapObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -153,22 +153,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
     TMap<FString, UGorgeousObjectVariable*> GetStringMapObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a map of FTransforms to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A map of FTransforms to GorgeousObjectVariables.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
-    TMap<FTransform, UGorgeousObjectVariable*> GetTransformMapObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a map of FVectors to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A map of FVectors to GorgeousObjectVariables.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
-    TMap<FVector, UGorgeousObjectVariable*> GetVectorMapObjectVariable(const FName OptionalVariableName) const;
 };

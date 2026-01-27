@@ -5,122 +5,95 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "GorgeousCoreEditorModule.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "PropertyEditorModule.h"
-//<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreMinimalShared.h"
+#include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "../HeaderFiles/PropertyTypeCustomizations/GorgeousObjectVariablePropertyTypeCustomization.h"
+#include "Editor.h"
+#include "Misc/CoreDelegates.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // FGorgeousCoreEditorModule Implementation
 //=============================================================================
 
-void FGorgeousCoreEditorModule::StartupModule()
+namespace
 {
-	UGorgeousAssetRegistration_ES* AssetRegistration = GEditor->GetEditorSubsystem<UGorgeousAssetRegistration_ES>();
+	FDelegateHandle BeginPIEHandle;
+	FDelegateHandle EndPIEHandle;
 
-	EAssetTypeCategories::Type GorgeousThingsAssetCategory;
-	AssetRegistration->RegisterNewCategory(INVTEXT("Gorgeous Things"), GorgeousThingsAssetCategory);
+	void HandleBeginPIE(bool bIsSimulating)
 	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Object Variable"), UGorgeousObjectVariable::StaticClass(),
-			FColor::Blue, {INVTEXT("Gorgeous Core")});
-		
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Conditional Object Chooser"), UGorgeousConditionalObjectChooser::StaticClass(),
-		FColor::Cyan, {INVTEXT("Gorgeous Core"), INVTEXT("Conditional Object Choosers")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Boolean Condition"), UGorgeousBooleanCondition::StaticClass(),
-		FColor::Turquoise, {INVTEXT("Gorgeous Core"), INVTEXT("Conditional Object Choosers"), INVTEXT("Conditions")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous IsValid Condition"), UGorgeousIsValidCondition::StaticClass(),
-		FColor::Turquoise, {INVTEXT("Gorgeous Core"), INVTEXT("Conditional Object Choosers"), INVTEXT("Conditions")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Gameplay Tag Condition"), UGorgeousGameplayTagCondition::StaticClass(),
-		FColor::Turquoise, {INVTEXT("Gorgeous Core"), INVTEXT("Conditional Object Choosers"), INVTEXT("Conditions")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
+		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+		{
+			if (Subsystem->IsDebugPanelOpen())
+			{
+				Subsystem->ShowInGamePanel();
+			}
+		}
 	}
 
+	void HandleEndPIE(bool bIsSimulating)
 	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Game Instance"), UGorgeousGameInstance::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
+		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+		{
+			Subsystem->HideInGamePanel();
+		}
 	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Game Mode"), AGorgeousGameMode::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Game State"), AGorgeousGameState::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Player Controller"), AGorgeousPlayerController::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Player State"), AGorgeousPlayerState::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous World Settings"), AGorgeousWorldSettings::StaticClass(),
-		FColor::Blue, {INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life")});
-	
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, {GorgeousThingsAssetCategory});
-	}
-	{
-		/*FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = FGorgeousAssetTypeActionInfo_S(INVTEXT("Gorgeous Character"), AGorgeousCharacter::StaticClass(),
-			FColor::Blue, { INVTEXT("Gorgeous Core"), INVTEXT("Quality of Life") });
+}
 
-		AssetRegistration->RegisterNewAsset(AssetTypeActionInfo, { GorgeousThingsAssetCategory });*/
-	}
+void FGorgeousCoreEditorModule::GorgeousStartupModule()
+{
+	
+	//@TODO
 	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 		UGorgeousObjectVariable::StaticClass()->GetFName(),
-		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariableDetailCustomization::MakeInstance));
+		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariablePropertyTypeCustomization::MakeInstance));
 	PropertyEditorModule.NotifyCustomizationModuleChanged();*/
+
+	BeginPIEHandle = FEditorDelegates::BeginPIE.AddStatic(&HandleBeginPIE);
+	EndPIEHandle = FEditorDelegates::EndPIE.AddStatic(&HandleEndPIE);
 }
 
-void FGorgeousCoreEditorModule::ShutdownModule()
+void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 {
-	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	if (BeginPIEHandle.IsValid())
+	{
+		FEditorDelegates::BeginPIE.Remove(BeginPIEHandle);
+		BeginPIEHandle.Reset();
+	}
+	if (EndPIEHandle.IsValid())
+	{
+		FEditorDelegates::EndPIE.Remove(EndPIEHandle);
+		EndPIEHandle.Reset();
+	}
+
+	//@TODO
+	/*if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(UGorgeousObjectVariable::StaticClass()->GetFName());
-	}
+	}*/
 }
 
-TArray<FName> FGorgeousCoreEditorModule::GetDependentPlugins()
+TArray<FName> FGorgeousCoreEditorModule::GetDependentPlugins() const
 {
 	return TArray<FName>();
+}
+
+int32 FGorgeousCoreEditorModule::GetMinimumRequiredCoreVersion() const
+{
+	//Actually not needed as the Core does not perform checks against itself.
+	return 90; // Version 0.9
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreEditorModule, GorgeousCoreEditor)

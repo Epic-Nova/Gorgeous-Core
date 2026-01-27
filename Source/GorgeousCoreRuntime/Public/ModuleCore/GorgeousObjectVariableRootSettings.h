@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -66,7 +66,7 @@ public:
 	FText Description;
 };
 
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Gorgeous Object Variable Roots"))
+UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Core ↪ Object Variable Roots"))
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRootSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -91,7 +91,9 @@ public:
 	TArray<FName> GetRegisteredRootNames() const;
 
 #if WITH_EDITOR
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Core"); }
-	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionName", "Object Variable Roots"); }
+	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
+	virtual FName GetSectionName() const override { return TEXT("20_Core|Object Variable Roots"); }
+	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionName", "Core ↪ Object Variable Roots"); }
+	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionDescription", "Define available Object Variable roots and their default networking behavior."); }
 #endif
 };

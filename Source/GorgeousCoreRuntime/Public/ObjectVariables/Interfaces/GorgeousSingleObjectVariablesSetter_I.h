@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousSingleObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -195,24 +195,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Text")
     FText SetTextSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FText& NewValue);
-
-    /**
-     * Sets an FTransform.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new FTransform.
-     * @return The updated FTransform.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Transform")
-    FTransform SetTransformSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FTransform& NewValue);
-
-    /**
-     * Sets an FVector.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new FVector.
-     * @return The updated FVector.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Vector")
-    FVector SetVectorSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FVector& NewValue);
 };

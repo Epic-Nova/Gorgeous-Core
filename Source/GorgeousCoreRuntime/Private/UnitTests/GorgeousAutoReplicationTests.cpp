@@ -5,16 +5,17 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
-#if 0 //WITH_DEV_AUTOMATION_TESTS
+#if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
+#include "UnitTests/GorgeousAutoReplicationTransporterSpy.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "Engine/Engine.h"
 
@@ -27,42 +28,6 @@ namespace GorgeousAutoReplicationTests
 	}
 }
 
-UCLASS()
-class UGorgeousAutoReplicationTransporterSpy : public UGorgeousAutoReplicationRPCTransporter
-{
-	GENERATED_BODY()
-
-public:
-	void ResetFlags()
-	{
-		bServerRouted = false;
-		bClientRouted = false;
-		bMulticastRouted = false;
-	}
-
-	bool bServerRouted = false;
-	bool bClientRouted = false;
-	bool bMulticastRouted = false;
-
-protected:
-	virtual bool RouteServerBoundRPC(const FGorgeousQueuedRPC& QueuedRPC, bool bReliable) override
-	{
-		bServerRouted = true;
-		return true;
-	}
-
-	virtual bool RouteClientBoundRPC(const FGorgeousQueuedRPC& QueuedRPC, bool bReliable) override
-	{
-		bClientRouted = true;
-		return true;
-	}
-
-	virtual bool RouteMulticastRPC(const FGorgeousQueuedRPC& QueuedRPC, bool bReliable) override
-	{
-		bMulticastRouted = true;
-		return true;
-	}
-};
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousAutoReplicationDefaultStreamConfigTest, "GorgeousCore.AutoReplication.DefaultStreamConfig", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FGorgeousAutoReplicationDefaultStreamConfigTest::RunTest(const FString& Parameters)
@@ -126,17 +91,17 @@ bool FGorgeousAutoReplicationTransporterRoutingModesTest::RunTest(const FString&
 	FGorgeousQueuedRPC RPC;
 	RPC.Key = TEXT("TestKey");
 
-	RPC.Type = EGorgeousAutoReplicationRPCType::ReliableServer;
+	RPC.Type = EGorgeousAutoReplicationRPCType::EReliableServer;
 	TestTrue(TEXT("Server-bound RPC routed"), Transporter->RouteRPC(RPC));
 	TestTrue(TEXT("Server route invoked"), Transporter->bServerRouted);
 	Transporter->ResetFlags();
 
-	RPC.Type = EGorgeousAutoReplicationRPCType::ReliableClient;
+	RPC.Type = EGorgeousAutoReplicationRPCType::EReliableClient;
 	TestTrue(TEXT("Client-bound RPC routed"), Transporter->RouteRPC(RPC));
 	TestTrue(TEXT("Client route invoked"), Transporter->bClientRouted);
 	Transporter->ResetFlags();
 
-	RPC.Type = EGorgeousAutoReplicationRPCType::ReliableMulticast;
+	RPC.Type = EGorgeousAutoReplicationRPCType::EReliableMulticast;
 	TestTrue(TEXT("Multicast RPC routed"), Transporter->RouteRPC(RPC));
 	TestTrue(TEXT("Multicast route invoked"), Transporter->bMulticastRouted);
 	Transporter->ResetFlags();

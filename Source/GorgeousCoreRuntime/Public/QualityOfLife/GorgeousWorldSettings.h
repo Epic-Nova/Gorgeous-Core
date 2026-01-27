@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,13 +14,14 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "GameFramework/WorldSettings.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousWorldSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -44,6 +45,7 @@ AGorgeousWorldSettings();
 
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 	
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
@@ -64,11 +66,15 @@ AGorgeousWorldSettings();
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/** 
+	/**
 	 * Additional settings/configuration data for the current world.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData; 
+	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+
+	/** Trunk that persists serialized default payloads for this world's object variables. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous World Settings|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
 protected:
 
@@ -76,7 +82,7 @@ protected:
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-
+	
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

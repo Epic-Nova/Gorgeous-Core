@@ -10,11 +10,11 @@
 	"DocsURL": "https://c.docs.gt.simsalabim.studio",
 	"MarketplaceURL": "",
 	"SupportURL": "https://support.simsalabim.studio",
-	"EngineVersion": "5.4.0",
+	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
 	"IsBetaVersion": true,
-	"Installed": true,
+	"Installed": false,
 	"Modules": [
 		{
 			"Name": "GorgeousCoreRuntime",
@@ -42,12 +42,16 @@
 		{
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
 		{
 			"Name": "SQLiteSupport",
+			"Enabled": true
+		},
+		{
+			"Name": "DataValidation",
 			"Enabled": true
 		},
 		{
@@ -57,7 +61,11 @@
 		{
 			"Name": "Iris",
 			"Enabled": true
-        }
+        },
+		{
+			"Name": "Gauntlet",
+			"Enabled": true
+		}
 	],
 	"IsExperimentalVersion": false
 }

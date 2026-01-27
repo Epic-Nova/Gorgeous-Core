@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 #pragma once
@@ -69,7 +69,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStreamConfig
 	 * the variable in the strict relevancy pipeline even though its own
 	 * policy doesn't filter, which is useful for runtime policy changes
 	 * or when designers want this stream to participate in the root checks
-	 * despite using an “allow all” policy. When enabled, Blueprint subclasses
+	 * despite using an “allow all” policy, when enabled, Blueprint subclasses
 	 * can override UGorgeousObjectVariable::ResolveRespectAccessPolicy to
 	 * return an alternate policy for these Everyone streams.
 	 */

@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 #pragma once
@@ -43,9 +43,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|AutoReplication|RPC", meta = (WorldContext = "WorldContextObject"))
 	static bool AddAutoReplicationRPCStringArgument(UObject* WorldContextObject, UPARAM(ref) FGorgeousRPCPayload& Payload, FName ArgumentName, const FString& Value);
-
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|AutoReplication|RPC", meta = (WorldContext = "WorldContextObject"))
-	static bool AddAutoReplicationRPCVectorArgument(UObject* WorldContextObject, UPARAM(ref) FGorgeousRPCPayload& Payload, FName ArgumentName, const FVector& Value);
 
 private:
 	static UGorgeousObjectVariable* PrepareArgumentForPayload(UObject* DesiredOuter, UGorgeousObjectVariable* ArgumentValue, bool bDuplicateForContext);

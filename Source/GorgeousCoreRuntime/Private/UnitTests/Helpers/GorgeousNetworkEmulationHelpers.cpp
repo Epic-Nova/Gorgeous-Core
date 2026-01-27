@@ -1,7 +1,7 @@
 #include "UnitTests/Helpers/GorgeousNetworkEmulationHelpers.h"
 
 #include "Engine/Engine.h"
-#include "Automation/GorgeousAutomationTestMatrix.h"
+#include "InsightMatrix/GorgeousInsightTestMatrix.h"
 
 namespace FGorgeousNetworkEmulation
 {
@@ -163,7 +163,7 @@ bool ApplyProfile(const FPresetProfile& Profile, FString& OutWarning)
 #endif
 }
 
-static void DescribeRuntimeNote(const FRuntimeProfile& Runtime, FGorgeousAutomationScenarioResult* OptionalResult, const TCHAR* NotePrefix)
+static void DescribeRuntimeNote(const FRuntimeProfile& Runtime, FGorgeousInsightScenarioResult* OptionalResult, const TCHAR* NotePrefix)
 {
 	if (!OptionalResult)
 	{
@@ -185,7 +185,7 @@ static void DescribeRuntimeNote(const FRuntimeProfile& Runtime, FGorgeousAutomat
 	}
 }
 
-FRuntimeProfile ApplyPreset(const int32 PresetIndex, FGorgeousAutomationScenarioResult* OptionalResult, const TCHAR* NotePrefix)
+FRuntimeProfile ApplyPreset(const int32 PresetIndex, FGorgeousInsightScenarioResult* OptionalResult, const TCHAR* NotePrefix)
 {
 	FRuntimeProfile Runtime;
 	if (PresetIndex < 0)
@@ -238,7 +238,7 @@ int32 GetSuiteDefaultPreset()
 	return GSuitePreset.Load();
 }
 
-FRuntimeProfile EnsureSuitePresetApplied(FGorgeousAutomationScenarioResult* OptionalResult)
+FRuntimeProfile EnsureSuitePresetApplied(FGorgeousInsightScenarioResult* OptionalResult)
 {
 	const int32 RequestedPreset = GSuitePreset.Load();
 	if (RequestedPreset < 0)
@@ -255,7 +255,7 @@ FRuntimeProfile EnsureSuitePresetApplied(FGorgeousAutomationScenarioResult* Opti
 	return GSuiteRuntime;
 }
 
-void AppendRuntimeMetrics(const FRuntimeProfile& Runtime, FGorgeousAutomationScenarioResult& Result, const TCHAR* MetricPrefix)
+void AppendRuntimeMetrics(const FRuntimeProfile& Runtime, FGorgeousInsightScenarioResult& Result, const TCHAR* MetricPrefix)
 {
 	if (!Runtime.bEnabled)
 	{

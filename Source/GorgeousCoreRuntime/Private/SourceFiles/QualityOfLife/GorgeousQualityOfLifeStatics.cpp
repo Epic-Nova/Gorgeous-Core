@@ -4,7 +4,7 @@
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
-#include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
+#include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "Engine/GameInstance.h"
 

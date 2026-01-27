@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Templates/Casts.h"
 #include "Runtime/Launch/Resources/Version.h"
 #include "Misc/EngineVersion.h"
@@ -25,6 +25,8 @@
 |													MACRO HELL															|
 | --------------------------------------------------------------------------------------------------------------------- |
 <======================================================================================================================*/
+
+//@TODO: Reconsider to drop the planned support for UE 4.23 - 4.27 and only support UE 5.0 and higher going forward, depending on the communities needs.
 
 /**
  * Multiplies the major engine version by 100 and adds the minor version for better usage in the macros below.
@@ -93,6 +95,18 @@
 #define GORGEOUS_54_HIGHER(...)
 #else
 #define GORGEOUS_54_HIGHER(...) __VA_ARGS__
+#endif
+
+#if GORGEOUS_ENGINE_VERSION < 550
+#define GORGEOUS_55_HIGHER(...)
+#else
+#define GORGEOUS_55_HIGHER(...) __VA_ARGS__
+#endif
+
+#if GORGEOUS_ENGINE_VERSION < 560
+#define GORGEOUS_56_HIGHER(...)
+#else
+#define GORGEOUS_56_HIGHER(...) __VA_ARGS__
 #endif
 
 
@@ -164,6 +178,12 @@
 #define GORGEOUS_55_LOWER(X)
 #else
 #define GORGEOUS_55_LOWER(...) __VA_ARGS__
+#endif
+
+#if GORGEOUS_ENGINE_VERSION > 560
+#define GORGEOUS_56_LOWER(X)
+#else
+#define GORGEOUS_56_LOWER(...) __VA_ARGS__
 #endif
 
 
@@ -258,6 +278,14 @@
 #else
 #define GORGEOUS_55_SWITCH(Before, AfterEqual) Before
 #define GORGEOUS_55_ONLY(...)
+#endif
+
+#if GORGEOUS_ENGINE_VERSION >= 560
+#define GORGEOUS_56_SWITCH(Before, AfterEqual) AfterEqual
+#define GORGEOUS_56_ONLY(...) __VA_ARGS__
+#else
+#define GORGEOUS_56_SWITCH(Before, AfterEqual) Before
+#define GORGEOUS_56_ONLY(...)
 #endif
 
 /**

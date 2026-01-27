@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousArrayObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -195,24 +195,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Text")
     TArray<FText> SetTextArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FText>& NewValue);
-
-    /**
-     * Sets an array of FTransforms.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new array of FTransforms.
-     * @return The updated array of FTransforms.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Transform")
-    TArray<FTransform> SetTransformArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FTransform>& NewValue);
-
-    /**
-     * Sets an array of FVectors.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new array of FVectors.
-     * @return The updated array of FVectors.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Vector")
-	TArray<FVector> SetVectorArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<FVector>& NewValue);
 };

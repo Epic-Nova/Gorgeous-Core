@@ -5,13 +5,13 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "QualityOfLife/GorgeousGameInstance.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
@@ -34,6 +34,8 @@ DEFINE_LOG_CATEGORY_STATIC(LogGorgeousGameInstance, Log, All);
 UE_QOL_DEFINE_CONSTRUCTOR(UGorgeousGameInstance, false)
 
 UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(UGorgeousGameInstance)
+
+UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(UGorgeousGameInstance)
 
 void UGorgeousGameInstance::Init()
 {

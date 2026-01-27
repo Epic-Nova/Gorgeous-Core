@@ -5,13 +5,13 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
-#include "ObjectVariables/GorgeousObjectVariableDefinitions.h"
+#include "ObjectVariables/NativeObjectVariableDefinitions.h"
 
 namespace GorgeousAutoReplicationRPCPayloadLibrary_Private
 {
@@ -90,15 +90,6 @@ bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCFloatArgume
 bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const FString& Value)
 {
 	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UString_SOV>(WorldContextObject, Value))
-	{
-		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
-	}
-	return false;
-}
-
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCVectorArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const FVector& Value)
-{
-	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UVector_SOV>(WorldContextObject, Value))
 	{
 		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
 	}

@@ -5,11 +5,15 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 #pragma once
+
+#ifndef GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+#define GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS 0
+#endif
 
 #include "Containers/Array.h"
 #include "Containers/Map.h"
@@ -18,8 +22,11 @@
 #include "Math/RandomStream.h"
 #include "Math/UnrealMathUtility.h"
 #include "Math/Vector.h"
-#include "Net/NetworkMetricsDatabase.h"
 #include "Net/UnrealNetwork.h"
+// NetworkMetricsDatabase only when metrics are enabled so the plugin can compile without engine dependencies.
+#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+#include "Net/NetworkMetricsDatabase.h"
+#endif
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "GorgeousObjectVariablePerfTestTypes.generated.h"
@@ -375,19 +382,21 @@ private:
 	bool bAllowAuthorizedController = true;
 };
 
+// The listener caches network metrics when enabled; always inherits from UObject to satisfy UHT.
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousPerfNetworkMetricsListener : public UNetworkMetricsBaseListener
+class GORGEOUSCORERUNTIME_API UGorgeousPerfNetworkMetricsListener : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	UGorgeousPerfNetworkMetricsListener();
-
-	virtual void Report(const UE::Net::FNetworkMetricSnapshot& Snapshot) override;
-
 	bool TryGetIntMetric(FName MetricName, int64& OutValue) const;
 	bool TryGetFloatMetric(FName MetricName, float& OutValue) const;
 	bool HasMetric(FName MetricName) const;
+
+#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
+	// Called by the network metrics system when metrics are available.
+	void HandleReport(const UE::Net::FNetworkMetricSnapshot& Snapshot);
+#endif
 
 private:
 	UPROPERTY()

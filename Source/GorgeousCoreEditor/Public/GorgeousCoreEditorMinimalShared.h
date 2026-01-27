@@ -5,15 +5,15 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE									|
+|                                  TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                 |
 | --------------------------------------------------------------------------------------------------------------------- |
-|								ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED								|
-|		TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE			|
+|                                ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                               |
+|          TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE         |
 <======================================================================================================================*/
 
 //<=============================--- Pragmas ---==============================>

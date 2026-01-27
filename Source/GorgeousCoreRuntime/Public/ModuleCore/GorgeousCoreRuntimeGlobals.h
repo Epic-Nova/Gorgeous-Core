@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,11 +14,11 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "ReplicationGraph.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousCoreRuntimeGlobals.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -75,7 +75,7 @@ public:
 	 * @return The current instance of the Gorgeous World Settings.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
-	static AGorgeousWorldSettings* GetGorgeousWorldSettings(const UObject* WorldContextObject);
+	static class AGorgeousWorldSettings* GetGorgeousWorldSettings(const UObject* WorldContextObject);
 
 	/** Resolves an object variable by its globally registered display name. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Object Variables")

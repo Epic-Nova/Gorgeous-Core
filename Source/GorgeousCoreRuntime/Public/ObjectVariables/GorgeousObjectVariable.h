@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
@@ -14,7 +14,7 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "GorgeousObjectVariableStructures.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
@@ -24,13 +24,23 @@
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesSetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousQueueObjectVariablesGetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousQueueObjectVariablesSetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousStackObjectVariablesGetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousStackObjectVariablesSetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousDequeObjectVariablesGetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousDequeObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousMapObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousMapObjectVariablesSetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousMultiMapObjectVariablesGetter_I.h"
+#include "ObjectVariables/Interfaces/GorgeousMultiMapObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesSetter_I.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "Net/UnrealNetwork.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
+struct FGorgeousObjectVariableSerializedPayload;
+
 #include "GorgeousObjectVariable.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -54,6 +64,13 @@ enum class EGorgeousObjectVariableAccessPolicy : uint8
 	Custom
 };
 
+UENUM(BlueprintType)
+enum class EGorgeousObjectVariableUniqueRegistrationPolicy : uint8
+{
+		CancelRegistration UMETA(DisplayName = "Cancel Registration"),
+		RemoveAllExisting UMETA(DisplayName = "Remove All Existing")
+};
+
 USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableRootConfiguration
 {
@@ -64,7 +81,7 @@ public:
 
 	/** Optional override that selects a named root from the developer settings. */
 	//UGorgeousRootObjectVariable::GetRegisteredRootNames
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Root", meta = (GetOptions = "/Script/GorgeousCoreRuntime.GorgeousRootObjectVariable.GetRegisteredRootNames"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup", meta = (GetOptions = "/Script/GorgeousCoreRuntime.GorgeousRootObjectVariable.GetRegisteredRootNames"))
 	FName PreferredRootName;
 
 	/** Returns the explicitly configured root or falls back to the developer default. */
@@ -80,35 +97,16 @@ public:
 	FGorgeousRootNetworkAccessConfig();
 
 	/** Enables the root network stack for this variable when networking is active. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Root Network Stack")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	bool bExposeThroughRootNetworkStack;
 
 	/** Determines which controllers are allowed to receive replicated data. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Root Network Stack", meta = (EditCondition = "bExposeThroughRootNetworkStack", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	EGorgeousObjectVariableAccessPolicy AccessPolicy;
 
 	/** Optional logical channel name used by the networking layer to group streams. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Root Network Stack", meta = (EditCondition = "bExposeThroughRootNetworkStack", EditConditionHides))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	FName ReplicationChannel;
-};
-
-USTRUCT(BlueprintType)
-struct GORGEOUSCORERUNTIME_API FGorgeousSharedNetworkStackConfig
-{
-	GENERATED_BODY()
-
-public:
-	FGorgeousSharedNetworkStackConfig();
-
-	/** Determines access policy when routing through the shared network stack. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shared Network Stack")
-	EGorgeousObjectVariableAccessPolicy AccessPolicy;
-
-	/** Optional logical channel name used when leveraging the shared stack. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shared Network Stack")
-	FName ReplicationChannel;
-
-	void Reset();
 };
 
 UENUM(BlueprintType)
@@ -213,7 +211,11 @@ class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UGorgeousBaseWorl
 public IGorgeousObjectVariableInteraction_I,
 public IGorgeousSingleObjectVariablesGetter_I, public IGorgeousSingleObjectVariablesSetter_I,
 public IGorgeousArrayObjectVariablesGetter_I, public IGorgeousArrayObjectVariablesSetter_I,
+public IGorgeousQueueObjectVariablesGetter_I, public IGorgeousQueueObjectVariablesSetter_I,
+public IGorgeousStackObjectVariablesGetter_I, public IGorgeousStackObjectVariablesSetter_I,
+public IGorgeousDequeObjectVariablesGetter_I, public IGorgeousDequeObjectVariablesSetter_I,
 public IGorgeousMapObjectVariablesGetter_I, public IGorgeousMapObjectVariablesSetter_I,
+public IGorgeousMultiMapObjectVariablesGetter_I, public IGorgeousMultiMapObjectVariablesSetter_I,
 public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSetter_I
 {
 	GENERATED_BODY()
@@ -223,6 +225,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	friend class FGorgeousAutoReplicationCoordinator;
 	friend class FGorgeousAutoReplicationMixin;
 	friend class UGorgeousRootNetworkStackSubsystem;
+	friend class FGorgeousObjectVariablePropertyTypeCustomization;
 #if WITH_AUTOMATION_TESTS
 	friend struct FGorgeousObjectVariablePerfTestAccess;
 #endif
@@ -272,6 +275,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
 	UGorgeousObjectVariable* InstantiateTransactionalObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, UGorgeousObjectVariable* Parent = nullptr, UObject* Outer = nullptr);
+
+	/** Serializes this instance into a portable payload that can be stored inside a trunk. */
+	bool SerializeToPayload(FGorgeousObjectVariableSerializedPayload& OutPayload) const;
+
+	/** Restores this instance from a previously serialized payload. */
+	bool DeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload);
 
 	/**
 	 * Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
@@ -521,7 +530,7 @@ public:
 
 	/** Optional root network stack configuration (only visible when networking is available and the shared stack is disabled). */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
-		, meta = (EditCondition = "bSupportsNetworking && !bUseSharedNetworkStack", EditConditionHides, ShowOnlyInnerProperties, DisplayAfter = "AutoReplicationConfig"))
+		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, ShowOnlyInnerProperties, DisplayAfter = "AutoReplicationConfig"))
 	FGorgeousRootNetworkAccessConfig RootNetworkConfig;
 
 	/** Enables the shared network stack path when root access is disabled. */
@@ -529,16 +538,25 @@ public:
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, DisplayAfter = "RootNetworkConfig"))
 	bool bUseSharedNetworkStack;
 
-	/** Shared network stack configuration surfaced when the shared stack is active. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
-		, meta = (EditCondition = "bUseSharedNetworkStack", EditConditionHides, ShowOnlyInnerProperties, DisplayAfter = "bUseSharedNetworkStack"))
-	FGorgeousSharedNetworkStackConfig SharedNetworkStackConfig;
-
-
 private:
 	bool InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr);
 
+public:
+	/**
+	 * Validates whether a value assignment should be accepted for the given property.
+	 * Default implementation accepts all values.
+	 */
+	virtual bool ValidateVariableAssignment(const FName PropertyName, const FProperty* ValueProperty, const void* ValueAddress) const;
+
 protected:
+
+	/** Hook that allows derived types to populate custom metadata before serialization. */
+	virtual void PreSerializeToPayload(FGorgeousObjectVariableSerializedPayload& OutPayload) const;
+
+	/** Hook that allows derived types to react after deserialization. */
+	virtual void PostDeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload);
+
+	void EnsureRemovedFromRegistry();
 	/**
 	 * Sets a dynamic property of the object variable.
 	 *
@@ -552,8 +570,22 @@ protected:
     template<typename InTCppType, typename TInPropertyBaseClass>
     void SetDynamicProperty(const FName PropertyName, const InTCppType& Value)
     {
-    	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); PropertyName.IsValid())
-    	{
+		if (PropertyName.IsNone())
+		{
+			return;
+		}
+
+		FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName);
+		if (!Property)
+		{
+			return;
+		}
+
+		if (!ValidateVariableAssignment(PropertyName, Property, &Value))
+		{
+			GT_E_LOG("GT.ObjectVariables.Assignment.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *PropertyName.ToString(), *GetNameSafe(this));
+			return;
+		}
     		// Handle UObject* properties separately
     		if constexpr (std::is_base_of_v<UObject, InTCppType>)
     		{
@@ -569,7 +601,6 @@ protected:
     				TypedProperty->SetPropertyValue_InContainer(this, Value);
     			}
     		}
-    	}
     }
 //end grepper
 	
@@ -651,8 +682,18 @@ public:
 	/** Runtime replicated flag toggled by the owning AutoReplication system. */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
 	bool bReplicates;
+	
+	/** Ensures only a single instance of this class can exist in the hierarchy. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Registration")
+	bool bUnique = false;
+	
+	/** Behavior that is executed when uniqueness conflicts are detected. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Registration", meta = (EditCondition = "bUnique"))
+	EGorgeousObjectVariableUniqueRegistrationPolicy UniqueRegistrationPolicy = EGorgeousObjectVariableUniqueRegistrationPolicy::CancelRegistration;
 
 protected:
+	
+	static bool HandleUniqueRegistrationPolicy(UGorgeousObjectVariable* Candidate);
 
 	/**
 	 * The parent of the object variable.
@@ -766,8 +807,6 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FRotator, Rotator, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FString, String, Single)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FText, Text, Single)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FTransform, Transform, Single)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(FVector, Vector, Single)
 
 	
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UGorgeousObjectVariable*>, ObjectVariable, Array)
@@ -785,8 +824,54 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FRotator>, Rotator, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FString>, String, Array)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FText>, Text, Array)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FTransform>, Transform, Array)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FVector>, Vector, Array)
+
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UGorgeousObjectVariable*>, ObjectVariable, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UObject*>, ObjectObject, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UClass*>, ObjectClass, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftObjectPtr<UObject>>, SoftObjectObject, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftClassPtr<UObject>>, SoftObjectClass, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<bool>, Boolean, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<uint8>, Byte, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<float>, Float, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<double>, Double, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int64>, Integer64, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int32>, Integer, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FName>, Name, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FRotator>, Rotator, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FString>, String, Queue)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FText>, Text, Queue)
+
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UGorgeousObjectVariable*>, ObjectVariable, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UObject*>, ObjectObject, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UClass*>, ObjectClass, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftObjectPtr<UObject>>, SoftObjectObject, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftClassPtr<UObject>>, SoftObjectClass, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<bool>, Boolean, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<uint8>, Byte, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<float>, Float, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<double>, Double, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int64>, Integer64, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int32>, Integer, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FName>, Name, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FRotator>, Rotator, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FString>, String, Stack)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FText>, Text, Stack)
+
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UGorgeousObjectVariable*>, ObjectVariable, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UObject*>, ObjectObject, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<UClass*>, ObjectClass, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftObjectPtr<UObject>>, SoftObjectObject, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<TSoftClassPtr<UObject>>, SoftObjectClass, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<bool>, Boolean, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<uint8>, Byte, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<float>, Float, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<double>, Double, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int64>, Integer64, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<int32>, Integer, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FName>, Name, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FRotator>, Rotator, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FString>, String, Deque)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TArray<FText>, Text, Deque)
 
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(UGorgeousObjectVariable*, ObjectVariable)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(UObject*, ObjectObject)
@@ -800,8 +885,19 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(int32, Integer)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(FName, Name)
 	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(FString, String)
-	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(FTransform, Transform)
-	UE_DEFINE_OBJECT_VARIABLE_MAP_REFERENCE_INTERFACE(FVector, Vector)
+
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(UGorgeousObjectVariable*, ObjectVariable)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(UObject*, ObjectObject)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(UClass*, ObjectClass)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(uint8, Byte)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(float, Float)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(double, Double)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(int64, Integer64)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(int32, Integer)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(FName, Name)
+	UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_REFERENCE_INTERFACE(FString, String)
 
 	
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<UGorgeousObjectVariable*>, ObjectVariable, Set)
@@ -816,8 +912,6 @@ private:
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<int32>, Integer, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FName>, Name, Set)
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FString>, String, Set)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FTransform>, Transform, Set)
-	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(TSet<FVector>, Vector, Set)
 
 
 	UPROPERTY(Transient)
@@ -834,6 +928,8 @@ private:
 
 	UPROPERTY(Transient)
 	uint8 bLegacyReplicationRegistered : 1;
+
+	bool bRemovedFromRegistry;
 
 	UPROPERTY(Transient)
 	TMap<FGuid, FGorgeousAutoReplicationRPCResultDescriptor> CachedRPCResultDescriptors;

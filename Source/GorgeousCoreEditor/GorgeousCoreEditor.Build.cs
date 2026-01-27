@@ -5,8 +5,8 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 using System.IO;
@@ -45,12 +45,14 @@ public class GorgeousCoreEditor : ModuleRules
             "CoreUObject", 
             "Engine", 
             "InputCore", 
-            "EditorSubsystem"
+            "EditorSubsystem",
+            "GameplayTags"
         });
         
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
+                "AssetDefinition",
                 "Slate", 
                 "SlateCore", 
                 "Projects",

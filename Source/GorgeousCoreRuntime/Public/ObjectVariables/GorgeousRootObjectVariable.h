@@ -5,18 +5,20 @@
 |         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 //<=============================--- Pragmas ---==============================>
 #pragma once
 //<-------------------------------------------------------------------------->
 
+
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariable.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousRootObjectVariable.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -152,6 +154,12 @@ public:
    /** Lookup helper that resolves a variable by its registered display name. */
    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
    static UGorgeousObjectVariable* FindVariableByDisplayName(FName InDisplayName);
+   
+   template<typename VariableType>
+   static VariableType* FindVariableByDisplayNameTyped(const FName InDisplayName)
+   {
+      return Cast<VariableType>(FindVariableByDisplayName(InDisplayName));
+   }
 
    /** Claims ownership of the specified root so replication has a stable authority context. */
    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
@@ -226,11 +234,16 @@ public:
           {
              if (TargetProperty->SameType(SourceProperty))
              {
-                TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
+               if (!FoundObjectVariable->ValidateVariableAssignment(OptionalPropertyName, SourceProperty, SourcePropertyAddress))
+               {
+                  GT_E_LOG("GT.ObjectVariables.Universal.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *OptionalPropertyName.ToString(), *GetNameSafe(FoundObjectVariable));
+                  return;
+               }
+               TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
              }
              else
              {
-                UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
+               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
              }
           }
        }
@@ -287,7 +300,7 @@ public:
              }
              else
              {
-                UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Property type mismatch for %s"), *OptionalPropertyName.ToString()), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object);
+               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
              }
           }
        }
