@@ -24,6 +24,7 @@
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "Profiling/GorgeousProfiling.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
@@ -113,7 +114,12 @@ void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::InitializeShadowSt
 
 	if (!bShadowInitialized)
 	{
-		const int32 ShadowSize = Property->GetElementSize() * Property->ArrayDim;
+		GORGEOUS_55_HIGHER(
+			const int32 ShadowSize = Property->GetElementSize() * Property->ArrayDim;
+		)
+		GORGEOUS_54_LOWER(
+			const int32 ShadowSize = Property->GetSize() * Property->ArrayDim;
+		)
 		RepNotifyShadow.SetNumZeroed(ShadowSize > 0 ? ShadowSize : 1);
 		Property->InitializeValue(RepNotifyShadow.GetData());
 		bShadowInitialized = true;

@@ -118,3 +118,47 @@ private:
 	 */
 	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
 };
+
+//=============================================================================
+// FGorgeousAssetTypeAction Inline Implementation
+//=============================================================================
+
+inline FGorgeousAssetTypeAction::FGorgeousAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo)
+	: AssetTypeActionInfos(InAssetTypeActionInfo)
+{
+}
+
+inline FText FGorgeousAssetTypeAction::GetName() const
+{
+	return AssetTypeActionInfos.DisplayName;
+}
+
+inline UClass* FGorgeousAssetTypeAction::GetSupportedClass() const
+{
+	return AssetTypeActionInfos.SupportedClass.Get();
+}
+
+inline FColor FGorgeousAssetTypeAction::GetTypeColor() const
+{
+	return AssetTypeActionInfos.TypeColor;
+}
+
+inline uint32 FGorgeousAssetTypeAction::GetCategories()
+{
+	return AssetTypeActionInfos.Categories;
+}
+
+inline const TArray<FText>& FGorgeousAssetTypeAction::GetSubMenus() const
+{
+	return AssetTypeActionInfos.SubMenus;
+}
+
+inline const FSlateBrush* FGorgeousAssetTypeAction::GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const
+{
+	return AssetTypeActionInfos.ThumbnailBrush;
+}
+
+inline const FSlateBrush* FGorgeousAssetTypeAction::GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const
+{
+	return AssetTypeActionInfos.IconBrush;
+}

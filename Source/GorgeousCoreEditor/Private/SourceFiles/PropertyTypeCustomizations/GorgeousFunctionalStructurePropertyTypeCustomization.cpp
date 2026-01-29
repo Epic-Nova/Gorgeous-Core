@@ -21,6 +21,7 @@
 #include "IDetailGroup.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -96,7 +97,12 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	
 	if (!AdvancedHandles.IsEmpty())
 	{
-		IDetailGroup& AdvancedGroup = ChildBuilder.AddGroup("Advanced", FText::FromString("Advanced"), false);
+		GORGEOUS_55_HIGHER(
+			IDetailGroup& AdvancedGroup = ChildBuilder.AddGroup("Advanced", FText::FromString("Advanced"), false);
+		)
+		GORGEOUS_54_LOWER(
+			IDetailGroup& AdvancedGroup = ChildBuilder.AddGroup("Advanced", FText::FromString("Advanced"));
+		)
 		for (const auto AdvancedHandle : AdvancedHandles)
 		{
 			AdvancedGroup.AddPropertyRow(AdvancedHandle);
