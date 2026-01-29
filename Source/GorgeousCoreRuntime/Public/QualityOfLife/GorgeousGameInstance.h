@@ -19,7 +19,6 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
-#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousGameInstance.generated.h"
@@ -36,7 +35,6 @@
  */
 UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
-	, public IGorgeousAutoReplicationRPCResponder_I
 	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
@@ -44,12 +42,7 @@ class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
 public:
 
 	UGorgeousGameInstance();
-
-	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
-
-	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
-	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
-
+	
 	//<============================--- Overrides ---=============================>
 
 	/** 
@@ -66,31 +59,15 @@ public:
 	
 	//<-------------------------------------------------------------------------->
 	
-	/** Enables the networking pathway for AutoReplication data so entries register with the replicated array at runtime. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance|Networking")
-	bool bActivateNetworkingCapabilities;
-
 	/**
 	 * Additional settings/configuration data for the current game instance.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
 	/** Serialized trunk that keeps authoritative default payloads for object variables authored on this instance. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Instance|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
-
-protected:
-
-	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game Instance|Networking")
-	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
-
-	/** Local backing store for replicated AutoReplication slots (game instances never replicate but the mixin expects valid storage). */
-	UPROPERTY(Transient)
-	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
-
-	/** Helper that wires mixin flows across all AutoReplication entry points. */
-	FGorgeousAutoReplicationMixin AutoReplicationMixin;
 
 private:
 	void EnsureRootVariablesFallbackToGameInstance();

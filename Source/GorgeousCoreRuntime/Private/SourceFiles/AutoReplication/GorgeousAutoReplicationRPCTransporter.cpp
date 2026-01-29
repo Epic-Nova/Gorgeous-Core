@@ -116,6 +116,12 @@ bool UGorgeousAutoReplicationRPCTransporter::RoutePropertyPayload(const FGorgeou
 		return false;
 	}
 
+	AActor* OwnerActor = GetOwner();
+	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Transporter %s on actor %s routing entry %s (RouteType=%d, IsOwnerLocallyAuthoritative=%d, OwnerRole=%d)."),
+		*GetName(), OwnerActor ? *OwnerActor->GetName() : TEXT("null"), *Envelope.EntryKey.ToString(),
+		static_cast<int32>(RouteType), IsOwnerLocallyAuthoritative() ? 1 : 0,
+		OwnerActor ? static_cast<int32>(OwnerActor->GetLocalRole()) : -1);
+
 	const bool bReliable = GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType);
 
 	switch (RouteType)
@@ -125,14 +131,17 @@ bool UGorgeousAutoReplicationRPCTransporter::RoutePropertyPayload(const FGorgeou
 	{
 		if (IsOwnerLocallyAuthoritative())
 		{
+			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Owner is authoritative, delivering locally."));
 			DeliverPropertyPayload(Envelope);
 		}
 		else if (bReliable)
 		{
+			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadReliable RPC."));
 			ServerReceivePropertyPayloadReliable(Envelope, RouteType);
 		}
 		else
 		{
+			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadUnreliable RPC."));
 			ServerReceivePropertyPayloadUnreliable(Envelope, RouteType);
 		}
 		return true;
@@ -539,11 +548,13 @@ void UGorgeousAutoReplicationRPCTransporter::MulticastReceiveRPCUnreliable_Imple
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
+	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received reliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 	RoutePropertyPayload(Envelope, RouteType);
 }
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnreliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
+	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 	RoutePropertyPayload(Envelope, RouteType);
 }
 

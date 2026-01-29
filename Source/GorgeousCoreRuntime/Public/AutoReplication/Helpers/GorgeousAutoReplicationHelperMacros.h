@@ -15,9 +15,33 @@
 
 /**
  * Initializes the AutoReplication mixin and invokes instanced functionality for every configured entry.
+ * If the class has an AutoReplicationRPCRelay member, it will be set up to forward property payloads to the mixin.
  */
 #define UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA \
 	AutoReplicationMixin.InitializeAdditionalData(bActivateNetworkingCapabilities); \
+	for (auto& GorgeousSetting : AdditionalGorgeousData) \
+	{ \
+		if (UGorgeousObjectVariable* const DefaultVar = GorgeousSetting.Value.DefaultValue) \
+		{ \
+			if(!DefaultVar->UniqueIdentifier.IsValid()) \
+			{ \
+				DefaultVar->UniqueIdentifier = FGuid::NewGuid(); \
+			} \
+			DefaultVar->InvokeInstancedFunctionality(DefaultVar->UniqueIdentifier); \
+		} \
+	}
+
+/**
+ * Extended version that also sets up the RPC relay component for property payload forwarding.
+ * Use this in classes that have an AutoReplicationRPCRelay member (like AGorgeousPlayerController).
+ */
+#define UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA_WITH_RELAY \
+	AutoReplicationMixin.InitializeAdditionalData(bActivateNetworkingCapabilities); \
+	if (AutoReplicationRPCRelay) \
+	{ \
+		AutoReplicationRPCRelay->SetTargetMixin(&AutoReplicationMixin); \
+		AutoReplicationMixin.SetRPCRelayComponent(AutoReplicationRPCRelay); \
+	} \
 	for (auto& GorgeousSetting : AdditionalGorgeousData) \
 	{ \
 		if (UGorgeousObjectVariable* const DefaultVar = GorgeousSetting.Value.DefaultValue) \
