@@ -15,168 +15,197 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "CoreMinimal.h"
-#include "Engine/Engine.h"
-#include "GorgeousCoreRuntimeUtilitiesEnums.h"
+#include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
-#include "Helpers/GorgeousLogRouting.h"
-#include "Containers/Set.h"
-#include "Misc/ConfigCacheIni.h"
-#include "Modules/ModuleManager.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #if WITH_EDITOR
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-#include "Styling/CoreStyle.h"
 #endif
 //<-------------------------------------------------------------------------->
 
-	/**
-	 * Struct containing all customizable options for toast notifications.
-	 */
-	struct FGorgeousToastParams
-	{
-		/** The title displayed at the top of the toast notification. */
-		FString Title;
-		/** The detailed message or description shown below the title. */
-		FString Message;
-        /** Icon style: 0 = information, 1 = warning, 2 = success, 3 = error. */
-        int32 ToastIconKind = 3;
-		/** Duration in seconds the toast will be visible before auto-dismissing. */
-		float ExpireDuration = 8.0f;
-		/** Whether to use the throbber animation (spinner). */
-		bool bUseThrobber = false;
-		/** Whether to display icons. */
-		bool bUseIcons = true;
-		/** Whether the notification auto-dismisses (true) or requires user interaction (false). */
-		bool bFireAndForget = true;
-	};
+/**
+ * Struct containing all customizable options for toast notifications.
+ * 
+ * @author Nils Bergemann
+ */
+struct FGorgeousToastParams
+{
+	// The title displayed at the top of the toast notification.
+	FString Title;
+	
+	// The detailed message or description shown below the title.
+	FString Message;
+    
+    // Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
+    int32 ToastIconKind = 3;
+	
+	// Duration in seconds the toast will be visible before auto-dismissing.
+	float ExpireDuration = 8.0f;
+	
+	// Whether to use the throbber animation (spinner).
+	bool bUseThrobber = false;
+	
+	// Whether to display icons.
+	bool bUseIcons = true;
+	
+	// Whether the notification auto-dismisses (true) or requires user interaction (false).
+	bool bFireAndForget = true;
+};
 
-	// Queue for notifications that need to be shown when editor is ready
-	static TArray<FGorgeousToastParams> QueuedToastNotifications;
-	static bool bToastNotificationsFlushed = false;
+//<============================--- Variables ---============================>
 
-	/**
-	 * Immediately displays a toast notification without queuing.
-	 * Internal use - prefer ShowToastNotification which handles queuing.
-	 *
-	 * @param Params Struct containing all notification parameters.
-	 */
-	FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
-	{
+// Queue for notifications that need to be shown when editor is ready
+static TArray<FGorgeousToastParams> QueuedToastNotifications;
+
+// Flag indicating if queued notifications have been flushed
+static bool GbToastNotificationsFlushed = false;
+//<------------------------------------------------------------------------->
+
+
+//<============================--- C++ Only ---=============================>
+
+/**
+ * Immediately displays a toast notification without queuing.
+ * Internal use - prefer ShowToastNotification which handles queuing.
+ *
+ * @param Params Struct containing all notification parameters.
+ */
+FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
+{
 #if WITH_EDITOR
-		auto& NotificationManager = FSlateNotificationManager::Get();
-		
-		FNotificationInfo Info(FText::FromString(Params.Title));
-		Info.SubText = FText::FromString(Params.Message);
-		Info.bFireAndForget = Params.bFireAndForget;
-		Info.ExpireDuration = Params.ExpireDuration;
-		Info.bUseThrobber = Params.bUseThrobber;
-		Info.bUseSuccessFailIcons = Params.bUseIcons;
-		
-        switch (Params.ToastIconKind)
-        {
-            case 0:
-                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
-                break;
-            case 1:
-                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.WarningWithColor"));
-                break;
-            case 2:
-                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.SuccessWithColor"));
-                break;
-            case 3:
-            default:
-                Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
-                break;
-        }
-		
-		NotificationManager.AddNotification(Info);
+	auto& NotificationManager = FSlateNotificationManager::Get();
+	
+	FNotificationInfo Info(FText::FromString(Params.Title));
+	Info.SubText = FText::FromString(Params.Message);
+	Info.bFireAndForget = Params.bFireAndForget;
+	Info.ExpireDuration = Params.ExpireDuration;
+	Info.bUseThrobber = Params.bUseThrobber;
+	Info.bUseSuccessFailIcons = Params.bUseIcons;
+	
+    switch (Params.ToastIconKind)
+    {
+        case 0:
+            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
+            break;
+        case 1:
+            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.WarningWithColor"));
+            break;
+        case 2:
+            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.SuccessWithColor"));
+            break;
+        case 3:
+        default:
+            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
+            break;
+    }
+	
+	NotificationManager.AddNotification(Info);
 #endif
-	}
+}
 
-	/**
-	 * Attempts to flush all queued toast notifications if the editor is ready.
-	 * Called automatically when notifications are queued.
-	 */
-	FORCEINLINE static void TryFlushQueuedToastNotifications()
-	{
+/**
+ * Attempts to flush all queued toast notifications if the editor is ready.
+ * Called automatically when notifications are queued.
+ */
+FORCEINLINE static void TryFlushQueuedToastNotifications()
+{
 #if WITH_EDITOR
-		if (!FSlateNotificationManager::Get().AreNotificationsAllowed())
-		{
-			// Schedule retry
-			FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float DeltaTime)
-			{
-				TryFlushQueuedToastNotifications();
-				return false;
-			}), 0.5f);
-			return;
-		}
-		
-		bToastNotificationsFlushed = true;
-		
-		for (const FGorgeousToastParams& Params : QueuedToastNotifications)
-		{
-			ShowToastNotificationImmediate(Params);
-		}
-		
-		QueuedToastNotifications.Empty();
-#endif
-	}
-
-	/**
-	 * Shows a toast notification with full customization.
-	 * Use this when you need complete control over the notification appearance.
-	 *
-	 * @param Params Struct containing all notification parameters.
-	 */
-	FORCEINLINE static void ShowToastNotification(const FGorgeousToastParams& Params)
+	if (!FSlateNotificationManager::Get().AreNotificationsAllowed())
 	{
-#if WITH_EDITOR
-		// Queue if editor not ready yet
-		if (!bToastNotificationsFlushed)
+		// Schedule retry
+		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float DeltaTime)
 		{
-			QueuedToastNotifications.Add(Params);
 			TryFlushQueuedToastNotifications();
-			return;
-		}
-
-		ShowToastNotificationImmediate(Params);
-#endif
+			return false;
+		}), 0.5f);
+		return;
 	}
-
-	/**
-	 * Shows a toast notification with minimal parameters.
-	 * Convenience function for quick error/warning notifications.
-	 *
-	 * @param Title The title of the notification.
-	 * @param Message The message to display.
-     * @param ToastIconKind Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
-	 */
-    FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
+	
+	GbToastNotificationsFlushed = true;
+	
+	for (const FGorgeousToastParams& Params : QueuedToastNotifications)
 	{
-		FGorgeousToastParams Params;
-		Params.Title = Title;
-		Params.Message = Message;
-        Params.ToastIconKind = ToastIconKind;
-		ShowToastNotification(Params);
+		ShowToastNotificationImmediate(Params);
 	}
+	
+	QueuedToastNotifications.Empty();
+#endif
+}
+
+/**
+ * Shows a toast notification with full customization.
+ * Use this when you need complete control over the notification appearance.
+ *
+ * @param Params Struct containing all notification parameters.
+ */
+FORCEINLINE static void ShowToastNotification(const FGorgeousToastParams& Params)
+{
+#if WITH_EDITOR
+	// Queue if editor not ready yet
+	if (!GbToastNotificationsFlushed)
+	{
+		QueuedToastNotifications.Add(Params);
+		TryFlushQueuedToastNotifications();
+		return;
+	}
+
+	ShowToastNotificationImmediate(Params);
+#endif
+}
+
+/**
+ * Shows a toast notification with minimal parameters.
+ * Convenience function for quick error/warning notifications.
+ *
+ * @param Title The title of the notification.
+ * @param Message The message to display.
+ * @param ToastIconKind Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
+ */
+FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
+{
+	FGorgeousToastParams Params;
+	Params.Title = Title;
+	Params.Message = Message;
+    Params.ToastIconKind = ToastIconKind;
+	ShowToastNotification(Params);
+}
 
 namespace GorgeousLogging
 {
     // The messages that were logged and are currently on cooldown with their gameplay tag as key.
     static TMap<FGameplayTag, FString> LoggedMessages;
+    
+    // The set of logging keys that are currently suppressed.
     static TSet<FName> SuppressedLoggingKeys;
 
+    /**
+     * Checks if the GameplayTags module is available for use.
+     *
+     * @return True if GameplayTags can be used, false otherwise.
+     */
     FORCEINLINE static bool CanUseGameplayTags()
     {
         return !IsEngineExitRequested() && FModuleManager::Get().IsModuleLoaded(TEXT("GameplayTags"));
     }
 
+    /**
+     * Determines if logging for a specific key should be suppressed.
+     *
+     * @param LoggingKey The unique key associated with the log message.
+     * @return True if logging for the key is suppressed, false otherwise.
+     */
     FORCEINLINE static bool ShouldSuppressKey(const FName& LoggingKey)
     {
         return LoggingKey != NAME_None && SuppressedLoggingKeys.Contains(LoggingKey);
     }
 
+    /**
+     * Sets the suppression state for a specific logging key.
+     *
+     * @param LoggingKey The unique key associated with the log message.
+     * @param bShouldSuppress True to suppress logging for the key, false to allow it.
+     */
     FORCEINLINE static void SetLoggingKeySuppressed(const FName& LoggingKey, const bool bShouldSuppress)
     {
         if (LoggingKey == NAME_None)
@@ -194,16 +223,28 @@ namespace GorgeousLogging
         }
     }
 
+    /**
+     * Checks if logging for a specific key is currently suppressed.
+     *
+     * @param LoggingKey The unique key associated with the log message.
+     * @return True if logging for the key is suppressed, false otherwise.
+     */
     FORCEINLINE static bool IsLoggingKeySuppressed(const FName& LoggingKey)
     {
         return ShouldSuppressKey(LoggingKey);
     }
 
+    // Clears all logging suppressions, allowing all messages to be logged again.
     FORCEINLINE static void ClearAllLoggingSuppressions()
     {
         SuppressedLoggingKeys.Reset();
     }
 
+    /**
+     * Snapshot of the current logging settings.
+     * 
+     * @author Nils Bergemann
+     */
     struct FGorgeousLoggingSettingsSnapshot
     {
         bool bEnableGorgeousMessageLog = true;
@@ -213,6 +254,11 @@ namespace GorgeousLogging
         bool bShowOnScreen = true;
     };
 
+    /**
+     * Retrieves a snapshot of the current logging settings from the configuration.
+     *
+     * @return A struct containing the current logging settings.
+     */
     FORCEINLINE static FGorgeousLoggingSettingsSnapshot GetLoggingSettingsSnapshot()
     {
         FGorgeousLoggingSettingsSnapshot Snapshot;
@@ -238,14 +284,13 @@ namespace GorgeousLogging
             Snapshot.bShowOnScreen = bBoolValue;
         }
 
-        FString ListingName;
-        if (GConfig->GetString(SettingsSection, TEXT("MessageLogListingName"), ListingName, GGameIni) && !ListingName.IsEmpty())
+        if (FString ListingName; GConfig->GetString(SettingsSection, TEXT("MessageLogListingName"), ListingName, GGameIni) && 
+            !ListingName.IsEmpty())
         {
             Snapshot.MessageLogListingName = FName(*ListingName);
         }
 
-        int32 VerbosityValue = Snapshot.MinMessageLogVerbosity;
-        if (GConfig->GetInt(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityValue, GGameIni))
+        if (int32 VerbosityValue = Snapshot.MinMessageLogVerbosity; GConfig->GetInt(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityValue, GGameIni))
         {
             Snapshot.MinMessageLogVerbosity = static_cast<EGorgeousLoggingImportance>(VerbosityValue);
         }
@@ -253,11 +298,25 @@ namespace GorgeousLogging
         return Snapshot;
     }
 
+    /**
+     * Shows a toast notification with full customization.
+     * Use this when you need complete control over the notification appearance.
+     *
+     * @param Params Struct containing all notification parameters.
+     */
     FORCEINLINE static void ShowToastNotification(const ::FGorgeousToastParams& Params)
     {
         ::ShowToastNotification(Params);
     }
 
+    /**
+     * Shows a toast notification with minimal parameters.
+     * Convenience function for quick error/warning notifications.
+     *
+     * @param Title The title of the notification.
+     * @param Message The message to display.
+     * @param ToastIconKind Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
+     */
     FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
     {
         ::ShowToastNotification(Title, Message, ToastIconKind);

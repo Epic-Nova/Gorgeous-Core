@@ -8,8 +8,9 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "Helpers/GorgeousLogRouting.h"
+#include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 
+// // Global instance of the Gorgeous log entry delegate.
 static FGorgeousLogEntryDelegate GGorgeousLogEntryDelegate;
 
 FGorgeousLogEntryDelegate& GetGorgeousLogEntryDelegate()
