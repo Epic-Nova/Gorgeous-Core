@@ -18,6 +18,12 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/DialogueWave.h"
 #include "Sound/SoundBase.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
+#include "UObject/SoftObjectPath.h"
+#include "UObject/SoftObjectPtr.h"
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousAudioBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
@@ -41,12 +47,12 @@ public:
 		FOnVoiceLineFinishedNative OnVoiceLineFinished,
 		UObject* WorldContextObject = nullptr)
 	{
-		if (!Sound.IsValid() || !Actor)
+		if (Sound.IsNull() || !Actor)
 		{
 			return;
 		}
-		
-		Sound.LoadAsync(FLoadSoftObjectPathAsyncDelegate::CreateLambda([=](const FSoftObjectPath& LoadedPath, UObject* LoadedObject)
+
+		auto HandleLoadedObject = [=](UObject* LoadedObject)
 		{
 			if (!LoadedObject)
 			{
@@ -58,7 +64,7 @@ public:
 				const FDialogueContext DialogueContext;
 				//@TODO: Ask a runtime context provider to hand over a valid context
 				//@e.g. the Actor can be used as the speaker and the actors in the near distance could be the listeners
-				
+
 				UGameplayStatics::PlayDialogueAtLocation(WorldContextObject, DialogueSoundWave, DialogueContext,
 					Actor->GetActorLocation(),
 					Actor->GetActorRotation(),
@@ -73,7 +79,37 @@ public:
 				UGameplayStatics::PlaySoundAtLocation(WorldContextObject, LoadedSound, Actor->GetActorLocation());
 				OnVoiceLineFinished.ExecuteIfBound();
 			}
-		}));
+		};
+
+		GORGEOUS_55_HIGHER(
+			Sound.LoadAsync(FLoadSoftObjectPathAsyncDelegate::CreateLambda([=](const FSoftObjectPath& LoadedPath, UObject* LoadedObject)
+			{
+				HandleLoadedObject(LoadedObject);
+			}));
+		)
+
+		GORGEOUS_54_LOWER(
+			const FSoftObjectPath SoundPath = Sound.ToSoftObjectPath();
+			if (!SoundPath.IsValid())
+			{
+				return;
+			}
+
+			FStreamableManager& StreamableManager = UAssetManager::GetStreamableManager();
+			StreamableManager.RequestAsyncLoad(SoundPath, FStreamableDelegate::CreateLambda([=]()
+			{
+				UObject* LoadedObject = Sound.Get();
+				if (!LoadedObject)
+				{
+					LoadedObject = SoundPath.ResolveObject();
+				}
+				if (!LoadedObject)
+				{
+					LoadedObject = Sound.LoadSynchronous();
+				}
+				HandleLoadedObject(LoadedObject);
+			}));
+		)
 	}
 };
 

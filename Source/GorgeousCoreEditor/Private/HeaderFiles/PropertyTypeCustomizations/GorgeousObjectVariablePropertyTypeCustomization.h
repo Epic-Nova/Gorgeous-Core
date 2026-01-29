@@ -14,6 +14,7 @@
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
 #include "PropertyHandle.h"
 #include "Templates/SharedPointer.h"
+#include "UObject/StrongObjectPtr.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SSearchBox.h"

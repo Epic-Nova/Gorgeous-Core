@@ -97,7 +97,7 @@ int32 SGorgeousInsightMiniPieChart::OnPaint(const FPaintArgs& Args, const FGeome
 	const FVector2D Center = ChartOrigin + (ChartSize * 0.5f);
 	const float OuterRadius = 0.5f * FMath::Min(ChartSize.X, ChartSize.Y);
 	const float InnerRadius = bDonut ? OuterRadius * 0.55f : 0.f;
-	const FSlateRenderTransform RenderTransform = AllottedGeometry.ToPaintGeometry().GetAccumulatedRenderTransform();
+	const FSlateRenderTransform LocalRenderTransform = AllottedGeometry.ToPaintGeometry().GetAccumulatedRenderTransform();
 	const FSlateResourceHandle ResourceHandle = FSlateApplication::Get().GetRenderer()->GetResourceHandle(*WhiteBrush);
 	const FSlateShaderResourceProxy* ResourceProxy = ResourceHandle.GetResourceProxy();
 	const FVector2f AtlasUV = ResourceProxy ? FVector2f(ResourceProxy->StartUV) : FVector2f(0.f, 0.f);
@@ -119,8 +119,8 @@ int32 SGorgeousInsightMiniPieChart::OnPaint(const FPaintArgs& Args, const FGeome
 			const FVector2f OuterPos = FVector2f(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * OuterRadius);
 			const FVector2f InnerPos = FVector2f(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * InnerRadius);
 			const FColor VertexColor = Color.ToFColor(true);
-			Verts.Add(FSlateVertex::Make(RenderTransform, OuterPos, VertexUV, VertexColor));
-			Verts.Add(FSlateVertex::Make(RenderTransform, InnerPos, VertexUV, VertexColor));
+			Verts.Add(FSlateVertex::Make(LocalRenderTransform, OuterPos, VertexUV, VertexColor));
+			Verts.Add(FSlateVertex::Make(LocalRenderTransform, InnerPos, VertexUV, VertexColor));
 		}
 
 		for (int32 Step = 0; Step < Steps; ++Step)

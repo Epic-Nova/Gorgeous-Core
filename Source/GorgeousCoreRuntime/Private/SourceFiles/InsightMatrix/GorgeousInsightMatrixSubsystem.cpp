@@ -22,6 +22,7 @@
 #include "InsightMatrix/GorgeousInsightBaselineSettings.h"
 #include "Profiling/GorgeousProfiling.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "Misc/FileHelper.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/ConfigCacheIni.h"
@@ -59,10 +60,19 @@ namespace
 		{
 		}
 
-		virtual EAutomationTestFlags GetTestFlags() const override
-		{
-			return EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
-		}
+		GORGEOUS_55_HIGHER(
+			virtual EAutomationTestFlags GetTestFlags() const override
+			{
+				return EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
+			}
+		)
+
+		GORGEOUS_54_LOWER(
+			virtual uint32 GetTestFlags() const override
+			{
+				return static_cast<uint32>(EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
+			}
+		)
 
 		virtual uint32 GetRequiredDeviceNum() const override
 		{
