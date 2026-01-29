@@ -73,37 +73,37 @@
 #define GORGEOUS_5_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 510
+#if GORGEOUS_ENGINE_VERSION < 501
 #define GORGEOUS_51_HIGHER(...)
 #else
 #define GORGEOUS_51_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 520
+#if GORGEOUS_ENGINE_VERSION < 502
 #define GORGEOUS_52_HIGHER(...)
 #else
 #define GORGEOUS_52_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 530
+#if GORGEOUS_ENGINE_VERSION < 503
 #define GORGEOUS_53_HIGHER(...)
 #else
 #define GORGEOUS_53_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 540
+#if GORGEOUS_ENGINE_VERSION < 504
 #define GORGEOUS_54_HIGHER(...)
 #else
 #define GORGEOUS_54_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 550
+#if GORGEOUS_ENGINE_VERSION < 505
 #define GORGEOUS_55_HIGHER(...)
 #else
 #define GORGEOUS_55_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION < 560
+#if GORGEOUS_ENGINE_VERSION < 506
 #define GORGEOUS_56_HIGHER(...)
 #else
 #define GORGEOUS_56_HIGHER(...) __VA_ARGS__
@@ -114,133 +114,84 @@
  * If the Unreal Engine version is lower than to the defined engine version, then these macros are active.
  * These macros allow for conditional compilation based on the Unreal Engine version.
  */
-#if GORGEOUS_ENGINE_VERSION > 423
-#define GORGEOUS_23_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 501
+#define GORGEOUS_51_HIGHER(...)
 #else
-#define GORGEOUS_23_LOWER(...) __VA_ARGS__
+#define GORGEOUS_51_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 424
-#define GORGEOUS_24_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 502
+#define GORGEOUS_52_HIGHER(...)
 #else
-#define GORGEOUS_24_LOWER(...) __VA_ARGS__
+#define GORGEOUS_52_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 425
-#define GORGEOUS_25_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 503
+#define GORGEOUS_53_HIGHER(...)
 #else
-#define GORGEOUS_25_LOWER(...) __VA_ARGS__
+#define GORGEOUS_53_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 426
-#define GORGEOUS_26_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 504
+#define GORGEOUS_54_HIGHER(...)
 #else
-#define GORGEOUS_26_LOWER(...) __VA_ARGS__
+#define GORGEOUS_54_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 427
-#define GORGEOUS_27_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 505
+#define GORGEOUS_55_HIGHER(...)
 #else
-#define GORGEOUS_27_LOWER(...) __VA_ARGS__
+#define GORGEOUS_55_HIGHER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 500
-#define GORGEOUS_5_LOWER(X)
+#if GORGEOUS_ENGINE_VERSION < 506
+#define GORGEOUS_56_HIGHER(...)
 #else
-#define GORGEOUS_5_LOWER(...) __VA_ARGS__
+#define GORGEOUS_56_HIGHER(...) __VA_ARGS__
 #endif
-
-#if GORGEOUS_ENGINE_VERSION > 510
+// ...existing code...
+#if GORGEOUS_ENGINE_VERSION > 501
 #define GORGEOUS_51_LOWER(X)
 #else
 #define GORGEOUS_51_LOWER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 520
+#if GORGEOUS_ENGINE_VERSION > 502
 #define GORGEOUS_52_LOWER(X)
 #else
 #define GORGEOUS_52_LOWER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 530
+#if GORGEOUS_ENGINE_VERSION > 503
 #define GORGEOUS_53_LOWER(X)
 #else
 #define GORGEOUS_53_LOWER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 540
+#if GORGEOUS_ENGINE_VERSION > 504
 #define GORGEOUS_54_LOWER(X)
 #else
 #define GORGEOUS_54_LOWER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 550
+#if GORGEOUS_ENGINE_VERSION > 505
 #define GORGEOUS_55_LOWER(X)
 #else
 #define GORGEOUS_55_LOWER(...) __VA_ARGS__
 #endif
 
-#if GORGEOUS_ENGINE_VERSION > 560
+#if GORGEOUS_ENGINE_VERSION > 506
 #define GORGEOUS_56_LOWER(X)
 #else
 #define GORGEOUS_56_LOWER(...) __VA_ARGS__
 #endif
-
 
 /**
  * If the Unreal Engine version is higher than or equal to the defined engine version, then the Switch macros are active.
  * If the Unreal Engine version is the same as the defined engine version, the only macros are active.
  * These macros allow for conditional compilation based on the Unreal Engine version.
  */
-#if GORGEOUS_ENGINE_VERSION >= 423
-#define GORGEOUS_23_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_23_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_23_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_23_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 424
-#define GORGEOUS_24_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_24_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_24_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_24_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 425
-#define GORGEOUS_25_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_25_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_25_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_25_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 426
-#define GORGEOUS_26_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_26_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_26_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_26_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 427
-#define GORGEOUS_27_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_27_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_27_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_27_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 500
-#define GORGEOUS_5_SWITCH(Before, AfterEqual) AfterEqual
-#define GORGEOUS_5_ONLY(...) __VA_ARGS__
-#else
-#define GORGEOUS_5_SWITCH(Before, AfterEqual) Before
-#define GORGEOUS_5_ONLY(...)
-#endif
-
-#if GORGEOUS_ENGINE_VERSION >= 510
+#if GORGEOUS_ENGINE_VERSION >= 501
 #define GORGEOUS_51_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_51_ONLY(...) __VA_ARGS__
 #else
@@ -248,7 +199,7 @@
 #define GORGEOUS_51_ONLY(...)
 #endif
 
-#if GORGEOUS_ENGINE_VERSION >= 520
+#if GORGEOUS_ENGINE_VERSION >= 502
 #define GORGEOUS_52_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_52_ONLY(...) __VA_ARGS__
 #else
@@ -256,7 +207,7 @@
 #define GORGEOUS_52_ONLY(...)
 #endif
 
-#if GORGEOUS_ENGINE_VERSION >= 530
+#if GORGEOUS_ENGINE_VERSION >= 503
 #define GORGEOUS_53_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_53_ONLY(...) __VA_ARGS__
 #else
@@ -264,7 +215,7 @@
 #define GORGEOUS_53_ONLY(...)
 #endif
 
-#if GORGEOUS_ENGINE_VERSION >= 540
+#if GORGEOUS_ENGINE_VERSION >= 504
 #define GORGEOUS_54_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_54_ONLY(...) __VA_ARGS__
 #else
@@ -272,7 +223,7 @@
 #define GORGEOUS_54_ONLY(...)
 #endif
 
-#if GORGEOUS_ENGINE_VERSION >= 550
+#if GORGEOUS_ENGINE_VERSION >= 505
 #define GORGEOUS_55_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_55_ONLY(...) __VA_ARGS__
 #else
@@ -280,14 +231,13 @@
 #define GORGEOUS_55_ONLY(...)
 #endif
 
-#if GORGEOUS_ENGINE_VERSION >= 560
+#if GORGEOUS_ENGINE_VERSION >= 506
 #define GORGEOUS_56_SWITCH(Before, AfterEqual) AfterEqual
 #define GORGEOUS_56_ONLY(...) __VA_ARGS__
 #else
 #define GORGEOUS_56_SWITCH(Before, AfterEqual) Before
 #define GORGEOUS_56_ONLY(...)
 #endif
-
 /**
 * If the Unreal Engine version is below 4.25 then F is referred to U.
 */

@@ -4,7 +4,7 @@
 	"VersionName": "GT-C-1.0-General",
 	"FriendlyName": "Gorgeous Core",
 	"Description": "Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.",
-	"Category": "Universal",
+	"Category": "Gorgeous Things",
 	"CreatedBy": "Simsalabim Studios",
 	"CreatedByURL": "https://simsalabim.studio",
 	"DocsURL": "https://c.docs.gt.simsalabim.studio",
@@ -14,11 +14,10 @@
 	"EnabledByDefault": true,
 	"CanContainContent": true,
 	"IsBetaVersion": true,
-	"Installed": false,
 	"Modules": [
 		{
 			"Name": "GorgeousCoreRuntime",
-			"Type": "Runtime",
+			"Type": "PreDefault",
 			"LoadingPhase": "Default",
 			"PlatformDenyList": [
 				"Android",
