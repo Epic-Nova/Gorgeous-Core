@@ -19,17 +19,12 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
-/*==============================>
-| Std Includes					|
-<==============================*/
-
+// Std Includes
 #if PLATFORM_WINDOWS
 #include <functional>
 #endif
 
-/*==============================>
-| Engine Includes               |
-<==============================*/
+// Engine Includes
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -60,8 +55,3 @@
 #include "GameFramework/Info.h"
 
 #include "GameFramework/Controller.h"
-#include "GameFramework/Character.h"
-
-#include "GameFramework/SpringArmComponent.h"
-
-#include "Camera/CameraComponent.h"

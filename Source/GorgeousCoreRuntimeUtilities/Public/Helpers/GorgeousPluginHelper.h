@@ -27,6 +27,8 @@ enum class EGorgeousModuleFunctionality : uint8;
 
 /**
  * Enum defining the load state of a gorgeous plugin.
+ * 
+ * @author Nils Bergemann
  */
 UENUM(BlueprintType)
 enum class EGorgeousPluginLoadState : uint8
@@ -161,6 +163,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	TArray<FName> GetGorgeousPluginDependencies(const FName& PluginName) const;
 
 private:
+	
 	/**
 	 * Checks if all modules for a plugin have been processed and shows a final notification if needed.
 	 * @param PluginName The name of the plugin to check.
@@ -220,6 +223,7 @@ private:
 	static FString GetCircularDependencyNotificationFilePath();
 	//<------------------------------------------------------------------------->
 
+	
 	//<============================--- Variables ---============================>
 	
 	// Array of registered core gorgeous things module interfaces.

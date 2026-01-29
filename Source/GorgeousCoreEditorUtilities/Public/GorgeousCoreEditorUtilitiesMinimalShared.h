@@ -22,5 +22,4 @@
 
 MONOLITHIC_HEADER_BOILERPLATE()
 
-// Note: Asset registration now uses UAssetDefinitionDefault.
-// See GorgeousCoreAssetDefinitions.h in GorgeousCoreEditor for asset type definitions.
+#include "AssetRegistration/GorgeousFactory.h"

@@ -16,10 +16,13 @@
 
 #include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "Interfaces/IPluginManager.h"
 #include "Misc/CoreDelegates.h"
+#include "Misc/Paths.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 //<-------------------------------------------------------------------------->
 
@@ -31,9 +34,24 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
 	const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-	check(ThisPlugin.IsValid());
+	
+	// During module loading, the plugin may not yet be fully registered in the Plugin Manager.
+	// If FindPlugin fails, we calculate the path relative to this module's location.
+	FString PluginBaseDir;
+	if (ThisPlugin.IsValid())
+	{
+		PluginBaseDir = ThisPlugin->GetBaseDir();
+	}
+	else
+	{
+		// Fallback: Calculate plugin directory from module DLL location
+		// The module DLL is in <PluginDir>/Binaries/<Platform>/, so go up 3 levels
+		const FString ModulePath = FModuleManager::Get().GetModuleFilename(TEXT("GorgeousCoreRuntime"));
+		PluginBaseDir = FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(ModulePath)));
+		UE_LOG(LogGorgeousThings, Warning, TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
+	}
 
-	UGameplayTagsManager::Get().AddTagIniSearchPath(ThisPlugin->GetBaseDir() / TEXT("Config") / TEXT("Tags"));
+	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
 
@@ -90,7 +108,7 @@ TArray<FName> FGorgeousCoreRuntimeModule::GetDependentPlugins() const
 int32 FGorgeousCoreRuntimeModule::GetMinimumRequiredCoreVersion() const
 {
 	//Actually not needed as the Core does not perform checks against itself.
-	return 90; // Version 0.9
+	return 100; // Version 0.9
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeModule, GorgeousCoreRuntime)

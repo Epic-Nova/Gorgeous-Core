@@ -93,7 +93,7 @@ TArray<FName> FGorgeousCoreEditorModule::GetDependentPlugins() const
 int32 FGorgeousCoreEditorModule::GetMinimumRequiredCoreVersion() const
 {
 	//Actually not needed as the Core does not perform checks against itself.
-	return 90; // Version 0.9
+	return 100; // Version 0.9
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreEditorModule, GorgeousCoreEditor)
