@@ -14,18 +14,28 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ModuleCore/GorgeousCoreRuntimeUtilitiesEnums.h"
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousLoggingBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * Blueprint function library for Gorgeous logging functionalities.
- * Provides a set of blueprint callable functions for logging messages with different importances.
- *
- * @author Nils Bergemann
- * @note This class provides a centralized and easy-to-use logging system for blueprints.
- */
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Logging Blueprint Function Library
+| Functional Name: UGorgeousLoggingBlueprintFunctionLibrary
+| Parent Class: UBlueprintFunctionLibrary
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Function Library providing logging functionalities from the Logging Helper
+| exposed to Blueprints. Allows logging messages with different importance levels,
+| managing logging keys, and controlling suppression of log messages.
+<--------------------------------------------------------------------------->
+<===========================================================================>
+*/
 UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousLoggingBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
@@ -130,3 +140,4 @@ public:
     static void ClearAllLoggingSuppressions();
 };
 
+using UGT_LoggingFunctionLibrary = UGorgeousLoggingBlueprintFunctionLibrary;

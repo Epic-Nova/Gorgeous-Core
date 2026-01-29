@@ -26,7 +26,7 @@ class UWorld;
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
 | Display Name: Gorgeous Base World Context UObject
-| Functional Name: GorgeousBaseWorldContextUObject
+| Functional Name: UGorgeousBaseWorldContextUObject
 | Parent Class: UObject
 | Class Suffix: -
 | Author: Nils Bergemann
@@ -45,6 +45,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public
 	GENERATED_BODY()
 
 public:
+	
 	/**
 	 * Sets the cached owner of this object. This is used as an absolute failsafe to ensure the consistent availability of the world to the current active instance.
 	 * 
@@ -54,6 +55,7 @@ public:
 	void SetCachedOwner(UObject* NewCachedOwner) const { CachedOwner = NewCachedOwner; }
 
 protected:
+	
 	/**
 	 * Gets the world context for this object.
 	 *
@@ -61,9 +63,7 @@ protected:
 	 */
 	virtual UWorld* GetWorld() const override;
 
-	/**
-	 * Cached owner object used to determine the world context.
-	 */
+	// The cached owner object used to retrieve the world context.
 	UPROPERTY()
 	mutable UObject* CachedOwner;
 };

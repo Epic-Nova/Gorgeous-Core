@@ -13,7 +13,10 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * This module defines the runtime utilities of the Gorgeous Things plugin.
@@ -76,7 +79,7 @@ public:
 	 * 
 	 * @return The minimum required core version as an integer. Represented as Major * 100 + (Minor * 10)
 	 */
-	virtual int32 GetMinimumRequiredCoreVersion() const override;
+	virtual int32 GetMinimumRequiredCoreVersion() const override { return 100; }
 	
 	
 	/** 
@@ -87,3 +90,7 @@ public:
 	 */
 	virtual bool ProvidesCoreFunctionality() const override { return true; }
 };
+
+//<=============================--- Inline Definitions ---=============================>
+IMPLEMENT_MODULE(FGorgeousCoreRuntimeUtilitiesModule, GorgeousCoreRuntimeUtilities)
+//<------------------------------------------------------------------------------------>

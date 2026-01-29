@@ -16,15 +16,17 @@
 |     TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntimeUtilities" MODULE     |
 <======================================================================================================================*/
 
-
 //<=============================--- Pragmas ---==============================>
 #pragma once
 //<-------------------------------------------------------------------------->
 
 MONOLITHIC_HEADER_BOILERPLATE()
 
+// Module Core Includes
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
+#include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "GorgeousCoreRuntimeUtilitiesStructures.h"
 
 //Helper Includes
 #include "Helpers/GorgeousConversationHelper.h"
@@ -34,6 +36,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Helpers/GorgeousLanguageHelper.h"
 #include "Helpers/GorgeousLicenseHelper.h"
 #include "Helpers/GorgeousLoggingHelper.h"
+#include "Helpers/GorgeousPluginHelper.h"
 
 //Macro Helper Includes
 #include "Helpers/Macros/GorgeousConnectionHelperMacros.h"

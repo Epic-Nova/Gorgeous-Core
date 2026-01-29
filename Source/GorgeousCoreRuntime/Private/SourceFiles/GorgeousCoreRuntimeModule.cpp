@@ -20,6 +20,7 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 //<-------------------------------------------------------------------------->
 
@@ -31,7 +32,7 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
 	const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-	check(ThisPlugin.IsValid());
+	GT_F_LOG_CHECKF(ThisPlugin.IsValid(), "GT.Module.Plugin_Not_Found", TEXT("Could not find GorgeousCore plugin in the plugin manager during module startup."));
 
 	UGameplayTagsManager::Get().AddTagIniSearchPath(ThisPlugin->GetBaseDir() / TEXT("Config") / TEXT("Tags"));
 
@@ -90,7 +91,7 @@ TArray<FName> FGorgeousCoreRuntimeModule::GetDependentPlugins() const
 int32 FGorgeousCoreRuntimeModule::GetMinimumRequiredCoreVersion() const
 {
 	//Actually not needed as the Core does not perform checks against itself.
-	return 90; // Version 0.9
+	return 100; // Version 0.9
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeModule, GorgeousCoreRuntime)

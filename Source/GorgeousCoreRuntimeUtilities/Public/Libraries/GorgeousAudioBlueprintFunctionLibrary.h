@@ -26,6 +26,20 @@
 DECLARE_DYNAMIC_DELEGATE(FOnVoiceLineFinishedNative);
 //<--------------------------------------------------->
 
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Audio Blueprint Function Library
+| Functional Name: UGorgeousAudioBlueprintFunctionLibrary
+| Parent Class: UBlueprintFunctionLibrary
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Function Library providing audio related helper functions for Blueprints.
+<--------------------------------------------------------------------------->
+<===========================================================================>
+*/
 UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousAudioBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
@@ -33,7 +47,16 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousAudioBlueprintFunctionLibrary : 
 	
 public:
 	
-	//@TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function)
+	/**
+	 * Plays a voice line sound at the location of the specified actor.
+	 *
+	 * @param Sound The soft object pointer to the sound asset to be played.
+	 * @param Actor The actor at whose location the sound will be played.
+	 * @param OnVoiceLineFinished A delegate that will be executed when the voice line has finished playing.
+	 * @param WorldContextObject The world context object for locating the world in which to play the sound.
+	 * 
+	 * @TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function)
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Audio", meta = (WorldContext = "WorldContextObject"))
 	static void PlayVoiceLineAtActorLocation(
 		const TSoftObjectPtr<USoundBase> Sound,
@@ -76,6 +99,5 @@ public:
 		}));
 	}
 };
-
 
 using UGT_AudioFunctionLibrary = UGorgeousAudioBlueprintFunctionLibrary;

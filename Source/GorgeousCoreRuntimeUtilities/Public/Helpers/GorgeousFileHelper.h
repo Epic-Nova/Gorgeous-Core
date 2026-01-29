@@ -13,16 +13,6 @@
 #pragma once
 //<-------------------------------------------------------------------------->
 
-#include "HAL/FileManager.h"
-#include "Misc/FileHelper.h"
-
-//<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include <HAL/FileManager.h>
-//<--------------------------=== Module Includes ===------------------------->
-#include "GorgeousDirectoryHelper.h"
-//<-------------------------------------------------------------------------->
-
 /**
  * Checks if a file exists within the Gorgeous file structure.
  *
