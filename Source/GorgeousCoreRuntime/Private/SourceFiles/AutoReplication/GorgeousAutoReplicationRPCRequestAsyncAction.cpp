@@ -389,11 +389,7 @@ FGorgeousAutoReplicationMixin* UGorgeousAutoReplicationRPCRequestAsyncAction::Re
 		{
 			return nullptr;
 		}
-
-		if (UGorgeousGameInstance* GameInstance = Cast<UGorgeousGameInstance>(Object))
-		{
-			return &GameInstance->GetAutoReplicationMixin();
-		}
+		
 		if (AGorgeousGameMode* GameMode = Cast<AGorgeousGameMode>(Object))
 		{
 			return &GameMode->GetAutoReplicationMixin();

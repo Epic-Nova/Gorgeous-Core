@@ -15,6 +15,7 @@
 #include "AutoReplication/GorgeousAutoReplicationIrisBackend.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Engine/NetDriver.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -184,13 +185,13 @@ void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObject
 		}
 		else
 		{
-			UE_LOG(LogGorgeousAutoReplicationCoordinator, Warning, TEXT("AutoReplication stream on %s requested the replication graph backend but no graph instance is available."), *Variable->GetName());
+			GT_W_LOG("GT.AutoReplication.Coordinator.Graph.Missing", TEXT("AutoReplication stream on %s requested the replication graph backend but no graph instance is available."), *Variable->GetName());
 		}
 	}
 #else
 	if (bUsesReplicationGraph)
 	{
-		UE_LOG(LogGorgeousAutoReplicationCoordinator, Warning, TEXT("AutoReplication stream on %s requested the replication graph backend but the module was built without replication graph support."), *Variable->GetName());
+		GT_W_LOG("GT.AutoReplication.Coordinator.Graph.Disabled", TEXT("AutoReplication stream on %s requested the replication graph backend but the module was built without replication graph support."), *Variable->GetName());
 	}
 #endif
 
@@ -209,13 +210,13 @@ void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObject
 		}
 		else
 		{
-			UE_LOG(LogGorgeousAutoReplicationCoordinator, Warning, TEXT("AutoReplication stream on %s requested the Iris backend but no Iris backend instance is available."), *Variable->GetName());
+			GT_W_LOG("GT.AutoReplication.Coordinator.Iris.Missing", TEXT("AutoReplication stream on %s requested the Iris backend but no Iris backend instance is available."), *Variable->GetName());
 		}
 	}
 #else
 	if (bUsesIris)
 	{
-		UE_LOG(LogGorgeousAutoReplicationCoordinator, Warning, TEXT("AutoReplication stream on %s requested the Iris backend but Iris is not enabled for this build."), *Variable->GetName());
+		GT_W_LOG("GT.AutoReplication.Coordinator.Iris.Disabled", TEXT("AutoReplication stream on %s requested the Iris backend but Iris is not enabled for this build."), *Variable->GetName());
 	}
 #endif
 }
@@ -272,7 +273,7 @@ void FGorgeousAutoReplicationCoordinator::NotifyRPCBroadcast(const FGorgeousQueu
 		const UEnum* BackendEnum = StaticEnum<EGorgeousAutoReplicationBackend>();
 		const FString BackendLabel = BackendEnum ? BackendEnum->GetNameStringByValue(static_cast<int64>(Stream->Config.Backend)) : FString::Printf(TEXT("%d"), static_cast<int32>(Stream->Config.Backend));
 		const FString ChannelLabel = Stream->RootNetworkChannel.IsNone() ? TEXT("Default") : Stream->RootNetworkChannel.ToString();
-		UE_LOG(LogGorgeousAutoReplicationCoordinator, Verbose, TEXT("AutoReplication – Routed RPC %s for %s using backend %s (channel: %s)."),
+		GT_I_LOG("GT.AutoReplication.Coordinator.RPC.Routed", TEXT("AutoReplication – Routed RPC %s for %s using backend %s (channel: %s)."),
 			*QueuedRPC.Payload.HandlerName.ToString(), *TargetVariable->GetName(), *BackendLabel, *ChannelLabel);
 	}
 }
@@ -347,7 +348,7 @@ UReplicationGraph* FGorgeousAutoReplicationCoordinator::GetOrCreateReplicationGr
 	{
 		//@TODO: Iris and Replication Graph cannot be used together
 		bWarnedReplicationGraphIrisConflict = true;
-		UE_LOG(LogGorgeousAutoReplicationCoordinator, Verbose, TEXT("NetDriver %s is using Iris replication; Iris and Replication Graph cannot be used together."), *NetDriver->GetName());
+		GT_I_LOG("GT.AutoReplication.Coordinator.Graph.IrisConflict", TEXT("NetDriver %s is using Iris replication; Iris and Replication Graph cannot be used together."), *NetDriver->GetName());
 	}
 
 	if (UReplicationGraph* ExistingGraph = NetDriver->GetReplicationDriver<UReplicationGraph>())
@@ -379,7 +380,7 @@ UReplicationGraph* FGorgeousAutoReplicationCoordinator::GetOrCreateReplicationGr
 
 	if (!GraphClass)
 	{
-		UE_LOG(LogGorgeousAutoReplicationCoordinator, Warning, TEXT("Unable to resolve AutoReplication graph class while initializing NetDriver %s."), *NetDriver->GetName());
+		GT_W_LOG("GT.AutoReplication.Coordinator.Graph.ClassMissing", TEXT("Unable to resolve AutoReplication graph class while initializing NetDriver %s."), *NetDriver->GetName());
 		return nullptr;
 	}
 

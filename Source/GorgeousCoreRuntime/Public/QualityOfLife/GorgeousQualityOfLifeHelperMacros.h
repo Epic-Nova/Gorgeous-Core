@@ -15,6 +15,8 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Misc/Guid.h"
 
+class AActor;
+
 /** Common helper dropped into QoL class constructors to bind the mixin and ensure the self reference entry exists. */
 #define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
 	if (HasAnyFlags(RF_ClassDefaultObject)) \
@@ -97,4 +99,66 @@
 		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
 		UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA \
 		Super::BeginPlay(); \
+	}
+
+/** Declares a standard BeginPlay implementation for PlayerController with RPC relay setup. */
+#define UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY(Class) \
+	void Class::BeginPlay() \
+	{ \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA_WITH_RELAY \
+		Super::BeginPlay(); \
+	}
+
+/** Defines a Blueprint-callable registration function for runtime AutoReplication entries. */
+#define UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(Class) \
+	bool Class::RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride) \
+	{ \
+		if (HasAnyFlags(RF_ClassDefaultObject) || Key.IsNone() || !DefaultClass) \
+		{ \
+			return false; \
+		} \
+		if (const AActor* AsActor = Cast<AActor>(this)) \
+		{ \
+			if (!AsActor->HasAuthority()) \
+			{ \
+				return false; \
+			} \
+		} \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		FGorgeousObjectVariableEntry& Entry = AdditionalGorgeousData.FindOrAdd(Key); \
+		UGorgeousObjectVariable* DefaultValue = Entry.DefaultValue; \
+		if (!DefaultValue || !DefaultValue->IsA(DefaultClass)) \
+		{ \
+			DefaultValue = NewObject<UGorgeousObjectVariable>(this, DefaultClass, NAME_None, RF_Transactional); \
+		} \
+		Entry.DefaultValue = DefaultValue; \
+		Entry.bReplicate = bReplicate; \
+		Entry.bOverrideStreamConfig = bOverrideStreamConfig; \
+		if (bOverrideStreamConfig) \
+		{ \
+			Entry.StreamConfigOverride = StreamConfigOverride; \
+		} \
+		if (DefaultValue) \
+		{ \
+			if (!DefaultValue->UniqueIdentifier.IsValid()) \
+			{ \
+				DefaultValue->UniqueIdentifier = FGuid::NewGuid(); \
+			} \
+			DefaultValue->InvokeInstancedFunctionality(DefaultValue->UniqueIdentifier); \
+		} \
+		if (!Entry.bReplicate || (DefaultValue && !DefaultValue->SupportsAutoReplicationFeatures())) \
+		{ \
+			Entry.Handle.Reset(); \
+			Entry.Handle.Assign(Key, FGorgeousAutoReplicationHandle::InvalidReplicationIndex, this); \
+			const FGorgeousAutoReplicationStreamConfig* StreamOverridePtr = Entry.bOverrideStreamConfig ? &Entry.StreamConfigOverride : nullptr; \
+			Entry.Handle.CacheValue(Entry.DefaultValue, StreamOverridePtr, Entry.bReplicate); \
+			if (Entry.DefaultValue) \
+			{ \
+				Entry.DefaultValue->ApplyReplicatedIdentifier(Entry.DefaultValue->UniqueIdentifier); \
+			} \
+			return true; \
+		} \
+		AutoReplicationMixin.InitializeAdditionalData(bActivateNetworkingCapabilities); \
+		return true; \
 	}

@@ -18,7 +18,11 @@
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "../HeaderFiles/PropertyTypeCustomizations/GorgeousObjectVariablePropertyTypeCustomization.h"
 #include "Editor.h"
+#include "IMessageLogListing.h"
+#include "MessageLogModule.h"
+#include "Modules/ModuleManager.h"
 #include "Misc/CoreDelegates.h"
+#include "Helpers/GorgeousLoggingHelper.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -32,6 +36,13 @@ namespace
 
 	void HandleBeginPIE(bool bIsSimulating)
 	{
+		if (FModuleManager::Get().IsModuleLoaded("MessageLog") || FModuleManager::Get().LoadModule("MessageLog"))
+		{
+			FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
+			const FName ListingName = GorgeousLogging::GetLoggingSettingsSnapshot().MessageLogListingName;
+			MessageLogModule.GetLogListing(ListingName)->ClearMessages();
+		}
+
 		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
 		{
 			if (Subsystem->IsDebugPanelOpen())

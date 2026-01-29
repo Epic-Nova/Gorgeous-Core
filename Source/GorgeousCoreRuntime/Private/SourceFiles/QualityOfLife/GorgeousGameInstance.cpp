@@ -15,7 +15,6 @@
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
-#include "AutoReplication/Helpers/GorgeousAutoReplicationHelperMacros.h"
 #include "Containers/Set.h"
 #include "Engine/Engine.h"
 #include "Engine/LocalPlayer.h"
@@ -31,15 +30,18 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousGameInstance, Log, All);
 
-UE_QOL_DEFINE_CONSTRUCTOR(UGorgeousGameInstance, false)
-
-UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(UGorgeousGameInstance)
-
-UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(UGorgeousGameInstance)
+UGorgeousGameInstance::UGorgeousGameInstance()
+{
+	if (HasAnyFlags(RF_ClassDefaultObject))
+	{
+		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData);
+	}
+	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
+}
 
 void UGorgeousGameInstance::Init()
 {
-	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities);
+	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
 
 	if (!UGorgeousRootObjectVariable::GetRootObjectVariable())
 	{
@@ -49,7 +51,17 @@ void UGorgeousGameInstance::Init()
 
 	EnsureRootVariablesFallbackToGameInstance();
 
-	UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA
+	for (auto& GorgeousSetting : AdditionalGorgeousData)
+	{
+		if (UGorgeousObjectVariable* const DefaultVar = GorgeousSetting.Value.DefaultValue)
+		{
+			if (!DefaultVar->UniqueIdentifier.IsValid())
+			{
+				DefaultVar->UniqueIdentifier = FGuid::NewGuid();
+			}
+			DefaultVar->InvokeInstancedFunctionality(DefaultVar->UniqueIdentifier);
+		}
+	}
 
 	if (!RootRegistryChangedHandle.IsValid())
 	{
@@ -120,7 +132,44 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 	}
 }
 
-UE_QOL_DEFINE_POST_INIT_AND_LOAD(UGorgeousGameInstance)
+void UGorgeousGameInstance::PostInitProperties()
+{
+	Super::PostInitProperties();
+	if (HasAnyFlags(RF_ClassDefaultObject))
+	{
+		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData);
+		return;
+	}
+	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
+}
+
+void UGorgeousGameInstance::PostLoad()
+{
+	Super::PostLoad();
+	if (HasAnyFlags(RF_ClassDefaultObject))
+	{
+		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData);
+		return;
+	}
+	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
+}
+
+void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	const FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UGorgeousGameInstance, AdditionalGorgeousData))
+	{
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
+		for (auto& GorgeousSetting : AdditionalGorgeousData)
+		{
+			if (UGorgeousObjectVariable* const DefaultVar = GorgeousSetting.Value.DefaultValue)
+			{
+				DefaultVar->UniqueIdentifier = FGuid::NewGuid();
+			}
+		}
+	}
+}
 
 void UGorgeousGameInstance::HandleRootRegistryChanged()
 {
