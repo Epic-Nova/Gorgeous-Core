@@ -14,64 +14,24 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-#include "CoreMinimal.h"
-#include "GorgeousCoreRuntimeUtilitiesEnums.h"
-#include "GorgeousLogRouting.generated.h"
+//<--------------------------=== Module Includes ===------------------------->
+#include "GorgeousCoreRuntimeUtilitiesStructures.h"
 //<-------------------------------------------------------------------------->
 
-USTRUCT()
-struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogHyperlink
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FString LinkText;
-
-	UPROPERTY()
-	FSoftObjectPath TargetAsset;
-
-	UPROPERTY()
-	FName ActionName;
-
-	UPROPERTY()
-	FString ActionPayload;
-
-	FORCEINLINE bool IsValid() const
-	{
-		return !LinkText.IsEmpty() && (TargetAsset.IsValid() || !ActionName.IsNone());
-	}
-};
-
-USTRUCT()
-struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogEntry
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FString Message;
-
-	UPROPERTY()
-	FName LoggingKey;
-
-	UPROPERTY()
-	TEnumAsByte<EGorgeousLoggingImportance> Importance = Logging_Information;
-
-	UPROPERTY()
-	float Duration = 0.0f;
-
-	UPROPERTY()
-	bool bPrintToScreen = true;
-
-	UPROPERTY()
-	bool bPrintToLog = true;
-
-	UPROPERTY()
-	TWeakObjectPtr<const UObject> WorldContextObject;
-
-	UPROPERTY()
-	FGorgeousLogHyperlink Hyperlink;
-};
-
+//<=================--- Delegates ---=================>
 DECLARE_MULTICAST_DELEGATE_OneParam(FGorgeousLogEntryDelegate, const FGorgeousLogEntry&);
+//<--------------------------------------------------->
 
+//<============================--- C++ Only ---=============================>
+
+/**
+ * Retrieves the global Gorgeous log entry delegate.
+ *
+ * This function provides access to the global delegate used for logging Gorgeous-related entries.
+ * It allows other parts of the codebase to bind to this delegate and receive log entries for processing or display.
+ *
+ * @return A reference to the global FGorgeousLogEntryDelegate instance.
+ */
 GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogEntryDelegate& GetGorgeousLogEntryDelegate();
+
+//<------------------------------------------------------------------------->

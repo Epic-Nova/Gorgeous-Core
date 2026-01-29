@@ -1,11 +1,23 @@
-﻿#include "Helpers/GorgeousLicenseHelper.h"
-#include "Misc/Paths.h"
-#include "Misc/FileHelper.h"
-#include "HAL/PlatformFilemanager.h"
-#include "Misc/DateTime.h"
+﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
+<==========================================================================*/
+#include "Helpers/GorgeousLicenseHelper.h"
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Misc/Base64.h"
-#include "Serialization/BufferArchive.h"
-#include "Serialization/MemoryReader.h"
+//<-------------------------------------------------------------------------->
+
+//=============================================================================
+// FGorgeousCoreLicenseHelper Implementation
+//=============================================================================
 
 namespace
 {
@@ -18,9 +30,9 @@ namespace
 	FAES::FAESKey MakeAESKey(const FString& ProjectId)
 	{
 		FAES::FAESKey Key;
-		FTCHARToUTF8 Converter(*ProjectId);
+		const FTCHARToUTF8 Converter(*ProjectId);
 		FMemory::Memset(Key.Key, 0, 32);
-		int32 CopyLen = FMath::Min(Converter.Length(), 32);
+		const int32 CopyLen = FMath::Min(Converter.Length(), 32);
 		FMemory::Memcpy(Key.Key, Converter.Get(), CopyLen);
 		return Key;
 	}
@@ -28,8 +40,8 @@ namespace
 
 bool FGorgeousCoreLicenseHelper::CreateEncryptedLicenseFile(const TArray<FString>& LicenseStrings, const FString& ProjectId)
 {
-	FDateTime Now = FDateTime::UtcNow();
-	FString DateTimeString = Now.ToIso8601();
+	const FDateTime Now = FDateTime::UtcNow();
+	const FString DateTimeString = Now.ToIso8601();
 	FString Combined = DateTimeString;
 	for (const FString& Str : LicenseStrings)
 	{
@@ -40,10 +52,10 @@ bool FGorgeousCoreLicenseHelper::CreateEncryptedLicenseFile(const TArray<FString
 	FTCHARToUTF8 Converter(*Combined);
 	PlainBytes.Append((uint8*)Converter.Get(), Converter.Length());
 
-	FAES::FAESKey Key = MakeAESKey(ProjectId);
+	const FAES::FAESKey Key = MakeAESKey(ProjectId);
 	// Pad to AES block size (16 bytes)
-	int32 Pad = 16 - (PlainBytes.Num() % 16);
-	for (int32 i = 0; i < Pad; ++i) PlainBytes.Add((uint8)Pad);
+	const int32 Pad = 16 - (PlainBytes.Num() % 16);
+	for (int32 i = 0; i < Pad; ++i) PlainBytes.Add(static_cast<uint8>(Pad));
 
 	FAES::EncryptData(PlainBytes.GetData(), PlainBytes.Num(), Key);
 
@@ -72,16 +84,16 @@ bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& Projec
 		return false;
 	}
 
-	FAES::FAESKey Key = MakeAESKey(ProjectId);
+	const FAES::FAESKey Key = MakeAESKey(ProjectId);
 	FAES::DecryptData(EncryptedBytes.GetData(), EncryptedBytes.Num(), Key);
 
 	// Remove padding
 	if (EncryptedBytes.Num() == 0) return false;
-	uint8 Pad = EncryptedBytes.Last();
+	const uint8 Pad = EncryptedBytes.Last();
 	if (Pad > 16) return false;
 	EncryptedBytes.SetNum(EncryptedBytes.Num() - Pad);
 
-	FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
+	const FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
 	TArray<FString> Lines;
 	Combined.ParseIntoArrayLines(Lines);
 	if (Lines.Num() < 1) return false;
@@ -97,8 +109,8 @@ bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& Projec
 bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& ProjectId, FString& OutLicenseString, FDateTime& OutDateTime)
 {
 	TArray<FString> LicenseStrings;
-	bool bResult = ReadAndDecryptLicenseFile(ProjectId, LicenseStrings, OutDateTime);
-	if (!bResult || LicenseStrings.Num() < 1)
+	if (const bool bResult = ReadAndDecryptLicenseFile(ProjectId, LicenseStrings, OutDateTime); 
+		!bResult || LicenseStrings.Num() < 1)
 	{
 		OutLicenseString = TEXT("");
 		return false;
@@ -120,19 +132,19 @@ bool FGorgeousCoreLicenseHelper::AddLicenseEntry(const FString& EntryString, con
 	{
 		Lines.Add(Pair.Key.ToIso8601() + TEXT("|") + Pair.Value);
 	}
-	FString Combined = FString::Join(Lines, TEXT("\n"));
+	const FString Combined = FString::Join(Lines, TEXT("\n"));
 
 	TArray<uint8> PlainBytes;
-	FTCHARToUTF8 Converter(*Combined);
+	const FTCHARToUTF8 Converter(*Combined);
 	PlainBytes.Append((uint8*)Converter.Get(), Converter.Length());
 
-	FAES::FAESKey Key = MakeAESKey(ProjectId);
-	int32 Pad = 16 - (PlainBytes.Num() % 16);
-	for (int32 i = 0; i < Pad; ++i) PlainBytes.Add((uint8)Pad);
+	const FAES::FAESKey Key = MakeAESKey(ProjectId);
+	const int32 Pad = 16 - (PlainBytes.Num() % 16);
+	for (int32 i = 0; i < Pad; ++i) PlainBytes.Add(static_cast<uint8>(Pad));
 
 	FAES::EncryptData(PlainBytes.GetData(), PlainBytes.Num(), Key);
 
-	FString Encoded = FBase64::Encode(PlainBytes);
+	const FString Encoded = FBase64::Encode(PlainBytes);
 	return FFileHelper::SaveStringToFile(Encoded, *GetLicenseFilePath());
 }
 
@@ -151,21 +163,20 @@ bool FGorgeousCoreLicenseHelper::ReadAllLicenseEntries(const FString& ProjectId,
 		return false;
 	}
 
-	FAES::FAESKey Key = MakeAESKey(ProjectId);
+	const FAES::FAESKey Key = MakeAESKey(ProjectId);
 	FAES::DecryptData(EncryptedBytes.GetData(), EncryptedBytes.Num(), Key);
 
 	if (EncryptedBytes.Num() == 0) return true;
-	uint8 Pad = EncryptedBytes.Last();
+	const uint8 Pad = EncryptedBytes.Last();
 	if (Pad > 16) return false;
 	EncryptedBytes.SetNum(EncryptedBytes.Num() - Pad);
 
-	FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
+	const FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
 	TArray<FString> Lines;
 	Combined.ParseIntoArrayLines(Lines);
 	for (const FString& Line : Lines)
 	{
-		int32 SepIdx;
-		if (Line.FindChar('|', SepIdx))
+		if (int32 SepIdx; Line.FindChar('|', SepIdx))
 		{
 			FString DateStr = Line.Left(SepIdx);
 			FString ValueStr = Line.Mid(SepIdx + 1);

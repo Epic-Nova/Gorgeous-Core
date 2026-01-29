@@ -14,11 +14,17 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "GorgeousCoreRuntimeUtilitiesGlobals.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Modules/ModuleManager.h"
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "IGorgeousThingsModuleInterface.generated.h"
 //<-------------------------------------------------------------------------->
 
+//<===========--- Forward Declarations ---===========>
 class IGorgeousInsightMatrixProvider;
+//<-------------------------------------------------->
 
 /**
  * Enum defining the different functionalities a gorgeous module can provide.
@@ -55,6 +61,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API IGorgeousThingsModuleInterface : public I
 {
 	
 public:
+	
 	/**
 	 * The public wrapper function of the module interface that is called to load up this module.
 	 */
@@ -112,6 +119,7 @@ public:
 	virtual bool ProvidesCoreFunctionality() const;
 
 protected:
+	
 	/** Assign the runtime Insight Matrix provider instance for this module. */
 	void SetInsightProvider(IGorgeousInsightMatrixProvider* Provider) { InsightProvider = Provider; }
 
@@ -120,6 +128,7 @@ protected:
 	
 	
 private:
+	
 	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */

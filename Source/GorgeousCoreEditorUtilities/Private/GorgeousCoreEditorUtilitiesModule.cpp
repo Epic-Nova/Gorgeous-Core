@@ -291,7 +291,7 @@ TArray<FName> FGorgeousCoreEditorUtilitiesModule::GetDependentPlugins() const
 int32 FGorgeousCoreEditorUtilitiesModule::GetMinimumRequiredCoreVersion() const
 {
 	//Actually not needed as the Core does not perform checks against itself.
-	return 90; // Version 0.9
+	return 100; // Version 0.9
 }
 
 void FGorgeousCoreEditorUtilitiesModule::HandleGorgeousLogEntry(const FGorgeousLogEntry& Entry)

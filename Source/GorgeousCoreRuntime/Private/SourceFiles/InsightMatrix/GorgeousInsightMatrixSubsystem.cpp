@@ -1491,7 +1491,7 @@ TArray<FGorgeousInsightScenarioRunResult> UGorgeousInsightMatrixSubsystem::RunMa
 FString UGorgeousInsightMatrixSubsystem::GetInsightMatrixIniPath()
 {
 	// Get the path to the GorgeousCore plugin's Config folder
-	const FString PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousCore") / TEXT("Config");
+	const FString PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / TEXT("GorgeousCore") / TEXT("Config");
 	IFileManager::Get().MakeDirectory(*PluginDir, true);
 	return PluginDir / TEXT("DefaultGorgeousInsightMatrix.ini");
 }
