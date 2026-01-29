@@ -32,6 +32,7 @@
 #include "Serialization/JsonWriter.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
+#include "Interfaces/IPluginManager.h"
 #include "InsightMatrix/Slate/GorgeousInsightDebugPanel.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Application/IInputProcessor.h"
@@ -60,19 +61,15 @@ namespace
 		{
 		}
 
-		GORGEOUS_55_HIGHER(
-			virtual EAutomationTestFlags GetTestFlags() const override
-			{
-				return EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
-			}
-		)
-
-		GORGEOUS_54_LOWER(
+		GORGEOUS_55_SWITCH(
 			virtual uint32 GetTestFlags() const override
 			{
 				return static_cast<uint32>(EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
-			}
-		)
+			},
+			virtual EAutomationTestFlags GetTestFlags() const override
+			{
+				return EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
+			})
 
 		virtual uint32 GetRequiredDeviceNum() const override
 		{
@@ -1491,7 +1488,15 @@ TArray<FGorgeousInsightScenarioRunResult> UGorgeousInsightMatrixSubsystem::RunMa
 FString UGorgeousInsightMatrixSubsystem::GetInsightMatrixIniPath()
 {
 	// Get the path to the GorgeousCore plugin's Config folder
-	const FString PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / TEXT("GorgeousCore") / TEXT("Config");
+	FString PluginDir;
+	if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore")))
+	{
+		PluginDir = Plugin->GetBaseDir() / TEXT("Config");
+	}
+	else
+	{
+		PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / TEXT("GorgeousCore") / TEXT("Config");
+	}
 	IFileManager::Get().MakeDirectory(*PluginDir, true);
 	return PluginDir / TEXT("DefaultGorgeousInsightMatrix.ini");
 }
