@@ -40,6 +40,9 @@ public:
 	/** Relays a property payload from client to server. Returns true if the relay was initiated. */
 	bool RelayPropertyPayloadToServer(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, FGorgeousAutoReplicationMixin* TargetMixin);
 
+	/** Relays a property payload from server to owning client. Returns true if the relay was initiated. */
+	bool RelayPropertyPayloadToClient(const FGorgeousAutoReplicationPropertyEnvelope& Envelope);
+
 	/** Relays an RPC from client to server. Returns true if the relay was initiated. */
 	bool RelayRPCToServer(const FGorgeousQueuedRPC& QueuedRPC, bool bReliable, FGorgeousAutoReplicationMixin* TargetMixin);
 
@@ -58,6 +61,9 @@ protected:
 
 	UFUNCTION(Server, Unreliable)
 	void ServerRelayRPCUnreliable(const FGorgeousQueuedRPC& QueuedRPC);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRelayPropertyPayload(const FGorgeousAutoReplicationPropertyEnvelope& Envelope);
 
 private:
 	void SerializeResult(const FGorgeousAutoReplicationRPCResult& Result, FGorgeousAutoReplicationSerializedRPCResult& OutSerialized) const;
