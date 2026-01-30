@@ -64,6 +64,25 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToServer(con
 	return true;
 }
 
+bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToClient(const FGorgeousAutoReplicationPropertyEnvelope& Envelope)
+{
+	if (!GetOwner())
+	{
+		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayPropertyPayloadToClient: No owner actor."));
+		return false;
+	}
+
+	if (!GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayPropertyPayloadToClient: Cannot relay to client from non-authority."));
+		return false;
+	}
+
+	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayPropertyPayloadToClient: Server relaying property payload for entry %s to owning client."), *Envelope.EntryKey.ToString());
+	ClientRelayPropertyPayload(Envelope);
+	return true;
+}
+
 void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayAutoReplicationResult_Implementation(const FGorgeousAutoReplicationSerializedRPCResult& SerializedResult)
 {
 	if (!SerializedResult.RequestGuid.IsValid())
@@ -180,6 +199,20 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
 	default:
 		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCUnreliable: Unexpected RPC type %d for RPC %s."), static_cast<int32>(QueuedRPC.Type), *QueuedRPC.Key.ToString());
 		break;
+	}
+}
+
+void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayPropertyPayload_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope)
+{
+	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ClientRelayPropertyPayload: Client received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+
+	if (TargetMixin)
+	{
+		TargetMixin->HandleTransportedPropertyPayload(Envelope);
+	}
+	else
+	{
+		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ClientRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
 	}
 }
 

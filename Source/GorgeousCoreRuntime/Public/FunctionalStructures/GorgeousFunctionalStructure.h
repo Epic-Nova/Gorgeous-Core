@@ -55,9 +55,10 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 
 	/**
 	 * Unique identifier for the functional structure.
+	 * Initialized to empty GUID to satisfy UHT requirements, then set to new GUID in constructor.
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure", meta = (DisplayPriority = 99))
-	FGuid Identifier;
+	FGuid Identifier = FGuid();
 
 #if WITH_EDITOR
 

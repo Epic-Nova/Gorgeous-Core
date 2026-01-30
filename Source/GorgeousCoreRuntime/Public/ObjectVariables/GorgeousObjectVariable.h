@@ -785,6 +785,15 @@ private:
 	bool HandleClientPropertyPollingTick(float DeltaSeconds);
 	void RefreshClientChangeShadows();
 	void UpdateChangeShadowForProperty(FReplicatedPropertyDeclaration& Declaration);
+
+	/** Server-side property change detection and replication to clients. */
+	bool ShouldServerPollForPropertyChanges() const;
+	void StartServerPropertyPolling();
+	void StopServerPropertyPolling();
+	bool HandleServerPropertyPollingTick(float DeltaSeconds);
+	bool TryServerReplicateProperties(const TSet<FName>& DirtyProperties);
+	FTSTicker::FDelegateHandle ServerPropertyPollingHandle;
+	float ServerPropertyPollingIntervalSeconds;
 	void NotifyDisplayNameChanged();
 	void SetAutoReplicationBinding(UObject* InOwner, FName InEntryKey, int32 InReplicationIndex, const FGorgeousAutoReplicationStreamConfig* StreamOverride, bool bWantsReplication);
 	void RegisterLegacyReplication(UObject* BindingContext);

@@ -502,6 +502,7 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 	bLegacyReplicationRegistered(false),
 	bAutoReplicationActivated(false),
 	ClientPropertyPollingIntervalSeconds(0.0f),
+	ServerPropertyPollingIntervalSeconds(0.0f),
 	bRemovedFromRegistry(false)
 {
 	bReplicationActivationGuard = false;
@@ -719,6 +720,7 @@ void UGorgeousObjectVariable::BeginDestroy()
 {
 	GORGEOUS_PROFILE_SCOPE(GOV_BeginDestroy);
 	StopClientPropertyPolling();
+	StopServerPropertyPolling();
 	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
 	{
 		INC_DWORD_STAT(STAT_GOV_Destroyed);
@@ -1180,6 +1182,7 @@ void UGorgeousObjectVariable::ActivateReplication(const FGorgeousAutoReplication
 	ActiveReplicationContext = FGorgeousAutoReplicationContext();
 	RefreshClientChangeShadows();
 	StartClientPropertyPolling();
+	StartServerPropertyPolling();
 
 	if (SupportsAutoReplicationFeatures() && Context.OwningObject)
 	{
@@ -2580,6 +2583,212 @@ void UGorgeousObjectVariable::UpdateChangeShadowForProperty(FReplicatedPropertyD
 	Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
 }
 
+bool UGorgeousObjectVariable::ShouldServerPollForPropertyChanges() const
+{
+	if (!SupportsAutoReplicationFeatures() || !bSupportsNetworking || !bReplicates)
+	{
+		return false;
+	}
+
+	if (RegisteredReplicatedProperties.Num() == 0)
+	{
+		return false;
+	}
+
+	if (AutoReplicationEntryKey.IsNone() || !AutoReplicationOwner.IsValid())
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	// Server-side polling for NM_DedicatedServer, NM_ListenServer, and NM_Standalone (with clients)
+	const ENetMode NetMode = World->GetNetMode();
+	return NetMode == NM_DedicatedServer || NetMode == NM_ListenServer;
+}
+
+void UGorgeousObjectVariable::StartServerPropertyPolling()
+{
+	if (!ShouldServerPollForPropertyChanges())
+	{
+		StopServerPropertyPolling();
+		return;
+	}
+
+	const float TargetFrequency = AutoReplicationConfig.GetEffectiveUpdateFrequency();
+	const float Interval = TargetFrequency > 0.0f ? (1.0f / TargetFrequency) : 0.0f;
+	if (ServerPropertyPollingHandle.IsValid() && FMath::IsNearlyEqual(ServerPropertyPollingIntervalSeconds, Interval))
+	{
+		return;
+	}
+
+	StopServerPropertyPolling();
+	ServerPropertyPollingIntervalSeconds = Interval;
+	ServerPropertyPollingHandle = FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateUObject(this, &UGorgeousObjectVariable::HandleServerPropertyPollingTick),
+		ServerPropertyPollingIntervalSeconds);
+}
+
+void UGorgeousObjectVariable::StopServerPropertyPolling()
+{
+	if (ServerPropertyPollingHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(ServerPropertyPollingHandle);
+		ServerPropertyPollingHandle.Reset();
+	}
+}
+
+bool UGorgeousObjectVariable::HandleServerPropertyPollingTick(float DeltaSeconds)
+{
+	if (!ShouldServerPollForPropertyChanges())
+	{
+		StopServerPropertyPolling();
+		return false;
+	}
+
+	TSet<FName> DirtyProperties;
+	for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+	{
+		if (!Declaration.CachedProperty)
+		{
+			continue;
+		}
+
+		void* CurrentValue = Declaration.CachedProperty->ContainerPtrToValuePtr<void>(this);
+		if (!CurrentValue)
+		{
+			continue;
+		}
+
+		if (!Declaration.bChangeShadowInitialized)
+		{
+			Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
+			continue;
+		}
+
+		if (Declaration.ChangeShadow.Num() == 0)
+		{
+			continue;
+		}
+
+		if (!Declaration.CachedProperty->Identical(Declaration.ChangeShadow.GetData(), CurrentValue))
+		{
+			DirtyProperties.Add(Declaration.PropertyName);
+			GT_I_LOG("GT.ObjectVariables.ServerPoll.DirtyDetected", TEXT("%s: Property %s changed on server, marking for replication."), *GetName(), *Declaration.PropertyName.ToString());
+		}
+	}
+
+	if (DirtyProperties.Num() > 0)
+	{
+		GT_I_LOG("GT.ObjectVariables.ServerPoll.AttemptReplicate", TEXT("%s: Attempting to replicate %d dirty properties to clients."), *GetName(), DirtyProperties.Num());
+		if (TryServerReplicateProperties(DirtyProperties))
+		{
+			for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+			{
+				if (DirtyProperties.Contains(Declaration.PropertyName))
+				{
+					UpdateChangeShadowForProperty(Declaration);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& DirtyProperties)
+{
+	if (DirtyProperties.Num() == 0)
+	{
+		return false;
+	}
+
+	if (!bSupportsNetworking || !bReplicates)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	// Build the property payload
+	FGorgeousAutoReplicationConditionContext ConditionContext;
+	ConditionContext.bIsOwnerConnection = false; // Server sending to all clients
+
+	FGorgeousAutoReplicationPropertyPayload Payload;
+	if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
+	{
+		GT_W_LOG("GT.ObjectVariables.ServerSync.BuildPayloadFailed", TEXT("%s: Failed to build property payload for server replication."), *GetName());
+		return false;
+	}
+
+	// Filter to only dirty properties
+	Payload.Properties.RemoveAll([&](const FGorgeousAutoReplicationPropertyValue& Value)
+	{
+		return !DirtyProperties.Contains(Value.PropertyName);
+	});
+
+	if (Payload.Properties.Num() == 0)
+	{
+		return false;
+	}
+
+	// Build the envelope
+	FGorgeousAutoReplicationPropertyEnvelope Envelope;
+	Envelope.EntryKey = AutoReplicationEntryKey;
+	Envelope.Payload = Payload;
+
+	// Send to all connected clients via their relay components
+	int32 ClientsSent = 0;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (!PC)
+		{
+			continue;
+		}
+
+		// Skip local player on listen server
+		if (PC->IsLocalController())
+		{
+			continue;
+		}
+
+		// Find the relay component on the player controller
+		UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+		if (!RelayComponent)
+		{
+			GT_I_LOG("GT.ObjectVariables.ServerSync.NoRelayComponent", TEXT("%s: PlayerController %s has no AutoReplicationRPCRelayComponent."), *GetName(), *PC->GetName());
+			continue;
+		}
+
+		// Set the target mixin on the relay so the client can process the payload
+		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(PC))
+		{
+			RelayComponent->SetTargetMixin(&GPC->GetAutoReplicationMixin());
+		}
+
+		if (RelayComponent->RelayPropertyPayloadToClient(Envelope))
+		{
+			ClientsSent++;
+		}
+	}
+
+	// Also mark the stream dirty for Iris backend support
+	FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
+	Coordinator.MarkStreamDirty(this);
+
+	GT_I_LOG("GT.ObjectVariables.ServerSync.Replicated", TEXT("%s: Sent %d properties to %d clients for replication."), *GetName(), Payload.Properties.Num(), ClientsSent);
+	return ClientsSent > 0;
+}
+
 void UGorgeousObjectVariable::SetAutoReplicationBinding(UObject* InOwner, const FName InEntryKey, const int32 InReplicationIndex, const FGorgeousAutoReplicationStreamConfig* StreamOverride, const bool bWantsReplication)
 {
 	AutoReplicationOwner = InOwner;
@@ -2611,10 +2820,12 @@ void UGorgeousObjectVariable::SetAutoReplicationBinding(UObject* InOwner, const 
 	if (bReplicates)
 	{
 		StartClientPropertyPolling();
+		StartServerPropertyPolling();
 	}
 	else
 	{
 		StopClientPropertyPolling();
+		StopServerPropertyPolling();
 	}
 }
 
@@ -2730,10 +2941,12 @@ void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 	if (bReplicates)
 	{
 		StartClientPropertyPolling();
+		StartServerPropertyPolling();
 	}
 	else
 	{
 		StopClientPropertyPolling();
+		StopServerPropertyPolling();
 	}
 
 	if (SupportsLegacyReplication())
