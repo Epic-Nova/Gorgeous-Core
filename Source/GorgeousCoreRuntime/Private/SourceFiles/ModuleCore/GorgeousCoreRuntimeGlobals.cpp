@@ -268,12 +268,6 @@ bool UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPC(UObject* WorldContex
 	return AutoReplicationMixin->RequestRPC(Key, Type, Payload, TargetKind);
 }
 
-UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPCAsync(UObject* WorldContextObject, const FName Key, const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, UObject* AutoReplicationOwner)
-{
-	UObject* EffectiveContext = AutoReplicationOwner ? AutoReplicationOwner : WorldContextObject;
-	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(EffectiveContext, Key, Type, Payload, TargetKind);
-}
-
 bool UGorgeousCoreRuntimeGlobals::HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner)
 {
 	if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner))
