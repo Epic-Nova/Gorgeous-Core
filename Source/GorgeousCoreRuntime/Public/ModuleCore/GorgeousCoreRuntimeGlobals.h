@@ -108,11 +108,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject", DeprecatedFunction, DeprecationMessage = "Use the Request AutoReplication RPC async action node to receive dispatcher callbacks."))
 	static bool RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
 
-	/** Queues an asynchronous AutoReplication RPC using the async action utility, exposing completion delegates. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject"))
-	static UGorgeousAutoReplicationRPCRequestAsyncAction* RequestAutoReplicationRPCAsync(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
-
-
 	/** Returns true when any RPC requests are waiting to be processed on the provided context. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Networking", meta = (WorldContext = "WorldContextObject"))
 	static bool HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner = nullptr);

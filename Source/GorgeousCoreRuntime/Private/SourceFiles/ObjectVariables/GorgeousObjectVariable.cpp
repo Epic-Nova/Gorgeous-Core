@@ -1200,10 +1200,10 @@ void UGorgeousObjectVariable::ActivateReplication(const FGorgeousAutoReplication
 
 void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyName, const EGorgeousReplicationMode Mode, const bool bSendInitialState, const FGorgeousReplicatedPropertyConfig& AdvancedConfig)
 {
-	if (!EnsureReplicationActivation(TEXT("RegisterReplicatedProperty")))
+	/*if (!EnsureReplicationActivation(TEXT("RegisterReplicatedProperty")))
 	{
 		return;
-	}
+	}*/
 
 	if (PropertyName.IsNone())
 	{
@@ -1440,7 +1440,7 @@ UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousObjectVariable::RequestA
 		return nullptr;
 	}
 
-	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(ResolvedContext, ResolvedKey, Type, Payload, TargetKind);
+	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(ResolvedKey, Type, Payload, TargetKind, ResolvedContext);
 }
 
 bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)

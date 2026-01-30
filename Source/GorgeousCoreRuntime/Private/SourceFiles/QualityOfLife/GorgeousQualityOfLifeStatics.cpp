@@ -193,7 +193,7 @@ namespace FGorgeousQualityOfLifeStatics
 	FString ResolveSelfReferenceName(const TSubclassOf<UObject> QualityOfLifeClass)
 	{
 		//TODO: Current approach is fixing the stroke where we have multiple of these self references registered. or they have wierd namings whitch makes them impossible to address via a expected name without _X at the end.
-		////In the best case we expect only one of a kind self reference inside the root registry across the whole game instance
+		////In the best case we expect only one of a kind self reference inside the root registry across the whole game instance except we go with splitscreen
 		UGorgeousRootObjectVariable* Roots[] = {
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(false)),
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(true))
