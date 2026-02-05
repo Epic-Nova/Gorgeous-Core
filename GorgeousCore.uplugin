@@ -13,12 +13,12 @@
 	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
-	"IsBetaVersion": true,
+	"IsBetaVersion": false,
 	"Modules": [
 		{
 			"Name": "GorgeousCoreRuntime",
-			"Type": "PreDefault",
-			"LoadingPhase": "Default",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
 			"PlatformDenyList": [
 				"Android",
 				"IOS"

@@ -19,6 +19,7 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Misc/AutomationTest.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
@@ -182,7 +183,7 @@ void FGorgeousAutoReplicationHandle::CacheValue(UGorgeousObjectVariable* InValue
 	}
 }
 
-FGorgeousAutoReplicationEntry::FGorgeousAutoReplicationEntry()
+FGorgeousObjectVariableEntry::FGorgeousObjectVariableEntry()
 	: DefaultValue(nullptr)
 	, bReplicate(false)
 	, bOverrideStreamConfig(false)
@@ -193,6 +194,7 @@ FGorgeousReplicatedVariableEntry::FGorgeousReplicatedVariableEntry()
 	: ReplicationIndex(FGorgeousAutoReplicationHandle::InvalidReplicationIndex)
 	, Key(NAME_None)
 	, Value(nullptr)
+	, ValueClass(nullptr)
 	, VariableIdentifier()
 	, bIsActive(false)
 {
@@ -208,7 +210,7 @@ FGorgeousAutoReplicationMixin::FGorgeousAutoReplicationMixin()
 
 void FGorgeousAutoReplicationMixin::Bind(
 	UObject* InOwner,
-	TMap<FName, FGorgeousAutoReplicationEntry>* InAdditionalData,
+	TMap<FName, FGorgeousObjectVariableEntry>* InAdditionalData,
 	TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables)
 {
 	Owner = InOwner;
@@ -240,7 +242,7 @@ void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivat
 		UObject* OwnerObject = Owner.Get();
 		for (auto& Pair : *AdditionalData)
 		{
-			FGorgeousAutoReplicationEntry& Entry = Pair.Value;
+			FGorgeousObjectVariableEntry& Entry = Pair.Value;
 			Entry.Handle.Reset();
 			Entry.Handle.Assign(Pair.Key, FGorgeousAutoReplicationHandle::InvalidReplicationIndex, OwnerObject);
 			const FGorgeousAutoReplicationStreamConfig* StreamOverride = Entry.bOverrideStreamConfig ? &Entry.StreamConfigOverride : nullptr;
@@ -260,7 +262,7 @@ void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivat
 	UObject* OwnerObject = Owner.Get();
 	for (auto& Pair : *AdditionalData)
 	{
-		FGorgeousAutoReplicationEntry& Entry = Pair.Value;
+		FGorgeousObjectVariableEntry& Entry = Pair.Value;
 		UGorgeousObjectVariable* DefaultVar = Entry.DefaultValue;
 		const bool bEntrySupportsAutoReplication = !DefaultVar || DefaultVar->SupportsAutoReplicationFeatures();
 		if (!Entry.bReplicate || !bEntrySupportsAutoReplication)
@@ -285,6 +287,7 @@ void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivat
 			NewEntry.Key = Pair.Key;
 			NewEntry.ReplicationIndex = RepIndex;
 			NewEntry.Value = Entry.DefaultValue;
+			NewEntry.ValueClass = Entry.DefaultValue ? Entry.DefaultValue->GetClass() : nullptr;
 			NewEntry.VariableIdentifier = EntryIdentifier;
 			NewEntry.bIsActive = true;
 			ReplicatedVariables->Add(NewEntry);
@@ -292,13 +295,13 @@ void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivat
 	}
 }
 
-FGorgeousAutoReplicationEntry* FGorgeousAutoReplicationMixin::FindEntry(const FName Key)
+FGorgeousObjectVariableEntry* FGorgeousAutoReplicationMixin::FindEntry(const FName Key)
 {
 	EnsureBound();
 	return AdditionalData ? AdditionalData->Find(Key) : nullptr;
 }
 
-const FGorgeousAutoReplicationEntry* FGorgeousAutoReplicationMixin::FindEntry(const FName Key) const
+const FGorgeousObjectVariableEntry* FGorgeousAutoReplicationMixin::FindEntry(const FName Key) const
 {
 	return AdditionalData ? AdditionalData->Find(Key) : nullptr;
 }
@@ -316,9 +319,13 @@ bool FGorgeousAutoReplicationMixin::TrySetReplicatedValue(const FName Key, UGorg
 	{
 		RepEntry->Value = NewValue;
 		RepEntry->bIsActive = (NewValue != nullptr);
+		if (NewValue)
+		{
+			RepEntry->ValueClass = NewValue->GetClass();
+		}
 		RepEntry->VariableIdentifier = GorgeousAutoReplicationMixin_Private::EnsureVariableIdentifier(NewValue);
 
-		if (FGorgeousAutoReplicationEntry* Entry = FindEntry(Key))
+		if (FGorgeousObjectVariableEntry* Entry = FindEntry(Key))
 		{
 			const FGorgeousAutoReplicationStreamConfig* StreamOverride = Entry->bOverrideStreamConfig ? &Entry->StreamConfigOverride : nullptr;
 			Entry->Handle.CacheValue(NewValue, StreamOverride, Entry->bReplicate);
@@ -343,13 +350,13 @@ bool FGorgeousAutoReplicationMixin::TrySetReplicatedValue(const FName Key, UGorg
 		return true;
 	}
 
-	UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("Failed to set replicated value for key %s - no replication slot registered."), *Key.ToString());
+	GT_I_LOG("GT.AutoReplication.Mixin.SetValue.NoSlot", TEXT("Failed to set replicated value for key %s - no replication slot registered."), *Key.ToString());
 	return false;
 }
 
 bool FGorgeousAutoReplicationMixin::TryGetValue(const FName Key, UGorgeousObjectVariable*& OutValue) const
 {
-	if (const FGorgeousAutoReplicationEntry* Entry = FindEntry(Key))
+	if (const FGorgeousObjectVariableEntry* Entry = FindEntry(Key))
 	{
 		if (Entry->Handle.GetCachedValue())
 		{
@@ -398,12 +405,33 @@ void FGorgeousAutoReplicationMixin::RefreshCachedValues()
 	UObject* OwnerObject = Owner.Get();
 	for (FGorgeousReplicatedVariableEntry& RepEntry : *ReplicatedVariables)
 	{
-		if (FGorgeousAutoReplicationEntry* Entry = AdditionalData->Find(RepEntry.Key))
+		FGorgeousObjectVariableEntry* Entry = AdditionalData->Find(RepEntry.Key);
+		if (!Entry)
 		{
-			Entry->Handle.Assign(RepEntry.Key, RepEntry.ReplicationIndex, OwnerObject);
-			const FGorgeousAutoReplicationStreamConfig* StreamOverride = Entry->bOverrideStreamConfig ? &Entry->StreamConfigOverride : nullptr;
-			Entry->Handle.CacheValue(RepEntry.Value, StreamOverride, Entry->bReplicate);
+			FGorgeousObjectVariableEntry& NewEntry = AdditionalData->FindOrAdd(RepEntry.Key);
+			NewEntry.bReplicate = RepEntry.bIsActive;
+			if (RepEntry.Value)
+			{
+				NewEntry.DefaultValue = RepEntry.Value;
+			}
+			Entry = &NewEntry;
 		}
+
+		if (!Entry || !Entry->bReplicate)
+		{
+			continue;
+		}
+
+		if (!RepEntry.Value && RepEntry.ValueClass)
+		{
+			UObject* OuterObject = OwnerObject ? OwnerObject : GetTransientPackage();
+			RepEntry.Value = NewObject<UGorgeousObjectVariable>(OuterObject, RepEntry.ValueClass, NAME_None, RF_Transactional);
+			Entry->DefaultValue = RepEntry.Value;
+		}
+
+		Entry->Handle.Assign(RepEntry.Key, RepEntry.ReplicationIndex, OwnerObject);
+		const FGorgeousAutoReplicationStreamConfig* StreamOverride = Entry->bOverrideStreamConfig ? &Entry->StreamConfigOverride : nullptr;
+		Entry->Handle.CacheValue(RepEntry.Value, StreamOverride, Entry->bReplicate);
 
 		if (RepEntry.Value)
 		{
@@ -423,7 +451,7 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 
 	if (!bNetworkingEnabled)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("Attempted to queue AutoReplication RPC for key %s while networking is disabled."), *Key.ToString());
+		GT_W_LOG("GT.AutoReplication.Mixin.RPC.Disabled", TEXT("Attempted to queue AutoReplication RPC for key %s while networking is disabled."), *Key.ToString());
 		return false;
 	}
 
@@ -434,15 +462,19 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 	{
 		if (TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable)
 		{
-			UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC for key %s rejected because no eligible object variable is registered."), *Key.ToString());
+			GT_W_LOG("GT.AutoReplication.Mixin.RPC.NoVariable", TEXT("AutoReplication RPC for key %s rejected because no eligible object variable is registered."), *Key.ToString());
 		}
 		else if (TargetKind == EGorgeousAutoReplicationTargetKind::EOwner)
 		{
-			UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC for key %s rejected because the owning QoL object is unavailable."), *Key.ToString());
+			GT_W_LOG("GT.AutoReplication.Mixin.RPC.NoOwner", TEXT("AutoReplication RPC for key %s rejected because the owning QoL object is unavailable."), *Key.ToString());
+		}
+		else if (TargetKind == EGorgeousAutoReplicationTargetKind::EActorComponent)
+		{
+			GT_W_LOG("GT.AutoReplication.Mixin.RPC.NoComponent", TEXT("AutoReplication RPC for key %s rejected because no eligible actor component target was found."), *Key.ToString());
 		}
 		else
 		{
-			UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC for key %s rejected because neither an object variable nor owner handler is available."), *Key.ToString());
+			GT_W_LOG("GT.AutoReplication.Mixin.RPC.NoHandler", TEXT("AutoReplication RPC for key %s rejected because neither an object variable nor owner handler is available."), *Key.ToString());
 		}
 		return false;
 	}
@@ -458,6 +490,33 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 	if (OutRequestGuid)
 	{
 		*OutRequestGuid = QueuedRPC.RequestGuid;
+	}
+
+	// For server-bound, client-bound, or multicast RPCs from a client, use the relay component instead of the transporter
+	// since the transporter is dynamically created and doesn't exist on the server.
+	// Client RPCs also go through the server first, then the server forwards to the owning client.
+	const bool bIsServerBound = (Type == EGorgeousAutoReplicationRPCType::EReliableServer || Type == EGorgeousAutoReplicationRPCType::EUnreliableServer);
+	const bool bIsClientBound = (Type == EGorgeousAutoReplicationRPCType::EReliableClient || Type == EGorgeousAutoReplicationRPCType::EUnreliableClient);
+	const bool bIsMulticast = (Type == EGorgeousAutoReplicationRPCType::EReliableMulticast || Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast);
+	const bool bIsOnClient = !IsAuthorityContext();
+	
+	if ((bIsServerBound || bIsClientBound || bIsMulticast) && bIsOnClient && RPCRelayComponent.IsValid())
+	{
+		const bool bReliable = (Type == EGorgeousAutoReplicationRPCType::EReliableServer || Type == EGorgeousAutoReplicationRPCType::EReliableClient || Type == EGorgeousAutoReplicationRPCType::EReliableMulticast);
+		if (RPCRelayComponent->RelayRPCToServer(QueuedRPC, bReliable, this))
+		{
+			const UEnum* TypeEnum = StaticEnum<EGorgeousAutoReplicationRPCType>();
+			const FString TypeString = TypeEnum ? TypeEnum->GetNameStringByValue(static_cast<int64>(Type)) : FString(TEXT("<unknown>"));
+			const UEnum* TargetEnum = StaticEnum<EGorgeousAutoReplicationTargetKind>();
+			const FString TargetString = TargetEnum ? TargetEnum->GetNameStringByValue(static_cast<int64>(QueuedRPC.TargetKind)) : FString(TEXT("<unknown>"));
+			const FString TargetLabel = (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable && ResolvedVariable)
+				? ResolvedVariable->GetName()
+				: (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && ResolvedOwner)
+					? ResolvedOwner->GetName()
+					: FString(TEXT("<unresolved>"));
+			GT_I_LOG("GT.AutoReplication.Mixin.RPC.DispatchedViaRelay", TEXT("Dispatched AutoReplication RPC (%s -> %s:%s) for key %s through relay on %s."), *TypeString, *TargetString, *TargetLabel, *Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
+			return true;
+		}
 	}
 
 	UGorgeousAutoReplicationRPCTransporter* ActiveTransporter = RPCTransporter.Get();
@@ -478,17 +537,17 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 			: (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && ResolvedOwner)
 				? ResolvedOwner->GetName()
 				: FString(TEXT("<unresolved>"));
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("Dispatched AutoReplication RPC (%s -> %s:%s) for key %s through transporter on %s."), *TypeString, *TargetString, *TargetLabel, *Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
+		GT_I_LOG("GT.AutoReplication.Mixin.RPC.Dispatched", TEXT("Dispatched AutoReplication RPC (%s -> %s:%s) for key %s through transporter on %s."), *TypeString, *TargetString, *TargetLabel, *Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
 		return true;
 	}
 
 	if (ActiveTransporter)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC transporter failed to route request for key %s. Aborting send."), *Key.ToString());
+		GT_W_LOG("GT.AutoReplication.Mixin.RPC.RouteFailed", TEXT("AutoReplication RPC transporter failed to route request for key %s. Aborting send."), *Key.ToString());
 		return false;
 	}
 
-	UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("AutoReplication RPC transporter unavailable for key %s. Executing locally."), *Key.ToString());
+	GT_I_LOG("GT.AutoReplication.Mixin.RPC.NoTransporter", TEXT("AutoReplication RPC transporter unavailable for key %s. Executing locally."), *Key.ToString());
 	return EnqueueRPCInternal(QueuedRPC);
 }
 
@@ -563,6 +622,39 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 		return bHandledByOwner;
 	};
 
+	auto ExecuteOnActorComponent = [&]() -> bool
+	{
+		AActor* OwningActor = nullptr;
+		if (AActor* AsActor = Cast<AActor>(OwnerObject))
+		{
+			OwningActor = AsActor;
+		}
+		else if (UActorComponent* AsComponent = Cast<UActorComponent>(OwnerObject))
+		{
+			OwningActor = AsComponent->GetOwner();
+		}
+
+		if (!OwningActor)
+		{
+			return false;
+		}
+
+		TInlineComponentArray<UActorComponent*> Components;
+		OwningActor->GetComponents(Components);
+		for (UActorComponent* Component : Components)
+		{
+			UGorgeousObjectVariable* ReturnContainer = nullptr;
+			if (Component && UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(Component, QueuedRPC, &ReturnContainer))
+			{
+				UGorgeousObjectVariable* ResultVariable = ReturnContainer;
+				EmitResult(EGorgeousAutoReplicationTargetKind::EActorComponent, ResultVariable, Component);
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	auto ExecuteOnVariable = [&](UGorgeousObjectVariable* TargetVariable) -> bool
 	{
 		UGorgeousObjectVariable* ReturnContainer = nullptr;
@@ -575,7 +667,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 		return false;
 	};
 
-	const FGorgeousAutoReplicationEntry* Entry = AdditionalData ? AdditionalData->Find(QueuedRPC.Key) : nullptr;
+	const FGorgeousObjectVariableEntry* Entry = AdditionalData ? AdditionalData->Find(QueuedRPC.Key) : nullptr;
 	UGorgeousObjectVariable* TargetVariable = nullptr;
 	if (Entry)
 	{
@@ -596,15 +688,26 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 			const FString OwnerName = Owner.IsValid() ? Owner->GetName() : TEXT("<invalid>");
 			if (TargetVariable)
 			{
-				UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("%s failed to execute AutoReplication RPC handler %s on %s."),
+				GT_W_LOG("GT.AutoReplication.Mixin.Execute.VariableFailed", TEXT("%s failed to execute AutoReplication RPC handler %s on %s."),
 					*OwnerName, *QueuedRPC.Payload.HandlerName.ToString(), *TargetVariable->GetName());
 			}
 			else
 			{
-				UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC %s expected an object variable target but none was registered."), *QueuedRPC.Key.ToString());
+				GT_W_LOG("GT.AutoReplication.Mixin.Execute.NoVariable", TEXT("AutoReplication RPC %s expected an object variable target but none was registered."), *QueuedRPC.Key.ToString());
 			}
 		}
 		return bVariableHandled;
+	}
+	case EGorgeousAutoReplicationTargetKind::EActorComponent:
+	{
+		const bool bComponentHandled = ExecuteOnActorComponent();
+		if (!bComponentHandled)
+		{
+			const FString OwnerName = Owner.IsValid() ? Owner->GetName() : TEXT("<invalid>");
+			GT_W_LOG("GT.AutoReplication.Mixin.Execute.NoComponent", TEXT("AutoReplication RPC %s expected an Actor Component handler but none handled it on %s."),
+				*QueuedRPC.Key.ToString(), *OwnerName);
+		}
+		return bComponentHandled;
 	}
 	case EGorgeousAutoReplicationTargetKind::EOwner:
 	{
@@ -612,7 +715,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 		if (!bOwnerHandled)
 		{
 			const FString OwnerName = Owner.IsValid() ? Owner->GetName() : TEXT("<invalid>");
-			UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC %s expected the owning QoL object to handle %s but no handler was found on %s."),
+			GT_W_LOG("GT.AutoReplication.Mixin.Execute.NoOwnerHandler", TEXT("AutoReplication RPC %s expected the owning QoL object to handle %s but no handler was found on %s."),
 				*QueuedRPC.Key.ToString(), *QueuedRPC.Payload.HandlerName.ToString(), *OwnerName);
 		}
 		return bOwnerHandled;
@@ -624,11 +727,16 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 			return true;
 		}
 
+		if (ExecuteOnActorComponent())
+		{
+			return true;
+		}
+
 		const bool bOwnerHandled = ExecuteOnOwner(EGorgeousAutoReplicationTargetKind::EOwner);
 		if (!bOwnerHandled)
 		{
 			const FString OwnerName = Owner.IsValid() ? Owner->GetName() : TEXT("<invalid>");
-			UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication RPC %s could not resolve a valid handler on either the object variable or owner (%s)."), *QueuedRPC.Key.ToString(), *OwnerName);
+			GT_W_LOG("GT.AutoReplication.Mixin.Execute.NoHandler", TEXT("AutoReplication RPC %s could not resolve a valid handler on object variable, actor component, or owner (%s)."), *QueuedRPC.Key.ToString(), *OwnerName);
 		}
 		return bOwnerHandled;
 	}
@@ -704,14 +812,14 @@ void FGorgeousAutoReplicationMixin::InitializeTransporter()
 
 	if (!OwnerActor)
 	{
-		UE_LOG(LogGorgeousAutoReplication, Verbose, TEXT("OwnerActor is null in InitializeTransporter. RPCTransporter will be reset."));
+		GT_I_LOG("GT.AutoReplication.Mixin.Transporter.NoOwner", TEXT("OwnerActor is null in InitializeTransporter. RPCTransporter will be reset."));
 		RPCTransporter.Reset();
 		return;
 	}
 
 	if (!OwnerActor->GetWorld())
 	{
-		UE_LOG(LogGorgeousAutoReplication, Verbose, TEXT("OwnerActor or its World is invalid. Initialization deferred."));
+		GT_I_LOG("GT.AutoReplication.Mixin.Transporter.Deferred", TEXT("OwnerActor or its World is invalid. Initialization deferred."));
 		return;
 	}
 
@@ -724,13 +832,50 @@ void FGorgeousAutoReplicationMixin::InitializeTransporter()
 			break;
 		}
 	}
+
+	// If no transporter exists yet, we need to find or create one.
+	// For server RPCs to work, the component must exist on both server and client.
+	// Components created dynamically must be created on the server and replicate to clients.
 	if (!TransporterInstance)
 	{
-		TransporterInstance = OwnerActor->CreateDefaultSubobject<UGorgeousAutoReplicationRPCTransporter>(TEXT("AutoReplicationTransporter"));
-		if (TransporterInstance)
+		// First, try to find an existing transporter that isn't linked to any mixin yet
+		for (TInlineComponentArray<UGorgeousAutoReplicationRPCTransporter*> AllTransporters(OwnerActor); UGorgeousAutoReplicationRPCTransporter* Candidate : AllTransporters)
 		{
-			OwnerActor->AddInstanceComponent(TransporterInstance);
-			TransporterInstance->RegisterComponent();
+			if (Candidate && !Candidate->IsLinkedToMixin(nullptr))
+			{
+				TransporterInstance = Candidate;
+				break;
+			}
+		}
+	}
+
+	if (!TransporterInstance)
+	{
+		// Only the server should create new transporter components
+		// so they can replicate to clients properly
+		if (OwnerActor->HasAuthority())
+		{
+			TransporterInstance = NewObject<UGorgeousAutoReplicationRPCTransporter>(OwnerActor, UGorgeousAutoReplicationRPCTransporter::StaticClass(), TEXT("AutoReplicationTransporter"));
+			if (TransporterInstance)
+			{
+				TransporterInstance->SetIsReplicated(true);
+				OwnerActor->AddInstanceComponent(TransporterInstance);
+				if (OwnerActor->GetWorld())
+				{
+					TransporterInstance->RegisterComponent();
+				}
+				// Ensure the actor updates its replicated component list
+				OwnerActor->UpdateReplicatedComponent(TransporterInstance);
+				GT_I_LOG("GT.AutoReplication.Mixin.Transporter.Created", TEXT("Server created and registered transporter on %s."), *OwnerActor->GetName());
+			}
+		}
+		else
+		{
+			// Client doesn't have a transporter yet - this means the server hasn't created one
+			// or it hasn't replicated yet. We cannot create one on the client as it won't
+			// have a server counterpart for RPCs.
+			GT_W_LOG("GT.AutoReplication.Mixin.Transporter.ClientNoTransporter", TEXT("Client cannot find transporter on %s. Server must create it first."), *OwnerActor->GetName());
+			return;
 		}
 	}
 
@@ -748,7 +893,7 @@ bool FGorgeousAutoReplicationMixin::EnqueueRPCInternal(const FGorgeousQueuedRPC&
 
 	const UEnum* EnumClass = StaticEnum<EGorgeousAutoReplicationRPCType>();
 	const FString TypeString = EnumClass ? EnumClass->GetNameStringByValue(static_cast<int64>(QueuedRPC.Type)) : FString(TEXT("<unknown>"));
-	UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("Queued AutoReplication RPC (%s) for key %s on %s."), *TypeString, *QueuedRPC.Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
+	GT_I_LOG("GT.AutoReplication.Mixin.RPC.Queued", TEXT("Queued AutoReplication RPC (%s) for key %s on %s."), *TypeString, *QueuedRPC.Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
 
 	DispatchPendingRPCs();
 	return true;
@@ -761,30 +906,32 @@ bool FGorgeousAutoReplicationMixin::HandleTransportedRPC(const FGorgeousQueuedRP
 
 void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorgeousAutoReplicationPropertyEnvelope& Envelope)
 {
+	GT_I_LOG("GT.AutoReplication.Mixin.Payload.Received", TEXT("Received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+	
 	EnsureBound();
 
 	if (!bNetworkingEnabled)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("Dropping AutoReplication property payload for entry %s because networking is disabled."), *Envelope.EntryKey.ToString());
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.NetworkingDisabled", TEXT("Dropping AutoReplication property payload for entry %s because networking is disabled."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
 	if (!AdditionalData)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication property payload for entry %s could not be delivered because AdditionalData is unavailable."), *Envelope.EntryKey.ToString());
+		GT_W_LOG("GT.AutoReplication.Mixin.Payload.NoAdditionalData", TEXT("AutoReplication property payload for entry %s could not be delivered because AdditionalData is unavailable."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
-	FGorgeousAutoReplicationEntry* TargetEntry = AdditionalData->Find(Envelope.EntryKey);
+	FGorgeousObjectVariableEntry* TargetEntry = AdditionalData->Find(Envelope.EntryKey);
 	if (!TargetEntry)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("AutoReplication property payload references unknown entry %s. Payload discarded."), *Envelope.EntryKey.ToString());
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.UnknownEntry", TEXT("AutoReplication property payload references unknown entry %s. Payload discarded."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
 	if (!TargetEntry->bReplicate)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("AutoReplication property payload for entry %s was ignored because the entry is not marked for replication."), *Envelope.EntryKey.ToString());
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.NotReplicated", TEXT("AutoReplication property payload for entry %s was ignored because the entry is not marked for replication."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
@@ -801,20 +948,20 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 
 	if (!TargetVariable)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("AutoReplication property payload for entry %s has no target variable to apply changes."), *Envelope.EntryKey.ToString());
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.NoTarget", TEXT("AutoReplication property payload for entry %s has no target variable to apply changes."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
 	if (!TargetVariable->SupportsAutoReplicationFeatures())
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Verbose, TEXT("AutoReplication property payload for entry %s targeted %s but the variable is configured for manual networking."),
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.ManualNetworking", TEXT("AutoReplication property payload for entry %s targeted %s but the variable is configured for manual networking."),
 			*Envelope.EntryKey.ToString(), *TargetVariable->GetName());
 		return;
 	}
 
 	if (Envelope.Payload.IsEmpty())
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, VeryVerbose, TEXT("AutoReplication property payload for entry %s contained no serialized properties."), *Envelope.EntryKey.ToString());
+		GT_I_LOG("GT.AutoReplication.Mixin.Payload.Empty", TEXT("AutoReplication property payload for entry %s contained no serialized properties."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
@@ -852,13 +999,13 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 	TargetVariable->PostNetReceive();
 	if (!bApplied)
 	{
-		UE_LOG(LogGorgeousAutoReplicationMixin, Warning, TEXT("AutoReplication property payload for entry %s on %s failed to deserialize."),
+		GT_W_LOG("GT.AutoReplication.Mixin.Payload.DeserializeFailed", TEXT("AutoReplication property payload for entry %s on %s failed to deserialize."),
 			*Envelope.EntryKey.ToString(), *TargetVariable->GetName());
 		return;
 	}
 
 	const FString StreamId = Envelope.Payload.StreamGuid.IsValid() ? Envelope.Payload.StreamGuid.ToString() : TEXT("<invalid>");
-	UE_LOG(LogGorgeousAutoReplicationMixin, VeryVerbose,
+	GT_I_LOG("GT.AutoReplication.Mixin.Payload.Applied",
 		TEXT("Applied AutoReplication property payload for entry %s on %s (%d properties, stream %s)."),
 		*Envelope.EntryKey.ToString(), *TargetVariable->GetName(), Envelope.Payload.Properties.Num(), *StreamId);
 }
@@ -935,6 +1082,27 @@ bool FGorgeousAutoReplicationMixin::ResolveRPCDestination(const FName Key, const
 		OutVariable = CandidateVariable;
 		return true;
 	}
+	case EGorgeousAutoReplicationTargetKind::EActorComponent:
+	{
+		AActor* OwningActor = nullptr;
+		if (AActor* AsActor = Cast<AActor>(OwnerObject))
+		{
+			OwningActor = AsActor;
+		}
+		else if (UActorComponent* AsComponent = Cast<UActorComponent>(OwnerObject))
+		{
+			OwningActor = AsComponent->GetOwner();
+		}
+
+		if (!OwningActor)
+		{
+			return false;
+		}
+
+		OutResolvedKind = EGorgeousAutoReplicationTargetKind::EActorComponent;
+		OutOwner = OwningActor;
+		return true;
+	}
 	case EGorgeousAutoReplicationTargetKind::EOwner:
 	{
 		if (!OwnerObject)
@@ -952,6 +1120,22 @@ bool FGorgeousAutoReplicationMixin::ResolveRPCDestination(const FName Key, const
 		{
 			OutResolvedKind = EGorgeousAutoReplicationTargetKind::EObjectVariable;
 			OutVariable = CandidateVariable;
+			return true;
+		}
+
+		AActor* OwningActor = nullptr;
+		if (AActor* AsActor = Cast<AActor>(OwnerObject))
+		{
+			OwningActor = AsActor;
+		}
+		else if (UActorComponent* AsComponent = Cast<UActorComponent>(OwnerObject))
+		{
+			OwningActor = AsComponent->GetOwner();
+		}
+		if (OwningActor)
+		{
+			OutResolvedKind = EGorgeousAutoReplicationTargetKind::EActorComponent;
+			OutOwner = OwningActor;
 			return true;
 		}
 
@@ -974,7 +1158,7 @@ UGorgeousObjectVariable* FGorgeousAutoReplicationMixin::ResolveVariableForKey(co
 		return nullptr;
 	}
 
-	const FGorgeousAutoReplicationEntry* Entry = AdditionalData->Find(Key);
+	const FGorgeousObjectVariableEntry* Entry = AdditionalData->Find(Key);
 	if (!Entry)
 	{
 		return nullptr;

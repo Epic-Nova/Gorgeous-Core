@@ -30,13 +30,16 @@ public class GorgeousCoreEditor : ModuleRules
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations")
+            Path.Combine(privateIncludePath, "HeaderFiles", "FunctionalStructures")
         });
         
         PrivateIncludePaths.AddRange(new string[]
         {
             Path.Combine(privateIncludePath, "HeaderFiles"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "CodeGenerators"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "Factories"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "K2Nodes"),
+            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations")
         });
         
         PublicDependencyModuleNames.AddRange(new[]
@@ -52,7 +55,6 @@ public class GorgeousCoreEditor : ModuleRules
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
-                "AssetDefinition",
                 "Slate", 
                 "SlateCore", 
                 "Projects",

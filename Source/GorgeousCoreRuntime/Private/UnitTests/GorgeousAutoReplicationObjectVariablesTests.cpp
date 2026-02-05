@@ -96,7 +96,7 @@ namespace GorgeousAutomationObjectVariablesGauntlet
 			return Result;
 		}
 
-		FGorgeousAutoReplicationEntry& Entry = Controller->AdditionalGorgeousData.FindOrAdd(PlayerControllerEntryKey);
+		FGorgeousObjectVariableEntry& Entry = Controller->AdditionalGorgeousData.FindOrAdd(PlayerControllerEntryKey);
 		Entry.DefaultValue = Variable;
 		Entry.bReplicate = true;
 		Entry.Handle.CacheValue(Variable);

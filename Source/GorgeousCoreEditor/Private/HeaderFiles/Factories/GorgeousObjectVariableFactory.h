@@ -17,6 +17,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableFactory.generated.h"
 //<-------------------------------------------------------------------------->
@@ -43,6 +44,7 @@ public:
 	 */
 	UGorgeousObjectVariableFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousObjectVariable::StaticClass(), true, false, true, false));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousObjectVariable::StaticClass(), true, false, true, false,
+			UGorgeousObjectVariableBlueprint::StaticClass()));
 	}
 };

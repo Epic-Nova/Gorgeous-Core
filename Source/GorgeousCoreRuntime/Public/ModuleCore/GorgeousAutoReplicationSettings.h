@@ -35,7 +35,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableReplicationGraph", EditConditionHides))
 	bool bEnableIris;
 
-	/** True if a dedicated replication graph should be created for auto-replicated objects. */
+	/** True if a dedicated replication grap<<h should be created for auto-replicated objects. */
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableIris", EditConditionHides))
 	bool bEnableReplicationGraph;
 

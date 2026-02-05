@@ -51,6 +51,10 @@ public:
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Game Mode|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
+
 	
 	/** 
 	 * Called when the game mode begins play.
@@ -73,7 +77,7 @@ public:
 	 * Additional data for the current class.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Mode")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
 	/** Trunk that stores serialized default payloads for this game mode's object variables. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Mode|Defaults", meta = (ShowOnlyInnerProperties))

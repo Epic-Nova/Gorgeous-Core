@@ -57,9 +57,13 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerController : public APlayerControll
 	
 public:
 
-AGorgeousPlayerController();
-FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	AGorgeousPlayerController();
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Player Controller|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
 	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
 
@@ -100,7 +104,7 @@ FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicatio
 	 * Additional data for the current class.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
 	/** Trunk that stores serialized default payloads for this controller's authored object variables. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player Controller|Defaults", meta = (ShowOnlyInnerProperties))

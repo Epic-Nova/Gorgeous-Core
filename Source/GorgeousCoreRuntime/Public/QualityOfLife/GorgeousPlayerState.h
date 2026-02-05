@@ -49,6 +49,10 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Player State|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
+
 	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
 	
 	//<============================--- Overrides ---=============================>
@@ -74,7 +78,7 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	 * Additional data for the current class.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
 	/** Trunk that persists serialized default payloads authored on this player state. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player State|Defaults", meta = (ShowOnlyInnerProperties))

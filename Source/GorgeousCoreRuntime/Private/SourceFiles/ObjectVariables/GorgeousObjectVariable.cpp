@@ -20,12 +20,14 @@
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-#include "Profiling/GorgeousProfiling.h"
+#include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
@@ -41,6 +43,7 @@
 #include "UObject/ObjectMacros.h"
 #include "UObject/UnrealType.h"
 #include "Misc/ScopeLock.h"
+#include "Containers/Ticker.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "Stats/Stats.h"
 #include "Net/UnrealNetwork.h"
@@ -95,6 +98,7 @@ UGorgeousObjectVariable::FReplicatedPropertyDeclaration::FReplicatedPropertyDecl
 	, bFireInitialNotify(true)
 	, bDeliveredInitialNotify(false)
 	, bShadowInitialized(false)
+	, bChangeShadowInitialized(false)
 	, bHasValidatedRepNotifySignature(false)
 	, bIsRepNotifySignatureValid(true)
 {
@@ -103,6 +107,7 @@ UGorgeousObjectVariable::FReplicatedPropertyDeclaration::FReplicatedPropertyDecl
 UGorgeousObjectVariable::FReplicatedPropertyDeclaration::~FReplicatedPropertyDeclaration()
 {
 	ResetShadowState();
+	ResetChangeShadow();
 }
 
 void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::InitializeShadowState(const FProperty* Property, const void* InitialData)
@@ -139,6 +144,42 @@ void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::ResetShadowState()
 	}
 	RepNotifyShadow.Reset();
 	bShadowInitialized = false;
+}
+
+void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::InitializeChangeShadow(const FProperty* Property, const void* InitialData)
+{
+	if (!Property)
+	{
+		return;
+	}
+
+	if (!bChangeShadowInitialized)
+	{
+		GORGEOUS_55_HIGHER(
+			const int32 ShadowSize = Property->GetElementSize() * Property->ArrayDim;
+		)
+		GORGEOUS_54_LOWER(
+			const int32 ShadowSize = Property->GetSize() * Property->ArrayDim;
+		)
+		ChangeShadow.SetNumZeroed(ShadowSize > 0 ? ShadowSize : 1);
+		Property->InitializeValue(ChangeShadow.GetData());
+		bChangeShadowInitialized = true;
+	}
+
+	if (InitialData)
+	{
+		Property->CopyCompleteValue(ChangeShadow.GetData(), InitialData);
+	}
+}
+
+void UGorgeousObjectVariable::FReplicatedPropertyDeclaration::ResetChangeShadow()
+{
+	if (bChangeShadowInitialized && CachedProperty && ChangeShadow.Num() > 0)
+	{
+		CachedProperty->DestroyValue(ChangeShadow.GetData());
+	}
+	ChangeShadow.Reset();
+	bChangeShadowInitialized = false;
 }
 
 bool UGorgeousObjectVariable::ValidateVariableAssignment(const FName PropertyName, const FProperty* ValueProperty, const void* ValueAddress) const
@@ -269,7 +310,7 @@ namespace GorgeousObjectVariable_Private
 		FProperty* SourceProperty = ArgumentVariable->GetClass()->FindPropertyByName(ValuePropertyName);
 		if (!SourceProperty)
 		{
-			UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s does not expose a Value property and cannot be used as a AutoReplication RPC argument."), *ArgumentVariable->GetName());
+			GT_W_LOG("GT.ObjectVariables.RPC.ArgumentNoValue", TEXT("%s does not expose a Value property and cannot be used as a AutoReplication RPC argument."), *ArgumentVariable->GetName());
 			return false;
 		}
 
@@ -282,7 +323,7 @@ namespace GorgeousObjectVariable_Private
 			return true;
 		}
 
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("AutoReplication RPC argument %s (property type %s) is incompatible with parameter %s (type %s)."),
+		GT_W_LOG("GT.ObjectVariables.RPC.ArgumentTypeMismatch", TEXT("AutoReplication RPC argument %s (property type %s) is incompatible with parameter %s (type %s)."),
 			*ArgumentVariable->GetName(), *SourceProperty->GetClass()->GetName(), *ParameterProperty->GetName(), *ParameterProperty->GetClass()->GetName());
 		return false;
 	}
@@ -404,17 +445,18 @@ namespace GorgeousObjectVariable_Private
 			{
 				continue;
 			}
-			const TObjectPtr<UGorgeousObjectVariable>* ArgumentVariablePtr = &QueuedRPC.Payload.Arguments.FindByPredicate(
-				[&](const FGorgeousRPCArgumentContainer& ArgumentContainer)
-				{
-					return ArgumentContainer.ArgumentName == Property->GetFName();
-				})->ArgumentValue;
 			
-			UGorgeousObjectVariable* ArgumentVariable = (ArgumentVariablePtr && ArgumentVariablePtr->Get()) ? ArgumentVariablePtr->Get() : nullptr;
+			const FGorgeousRPCArgumentContainer* ArgumentContainer = QueuedRPC.Payload.Arguments.FindByPredicate(
+				[&](const FGorgeousRPCArgumentContainer& Container)
+				{
+					return Container.ArgumentName == Property->GetFName();
+				});
+			
+			UGorgeousObjectVariable* ArgumentVariable = (ArgumentContainer && ArgumentContainer->ArgumentValue) ? ArgumentContainer->ArgumentValue.Get() : nullptr;
 
 			if (!ArgumentVariable)
 			{
-				UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("AutoReplication RPC %s expected parameter %s but it was not provided."),
+				GT_W_LOG("GT.ObjectVariables.RPC.MissingParam", TEXT("AutoReplication RPC %s expected parameter %s but it was not provided."),
 					*QueuedRPC.Payload.HandlerName.ToString(), *Property->GetName());
 				bAllParametersFilled = false;
 				break;
@@ -422,7 +464,7 @@ namespace GorgeousObjectVariable_Private
 
 			if (!CopyArgumentToProperty(ArgumentVariable, Property, ParameterStorage.GetData()))
 			{
-				UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Failed to apply argument %s to parameter %s for handler %s."),
+				GT_W_LOG("GT.ObjectVariables.RPC.ApplyArgumentFailed", TEXT("Failed to apply argument %s to parameter %s for handler %s."),
 					*ArgumentVariable->GetName(), *Property->GetName(), *QueuedRPC.Payload.HandlerName.ToString());
 				bAllParametersFilled = false;
 				break;
@@ -458,6 +500,9 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 	AutoReplicationEntryKey(NAME_None),
 	AutoReplicationReplicationIndex(INDEX_NONE),
 	bLegacyReplicationRegistered(false),
+	bAutoReplicationActivated(false),
+	ServerPropertyPollingIntervalSeconds(0.0f),
+	ClientPropertyPollingIntervalSeconds(0.0f),
 	bRemovedFromRegistry(false)
 {
 	bReplicationActivationGuard = false;
@@ -674,6 +719,8 @@ void UGorgeousObjectVariable::ApplyReplicatedIdentifier(const FGuid& InIdentifie
 void UGorgeousObjectVariable::BeginDestroy()
 {
 	GORGEOUS_PROFILE_SCOPE(GOV_BeginDestroy);
+	StopClientPropertyPolling();
+	StopServerPropertyPolling();
 	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
 	{
 		INC_DWORD_STAT(STAT_GOV_Destroyed);
@@ -782,7 +829,7 @@ void UGorgeousObjectVariable::SetRootNetworkStackEnabledInternal(const bool bEna
 	const bool bDesiredState = bRootForced || bEnable;
 	if (bRootForced && !bEnable)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("%s cannot disable the root network stack because the configured root enforces networking."), *GetName());
+		GT_I_LOG("GT.ObjectVariables.RootStack.Forced", TEXT("%s cannot disable the root network stack because the configured root enforces networking."), *GetName());
 	}
 
 	if (RootNetworkConfig.bExposeThroughRootNetworkStack == bDesiredState)
@@ -1078,7 +1125,7 @@ bool UGorgeousObjectVariable::HandleUniqueRegistrationPolicy(UGorgeousObjectVari
 
 	case EGorgeousObjectVariableUniqueRegistrationPolicy::CancelRegistration:
 	default:
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Registration cancelled for %s because another unique instance already exists."), *Candidate->GetDisplayNameOrFallback());
+		GT_W_LOG("GT.ObjectVariables.Registration.UniqueCollision", TEXT("Registration cancelled for %s because another unique instance already exists."), *Candidate->GetDisplayNameOrFallback());
 		return false;
 	}
 }
@@ -1087,13 +1134,13 @@ void UGorgeousObjectVariable::ActivateReplication(const FGorgeousAutoReplication
 {
 	if (!bSupportsNetworking)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot activate replication because networking is disabled."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.Replication.Disabled", TEXT("%s cannot activate replication because networking is disabled."), *GetName());
 		return;
 	}
 
 	if (bReplicationActivationGuard)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Replication activation already in progress for %s."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.Replication.AlreadyActive", TEXT("Replication activation already in progress for %s."), *GetName());
 		return;
 	}
 
@@ -1131,7 +1178,11 @@ void UGorgeousObjectVariable::ActivateReplication(const FGorgeousAutoReplication
 	}
 
 	OnReplicationActivated(Context);
+	bAutoReplicationActivated = true;
 	ActiveReplicationContext = FGorgeousAutoReplicationContext();
+	RefreshClientChangeShadows();
+	StartClientPropertyPolling();
+	StartServerPropertyPolling();
 
 	if (SupportsAutoReplicationFeatures() && Context.OwningObject)
 	{
@@ -1149,21 +1200,21 @@ void UGorgeousObjectVariable::ActivateReplication(const FGorgeousAutoReplication
 
 void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyName, const EGorgeousReplicationMode Mode, const bool bSendInitialState, const FGorgeousReplicatedPropertyConfig& AdvancedConfig)
 {
-	if (!EnsureReplicationActivation(TEXT("RegisterReplicatedProperty")))
+	/*if (!EnsureReplicationActivation(TEXT("RegisterReplicatedProperty")))
 	{
 		return;
-	}
+	}*/
 
 	if (PropertyName.IsNone())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Attempted to register an unnamed property on %s."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.Replication.PropertyUnnamed", TEXT("Attempted to register an unnamed property on %s."), *GetName());
 		return;
 	}
 
 	FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName);
 	if (!Property)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Property %s does not exist on %s."), *PropertyName.ToString(), *GetName());
+		GT_W_LOG("GT.ObjectVariables.Replication.PropertyMissing", TEXT("Property %s does not exist on %s."), *PropertyName.ToString(), *GetName());
 		return;
 	}
 
@@ -1182,7 +1233,7 @@ void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyNam
 	{
 		if (!FindFunction(Declaration.RepNotifyFunction))
 		{
-			UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("RepNotify target %s was not found on %s while registering property %s. Notify will be disabled."),
+			GT_W_LOG("GT.ObjectVariables.Replication.RepNotifyMissing", TEXT("RepNotify target %s was not found on %s while registering property %s. Notify will be disabled."),
 				*Declaration.RepNotifyFunction.ToString(), *GetName(), *PropertyName.ToString());
 			Declaration.RepNotifyFunction = NAME_None;
 		}
@@ -1192,7 +1243,13 @@ void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyNam
 		}
 	}
 
-	UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("Registered replicated property %s on %s."), *PropertyName.ToString(), *GetName());
+	if (Declaration.CachedProperty)
+	{
+		void* CurrentValue = Declaration.CachedProperty->ContainerPtrToValuePtr<void>(this);
+		Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
+	}
+
+	GT_I_LOG("GT.ObjectVariables.Replication.PropertyRegistered", TEXT("Registered replicated property %s on %s."), *PropertyName.ToString(), *GetName());
 }
 
 bool UGorgeousObjectVariable::BuildAutoReplicationPropertyPayload(const FGorgeousAutoReplicationConditionContext& ConditionContext, FGorgeousAutoReplicationPropertyPayload& OutPayload) const
@@ -1242,14 +1299,14 @@ bool UGorgeousObjectVariable::BuildAutoReplicationPropertyPayload(const FGorgeou
 		{
 			if (!const_cast<UGorgeousObjectVariable*>(this)->BuildCustomAutoReplicationPayload(Declaration.PropertyName, SerializedValue.Payload, ConditionContext.bIsInitialState))
 			{
-				UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("Custom AutoReplication payload for property %s on %s was skipped because no handler provided data."),
+				GT_I_LOG("GT.ObjectVariables.Payload.CustomSkipped", TEXT("Custom AutoReplication payload for property %s on %s was skipped because no handler provided data."),
 					*Declaration.PropertyName.ToString(), *GetName());
 				continue;
 			}
 		}
 		else if (!GorgeousObjectVariable_Private::SerializePropertyValue(Declaration.CachedProperty, PropertyData, Declaration.Mode, ConditionContext.PackageMap, SerializedValue.Payload))
 		{
-			UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Failed to serialize auto-replicated property %s on %s."), *Declaration.PropertyName.ToString(), *GetName());
+			GT_W_LOG("GT.ObjectVariables.Payload.SerializeFailed", TEXT("Failed to serialize auto-replicated property %s on %s."), *Declaration.PropertyName.ToString(), *GetName());
 			continue;
 		}
 
@@ -1278,7 +1335,7 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 		FReplicatedPropertyDeclaration* Declaration = FindReplicatedDeclarationByName(SerializedProperty.PropertyName);
 		if (!Declaration || !Declaration->CachedProperty)
 		{
-			UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("Received AutoReplication payload for unknown property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
+			GT_I_LOG("GT.ObjectVariables.Payload.UnknownProperty", TEXT("Received AutoReplication payload for unknown property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
 			continue;
 		}
 
@@ -1287,7 +1344,7 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 			const bool bHandled = ApplyCustomAutoReplicationPayload(SerializedProperty.PropertyName, SerializedProperty.Payload, SerializedProperty.bIsInitialState != 0);
 			if (!bHandled)
 			{
-				UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
+				GT_W_LOG("GT.ObjectVariables.Payload.CustomApplyFailed", TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
 				continue;
 			}
 			bAppliedAny = true;
@@ -1307,7 +1364,7 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 
 		if (!GorgeousObjectVariable_Private::DeserializePropertyValue(Declaration->CachedProperty, PropertyData, Declaration->Mode, PackageMap, SerializedProperty.Payload))
 		{
-			UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
+			GT_W_LOG("GT.ObjectVariables.Payload.DeserializeFailed", TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
 			continue;
 		}
 
@@ -1337,7 +1394,7 @@ void UGorgeousObjectVariable::BindRPCHandler(const FName RPCName, const EGorgeou
 
 	if (RPCName.IsNone())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Attempted to bind an unnamed RPC handler on %s."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPC.BindUnnamed", TEXT("Attempted to bind an unnamed RPC handler on %s."), *GetName());
 		return;
 	}
 
@@ -1345,14 +1402,14 @@ void UGorgeousObjectVariable::BindRPCHandler(const FName RPCName, const EGorgeou
 	Binding.RPCName = RPCName;
 	Binding.Reliability = Reliability;
 
-	UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("Registered AutoReplication RPC handler %s on %s."), *RPCName.ToString(), *GetName());
+	GT_I_LOG("GT.ObjectVariables.RPC.HandlerRegistered", TEXT("Registered AutoReplication RPC handler %s on %s."), *RPCName.ToString(), *GetName());
 }
 
 bool UGorgeousObjectVariable::RequestAutoReplicationRPC(const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const FName OverrideKey, UObject* OverrideContext, const EGorgeousAutoReplicationTargetKind TargetKind)
 {
 	if (!SupportsAutoReplicationFeatures())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot queue AutoReplication RPC because it is configured for manual networking."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPC.ManualNetworking", TEXT("%s cannot queue AutoReplication RPC because it is configured for manual networking."), *GetName());
 		return false;
 	}
 
@@ -1360,7 +1417,7 @@ bool UGorgeousObjectVariable::RequestAutoReplicationRPC(const EGorgeousAutoRepli
 	UObject* ResolvedContext = nullptr;
 	if (!ResolveAutoReplicationRPCContext(OverrideKey, OverrideContext, ResolvedKey, ResolvedContext))
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot queue AutoReplication RPC because no owning context could be resolved."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPC.NoContext", TEXT("%s cannot queue AutoReplication RPC because no owning context could be resolved."), *GetName());
 		return false;
 	}
 
@@ -1371,7 +1428,7 @@ UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousObjectVariable::RequestA
 {
 	if (!SupportsAutoReplicationFeatures())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot queue AutoReplication RPC async action because it is configured for manual networking."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPCAsync.ManualNetworking", TEXT("%s cannot queue AutoReplication RPC async action because it is configured for manual networking."), *GetName());
 		return nullptr;
 	}
 
@@ -1379,24 +1436,24 @@ UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousObjectVariable::RequestA
 	UObject* ResolvedContext = nullptr;
 	if (!ResolveAutoReplicationRPCContext(OverrideKey, OverrideContext, ResolvedKey, ResolvedContext))
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot queue AutoReplication RPC async action because no owning context could be resolved."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPCAsync.NoContext", TEXT("%s cannot queue AutoReplication RPC async action because no owning context could be resolved."), *GetName());
 		return nullptr;
 	}
 
-	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(ResolvedContext, ResolvedKey, Type, Payload, TargetKind);
+	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(ResolvedKey, Type, Payload, TargetKind, ResolvedContext);
 }
 
 bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)
 {
 	if (!SupportsAutoReplicationFeatures())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s is configured for manual networking and cannot execute AutoReplication RPCs."), *GetName());
+		GT_W_LOG("GT.ObjectVariables.RPC.ExecuteManual", TEXT("%s is configured for manual networking and cannot execute AutoReplication RPCs."), *GetName());
 		return false;
 	}
 
 	if (QueuedRPC.Payload.HandlerName.IsNone())
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s received AutoReplication RPC for key %s without a handler name."), *GetName(), *QueuedRPC.Key.ToString());
+		GT_W_LOG("GT.ObjectVariables.RPC.MissingHandler", TEXT("%s received AutoReplication RPC for key %s without a handler name."), *GetName(), *QueuedRPC.Key.ToString());
 		return false;
 	}
 
@@ -1407,20 +1464,20 @@ bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC
 
 	if (!Binding)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("%s executing AutoReplication RPC %s for key %s without an explicit binding."), *GetName(), *QueuedRPC.Payload.HandlerName.ToString(), *QueuedRPC.Key.ToString());
+		GT_I_LOG("GT.ObjectVariables.RPC.NoBinding", TEXT("%s executing AutoReplication RPC %s for key %s without an explicit binding."), *GetName(), *QueuedRPC.Payload.HandlerName.ToString(), *QueuedRPC.Key.ToString());
 	}
 	else if (Binding->Reliability != QueuedRPC.Type)
 	{
 		const UEnum* EnumClass = StaticEnum<EGorgeousAutoReplicationRPCType>();
 		const FString Expected = EnumClass ? EnumClass->GetNameStringByValue(static_cast<int64>(Binding->Reliability)) : TEXT("<unknown>");
 		const FString Received = EnumClass ? EnumClass->GetNameStringByValue(static_cast<int64>(QueuedRPC.Type)) : TEXT("<unknown>");
-		UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("AutoReplication RPC %s on %s expected %s but received %s. Continuing execution."), *QueuedRPC.Payload.HandlerName.ToString(), *GetName(), *Expected, *Received);
+		GT_I_LOG("GT.ObjectVariables.RPC.ReliabilityMismatch", TEXT("AutoReplication RPC %s on %s expected %s but received %s. Continuing execution."), *QueuedRPC.Payload.HandlerName.ToString(), *GetName(), *Expected, *Received);
 	}
 
 	const bool bExecutedNativeHandler = InvokeNativeAutoReplicationRPCHandler(QueuedRPC, nullptr);
 	if (!bExecutedNativeHandler)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("AutoReplication RPC %s on %s did not match a native function. Blueprint event will be fired instead."),
+		GT_I_LOG("GT.ObjectVariables.RPC.NoNativeHandler", TEXT("AutoReplication RPC %s on %s did not match a native function. Blueprint event will be fired instead."),
 			*QueuedRPC.Payload.HandlerName.ToString(), *GetName());
 	}
 
@@ -1688,7 +1745,7 @@ UGorgeousRPC_OV* UGorgeousObjectVariable::CreateAutoRPCResultContainer()
 	}
 	else
 	{
-		UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("%s created an RPC result container without an AutoReplication owner. Networking may be skipped."), *GetName());
+		GT_I_LOG("GT.ObjectVariables.RPC.ResultNoOwner", TEXT("%s created an RPC result container without an AutoReplication owner. Networking may be skipped."), *GetName());
 	}
 	ResultContainer->SetNetworkingEnabled(true);
 	ResultContainer->SetFlags(RF_Transient);
@@ -1822,7 +1879,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateRPCResultFromDescri
 	Reader << Version;
 	if (Version != GorgeousObjectVariable_Private::Snapshot::SnapshotVersion)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("RPC result snapshot version mismatch (expected %u, received %u)."),
+		GT_W_LOG("GT.ObjectVariables.RPC.SnapshotVersionMismatch", TEXT("RPC result snapshot version mismatch (expected %u, received %u)."),
 			GorgeousObjectVariable_Private::Snapshot::SnapshotVersion, Version);
 		return nullptr;
 	}
@@ -1952,7 +2009,7 @@ void UGorgeousObjectVariable::RegisterReplicatedRPCResult(const FGorgeousQueuedR
 	Descriptor.bReplicateToAllConnections = QueuedRPC.Payload.bReplicateResultToAllConnections;
 	if (!BuildRPCResultSnapshot(ResultContainer, Descriptor.SnapshotPayload))
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Failed to capture RPC result snapshot for %s."), *ResultContainer->GetName());
+		GT_W_LOG("GT.ObjectVariables.RPC.SnapshotCaptureFailed", TEXT("Failed to capture RPC result snapshot for %s."), *ResultContainer->GetName());
 	}
 	CachedRPCResultDescriptors.Add(Descriptor.RequestGuid, Descriptor);
 	CachedRPCResultInstances.FindOrAdd(Descriptor.RequestGuid) = ResultContainer;
@@ -1992,7 +2049,7 @@ void UGorgeousObjectVariable::HandleReplicatedRPCResultDescriptors(const TArray<
 			ResolvedInstance = InstantiateRPCResultFromDescriptor(Descriptor);
 			if (!ResolvedInstance && Descriptor.SnapshotPayload.Num() > 0)
 			{
-				UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("Failed to reconstruct RPC result for request %s."), *Descriptor.RequestGuid.ToString());
+				GT_W_LOG("GT.ObjectVariables.RPC.ResultReconstructFailed", TEXT("Failed to reconstruct RPC result for request %s."), *Descriptor.RequestGuid.ToString());
 			}
 		}
 
@@ -2090,24 +2147,25 @@ void UGorgeousObjectVariable::PostNetReceive()
 {
 	Super::PostNetReceive();
 	EvaluateRegisteredRepNotifies(false);
+	RefreshClientChangeShadows();
 }
 
 void UGorgeousObjectVariable::HandleAutoReplicationRPCPayload_Implementation(const FGorgeousQueuedRPC& QueuedRPC)
 {
-	UE_LOG(LogGorgeousObjectVariable, Verbose, TEXT("%s received AutoReplication RPC %s for key %s (%d named arguments) but no Blueprint override is provided."),
+	GT_I_LOG("GT.ObjectVariables.RPC.NoBlueprintOverride", TEXT("%s received AutoReplication RPC %s for key %s (%d named arguments) but no Blueprint override is provided."),
 		*GetName(), *QueuedRPC.Payload.HandlerName.ToString(), *QueuedRPC.Key.ToString(), QueuedRPC.Payload.Arguments.Num());
 }
 
 void UGorgeousObjectVariable::ExampleAutoReplicationRPCHandler(double ExampleValue, const FString& ExampleLabel)
 {
-	UE_LOG(LogGorgeousObjectVariable, Log, TEXT("Example AutoReplication RPC handler invoked on %s | Label: %s | Value: %.2f"), *GetName(), *ExampleLabel, ExampleValue);
+	GT_I_LOG("GT.ObjectVariables.RPC.ExampleHandler", TEXT("Example AutoReplication RPC handler invoked on %s | Label: %s | Value: %.2f"), *GetName(), *ExampleLabel, ExampleValue);
 }
 
 bool UGorgeousObjectVariable::EnsureReplicationActivation(const TCHAR* SourceFunction) const
 {
 	if (!bReplicationActivationGuard)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s can only be invoked inside OnReplicationActivated for %s."), SourceFunction, *GetName());
+		GT_W_LOG("GT.ObjectVariables.Replication.ActivationGuard", TEXT("%s can only be invoked inside OnReplicationActivated for %s."), SourceFunction, *GetName());
 		return false;
 	}
 	return true;
@@ -2259,13 +2317,476 @@ void UGorgeousObjectVariable::InvokeRepNotify(FReplicatedPropertyDeclaration& De
 		Declaration.bIsRepNotifySignatureValid = bFilledValue;
 		if (!bFilledValue && Declaration.CachedProperty)
 		{
-			UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("RepNotify %s on %s expects a parameter incompatible with property %s. Continuing without passing the old value."),
+			GT_W_LOG("GT.ObjectVariables.RepNotify.SignatureMismatch", TEXT("RepNotify %s on %s expects a parameter incompatible with property %s. Continuing without passing the old value."),
 				*Declaration.RepNotifyFunction.ToString(), *GetName(), *Declaration.PropertyName.ToString());
 		}
 	}
 
 	ProcessEvent(RepFunction, ParameterStorage.GetData());
 	RepFunction->DestroyStruct(ParameterStorage.GetData());
+}
+
+void UGorgeousObjectVariable::TryClientAutoReplicateProperty(const FName PropertyName)
+{
+	if (PropertyName.IsNone())
+	{
+		return;
+	}
+
+	TSet<FName> DirtyProperties;
+	DirtyProperties.Add(PropertyName);
+	if (TryClientAutoReplicateProperties(DirtyProperties))
+	{
+		if (FReplicatedPropertyDeclaration* Declaration = FindReplicatedDeclarationByName(PropertyName))
+		{
+			UpdateChangeShadowForProperty(*Declaration);
+		}
+	}
+}
+
+bool UGorgeousObjectVariable::TryClientAutoReplicateProperties(const TSet<FName>& DirtyProperties)
+{
+	if (DirtyProperties.Num() == 0)
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.NoDirty", TEXT("%s: No dirty properties to sync."), *GetName());
+		return false;
+	}
+
+	if (!bSupportsNetworking || !bReplicates)
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.NetworkingDisabled", TEXT("%s: Networking disabled (bSupportsNetworking=%d, bReplicates=%d)."), *GetName(), bSupportsNetworking, bReplicates);
+		return false;
+	}
+
+	if (AutoReplicationEntryKey.IsNone())
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.NoEntryKey", TEXT("%s: AutoReplicationEntryKey is None."), *GetName());
+		return false;
+	}
+
+	if (!AutoReplicationOwner.IsValid())
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.NoOwner", TEXT("%s: AutoReplicationOwner is invalid."), *GetName());
+		return false;
+	}
+
+	AActor* OwnerActor = ResolveReplicationOwnerActor();
+	if (!OwnerActor)
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.NoOwnerActor", TEXT("%s: Could not resolve owner actor."), *GetName());
+		return false;
+	}
+
+	if (OwnerActor->HasAuthority())
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.HasAuthority", TEXT("%s: Owner actor %s has authority, skipping client sync."), *GetName(), *OwnerActor->GetName());
+		return false;
+	}
+
+	// For client-to-server property sync, we need to use the RPC relay component
+	// because it exists as a default subobject on both server and client (unlike dynamically created transporters).
+	// The relay component is created in the PlayerController constructor, so Server RPCs work properly.
+	UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = OwnerActor->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+	if (!RelayComponent)
+	{
+		GT_W_LOG("GT.ObjectVariables.ClientSync.NoRelayComponent", TEXT("%s: No RPC relay component found on owner actor %s."), *GetName(), *OwnerActor->GetName());
+		return false;
+	}
+
+	GT_I_LOG("GT.ObjectVariables.ClientSync.RelayFound", TEXT("%s: Found relay component on actor %s (Class: %s, Role: %d, HasLocalNetOwner: %d)."),
+		*GetName(), *OwnerActor->GetName(), *OwnerActor->GetClass()->GetName(),
+		static_cast<int32>(OwnerActor->GetLocalRole()), OwnerActor->HasLocalNetOwner());
+
+	FGorgeousAutoReplicationConditionContext ConditionContext;
+	ConditionContext.bIsOwnerConnection = OwnerActor->HasLocalNetOwner();
+
+	FGorgeousAutoReplicationPropertyPayload Payload;
+	if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
+	{
+		GT_W_LOG("GT.ObjectVariables.ClientSync.BuildPayloadFailed", TEXT("%s: Failed to build property payload."), *GetName());
+		return false;
+	}
+
+	Payload.Properties.RemoveAll([&](const FGorgeousAutoReplicationPropertyValue& Value)
+	{
+		return !DirtyProperties.Contains(Value.PropertyName);
+	});
+
+	if (Payload.Properties.Num() == 0)
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientSync.EmptyPayload", TEXT("%s: Payload contained no matching dirty properties after filtering."), *GetName());
+		return false;
+	}
+
+	GT_I_LOG("GT.ObjectVariables.ClientSync.Sending", TEXT("%s: Sending %d dirty properties to server via relay for entry %s."), *GetName(), Payload.Properties.Num(), *AutoReplicationEntryKey.ToString());
+
+	FGorgeousAutoReplicationPropertyEnvelope Envelope;
+	Envelope.EntryKey = AutoReplicationEntryKey;
+	Envelope.Payload = MoveTemp(Payload);
+
+	// Get the mixin from the owner to pass to the relay
+	FGorgeousAutoReplicationMixin* TargetMixin = nullptr;
+	if (AGorgeousPlayerController* PC = Cast<AGorgeousPlayerController>(OwnerActor))
+	{
+		TargetMixin = &PC->GetAutoReplicationMixin();
+	}
+
+	const bool bResult = RelayComponent->RelayPropertyPayloadToServer(Envelope, TargetMixin);
+	if (!bResult)
+	{
+		GT_W_LOG("GT.ObjectVariables.ClientSync.RelayFailed", TEXT("%s: RelayPropertyPayloadToServer returned false."), *GetName());
+	}
+	return bResult;
+}
+
+bool UGorgeousObjectVariable::ShouldClientPollForPropertyChanges() const
+{
+	if (!SupportsAutoReplicationFeatures() || !bSupportsNetworking || !bReplicates)
+	{
+		return false;
+	}
+
+	if (RegisteredReplicatedProperties.Num() == 0)
+	{
+		return false;
+	}
+
+	if (AutoReplicationEntryKey.IsNone() || !AutoReplicationOwner.IsValid())
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || World->GetNetMode() != NM_Client)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void UGorgeousObjectVariable::StartClientPropertyPolling()
+{
+	if (!ShouldClientPollForPropertyChanges())
+	{
+		StopClientPropertyPolling();
+		return;
+	}
+
+	const float TargetFrequency = AutoReplicationConfig.GetEffectiveUpdateFrequency();
+	const float Interval = TargetFrequency > 0.0f ? (1.0f / TargetFrequency) : 0.0f;
+	if (ClientPropertyPollingHandle.IsValid() && FMath::IsNearlyEqual(ClientPropertyPollingIntervalSeconds, Interval))
+	{
+		return;
+	}
+
+	StopClientPropertyPolling();
+	ClientPropertyPollingIntervalSeconds = Interval;
+	ClientPropertyPollingHandle = FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateUObject(this, &UGorgeousObjectVariable::HandleClientPropertyPollingTick),
+		ClientPropertyPollingIntervalSeconds);
+}
+
+void UGorgeousObjectVariable::StopClientPropertyPolling()
+{
+	if (ClientPropertyPollingHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(ClientPropertyPollingHandle);
+		ClientPropertyPollingHandle.Reset();
+	}
+}
+
+bool UGorgeousObjectVariable::HandleClientPropertyPollingTick(float DeltaSeconds)
+{
+	if (!ShouldClientPollForPropertyChanges())
+	{
+		StopClientPropertyPolling();
+		return false;
+	}
+
+	TSet<FName> DirtyProperties;
+	for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+	{
+		if (!Declaration.CachedProperty)
+		{
+			continue;
+		}
+
+		void* CurrentValue = Declaration.CachedProperty->ContainerPtrToValuePtr<void>(this);
+		if (!CurrentValue)
+		{
+			continue;
+		}
+
+		if (!Declaration.bChangeShadowInitialized)
+		{
+			Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
+			continue;
+		}
+
+		if (Declaration.ChangeShadow.Num() == 0)
+		{
+			continue;
+		}
+
+		if (!Declaration.CachedProperty->Identical(Declaration.ChangeShadow.GetData(), CurrentValue))
+		{
+			DirtyProperties.Add(Declaration.PropertyName);
+			GT_I_LOG("GT.ObjectVariables.ClientPoll.DirtyDetected", TEXT("%s: Property %s changed, marking as dirty."), *GetName(), *Declaration.PropertyName.ToString());
+		}
+	}
+
+	if (DirtyProperties.Num() > 0)
+	{
+		GT_I_LOG("GT.ObjectVariables.ClientPoll.AttemptSync", TEXT("%s: Attempting to sync %d dirty properties."), *GetName(), DirtyProperties.Num());
+		if (TryClientAutoReplicateProperties(DirtyProperties))
+		{
+			for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+			{
+				if (DirtyProperties.Contains(Declaration.PropertyName))
+				{
+					UpdateChangeShadowForProperty(Declaration);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+void UGorgeousObjectVariable::RefreshClientChangeShadows()
+{
+	if (!ShouldClientPollForPropertyChanges())
+	{
+		return;
+	}
+
+	for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+	{
+		UpdateChangeShadowForProperty(Declaration);
+	}
+}
+
+void UGorgeousObjectVariable::UpdateChangeShadowForProperty(FReplicatedPropertyDeclaration& Declaration)
+{
+	if (!Declaration.CachedProperty)
+	{
+		return;
+	}
+
+	void* CurrentValue = Declaration.CachedProperty->ContainerPtrToValuePtr<void>(this);
+	if (!CurrentValue)
+	{
+		return;
+	}
+
+	Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
+}
+
+bool UGorgeousObjectVariable::ShouldServerPollForPropertyChanges() const
+{
+	if (!SupportsAutoReplicationFeatures() || !bSupportsNetworking || !bReplicates)
+	{
+		return false;
+	}
+
+	if (RegisteredReplicatedProperties.Num() == 0)
+	{
+		return false;
+	}
+
+	if (AutoReplicationEntryKey.IsNone() || !AutoReplicationOwner.IsValid())
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	// Server-side polling for NM_DedicatedServer, NM_ListenServer, and NM_Standalone (with clients)
+	const ENetMode NetMode = World->GetNetMode();
+	return NetMode == NM_DedicatedServer || NetMode == NM_ListenServer;
+}
+
+void UGorgeousObjectVariable::StartServerPropertyPolling()
+{
+	if (!ShouldServerPollForPropertyChanges())
+	{
+		StopServerPropertyPolling();
+		return;
+	}
+
+	const float TargetFrequency = AutoReplicationConfig.GetEffectiveUpdateFrequency();
+	const float Interval = TargetFrequency > 0.0f ? (1.0f / TargetFrequency) : 0.0f;
+	if (ServerPropertyPollingHandle.IsValid() && FMath::IsNearlyEqual(ServerPropertyPollingIntervalSeconds, Interval))
+	{
+		return;
+	}
+
+	StopServerPropertyPolling();
+	ServerPropertyPollingIntervalSeconds = Interval;
+	ServerPropertyPollingHandle = FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateUObject(this, &UGorgeousObjectVariable::HandleServerPropertyPollingTick),
+		ServerPropertyPollingIntervalSeconds);
+}
+
+void UGorgeousObjectVariable::StopServerPropertyPolling()
+{
+	if (ServerPropertyPollingHandle.IsValid())
+	{
+		FTSTicker::GetCoreTicker().RemoveTicker(ServerPropertyPollingHandle);
+		ServerPropertyPollingHandle.Reset();
+	}
+}
+
+bool UGorgeousObjectVariable::HandleServerPropertyPollingTick(float DeltaSeconds)
+{
+	if (!ShouldServerPollForPropertyChanges())
+	{
+		StopServerPropertyPolling();
+		return false;
+	}
+
+	TSet<FName> DirtyProperties;
+	for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+	{
+		if (!Declaration.CachedProperty)
+		{
+			continue;
+		}
+
+		void* CurrentValue = Declaration.CachedProperty->ContainerPtrToValuePtr<void>(this);
+		if (!CurrentValue)
+		{
+			continue;
+		}
+
+		if (!Declaration.bChangeShadowInitialized)
+		{
+			Declaration.InitializeChangeShadow(Declaration.CachedProperty, CurrentValue);
+			continue;
+		}
+
+		if (Declaration.ChangeShadow.Num() == 0)
+		{
+			continue;
+		}
+
+		if (!Declaration.CachedProperty->Identical(Declaration.ChangeShadow.GetData(), CurrentValue))
+		{
+			DirtyProperties.Add(Declaration.PropertyName);
+			GT_I_LOG("GT.ObjectVariables.ServerPoll.DirtyDetected", TEXT("%s: Property %s changed on server, marking for replication."), *GetName(), *Declaration.PropertyName.ToString());
+		}
+	}
+
+	if (DirtyProperties.Num() > 0)
+	{
+		GT_I_LOG("GT.ObjectVariables.ServerPoll.AttemptReplicate", TEXT("%s: Attempting to replicate %d dirty properties to clients."), *GetName(), DirtyProperties.Num());
+		if (TryServerReplicateProperties(DirtyProperties))
+		{
+			for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+			{
+				if (DirtyProperties.Contains(Declaration.PropertyName))
+				{
+					UpdateChangeShadowForProperty(Declaration);
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& DirtyProperties)
+{
+	if (DirtyProperties.Num() == 0)
+	{
+		return false;
+	}
+
+	if (!bSupportsNetworking || !bReplicates)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	// Build the property payload
+	FGorgeousAutoReplicationConditionContext ConditionContext;
+	ConditionContext.bIsOwnerConnection = false; // Server sending to all clients
+
+	FGorgeousAutoReplicationPropertyPayload Payload;
+	if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
+	{
+		GT_W_LOG("GT.ObjectVariables.ServerSync.BuildPayloadFailed", TEXT("%s: Failed to build property payload for server replication."), *GetName());
+		return false;
+	}
+
+	// Filter to only dirty properties
+	Payload.Properties.RemoveAll([&](const FGorgeousAutoReplicationPropertyValue& Value)
+	{
+		return !DirtyProperties.Contains(Value.PropertyName);
+	});
+
+	if (Payload.Properties.Num() == 0)
+	{
+		return false;
+	}
+
+	// Build the envelope
+	FGorgeousAutoReplicationPropertyEnvelope Envelope;
+	Envelope.EntryKey = AutoReplicationEntryKey;
+	Envelope.Payload = Payload;
+
+	// Send to all connected clients via their relay components
+	int32 ClientsSent = 0;
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (!PC)
+		{
+			continue;
+		}
+
+		// Skip local player on listen server
+		if (PC->IsLocalController())
+		{
+			continue;
+		}
+
+		// Find the relay component on the player controller
+		UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+		if (!RelayComponent)
+		{
+			GT_I_LOG("GT.ObjectVariables.ServerSync.NoRelayComponent", TEXT("%s: PlayerController %s has no AutoReplicationRPCRelayComponent."), *GetName(), *PC->GetName());
+			continue;
+		}
+
+		// Set the target mixin on the relay so the client can process the payload
+		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(PC))
+		{
+			RelayComponent->SetTargetMixin(&GPC->GetAutoReplicationMixin());
+		}
+
+		if (RelayComponent->RelayPropertyPayloadToClient(Envelope))
+		{
+			ClientsSent++;
+		}
+	}
+
+	// Also mark the stream dirty for Iris backend support
+	FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
+	Coordinator.MarkStreamDirty(this);
+
+	GT_I_LOG("GT.ObjectVariables.ServerSync.Replicated", TEXT("%s: Sent %d properties to %d clients for replication."), *GetName(), Payload.Properties.Num(), ClientsSent);
+	return ClientsSent > 0;
 }
 
 void UGorgeousObjectVariable::SetAutoReplicationBinding(UObject* InOwner, const FName InEntryKey, const int32 InReplicationIndex, const FGorgeousAutoReplicationStreamConfig* StreamOverride, const bool bWantsReplication)
@@ -2279,12 +2800,32 @@ void UGorgeousObjectVariable::SetAutoReplicationBinding(UObject* InOwner, const 
 		AutoReplicationConfig = *StreamOverride;
 	}
 
+	if (SupportsAutoReplicationFeatures() && bWantsReplication && !bAutoReplicationActivated && AutoReplicationOwner.IsValid())
+	{
+		FGorgeousAutoReplicationContext Context;
+		Context.OwningObject = AutoReplicationOwner.Get();
+		Context.EntryKey = AutoReplicationEntryKey;
+		Context.ReplicationIndex = AutoReplicationReplicationIndex;
+		ActivateReplication(Context);
+	}
+
 	const bool bWasReplicating = bReplicates;
 	SetIsReplicated(bWantsReplication);
 
 	if (bWasReplicating && bReplicates)
 	{
 		UpdateAutoReplicationState(true);
+	}
+
+	if (bReplicates)
+	{
+		StartClientPropertyPolling();
+		StartServerPropertyPolling();
+	}
+	else
+	{
+		StopClientPropertyPolling();
+		StopServerPropertyPolling();
 	}
 }
 
@@ -2360,6 +2901,16 @@ AActor* UGorgeousObjectVariable::ResolveReplicationOwnerActor(UObject* BindingCo
 	return GetTypedOuter<AActor>();
 }
 
+bool UGorgeousObjectVariable::IsExecutingOnReplicationOwner() const
+{
+	if (AActor* OwnerActor = ResolveReplicationOwnerActor())
+	{
+		return OwnerActor->HasLocalNetOwner();
+	}
+
+	return false;
+}
+
 void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 {
 	const bool bRootForcesNetworking = DoesRootEnforceNetworking();
@@ -2372,7 +2923,7 @@ void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 
 	if (bEffectiveRequest && !bSupportsNetworking)
 	{
-		UE_LOG(LogGorgeousObjectVariable, Warning, TEXT("%s cannot enable replication%s because networking support is disabled."),
+		GT_W_LOG("GT.ObjectVariables.Replication.DisabledSupport", TEXT("%s cannot enable replication%s because networking support is disabled."),
 			*GetName(), bRootForcesNetworking ? TEXT(" (required by root)") : TEXT(""));
 		return;
 	}
@@ -2386,6 +2937,17 @@ void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 	bReplicates = bShouldReplicate;
 
 	UpdateAutoReplicationState(bReplicates);
+
+	if (bReplicates)
+	{
+		StartClientPropertyPolling();
+		StartServerPropertyPolling();
+	}
+	else
+	{
+		StopClientPropertyPolling();
+		StopServerPropertyPolling();
+	}
 
 	if (SupportsLegacyReplication())
 	{

@@ -15,6 +15,7 @@
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 
 #include "GorgeousAutoReplicationMixin.generated.h"
 
@@ -68,12 +69,12 @@ private:
  * Entry stored inside AdditionalGorgeousData that keeps the default object and replication metadata.
  */
 USTRUCT(BlueprintType)
-struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationEntry
+struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableEntry
 {
 	GENERATED_BODY()
 
 public:
-	FGorgeousAutoReplicationEntry();
+	FGorgeousObjectVariableEntry();
 
 	/** Default value that will be instanced or used when networking is disabled. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication", meta = (GorgeousObjectVariableTrunk = "DefaultObjectVariableTrunk"))
@@ -116,6 +117,10 @@ public:
 	UPROPERTY(Instanced)
 	TObjectPtr<UGorgeousObjectVariable> Value;
 
+	/** Class used to instantiate the variable when the instance is not yet available. */
+	UPROPERTY()
+	TSubclassOf<UGorgeousObjectVariable> ValueClass;
+
 	/** Stable identifier mirrored from the authoritative instance so remote lookups can resolve the same variable. */
 	UPROPERTY()
 	FGuid VariableIdentifier;
@@ -131,12 +136,13 @@ class GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationMixin
 {
 public:
 	friend class UGorgeousAutoReplicationRPCTransporter;
+	friend class UGorgeousAutoReplicationRPCRelayComponent;
 
 	FGorgeousAutoReplicationMixin();
 
 	/** Binds the mixin to the owning object and the storage containers declared by macros on that class. */
 	void Bind(UObject* InOwner,
-		TMap<FName, FGorgeousAutoReplicationEntry>* InAdditionalData,
+		TMap<FName, FGorgeousObjectVariableEntry>* InAdditionalData,
 		TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables);
 
 	/** Initializes the additional data container and optionally activates networking. */
@@ -146,8 +152,8 @@ public:
 	bool IsNetworkingEnabled() const { return bNetworkingEnabled; }
 
 	/** Finds an entry by key. */
-	FGorgeousAutoReplicationEntry* FindEntry(const FName Key);
-	const FGorgeousAutoReplicationEntry* FindEntry(const FName Key) const;
+	FGorgeousObjectVariableEntry* FindEntry(const FName Key);
+	const FGorgeousObjectVariableEntry* FindEntry(const FName Key) const;
 
 	/** Sets a replicated value, returning false if the key cannot be found or networking is disabled. */
 	bool TrySetReplicatedValue(const FName Key, UGorgeousObjectVariable* NewValue);
@@ -179,6 +185,9 @@ public:
 	/** Number of replicated entries currently tracked by the mixin. */
 	int32 GetReplicatedEntryCount() const;
 
+	/** Sets the relay component to use for client-to-server RPC routing. */
+	void SetRPCRelayComponent(UGorgeousAutoReplicationRPCRelayComponent* InRelay) { RPCRelayComponent = InRelay; }
+
 private:
 	void EnsureBound() const;
 	UObject* ResolveOwnerObject() const;
@@ -196,13 +205,15 @@ private:
 
 private:
 	TWeakObjectPtr<UObject> Owner;
-	TMap<FName, FGorgeousAutoReplicationEntry>* AdditionalData;
+	TMap<FName, FGorgeousObjectVariableEntry>* AdditionalData;
 	TArray<FGorgeousReplicatedVariableEntry>* ReplicatedVariables;
 	TMap<FName, uint16> KeyToReplicationIndex;
 	bool bNetworkingEnabled;
 	bool bIsBound;
 	/** Actor-bound component that mirrors RPC payloads to the desired network target. */
 	TWeakObjectPtr<UGorgeousAutoReplicationRPCTransporter> RPCTransporter;
+	/** Relay component for routing server-bound RPCs from clients. */
+	TWeakObjectPtr<UGorgeousAutoReplicationRPCRelayComponent> RPCRelayComponent;
 
 	TArray<FGorgeousQueuedRPC> PendingRPCs;
 };

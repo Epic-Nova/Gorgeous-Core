@@ -300,7 +300,7 @@ class GORGEOUSCORERUNTIME_API UString_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FString, Value, String)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     FString Value;
 
     UString_SOV()

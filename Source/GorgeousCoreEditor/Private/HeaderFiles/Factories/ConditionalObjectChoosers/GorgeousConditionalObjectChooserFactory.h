@@ -17,6 +17,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousConditionalObjectChooserFactory.generated.h"
 //<-------------------------------------------------------------------------->
@@ -44,6 +45,7 @@ public:
 	 */
 	UGorgeousConditionalObjectChooserFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousConditionalObjectChooser::StaticClass(), true, false, true, false));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousConditionalObjectChooser::StaticClass(), true, false, true, false,
+			UGorgeousConditionalObjectChooserBlueprint::StaticClass()));
 	}
 };

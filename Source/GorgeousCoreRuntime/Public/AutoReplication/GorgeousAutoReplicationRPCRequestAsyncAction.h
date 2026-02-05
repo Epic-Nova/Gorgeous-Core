@@ -58,8 +58,8 @@ class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRequestAsyncAction : pu
 public:
 
 	/** Starts an asynchronous AutoReplication RPC request and exposes completion/failure pins. */
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "Context", DisplayName = "Request AutoReplication RPC"), Category = "Gorgeous Core|AutoReplication|Networking")
-	static UGorgeousAutoReplicationRPCRequestAsyncAction* RequestAutoReplicationRPC(UObject* Context, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto);
+	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", DisplayName = "Request AutoReplication RPC"), Category = "Gorgeous Core|AutoReplication|Networking")
+	static UGorgeousAutoReplicationRPCRequestAsyncAction* RequestAutoReplicationRPC(FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
 
 	virtual void Activate() override;
 

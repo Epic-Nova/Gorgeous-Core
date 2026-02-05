@@ -15,6 +15,9 @@
         * Implements the object variable system for flexible data management
         * Provides conditional object chooser system for dynamic object selection
         * Supports functional structures with property change events
+        * Adds AutoReplication for object-variable networking
+        * Hosts the Insight Matrix runtime test system
+        * Ships Blueprint systems under Content/Systems (Playlist, Team)
 
     * **Runtime Utilities Module:**
         * Offers essential helper functions for file and directory operations
@@ -47,6 +50,20 @@
 * Built-in object variable support
 * Automatic property replication
 * Editor integration for easy configuration
+
+### AutoReplication
+* Object-variable replication with property payload streams
+* RPC-style payload dispatching with client/server routing
+* Blueprint-friendly registration helpers
+
+### Insight Matrix
+* Runtime test matrix and scenario execution
+* Provider-based registry for automation tooling
+* Debug panels and mini chart widgets
+
+### Blueprint Systems (Content/Systems)
+* Playlist system with survey/data gathering UI
+* Team system with definitions, runtime state, and UI
 
 ### Conditional Object Chooser System
 * Dynamic object selection based on conditions

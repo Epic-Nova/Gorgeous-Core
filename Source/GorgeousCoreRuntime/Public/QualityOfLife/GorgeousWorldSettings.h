@@ -41,7 +41,7 @@ class GORGEOUSCORERUNTIME_API AGorgeousWorldSettings : public AWorldSettings
 	
 public:
 
-AGorgeousWorldSettings();
+	AGorgeousWorldSettings();
 
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
@@ -49,6 +49,10 @@ AGorgeousWorldSettings();
 	
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous World Settings|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
 	//<============================--- Overrides ---=============================>
 	
@@ -70,7 +74,7 @@ AGorgeousWorldSettings();
 	 * Additional settings/configuration data for the current world.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings")
-	TMap<FName, FGorgeousAutoReplicationEntry> AdditionalGorgeousData;
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
 	/** Trunk that persists serialized default payloads for this world's object variables. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous World Settings|Defaults", meta = (ShowOnlyInnerProperties))

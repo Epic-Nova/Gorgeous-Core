@@ -37,6 +37,7 @@
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSetObjectVariablesSetter_I.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
+#include "Containers/Ticker.h"
 #include "Net/UnrealNetwork.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 struct FGorgeousObjectVariableSerializedPayload;
@@ -321,7 +322,7 @@ public:
 	void ActivateReplication(const FGorgeousAutoReplicationContext& Context);
 
 	/** Declares a property for replication while inside the activation scope. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking", meta = (ToolTip = "Registers a property for AutoReplication. Caution: once registered, changes made on the owning client will also be forwarded to the server via AutoReplication, then replicated to other clients as authoritative updates."))
 	void RegisterReplicatedProperty(FName PropertyName, EGorgeousReplicationMode Mode = EGorgeousReplicationMode::EProperty, bool bSendInitialState = true, const FGorgeousReplicatedPropertyConfig& AdvancedConfig = FGorgeousReplicatedPropertyConfig());
 
 	/** Binds a named RPC handler that can react to async AutoReplication networking events. */
@@ -367,6 +368,10 @@ public:
 	/** Returns the replication index assigned by the owning mixin, or INDEX_NONE. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	int32 GetAutoReplicationReplicationIndex() const { return AutoReplicationReplicationIndex; }
+
+	/** Returns true if this variable is executing on its replication owner (locally owned). */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
+	bool IsExecutingOnReplicationOwner() const;
 
 	/** Executes a previously queued AutoReplication RPC that targets this object variable instance. */
 	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr);
@@ -555,6 +560,7 @@ protected:
 
 	/** Hook that allows derived types to react after deserialization. */
 	virtual void PostDeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload);
+	void TryClientAutoReplicateProperty(const FName PropertyName);
 
 	void EnsureRemovedFromRegistry();
 	/**
@@ -601,6 +607,8 @@ protected:
     				TypedProperty->SetPropertyValue_InContainer(this, Value);
     			}
     		}
+
+			TryClientAutoReplicateProperty(PropertyName);
     }
 //end grepper
 	
@@ -726,6 +734,8 @@ protected:
 		bool HasRepNotify() const { return !RepNotifyFunction.IsNone(); }
 		void InitializeShadowState(const FProperty* Property, const void* InitialData);
 		void ResetShadowState();
+		void InitializeChangeShadow(const FProperty* Property, const void* InitialData);
+		void ResetChangeShadow();
 
 		FName PropertyName;
 		FProperty* CachedProperty;
@@ -737,9 +747,11 @@ protected:
 		bool bFireInitialNotify;
 		bool bDeliveredInitialNotify;
 		bool bShadowInitialized;
+		bool bChangeShadowInitialized;
 		bool bHasValidatedRepNotifySignature;
 		bool bIsRepNotifySignatureValid;
 		TArray<uint8> RepNotifyShadow;
+		TArray<uint8> ChangeShadow;
 	};
 
 	struct FRPCBindingDeclaration
@@ -766,6 +778,22 @@ private:
 	const FReplicatedPropertyDeclaration* FindReplicatedDeclarationByName(FName PropertyName) const;
 	void EvaluateRegisteredRepNotifies(bool bForceAllNotifies = false);
 	void InvokeRepNotify(FReplicatedPropertyDeclaration& Declaration, const uint8* OldValueData);
+	bool TryClientAutoReplicateProperties(const TSet<FName>& DirtyProperties);
+	bool ShouldClientPollForPropertyChanges() const;
+	void StartClientPropertyPolling();
+	void StopClientPropertyPolling();
+	bool HandleClientPropertyPollingTick(float DeltaSeconds);
+	void RefreshClientChangeShadows();
+	void UpdateChangeShadowForProperty(FReplicatedPropertyDeclaration& Declaration);
+
+	/** Server-side property change detection and replication to clients. */
+	bool ShouldServerPollForPropertyChanges() const;
+	void StartServerPropertyPolling();
+	void StopServerPropertyPolling();
+	bool HandleServerPropertyPollingTick(float DeltaSeconds);
+	bool TryServerReplicateProperties(const TSet<FName>& DirtyProperties);
+	FTSTicker::FDelegateHandle ServerPropertyPollingHandle;
+	float ServerPropertyPollingIntervalSeconds;
 	void NotifyDisplayNameChanged();
 	void SetAutoReplicationBinding(UObject* InOwner, FName InEntryKey, int32 InReplicationIndex, const FGorgeousAutoReplicationStreamConfig* StreamOverride, bool bWantsReplication);
 	void RegisterLegacyReplication(UObject* BindingContext);
@@ -928,6 +956,12 @@ private:
 
 	UPROPERTY(Transient)
 	uint8 bLegacyReplicationRegistered : 1;
+
+	UPROPERTY(Transient)
+	uint8 bAutoReplicationActivated : 1;
+
+	FTSTicker::FDelegateHandle ClientPropertyPollingHandle;
+	float ClientPropertyPollingIntervalSeconds;
 
 	bool bRemovedFromRegistry;
 

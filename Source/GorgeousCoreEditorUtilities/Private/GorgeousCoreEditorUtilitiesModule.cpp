@@ -9,7 +9,19 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "GorgeousCoreEditorUtilitiesModule.h"
+#include "AssetRegistration/GorgeousAssetTypeAction.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
+#include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "QualityOfLife/GorgeousGameInstance.h"
+#include "QualityOfLife/GorgeousGameMode.h"
+#include "QualityOfLife/GorgeousGameState.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
+#include "QualityOfLife/GorgeousPlayerState.h"
+#include "QualityOfLife/GorgeousWorldSettings.h"
 #include "MessageLogModule.h"
 #include "Logging/TokenizedMessage.h"
 #include "Framework/Notifications/NotificationManager.h"
@@ -23,6 +35,16 @@
 #include "Logging/MessageLog.h"
 #include "Styling/CoreStyle.h"
 #include "ToolMenus.h"
+#include "AssetToolsModule.h"
+#include "AssetTypeCategories.h"
+#include "IAssetTools.h"
+#include "Modules/ModuleManager.h"
+#include "Interfaces/IPluginManager.h"
+#include "Styling/SlateStyle.h"
+#include "Styling/SlateStyleRegistry.h"
+#include "Brushes/SlateImageBrush.h"
+#include "Styling/AppStyle.h"
+#include "Misc/Paths.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
@@ -151,6 +173,242 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 namespace
 {
 	FToolMenuOwnerScoped GDebugMenuOwner{TEXT("GorgeousCoreEditorUtilities")};
+	TArray<TSharedPtr<IAssetTypeActions>> GRegisteredAssetTypeActions;
+	EAssetTypeCategories::Type GGorgeousThingsCategory = EAssetTypeCategories::Misc;
+	TSharedPtr<FSlateStyleSet> GGorgeousCoreEditorStyle;
+
+	void RegisterGorgeousCoreEditorStyle()
+	{
+		if (GGorgeousCoreEditorStyle.IsValid())
+		{
+			return;
+		}
+
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+		if (!Plugin.IsValid())
+		{
+			return;
+		}
+
+		GGorgeousCoreEditorStyle = MakeShared<FSlateStyleSet>(TEXT("GorgeousCoreEditorStyle"));
+		GGorgeousCoreEditorStyle->SetContentRoot(Plugin->GetBaseDir() / TEXT("Resources"));
+
+		const FVector2D Icon16(16.0f, 16.0f);
+		const FVector2D Thumb128(128.0f, 128.0f);
+
+		auto SetBrushes = [&](const FString& Key, const FString& FileName, const FString& ClassName)
+		{
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("GorgeousCore.%s.Icon"), *Key),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Icon16));
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("GorgeousCore.%s.Thumbnail"), *Key),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Thumb128));
+
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Icon16));
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *ClassName),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Thumb128));
+		};
+
+		auto SetNativeClassBrushes = [&](const FString& FileName, const FString& NativeClassName)
+		{
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassIcon.%s"), *NativeClassName),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Icon16));
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *NativeClassName),
+				new FSlateImageBrush(GGorgeousCoreEditorStyle->RootToContentDir(FileName, TEXT(".png")), Thumb128));
+		};
+
+		auto MapParentClassBrushes = [&](const FString& ClassName, const FString& ParentClassName)
+		{
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),
+				const_cast<FSlateBrush*>(FAppStyle::Get().GetBrush(*FString::Printf(TEXT("ClassIcon.%s"), *ParentClassName))));
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *ClassName),
+				const_cast<FSlateBrush*>(FAppStyle::Get().GetBrush(*FString::Printf(TEXT("ClassThumbnail.%s"), *ParentClassName))));
+		};
+
+		auto MapEngineSvgBrushes = [&](const FString& ClassName, const FString& RelativeSvgPath)
+		{
+			const FString SvgPath = FPaths::Combine(FPaths::EngineContentDir(), TEXT("Editor/Slate/Starship"), RelativeSvgPath);
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),
+				new FSlateVectorImageBrush(SvgPath, Icon16));
+			GGorgeousCoreEditorStyle->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *ClassName),
+				new FSlateVectorImageBrush(SvgPath, Thumb128));
+		};
+
+		SetBrushes(TEXT("ObjectVariable"), TEXT("variable-cube"), TEXT("GorgeousObjectVariableBlueprint"));
+		SetBrushes(TEXT("ConditionalObjectChooser"), TEXT("chooser-funnel"), TEXT("GorgeousConditionalObjectChooserBlueprint"));
+		SetBrushes(TEXT("Condition"), TEXT("condition"), TEXT("GorgeousConditionBlueprint"));
+
+		SetNativeClassBrushes(TEXT("variable-cube"), TEXT("GorgeousObjectVariable"));
+		SetNativeClassBrushes(TEXT("chooser-funnel"), TEXT("GorgeousConditionalObjectChooser"));
+		SetNativeClassBrushes(TEXT("condition"), TEXT("GorgeousCondition"));
+
+		MapParentClassBrushes(TEXT("GorgeousGameInstanceBlueprint"), TEXT("Object"));
+		MapParentClassBrushes(TEXT("GorgeousGameModeBlueprint"), TEXT("GameModeBase"));
+		MapParentClassBrushes(TEXT("GorgeousGameStateBlueprint"), TEXT("GameStateBase"));
+		MapParentClassBrushes(TEXT("GorgeousPlayerControllerBlueprint"), TEXT("PlayerController"));
+		MapEngineSvgBrushes(TEXT("GorgeousPlayerStateBlueprint"), TEXT("AssetIcons/Actor_64.svg"));
+		MapEngineSvgBrushes(TEXT("GorgeousWorldSettingsBlueprint"), TEXT("Common/WorldSettings.svg"));
+
+		FSlateStyleRegistry::RegisterSlateStyle(*GGorgeousCoreEditorStyle);
+	}
+
+	void UnregisterGorgeousCoreEditorStyle()
+	{
+		if (!GGorgeousCoreEditorStyle.IsValid())
+		{
+			return;
+		}
+
+		FSlateStyleRegistry::UnRegisterSlateStyle(*GGorgeousCoreEditorStyle);
+		GGorgeousCoreEditorStyle.Reset();
+	}
+
+	void RegisterAssetTypeAction(IAssetTools& AssetTools, const FGorgeousAssetTypeActionInfo_S& Info)
+	{
+		TSharedRef<IAssetTypeActions> Action = MakeShared<FGorgeousAssetTypeAction>(Info);
+		AssetTools.RegisterAssetTypeActions(Action);
+		GRegisteredAssetTypeActions.Add(Action);
+	}
+
+	void RegisterGorgeousAssetTypeActions()
+	{
+		RegisterGorgeousCoreEditorStyle();
+
+		IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+		GGorgeousThingsCategory = AssetTools.RegisterAdvancedAssetCategory(
+			"GorgeousThings",
+			NSLOCTEXT("GorgeousCore", "Category_GorgeousThings", "Gorgeous Things"));
+
+		const FText CoreMenu = NSLOCTEXT("GorgeousCore", "Menu_GorgeousCore", "Gorgeous Core");
+		const FText Menu_ConditionalChoosers = NSLOCTEXT("GorgeousCore", "Menu_ConditionalChoosers", "Conditional Object Choosers");
+		const FText Menu_Conditions = NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions");
+		const FText Menu_ObjectVariables = NSLOCTEXT("GorgeousCore", "Menu_ObjectVariables", "Object Variables");
+		const FText Menu_QualityOfLife = NSLOCTEXT("GorgeousCore", "Menu_QualityOfLife", "Quality of Life");
+
+		auto MakeInfo = [&](const FText& DisplayName, UClass* SupportedClass, const FColor& TypeColor, TArray<FText> SubMenus,
+			const FName& IconKey)
+		{
+			FGorgeousAssetTypeActionInfo_S Info;
+			Info.DisplayName = DisplayName;
+			Info.SupportedClass = SupportedClass;
+			Info.TypeColor = TypeColor;
+			Info.Categories = GGorgeousThingsCategory;
+			Info.SubMenus = MoveTemp(SubMenus);
+			if (GGorgeousCoreEditorStyle.IsValid() && !IconKey.IsNone())
+			{
+				Info.ThumbnailBrush = GGorgeousCoreEditorStyle->GetBrush(*FString::Printf(TEXT("GorgeousCore.%s.Thumbnail"), *IconKey.ToString()));
+				Info.IconBrush = GGorgeousCoreEditorStyle->GetBrush(*FString::Printf(TEXT("GorgeousCore.%s.Icon"), *IconKey.ToString()));
+			}
+			else
+			{
+				Info.ThumbnailBrush = nullptr;
+				Info.IconBrush = nullptr;
+			}
+			return Info;
+		};
+
+		auto MakeInfoWithBrushes = [&](const FText& DisplayName, UClass* SupportedClass, const FColor& TypeColor, TArray<FText> SubMenus,
+			const FSlateBrush* IconBrush, const FSlateBrush* ThumbnailBrush)
+		{
+			FGorgeousAssetTypeActionInfo_S Info;
+			Info.DisplayName = DisplayName;
+			Info.SupportedClass = SupportedClass;
+			Info.TypeColor = TypeColor;
+			Info.Categories = GGorgeousThingsCategory;
+			Info.SubMenus = MoveTemp(SubMenus);
+			Info.IconBrush = IconBrush;
+			Info.ThumbnailBrush = ThumbnailBrush;
+			return Info;
+		};
+
+		RegisterAssetTypeAction(AssetTools, MakeInfo(
+			NSLOCTEXT("GorgeousCore", "ObjectVariable", "Gorgeous Object Variable"),
+			UGorgeousObjectVariableBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu },
+			TEXT("ObjectVariable")));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfo(
+			NSLOCTEXT("GorgeousCore", "ConditionalObjectChooser", "Gorgeous Conditional Object Chooser"),
+			UGorgeousConditionalObjectChooserBlueprint::StaticClass(),
+			FColor::Cyan,
+			{ CoreMenu, Menu_ConditionalChoosers },
+			TEXT("ConditionalObjectChooser")));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfo(
+			NSLOCTEXT("GorgeousCore", "Condition", "Gorgeous Condition"),
+			UGorgeousConditionBlueprint::StaticClass(),
+			FColor::Turquoise,
+			{ CoreMenu, Menu_ConditionalChoosers, Menu_Conditions },
+			TEXT("Condition")));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfo(
+			NSLOCTEXT("GorgeousCore", "GameInstance", "Gorgeous Game Instance"),
+			UGorgeousGameInstanceBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			NAME_None));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfoWithBrushes(
+			NSLOCTEXT("GorgeousCore", "GameMode", "Gorgeous Game Mode"),
+			UGorgeousGameModeBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			FAppStyle::Get().GetBrush(TEXT("ClassIcon.GameModeBase")),
+			FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.GameModeBase"))));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfoWithBrushes(
+			NSLOCTEXT("GorgeousCore", "GameState", "Gorgeous Game State"),
+			UGorgeousGameStateBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			FAppStyle::Get().GetBrush(TEXT("ClassIcon.GameStateBase")),
+			FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.GameStateBase"))));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfoWithBrushes(
+			NSLOCTEXT("GorgeousCore", "PlayerController", "Gorgeous Player Controller"),
+			UGorgeousPlayerControllerBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			FAppStyle::Get().GetBrush(TEXT("ClassIcon.PlayerController")),
+			FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.PlayerController"))));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfoWithBrushes(
+			NSLOCTEXT("GorgeousCore", "PlayerState", "Gorgeous Player State"),
+			UGorgeousPlayerStateBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			GGorgeousCoreEditorStyle.IsValid() ? GGorgeousCoreEditorStyle->GetBrush(TEXT("ClassIcon.GorgeousPlayerStateBlueprint")) : nullptr,
+			GGorgeousCoreEditorStyle.IsValid() ? GGorgeousCoreEditorStyle->GetBrush(TEXT("ClassThumbnail.GorgeousPlayerStateBlueprint")) : nullptr));
+
+		RegisterAssetTypeAction(AssetTools, MakeInfoWithBrushes(
+			NSLOCTEXT("GorgeousCore", "WorldSettings", "Gorgeous World Settings"),
+			UGorgeousWorldSettingsBlueprint::StaticClass(),
+			FColor::Blue,
+			{ CoreMenu, Menu_QualityOfLife },
+			GGorgeousCoreEditorStyle.IsValid() ? GGorgeousCoreEditorStyle->GetBrush(TEXT("ClassIcon.GorgeousWorldSettingsBlueprint")) : nullptr,
+			GGorgeousCoreEditorStyle.IsValid() ? GGorgeousCoreEditorStyle->GetBrush(TEXT("ClassThumbnail.GorgeousWorldSettingsBlueprint")) : nullptr));
+	}
+
+	void UnregisterGorgeousAssetTypeActions()
+	{
+		if (!FModuleManager::Get().IsModuleLoaded("AssetTools"))
+		{
+			GRegisteredAssetTypeActions.Reset();
+			return;
+		}
+
+		IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+		for (const TSharedPtr<IAssetTypeActions>& Action : GRegisteredAssetTypeActions)
+		{
+			if (Action.IsValid())
+			{
+				AssetTools.UnregisterAssetTypeActions(Action.ToSharedRef());
+			}
+		}
+		GRegisteredAssetTypeActions.Reset();
+		UnregisterGorgeousCoreEditorStyle();
+	}
 
 	void RegisterDebugMenuEntry()
 	{
@@ -222,6 +480,8 @@ void FGorgeousCoreEditorUtilitiesModule::GorgeousStartupModule()
 		RegisteredLogListingName = Settings->MessageLogListingName;
 	}
 
+	RegisterGorgeousAssetTypeActions();
+
 	if (Settings && Settings->bEmitSampleLogsOnStartup)
 	{
 		FGorgeousLogEntry Entry;
@@ -264,6 +524,8 @@ void FGorgeousCoreEditorUtilitiesModule::GorgeousShutdownModule()
 		FEditorDelegates::EndPIE.Remove(EndPIEHandle);
 		EndPIEHandle.Reset();
 	}
+
+	UnregisterGorgeousAssetTypeActions();
 
 	if (LogEntryHandle.IsValid())
 	{

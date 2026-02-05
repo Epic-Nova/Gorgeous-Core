@@ -50,14 +50,14 @@ namespace
 
 namespace FGorgeousQualityOfLifeStatics
 {
-	void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousAutoReplicationEntry>& AdditionalData)
+	void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData)
 	{
 		if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject))
 		{
 			return;
 		}
 
-		if (FGorgeousAutoReplicationEntry* SelfEntry = AdditionalData.Find("SelfReference"))
+		if (FGorgeousObjectVariableEntry* SelfEntry = AdditionalData.Find("SelfReference"))
 		{
 			if (SelfEntry->DefaultValue)
 			{
@@ -70,7 +70,7 @@ namespace FGorgeousQualityOfLifeStatics
 		}
 	}
 
-	UObject_AOTOV* EnsureSelfReference(UObject* Owner, TMap<FName, FGorgeousAutoReplicationEntry>& AdditionalData, const bool bExposeThroughNetworkStack)
+	UObject_AOTOV* EnsureSelfReference(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData, const bool bExposeThroughNetworkStack)
 	{
 		if (!Owner)
 		{
@@ -86,7 +86,7 @@ namespace FGorgeousQualityOfLifeStatics
 
 
 		//TODO: Comply with splitscreen logic. Currently we work with one self reference per player index, we want to have one self reference per game instance, witch results in an oobject array that contains the reference to the local index objects
-		FGorgeousAutoReplicationEntry& Entry = AdditionalData.FindOrAdd("SelfReference");
+		FGorgeousObjectVariableEntry& Entry = AdditionalData.FindOrAdd("SelfReference");
 		UObject_AOTOV* SelfVariable = Cast<UObject_AOTOV>(Entry.DefaultValue);
 		if (!SelfVariable || SelfVariable->GetOuter() != Owner)
 		{
@@ -168,14 +168,14 @@ namespace FGorgeousQualityOfLifeStatics
 		return SelfVariable;
 	}
 
-	void ClearSelfReference(const UObject* Owner, TMap<FName, FGorgeousAutoReplicationEntry>& AdditionalData)
+	void ClearSelfReference(const UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData)
 	{
 		if (!Owner)
 		{
 			return;
 		}
 		
-		if (const FGorgeousAutoReplicationEntry* Entry = AdditionalData.Find("SelfReference"))
+		if (const FGorgeousObjectVariableEntry* Entry = AdditionalData.Find("SelfReference"))
 		{
 			if (Entry->DefaultValue)
 			{
@@ -193,7 +193,7 @@ namespace FGorgeousQualityOfLifeStatics
 	FString ResolveSelfReferenceName(const TSubclassOf<UObject> QualityOfLifeClass)
 	{
 		//TODO: Current approach is fixing the stroke where we have multiple of these self references registered. or they have wierd namings whitch makes them impossible to address via a expected name without _X at the end.
-		////In the best case we expect only one of a kind self reference inside the root registry across the whole game instance
+		////In the best case we expect only one of a kind self reference inside the root registry across the whole game instance except we go with splitscreen
 		UGorgeousRootObjectVariable* Roots[] = {
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(false)),
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(true))

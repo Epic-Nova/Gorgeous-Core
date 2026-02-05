@@ -290,9 +290,30 @@ namespace GorgeousLogging
             Snapshot.MessageLogListingName = FName(*ListingName);
         }
 
-        if (int32 VerbosityValue = Snapshot.MinMessageLogVerbosity; GConfig->GetInt(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityValue, GGameIni))
+        // TEnumAsByte is saved as a string (enum name), not an integer
+        if (FString VerbosityString; GConfig->GetString(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityString, GGameIni) && 
+            !VerbosityString.IsEmpty())
         {
-            Snapshot.MinMessageLogVerbosity = static_cast<EGorgeousLoggingImportance>(VerbosityValue);
+            if (VerbosityString == TEXT("Logging_Information"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Information;
+            }
+            else if (VerbosityString == TEXT("Logging_Success"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Success;
+            }
+            else if (VerbosityString == TEXT("Logging_Warning"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Warning;
+            }
+            else if (VerbosityString == TEXT("Logging_Error"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Error;
+            }
+            else if (VerbosityString == TEXT("Logging_Fatal"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Fatal;
+            }
         }
 
         return Snapshot;
