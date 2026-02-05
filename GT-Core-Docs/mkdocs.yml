@@ -89,6 +89,16 @@ nav:
       - 📊 Object Variable (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-OV.md
       - 📖 Object Variable Definitions (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-OVD.md
       - 🌱 Root Object Variable (Blueprint & C++): Runtime/ObjectVariables/GT-C-OV-ROV.md
+      - 🔁 Object Variable Replication: Runtime/ObjectVariables/GT-C-OV-Replication.md
+      - 🔬 Deep Dive: Runtime/ObjectVariables/GT-C-OV-DeepDive.md
+    - 🔁 AutoReplication:
+      - 🔎 About AutoReplication: Runtime/AutoReplication/GT-C-AutoReplication-About.md
+      - 🏗️ Architecture & Flow: Runtime/AutoReplication/GT-C-AutoReplication-Architecture.md
+      - 🔌 Mixin Reference: Runtime/AutoReplication/GT-C-AutoReplication-Mixin.md
+      - 📦 Types & Enums: Runtime/AutoReplication/GT-C-AutoReplication-Types.md
+      - 📡 Relay & Transporter: Runtime/AutoReplication/GT-C-AutoReplication-Components.md
+      - 📚 Quick Reference: Runtime/AutoReplication/GT-C-AutoReplication-Reference.md
+      - 🔬 Deep Dive: Runtime/AutoReplication/GT-C-AutoReplication-DeepDive.md
     - 👉 Conditional Object Choosers:
       - 🔎 About Conditional Object Choosers: Runtime/ConditionalObjectChoosers/GT-C-COC-About.md
       - 👉 Chooser (Blueprint & C++): Runtime/ConditionalObjectChoosers/GT-C-COC-C.md
@@ -96,6 +106,10 @@ nav:
         - 🚦 Boolean Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-Boolean-CND.md
         - ✅ IsValid Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-IsValid-CND.md
         - 🏷️ GameplayTag Condition (Blueprint & C++): Runtime/ConditionalObjectChoosers/Conditions/GT-C-COC-GameplayTag-CND.md
+    - 🧠 Insight Matrix:
+      - 🔎 About Insight Matrix: Runtime/InsightMatrix/GT-C-InsightMatrix-About.md
+      - 🧩 Insight Matrix Subsystem: Runtime/InsightMatrix/GT-C-InsightMatrix-Subsystem.md
+      - 🎛️ Harness & Test Matrix: Runtime/InsightMatrix/GT-C-InsightMatrix-Harness.md
     - ♻️ Quality of Life:
       - 📜 Game Instance: Runtime/QualityOfLife/GT-C-QOF-GI.md
       - 📜 Game Mode: Runtime/QualityOfLife/GT-C-QOF-GM.md
@@ -103,8 +117,17 @@ nav:
       - 📜 Player Controller: Runtime/QualityOfLife/GT-C-QOF-PC.md
       - 📜 Player State: Runtime/QualityOfLife/GT-C-QOF-PS.md
       - 📜 World Settings: Runtime/QualityOfLife/GT-C-QOF-WS.md
+    - 🎮 Blueprint Systems:
+      - 🔎 About Systems: Runtime/Systems/GT-C-Systems-About.md
+      - 🎶 Playlist System: Runtime/Systems/GT-C-Systems-Playlist.md
+      - 👥 Team System: Runtime/Systems/GT-C-Systems-Team.md
   - 📝Runtime Utilities:
     - 🧩 About this Module 🧩: RuntimeUtilities/GT-C-Runtime_Utilities-About.md
+    - 🧰 Helpers: RuntimeUtilities/GT-C-Runtime_Utilities-Helpers.md
+    - 🧩 Helper Macros: RuntimeUtilities/GT-C-Runtime_Utilities-Helper_Macros.md
+    - 📚 Blueprint Libraries: RuntimeUtilities/GT-C-Runtime_Utilities-Libraries.md
+    - 🧬 Templates: RuntimeUtilities/GT-C-Runtime_Utilities-Templates.md
+    - 🧱 Module Core: RuntimeUtilities/GT-C-Runtime_Utilities-Module_Core.md
   - 📝 Editor:
     - 🧩 About this Module 🧩: Editor/GT-C-Editor-About.md
   - 📝 Editor Utilities: 

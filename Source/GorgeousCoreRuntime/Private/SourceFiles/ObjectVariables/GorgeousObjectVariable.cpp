@@ -27,7 +27,7 @@
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-#include "Profiling/GorgeousProfiling.h"
+#include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
@@ -501,8 +501,8 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 	AutoReplicationReplicationIndex(INDEX_NONE),
 	bLegacyReplicationRegistered(false),
 	bAutoReplicationActivated(false),
-	ClientPropertyPollingIntervalSeconds(0.0f),
 	ServerPropertyPollingIntervalSeconds(0.0f),
+	ClientPropertyPollingIntervalSeconds(0.0f),
 	bRemovedFromRegistry(false)
 {
 	bReplicationActivationGuard = false;
