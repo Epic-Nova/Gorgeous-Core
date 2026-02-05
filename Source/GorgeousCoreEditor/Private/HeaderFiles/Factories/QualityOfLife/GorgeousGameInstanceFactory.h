@@ -17,6 +17,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousGameInstanceFactory.generated.h"
 //<-------------------------------------------------------------------------->
@@ -44,6 +45,7 @@ public:
 	 */
 	UGorgeousGameInstanceFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousGameInstance::StaticClass(), true, false, true, false));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousGameInstance::StaticClass(), true, false, true, false,
+			UGorgeousGameInstanceBlueprint::StaticClass()));
 	}
 };

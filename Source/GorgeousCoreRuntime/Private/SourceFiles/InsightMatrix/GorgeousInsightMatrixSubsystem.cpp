@@ -20,7 +20,7 @@
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightBaselineSettings.h"
-#include "Profiling/GorgeousProfiling.h"
+#include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "Misc/FileHelper.h"

@@ -21,7 +21,9 @@ graph TD
     B --> B1[Object Variables]
     B --> B2[Conditional Objects]
     B --> B3[Functional Structures]
-    B --> B4[Base Classes]
+    B --> B4[AutoReplication]
+    B --> B5[Insight Matrix]
+    B --> B6[Base Classes]
     
     D --> D1[Detail Panels]
     D --> D2[Factory Classes]
@@ -39,6 +41,7 @@ graph TD
     C --> C2[Directory Helpers]
     C --> C3[Logging System]
     C --> C4[Templates]
+    C --> C5[Helper Macros]
     
     E --> E1[Asset Registration]
     E --> E2[Asset Type Actions]
@@ -126,6 +129,59 @@ graph TD
     D --> D1[Replicated Variables]
 ```
 
+### AutoReplication System
+The AutoReplication system provides a mixin-based approach for property and RPC replication:
+```mermaid
+flowchart TD
+    subgraph "Host/Server"
+        MIXIN[Mixin] --> COORDINATOR[World Subsystem/Coordinator]
+        COORDINATOR --> TRANSPORTER[Transporter Component]
+    end
+    
+    subgraph "Network"
+        TRANSPORTER <-->|RPCs| NET[Unreal NetDriver]
+        RELAY <-->|Server RPCs| NET
+    end
+    
+    subgraph "Client"
+        NET --> RELAY[Relay Component]
+        RELAY --> C_MIXIN[Client Mixin]
+    end
+```
+
+**Key Components:**
+
+| Component | Purpose |
+|:----------|:--------|
+| `FGorgeousAutoReplicationMixin` | Binds Object Variables to owners, manages registration and RPC dispatch |
+| `UGorgeousAutoReplicationWorldSubsystem` | Coordinates property streams, tracks dirty variables |
+| `UGorgeousAutoReplicationRPCRelayComponent` | Client→Server RPC transport |
+| `UGorgeousAutoReplicationRPCTransporter` | Server→Client/Multicast RPC routing |
+
+### Insight Matrix System
+The Insight Matrix provides runtime debugging and diagnostics:
+```mermaid
+graph LR
+    subgraph "Providers"
+        P1[WorldSubsystem] --> REG
+        P2[GameState] --> REG
+        P3[Custom Provider] --> REG
+    end
+    
+    REG[InsightMatrix Subsystem] --> HAR[Test Harness]
+    HAR --> MATRIX[Test Matrix]
+    MATRIX --> RESULTS[Test Results]
+```
+
+**Components:**
+
+| Component | Purpose |
+|:----------|:--------|
+| `UGorgeousInsightMatrixSubsystem` | Registry for all insight providers |
+| `IGorgeousInsightMatrixProvider` | Interface for exposing diagnostic data |
+| `UGorgeousInsightMatrixHarness` | Manages test execution and validation |
+| `UGorgeousInsightMatrixTestMatrix` | Defines test configurations |
+
 ### Factory System
 The factory system for creating Gorgeous objects:
 ```mermaid
@@ -189,6 +245,10 @@ graph TD
 - `UGorgeousObjectVariable`: Base class for all object variables
 - `UGorgeousConditionalObjectChooser`: Handles dynamic object selection
 - `UGorgeousCondition`: Base class for all conditions
+- `FGorgeousAutoReplicationMixin`: AutoReplication binding and routing
+- `UGorgeousAutoReplicationWorldSubsystem`: AutoReplication runtime subsystem
+- `UGorgeousInsightMatrixSubsystem`: Insight Matrix registry
+- `IGorgeousInsightMatrixProvider`: Insight Matrix provider interface
 
 ### Editor
 - `FGorgeousObjectVariableDetailCustomization`: Customizes object variable properties
@@ -199,6 +259,10 @@ graph TD
 - `FGorgeousAssetTypeAction`: Defines how assets behave in the editor
 - `FGorgeousAssetRegistration`: Handles asset registration and unregistration
 - `UGorgeousFactory`: Creates new Gorgeous assets
+
+### Content Systems (Blueprint)
+- Playlist system assets (GorgeousCore/Content/Systems/Playlist)
+- Team system assets (GorgeousCore/Content/Systems/Team)
 
 ## 🔄 Extension Points
 

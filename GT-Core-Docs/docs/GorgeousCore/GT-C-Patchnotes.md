@@ -1,5 +1,18 @@
 # 🆕 Patchnotes 🆕
 
+## Gorgeous Core v1.1 (Placeholder)
+
+### 🚀 Planned / In Progress
+
+* **Documentation**
+  * Expanded runtime utilities reference (helpers, macros, templates, libraries)
+  * Added Insight Matrix and AutoReplication documentation
+  * Added Blueprint systems documentation (Playlist, Team)
+
+### 🧪 Validation
+
+* Content pending final review and release notes.
+
 ## Gorgeous Core v0.8
 
 ### 🚀 New Features

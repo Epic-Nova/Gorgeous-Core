@@ -17,6 +17,11 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
+#include "AssetToolsModule.h"
+#include "AssetTypeCategories.h"
+#include "IAssetTools.h"
+#include "Modules/ModuleManager.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousIsValidConditionFactory.generated.h"
 //<-------------------------------------------------------------------------->
@@ -44,6 +49,37 @@ public:
 	 */
 	UGorgeousIsValidConditionFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousIsValidCondition::StaticClass(), true, false, true, false));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousIsValidCondition::StaticClass(), true, false, true, false,
+			UGorgeousConditionBlueprint::StaticClass()));
+	}
+
+	virtual FText GetDisplayName() const override
+	{
+		return NSLOCTEXT("GorgeousCore", "GorgeousIsValidConditionFactory", "Gorgeous Is Valid Condition");
+	}
+
+	virtual uint32 GetMenuCategories() const override
+	{
+		if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
+		{
+			IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
+			return AssetTools.FindAdvancedAssetCategory("GorgeousThings");
+		}
+		return EAssetTypeCategories::Misc;
+	}
+
+	virtual const TArray<FText>& GetMenuCategorySubMenus() const override
+	{
+		static const TArray<FText> SubMenus = {
+			NSLOCTEXT("GorgeousCore", "Menu_GorgeousCore", "Gorgeous Core"),
+			NSLOCTEXT("GorgeousCore", "Menu_ConditionalChoosers", "Conditional Object Choosers"),
+			NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions")
+		};
+		return SubMenus;
+	}
+
+	virtual FName GetNewAssetThumbnailOverride() const override
+	{
+		return FName(TEXT("GorgeousCore.Condition.Icon"));
 	}
 };

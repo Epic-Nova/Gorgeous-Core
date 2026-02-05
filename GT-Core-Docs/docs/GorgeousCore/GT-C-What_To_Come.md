@@ -17,53 +17,55 @@
 
 ## 🎯 Planned Features
 
+Status legend: **[x] Implemented** · **[ ] Planned**
+
 ### Object Variable System Enhancements
 
 The object variable system is a highly dynamic system that provides a way of addressing variables via pointer references. While this dynamism allows for adding new variable types, it also makes implementation challenging and requires deep interaction with the engine's source.
 
 #### Custom Details Customization
 * **Improved Default Value Appearance**
-  * Creation of two dropdown menus and one FGuid as the variable identifier
-  * Type dropdown: Lists every available object variable (C++ or Blueprint)
-  * Count dropdown: Lists properties of the EObjectVariableCount_E enum
-  * Warning messages for unimplemented count types
-  * Dropdown menus only shown when necessary
+  * [x] FGuid-based variable identifier
+  * [ ] Type dropdown: Lists every available object variable (C++ or Blueprint)
+  * [ ] Count dropdown: Lists properties of the EObjectVariableCount_E enum
+  * [ ] Warning messages for unimplemented count types
+  * [ ] Dropdown menus only shown when necessary
 
 #### Value Management
 * **Default Value Construction**
-  * Dynamic field construction based on Type and Count
-  * Access to object variable defaults
-  * Enum-based input type specification
+  * [ ] Dynamic field construction based on Type and Count
+  * [ ] Access to object variable defaults
+  * [ ] Enum-based input type specification
 
 #### Storage and Retrieval
 * **Outer Access**
-  * Save values in an extra trunk in the outer
-  * Load values from the trunk via property name/signature
-  * Enum selection for appropriate default value field
+  * [x] Save values in an extra trunk in the outer
+  * [x] Load values from the trunk via property name/signature
+  * [ ] Enum selection for appropriate default value field
 
 #### Initialization and Access
 * **Lazy Initialization**
-  * Initialize saved values from trunk when accessed
-  * Use property name/signature as trunk identifier
-  * Direct value return if already initialized
+  * [x] Initialize saved values from trunk when accessed
+  * [x] Use property name/signature as trunk identifier
+  * [x] Direct value return if already initialized
 
 #### Advanced Features
 * **Universal Access Functions**
-  * Template-based Get and Set functions for C++
-  * Type parsing via template arguments
+  * [x] Template-based Get and Set functions for C++
+  * [x] Type parsing via template arguments
 
 * **Persistence**
-  * Save object variables to disk via serialization
-  * Support for runtime persistence
+  * [x] Save object variables to disk via serialization
+  * [x] Support for runtime persistence
 
 * **Hierarchical Structure**
-  * Nesting: Parent-child relationships between variables
-  * Visualization in a dedicated window (gorgeous.ov.list)
+  * [ ] Nesting: Parent-child relationships between variables
+  * [ ] Visualization in a dedicated window (gorgeous.ov.list)
 
 * **Lifecycle Management**
-  * Persistent and non-persistent variables
-  * Automatic cleanup of non-persistent variables after level switches
-  * Persistence based on owner object lifecycle
+  * [x] Persistent and non-persistent variables
+  * [ ] Automatic cleanup of non-persistent variables after level switches
+  * [ ] Persistence based on owner object lifecycle
 
 > **Note:** This workflow will replace the structures currently representing default values, addressing memory allocation inefficiencies where the entire memory space is allocated even when only a single value is used.
 
@@ -72,9 +74,9 @@ The object variable system is a highly dynamic system that provides a way of add
 Functional Structures enhance the capabilities of standard Unreal Engine structures by providing additional functionality:
 
 * **Property Change Callbacks**
-  * Structures with PostEditPropertyChange functionality
-  * Callbacks when structure members are changed
-  * Improved editor integration
+  * [x] Structures with PostEditPropertyChange functionality
+  * [x] Callbacks when structure members are changed
+  * [x] Improved editor integration
 
 > **Note:** This feature will be particularly useful for the dialogue system, allowing for dynamic asset selection based on property changes.
 
@@ -83,25 +85,25 @@ Functional Structures enhance the capabilities of standard Unreal Engine structu
 Conditional Object Choosers provide a flexible way to select objects based on conditions:
 
 * **Condition-Based Selection**
-  * Objects that return different object variables based on condition checks
-  * Support for various condition types:
-    * Gameplay Tag presence in containers
-    * Reference validity checks
-  * Branching logic based on condition results (Valid/Not Valid, Present/Not Present)
+  * [x] Objects that return different object variables based on condition checks
+  * [x] Support for various condition types:
+    * [x] Gameplay Tag presence in containers
+    * [x] Reference validity checks
+  * [x] Branching logic based on condition results (Valid/Not Valid, Present/Not Present)
 
 ### Build System Improvements
 
 The build system improvements aim to simplify module development:
 
 * **Dependency Management**
-  * Automatic scanning of source files for needed module dependencies
-  * Automatic inclusion of dependencies in module names array
-  * Dynamic link error resolution
+  * [ ] Automatic scanning of source files for needed module dependencies
+  * [ ] Automatic inclusion of dependencies in module names array
+  * [ ] Dynamic link error resolution
 
 * **Development Tools**
-  * Internal Build.cs simplification tool
-  * Internal Target.cs simplification tool
-  * Support for third-party library integration
+  * [ ] Internal Build.cs simplification tool
+  * [ ] Internal Target.cs simplification tool
+  * [ ] Support for third-party library integration
 
 > **Note:** These improvements will be available not just for Gorgeous plugins but for any Unreal Engine project, providing a tool that simplifies coding quality while maintaining usability.
 
