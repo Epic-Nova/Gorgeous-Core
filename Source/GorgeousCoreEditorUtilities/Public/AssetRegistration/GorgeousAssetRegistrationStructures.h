@@ -15,6 +15,8 @@
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
 #include "GorgeousAssetRegistrationStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -51,6 +53,8 @@ struct FGorgeousFactoryInfo_S
 	// Default constructor with safe initialization.
 	FGorgeousFactoryInfo_S()
 		: SupportedClass(nullptr)
+		, BlueprintClass(UBlueprint::StaticClass())
+		, BlueprintGeneratedClass(UBlueprintGeneratedClass::StaticClass())
 		, bEditAfterNew(false)
 		, bEditorImport(false)
 		, bCreateNew(false)
@@ -59,8 +63,12 @@ struct FGorgeousFactoryInfo_S
 
 	// Parameterized constructor for custom behavior setup.
 	FGorgeousFactoryInfo_S(const TSubclassOf<UObject>& NewSupportedClass, const bool NewEditAfterNew, const bool NewEditorImport,
-	                       const bool NewbCreateNew, const bool NewText)
+	                       const bool NewbCreateNew, const bool NewText,
+	                       const TSubclassOf<UBlueprint>& NewBlueprintClass = UBlueprint::StaticClass(),
+	                       const TSubclassOf<UBlueprintGeneratedClass>& NewBlueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass())
 		: SupportedClass(NewSupportedClass)
+		, BlueprintClass(NewBlueprintClass)
+		, BlueprintGeneratedClass(NewBlueprintGeneratedClass)
 		, bEditAfterNew(NewEditAfterNew)
 		, bEditorImport(NewEditorImport)
 		, bCreateNew(NewbCreateNew)
@@ -70,6 +78,14 @@ struct FGorgeousFactoryInfo_S
 	/** The class manufactured by this factory. */
 	UPROPERTY()
 	TSubclassOf<UObject> SupportedClass;
+
+	/** Blueprint asset class to create for this factory. */
+	UPROPERTY()
+	TSubclassOf<UBlueprint> BlueprintClass;
+
+	/** Generated class to use for this blueprint asset type. */
+	UPROPERTY()
+	TSubclassOf<UBlueprintGeneratedClass> BlueprintGeneratedClass;
 
 	/** True if the associated editor should be opened after creating a new object. */
 	UPROPERTY()
@@ -95,6 +111,8 @@ FORCEINLINE uint32 GetTypeHash(const FGorgeousFactoryInfo_S& Info)
 {
 	uint32 Hash = 0;
 	Hash = HashCombine(Hash, GetTypeHash(Info.SupportedClass.Get()));
+	Hash = HashCombine(Hash, GetTypeHash(Info.BlueprintClass.Get()));
+	Hash = HashCombine(Hash, GetTypeHash(Info.BlueprintGeneratedClass.Get()));
 	Hash = HashCombine(Hash, GetTypeHash(Info.bEditAfterNew));
 	Hash = HashCombine(Hash, GetTypeHash(Info.bEditorImport));
 	Hash = HashCombine(Hash, GetTypeHash(Info.bCreateNew));
@@ -108,6 +126,8 @@ FORCEINLINE uint32 GetTypeHash(const FGorgeousFactoryInfo_S& Info)
 FORCEINLINE bool operator==(const FGorgeousFactoryInfo_S& A, const FGorgeousFactoryInfo_S& B)
 {
 	return A.SupportedClass == B.SupportedClass
+		&& A.BlueprintClass == B.BlueprintClass
+		&& A.BlueprintGeneratedClass == B.BlueprintGeneratedClass
 		&& A.bEditAfterNew == B.bEditAfterNew
 		&& A.bEditorImport == B.bEditorImport
 		&& A.bCreateNew == B.bCreateNew

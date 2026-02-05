@@ -44,6 +44,9 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "UMG"
             });
 
+        PublicDefinitions.Add("CSV_PROFILER=1");
+        PrivateDefinitions.Add("CSV_PROFILER=1");
+
         if (Target.bBuildEditor)
         {
             PrivateDependencyModuleNames.AddRange(new[]

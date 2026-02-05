@@ -22,10 +22,6 @@
 
 /**
  * Asset type action handler for Gorgeous Core custom assets.
- * 
- * @deprecated This class is deprecated. Use UAssetDefinitionDefault subclasses instead.
- * UAssetDefinitionDefault provides automatic registration via UObject reflection and is
- * the preferred approach in UE5.4+. See GorgeousCoreAssetDefinitions.h for examples.
  *
  * This class defines how a specific asset type appears and behaves within the Unreal Engine Editor.
  * It provides metadata such as display name, color, supported class, categories, and icon/thumbnail
@@ -40,7 +36,7 @@
  *
  * @author Nils Bergemann
  */
-class UE_DEPRECATED(5.4, "Use UAssetDefinitionDefault instead.") GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Base
+class GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Blueprint
 {
 public:
 

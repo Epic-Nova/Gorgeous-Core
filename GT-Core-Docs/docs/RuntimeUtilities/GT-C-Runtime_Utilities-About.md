@@ -13,8 +13,6 @@
     * **General Utilities:**
         * Provides core functionality and interfaces for other Gorgeous Things plugins.
         * Defines enums and a precompiled header for efficient compilation.
-    * **Logging:**
-        * Offers a Blueprint library for versatile logging, enabling messages with different levels of importance and display options.
     * **Templates:**
         * Includes templates for creating UObjects with world context awareness and for implementing the singleton pattern.
     * **Helpers:**
@@ -28,7 +26,8 @@
             * Checking for plugin existence.
             * Platform-specific code.
             * Engine version compatibility.
-    
+    * **Blueprint Libraries:**
+        * Exposes logging and audio utility helpers to Blueprint graphs.
 
 ## 🛠️ Integration
 
@@ -59,3 +58,7 @@ PrivateDependencyModuleNames.AddRange(new string[] { "GorgeousCoreRuntimeUtiliti
 **Question:** How can I use the logging functionality?
 
 **Answer:** The `GorgeousLoggingBlueprintFunctionLibrary.h` provides Blueprint Callable functions (e.g., `LogInformationMessage`, `LogWarningMessage`) to easily log messages with different levels of importance. Also the correct usage of this class is also documented here.
+
+**Question:** Where can I find the helper macros and helpers?
+
+**Answer:** Helper classes live under `Source/GorgeousCoreRuntimeUtilities/Public/Helpers`, and macro headers live under `Source/GorgeousCoreRuntimeUtilities/Public/Helpers/Macros`. Dedicated documentation pages are now available in the Runtime Utilities section.

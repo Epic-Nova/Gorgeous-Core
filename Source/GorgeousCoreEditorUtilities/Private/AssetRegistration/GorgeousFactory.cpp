@@ -22,19 +22,20 @@
 UObject* UGorgeousFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
 	return FKismetEditorUtilities::CreateBlueprint(
-		SupportedClass,
+		FactoryInfos.SupportedClass,
 		InParent,
 		InName,
 		BPTYPE_Normal,
-		UBlueprint::StaticClass(),
-		UBlueprintGeneratedClass::StaticClass(),
+		FactoryInfos.BlueprintClass ? FactoryInfos.BlueprintClass.Get() : UBlueprint::StaticClass(),
+		FactoryInfos.BlueprintGeneratedClass ? FactoryInfos.BlueprintGeneratedClass.Get() : UBlueprintGeneratedClass::StaticClass(),
 		NAME_None
 	);
 }
 
 void UGorgeousFactory::SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfos)
 {
-	SupportedClass = NewFactoryInfos.SupportedClass;
+	FactoryInfos = NewFactoryInfos;
+	SupportedClass = NewFactoryInfos.BlueprintClass ? NewFactoryInfos.BlueprintClass.Get() : UBlueprint::StaticClass();
 	bEditAfterNew = NewFactoryInfos.bEditAfterNew;
 	bEditorImport = NewFactoryInfos.bEditorImport;
 	bCreateNew = NewFactoryInfos.bCreateNew;

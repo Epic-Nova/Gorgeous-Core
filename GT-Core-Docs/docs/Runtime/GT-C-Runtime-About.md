@@ -23,6 +23,13 @@
         * Provides classes for conditional object selection and various types of conditions (boolean, validity, gameplay tag-based). 
     * **Functional Structures:**
         * Enables structures to receive `PostEditChangeProperty` and `PreEditChangeProperty` events, allowing for more control over property changes in the editor.
+    * **AutoReplication:**
+        * Provides object-variable property streaming and RPC-style payload replication.
+        * Integrates with Quality-of-Life classes for runtime networking.
+    * **Insight Matrix:**
+        * Offers runtime test-matrix orchestration and provider registry.
+    * **Blueprint Systems:**
+        * Ships Blueprint systems under Content/Systems (Playlist, Team).
     
 
 ## 🛠️ Integration

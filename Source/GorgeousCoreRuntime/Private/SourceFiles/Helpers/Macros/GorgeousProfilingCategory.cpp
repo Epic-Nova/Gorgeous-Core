@@ -9,8 +9,8 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
-#include "Profiling/GorgeousProfiling.h"
+#include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
 
-#if __has_include("ProfilingDebugging/CsvProfiler.h")
+#if defined(CSV_PROFILER) && CSV_PROFILER
 CSV_DEFINE_CATEGORY(Gorgeous, true);
 #endif

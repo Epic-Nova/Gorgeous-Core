@@ -17,6 +17,7 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
+#include "Blueprints/GorgeousCoreBlueprintTypes.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousWorldSettingsFactory.generated.h"
 //<-------------------------------------------------------------------------->
@@ -44,6 +45,7 @@ public:
 	 */
 	UGorgeousWorldSettingsFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(AGorgeousWorldSettings::StaticClass(), true, false, true, false));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(AGorgeousWorldSettings::StaticClass(), true, false, true, false,
+			UGorgeousWorldSettingsBlueprint::StaticClass()));
 	}
 };

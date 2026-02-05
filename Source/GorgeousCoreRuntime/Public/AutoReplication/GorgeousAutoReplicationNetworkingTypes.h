@@ -218,6 +218,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResult
 	bool WasHandledByObjectVariable() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable && TargetVariable != nullptr; }
 	
 	bool WasHandledByOwner() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && TargetOwner != nullptr; }
+
+	bool WasHandledByActorComponent() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EActorComponent && TargetOwner != nullptr; }
 };
 
 /** Lightweight payload replicated through the relay component so the server can rebuild the full result. */

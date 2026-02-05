@@ -34,7 +34,9 @@ AGorgeousPlayerController::AGorgeousPlayerController()
 
 UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousPlayerController)
 
-UE_QOL_DEFINE_BEGIN_PLAY(AGorgeousPlayerController)
+UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY(AGorgeousPlayerController)
+
+UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)
 
 UE_QOL_DEFINE_POST_INIT_AND_LOAD(AGorgeousPlayerController)
 

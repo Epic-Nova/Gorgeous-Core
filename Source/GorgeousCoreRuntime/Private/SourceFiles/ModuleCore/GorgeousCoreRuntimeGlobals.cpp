@@ -16,13 +16,13 @@
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
-#include "QualityOfLife/GorgeousGameInstance.h"
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Engine/World.h"
 #include "Misc/AutomationTest.h"
 
@@ -52,10 +52,6 @@ namespace GorgeousCoreRuntimeGlobals_Private
 				return nullptr;
 			}
 
-			if (FGorgeousAutoReplicationMixin* GameInstanceMixin = ResolveFromContext<UGorgeousGameInstance>(Object))
-			{
-				return GameInstanceMixin;
-			}
 			if (FGorgeousAutoReplicationMixin* GameModeMixin = ResolveFromContext<AGorgeousGameMode>(Object))
 			{
 				return GameModeMixin;
@@ -123,7 +119,7 @@ AGorgeousWorldSettings* UGorgeousCoreRuntimeGlobals::GetGorgeousWorldSettings(co
 	if (!WorldContextObject || !WorldContextObject->GetWorld())
 	{
 		// Frequently queried before a world exists; keep the log quiet unless verbose is enabled.
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Verbose, TEXT("Invalid WorldContextObject passed to GetGorgeousWorldSettings."));
+		GT_I_LOG("GT.RuntimeGlobals.InvalidWorldContext", TEXT("Invalid WorldContextObject passed to GetGorgeousWorldSettings."));
 		return nullptr;
 	}
 	return Cast<AGorgeousWorldSettings>(WorldContextObject->GetWorld()->GetWorldSettings());
@@ -135,7 +131,7 @@ UGorgeousObjectVariable* UGorgeousCoreRuntimeGlobals::GetNamedObjectVariable(con
 	{
 		if (bLogWarning)
 		{
-			UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("GetNamedObjectVariable was called with an invalid display name."));
+			GT_W_LOG("GT.RuntimeGlobals.NamedOV.InvalidName", TEXT("GetNamedObjectVariable was called with an invalid display name."));
 		}
 		return nullptr;
 	}
@@ -147,7 +143,7 @@ UGorgeousObjectVariable* UGorgeousCoreRuntimeGlobals::GetNamedObjectVariable(con
 
 	if (bLogWarning)
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("No object variable registered under the display name '%s'."), *DisplayName.ToString());
+		GT_W_LOG("GT.RuntimeGlobals.NamedOV.NotFound", TEXT("No object variable registered under the display name '%s'."), *DisplayName.ToString());
 	}
 
 	return nullptr;
@@ -170,7 +166,7 @@ UObject* UGorgeousCoreRuntimeGlobals::GetNamedObjectReference(const FName Displa
 
 		if (bLogWarning)
 		{
-			UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Named object variable '%s' is not an Object Single OV."), *DisplayName.ToString());
+			GT_W_LOG("GT.RuntimeGlobals.NamedOV.NotObjectSingle", TEXT("Named object variable '%s' is not an Object Single OV."), *DisplayName.ToString());
 		}
 	}
 
@@ -181,7 +177,7 @@ UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* W
 {
 	if (!*QualityOfLifeClass)
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("GetQualityOfLifeReference requires a valid QoL class selection."));
+		GT_W_LOG("GT.RuntimeGlobals.QoL.InvalidClass", TEXT("GetQualityOfLifeReference requires a valid QoL class selection."));
 		return nullptr;
 	}
 
@@ -189,7 +185,7 @@ UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* W
 
 	if (!QualityOfLifeClass->ImplementsInterface(UGorgeousQualityOfLifeNodeTarget_I::StaticClass()))
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Class %s does not implement IGorgeousQualityOfLifeNodeTarget_I."), *QualityOfLifeClass->GetName());
+		GT_W_LOG("GT.RuntimeGlobals.QoL.InvalidInterface", TEXT("Class %s does not implement IGorgeousQualityOfLifeNodeTarget_I."), *QualityOfLifeClass->GetName());
 		return nullptr;
 	}
 	if (UObject* Resolved = FGorgeousQualityOfLifeStatics::ResolveSelfReference(QualityOfLifeClass))
@@ -210,7 +206,7 @@ bool UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(UObject* Wo
  
 	if (!AutoReplicationMixin)
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Unable to resolve AutoReplication mixin while reading key %s."), *Key.ToString());
+		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.ResolveRead", TEXT("Unable to resolve AutoReplication mixin while reading key %s."), *Key.ToString());
 		return false;
 	}
 
@@ -219,7 +215,7 @@ bool UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(UObject* Wo
 		return true;
 	}
 
-	UE_LOG(LogGorgeousCoreRuntimeGlobals, Verbose, TEXT("AutoReplication entry %s not found on context %s."), *Key.ToString(), Context ? *Context->GetName() : TEXT("<null>"));
+	GT_I_LOG("GT.RuntimeGlobals.AutoReplication.NotFound", TEXT("AutoReplication entry %s not found on context %s."), *Key.ToString(), Context ? *Context->GetName() : TEXT("<null>"));
 	return false;
 }
 
@@ -228,7 +224,7 @@ bool UGorgeousCoreRuntimeGlobals::SetNetGorgeousAutoReplicationValue(UObject* Wo
 	FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner);
 	if (!AutoReplicationMixin)
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Unable to resolve AutoReplication mixin while writing key %s."), *Key.ToString());
+		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.ResolveWrite", TEXT("Unable to resolve AutoReplication mixin while writing key %s."), *Key.ToString());
 		return false;
 	}
 
@@ -237,12 +233,12 @@ bool UGorgeousCoreRuntimeGlobals::SetNetGorgeousAutoReplicationValue(UObject* Wo
 		const bool bResult = AutoReplicationMixin->TrySetReplicatedValue(Key, NewValue);
 		if (!bResult)
 		{
-			UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Failed to enqueue replicated update for AutoReplication key %s."), *Key.ToString());
+			GT_W_LOG("GT.RuntimeGlobals.AutoReplication.EnqueueFail", TEXT("Failed to enqueue replicated update for AutoReplication key %s."), *Key.ToString());
 		}
 		return bResult;
 	}
 
-	if (FGorgeousAutoReplicationEntry* Entry = AutoReplicationMixin->FindEntry(Key))
+	if (FGorgeousObjectVariableEntry* Entry = AutoReplicationMixin->FindEntry(Key))
 	{
 		Entry->DefaultValue = NewValue;
 		Entry->Handle.CacheValue(NewValue);
@@ -250,7 +246,7 @@ bool UGorgeousCoreRuntimeGlobals::SetNetGorgeousAutoReplicationValue(UObject* Wo
 	}
 
 	const FString ContextLabel = AutoReplicationOwner ? AutoReplicationOwner->GetName() : (WorldContextObject ? WorldContextObject->GetName() : TEXT("<null>"));
-	UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Unable to locate AutoReplication entry %s for context %s."), *Key.ToString(), *ContextLabel);
+	GT_W_LOG("GT.RuntimeGlobals.AutoReplication.EntryMissing", TEXT("Unable to locate AutoReplication entry %s for context %s."), *Key.ToString(), *ContextLabel);
 	return false;
 }
 
@@ -259,23 +255,17 @@ bool UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPC(UObject* WorldContex
 	FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner);
 	if (!AutoReplicationMixin)
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Unable to resolve AutoReplication mixin for RPC request (key: %s)."), *Key.ToString());
+		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.RpcResolve", TEXT("Unable to resolve AutoReplication mixin for RPC request (key: %s)."), *Key.ToString());
 		return false;
 	}
 
 	if (!AutoReplicationMixin->IsNetworkingEnabled())
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Cannot queue AutoReplication RPC %s because networking is disabled."), *Key.ToString());
+		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.RpcDisabled", TEXT("Cannot queue AutoReplication RPC %s because networking is disabled."), *Key.ToString());
 		return false;
 	}
 
 	return AutoReplicationMixin->RequestRPC(Key, Type, Payload, TargetKind);
-}
-
-UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPCAsync(UObject* WorldContextObject, const FName Key, const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, UObject* AutoReplicationOwner)
-{
-	UObject* EffectiveContext = AutoReplicationOwner ? AutoReplicationOwner : WorldContextObject;
-	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(EffectiveContext, Key, Type, Payload, TargetKind);
 }
 
 bool UGorgeousCoreRuntimeGlobals::HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner)
@@ -294,7 +284,7 @@ bool UGorgeousCoreRuntimeGlobals::DequeuePendingAutoReplicationRPC(UObject* Worl
 	if (!AutoReplicationMixin)
 	{
 		const FString ContextLabel = AutoReplicationOwner ? AutoReplicationOwner->GetName() : (WorldContextObject ? WorldContextObject->GetName() : TEXT("<null>"));
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Verbose, TEXT("Unable to resolve AutoReplication mixin for pending RPC dequeue on context %s."), *ContextLabel);
+		GT_I_LOG("GT.RuntimeGlobals.AutoReplication.PendingDequeue", TEXT("Unable to resolve AutoReplication mixin for pending RPC dequeue on context %s."), *ContextLabel);
 		return false;
 	}
 
@@ -323,7 +313,7 @@ void UGorgeousCoreRuntimeGlobals::SetAutoReplicationStreamOverride(const FName E
 {
 	if (EntryKey.IsNone())
 	{
-		UE_LOG(LogGorgeousCoreRuntimeGlobals, Warning, TEXT("Cannot set AutoReplication stream override because the entry key is invalid."));
+		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.StreamKeyInvalid", TEXT("Cannot set AutoReplication stream override because the entry key is invalid."));
 		return;
 	}
 
@@ -508,7 +498,7 @@ bool UGorgeousCoreRuntimeGlobals::GetEffectiveAutoReplicationStreamConfig(UObjec
 
 	if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner))
 	{
-		if (FGorgeousAutoReplicationEntry* Entry = AutoReplicationMixin->FindEntry(EntryKey))
+		if (FGorgeousObjectVariableEntry* Entry = AutoReplicationMixin->FindEntry(EntryKey))
 		{
 			if (Entry->bOverrideStreamConfig)
 			{

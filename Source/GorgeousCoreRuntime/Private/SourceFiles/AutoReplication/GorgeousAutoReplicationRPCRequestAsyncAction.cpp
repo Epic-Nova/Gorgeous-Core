@@ -24,14 +24,14 @@
 
 TMap<FGuid, UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState> UGorgeousAutoReplicationRPCRequestAsyncAction::PendingRequests;
 
-UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(UObject* Context, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind)
+UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind, UObject* AutoReplicationOwner)
 {
 	UGorgeousAutoReplicationRPCRequestAsyncAction* Action = NewObject<UGorgeousAutoReplicationRPCRequestAsyncAction>();
-	Action->WeakContext = Context;
 	Action->RequestKey = Key;
 	Action->RequestType = Type;
 	Action->RequestPayload = Payload;
 	Action->RequestTargetKind = TargetKind;
+	Action->WeakContext = AutoReplicationOwner;
 	Action->ResultContainer = nullptr;
 	Action->CachedResults.Reset();
 	Action->CachedResultMap.Reset();
@@ -389,11 +389,7 @@ FGorgeousAutoReplicationMixin* UGorgeousAutoReplicationRPCRequestAsyncAction::Re
 		{
 			return nullptr;
 		}
-
-		if (UGorgeousGameInstance* GameInstance = Cast<UGorgeousGameInstance>(Object))
-		{
-			return &GameInstance->GetAutoReplicationMixin();
-		}
+		
 		if (AGorgeousGameMode* GameMode = Cast<AGorgeousGameMode>(Object))
 		{
 			return &GameMode->GetAutoReplicationMixin();
