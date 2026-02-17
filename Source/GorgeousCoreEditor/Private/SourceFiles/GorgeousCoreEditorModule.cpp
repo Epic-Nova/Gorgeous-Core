@@ -71,11 +71,11 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	Factory = MakeShareable(new FRainbowPinFactory());
 	FEdGraphUtilities::RegisterVisualNodeFactory(Factory);
 
-	RainbowPinFactory = MakeShareable(new FGorgeousRainbowGraphPinFactory());
-	FEdGraphUtilities::RegisterVisualPinFactory(RainbowPinFactory);
+	//RainbowPinFactory = MakeShareable(new FGorgeousRainbowGraphPinFactory());
+	//FEdGraphUtilities::RegisterVisualPinFactory(RainbowPinFactory);
 
-	RainbowConnectionFactory = MakeShareable(new FGorgeousRainbowConnectionFactory());
-	FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
+	//RainbowConnectionFactory = MakeShareable(new FGorgeousRainbowConnectionFactory());
+	//FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
 	
 	//@TODO: Planned for version 1.1 and upwards
 	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
@@ -101,9 +101,9 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 		EndPIEHandle.Reset();
 	}
 	
-	FEdGraphUtilities::UnregisterVisualNodeFactory(Factory);
-	FEdGraphUtilities::UnregisterVisualPinFactory(RainbowPinFactory);
-	FEdGraphUtilities::UnregisterVisualPinConnectionFactory(RainbowConnectionFactory);
+	//FEdGraphUtilities::UnregisterVisualNodeFactory(Factory);
+	//FEdGraphUtilities::UnregisterVisualPinFactory(RainbowPinFactory);
+	//FEdGraphUtilities::UnregisterVisualPinConnectionFactory(RainbowConnectionFactory);
 
 	//@TODO: Planned for version 1.1 and upwards
 	/*if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
