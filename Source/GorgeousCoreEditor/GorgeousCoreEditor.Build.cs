@@ -17,7 +17,7 @@ public class GorgeousCoreEditor : ModuleRules
     public GorgeousCoreEditor(ReadOnlyTargetRules Target) : base(Target)
     {
         var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
-        var privateIncludePath = Path.Combine(ModuleDirectory, "Private");
+        var privateIncludePath = Path.Combine(ModuleDirectory, "Private", "HeaderFiles");
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
@@ -30,16 +30,17 @@ public class GorgeousCoreEditor : ModuleRules
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "FunctionalStructures")
+            Path.Combine(privateIncludePath, "HeaderFiles", "FunctionalStructures"),
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
         });
         
         PrivateIncludePaths.AddRange(new string[]
         {
-            Path.Combine(privateIncludePath, "HeaderFiles"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "CodeGenerators"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "Factories"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "K2Nodes"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "PropertyTypeCustomizations")
+            Path.Combine(privateIncludePath),
+            Path.Combine(privateIncludePath, "CodeGenerators"),
+            Path.Combine(privateIncludePath, "Factories"),
+            Path.Combine(privateIncludePath, "K2Nodes"),
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
         });
         
         PublicDependencyModuleNames.AddRange(new[]

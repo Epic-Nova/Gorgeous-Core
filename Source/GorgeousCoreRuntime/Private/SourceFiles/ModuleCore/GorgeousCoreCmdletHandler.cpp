@@ -8,57 +8,46 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "IGorgeousThingsModuleInterface.h"
+#include "GorgeousCoreCmdletHandler.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "Helpers/GorgeousPluginHelper.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
-// UGorgeousPluginHelper IGorgeousThingsModuleInterface
+// UGorgeousCoreCmdletHandler Implementation
 //=============================================================================
 
-EGorgeousModuleLoadFailureHandling IGorgeousThingsModuleInterface::GetLoadFailureHandling() const
+void UGorgeousCoreCmdletHandler::PostInitProperties()
 {
-	return EGorgeousModuleLoadFailureHandling::ContinueOnFailure;
-}
-
-bool IGorgeousThingsModuleInterface::ProvidesCoreFunctionality() const
-{
-	return false;
-}
-
-void IGorgeousThingsModuleInterface::StartupModule()
-{
-	IModuleInterface::StartupModule();
+	Super::PostInitProperties();
 	
-	if (UGorgeousPluginHelper::GetSingleton()->RegisterModule(this))
-	{
-		GorgeousStartupModule();
-
-		if (GetModuleFunctionality() == EGorgeousModuleFunctionality::Runtime && !GetInsightProvider())
-		{
-			
-			GT_W_LOG_FULL_EX("GT.InsightMatrix.Provider.Missing", 
-				TEXT("Insight Matrix provider missing for plugin '%s', some functionality may not work as expected!"),
-				5.0f,
-				true,
-				true,
-				true,
-				true,
-				nullptr,
-				nullptr,
-				*GetBelongingPluginName().ToString()
-			);
-		}
-	}
+	RegisterConsoleCommands();
 }
 
-void IGorgeousThingsModuleInterface::ShutdownModule()
+void UGorgeousCoreCmdletHandler::RegisterConsoleCommands()
 {
-	IModuleInterface::ShutdownModule();
-	GorgeousShutdownModule();
-	UGorgeousPluginHelper::GetSingleton()->UnregisterModule(this);
+	IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("gorgeous.suppress"),
+		TEXT("Suppresses log messages associated with the specified logging key."),
+		FConsoleCommandWithArgsDelegate::CreateLambda([this](const TArray<FString>& Args)
+		{
+			SuppressLoggingKey(Args);
+		}),
+		ECVF_Default
+	);
+}
+
+void UGorgeousCoreCmdletHandler::SuppressLoggingKey(const TArray<FString>& Args)
+{
+	if (Args.Num() == 0)
+	{
+		GT_W_LOG("GT.Suppress_Invalid", TEXT("No arguments key. Usage: gorgeous.suppress <LoggingKey> <ShouldSuppress>"));
+		return;
+	}
+
+	const FString LoggingKey = Args[0];
+	const bool bShouldSuppress = Args.Num() > 1 ? Args[1].ToBool() : true;
+	GorgeousLogging::SetLoggingKeySuppressed(*LoggingKey, bShouldSuppress);
 }

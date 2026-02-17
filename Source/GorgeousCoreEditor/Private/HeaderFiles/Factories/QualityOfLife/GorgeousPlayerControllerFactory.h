@@ -15,19 +15,14 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
-#include "Blueprints/GorgeousCoreBlueprintTypes.h"
+#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousPlayerControllerFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Factory class responsible for creating instances of AGorgeousPlayerController.
- *
- * Key features include:
- * - Registration of AGorgeousPlayerController as the target class.
- *
  * The configuration is encapsulated using FGorgeousFactoryInfo_S, which is passed to the base class.
  *
  * @author Nils Bergemann

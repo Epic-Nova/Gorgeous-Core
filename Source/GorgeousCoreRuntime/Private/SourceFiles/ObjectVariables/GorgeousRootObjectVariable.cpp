@@ -550,7 +550,9 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	const FString Message = RemovedCount > 0
 		? FString::Printf(TEXT("Registry cleaned (%d dangling entries removed)."), RemovedCount)
 		: TEXT("Registry scan completed – no dangling entries detected.");
-	GT_S_LOG_MESSAGE(Message, TEXT("GT.ObjectVariables.Registry.Cleaned"));
+	
+	GT_S_LOG("GT.ObjectVariables.Registry.Cleaned", TEXT("%s"), *Message);
+	
 	DefaultOrphanResolution = PreviousResolution;
 }
 

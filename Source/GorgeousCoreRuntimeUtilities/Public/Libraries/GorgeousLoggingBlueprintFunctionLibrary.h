@@ -140,4 +140,4 @@ public:
     static void ClearAllLoggingSuppressions();
 };
 
-using UGT_LoggingFunctionLibrary = UGorgeousLoggingBlueprintFunctionLibrary;
+using UGT_Logging_FL = UGorgeousLoggingBlueprintFunctionLibrary;

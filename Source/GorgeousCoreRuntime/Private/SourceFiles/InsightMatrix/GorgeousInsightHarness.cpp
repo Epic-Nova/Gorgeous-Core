@@ -60,7 +60,7 @@ bool FGorgeousInsightHarness::StartHarness(const FGorgeousInsightMatrixRequest& 
 
 	if (IsGauntletActive())
 	{
-		GT_I_LOG_MESSAGE(TEXT("[InsightHarness] Gauntlet active; using external orchestration."), "GT.InsightMatrix.Harness.Gauntlet");
+		GT_I_LOG("GT.InsightMatrix.Harness.Gauntlet", TEXT("[InsightHarness] Detected Gauntlet command line parameter; using Gauntlet for orchestration."));
 		return true;
 	}
 
@@ -70,7 +70,7 @@ bool FGorgeousInsightHarness::StartHarness(const FGorgeousInsightMatrixRequest& 
 
 void FGorgeousInsightHarness::StopHarness()
 {
-	GT_I_LOG_MESSAGE(TEXT("[InsightHarness] StopHarness"), "GT.InsightMatrix.Harness.Stop");
+	GT_I_LOG("GT.InsightMatrix.Harness.Stop", TEXT("[InsightHarness] Stopping harness and cleaning up."));
 }
 
 FGorgeousInsightHarnessStatus FGorgeousInsightHarness::GetStatus()

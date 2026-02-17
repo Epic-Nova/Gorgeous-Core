@@ -60,7 +60,7 @@ class GORGEOUSCORERUNTIME_API UObject_SOTOV : public USingleObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(UObject*, Value, ObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     UObject* Value;
 
     UObject_SOTOV()
@@ -80,7 +80,7 @@ class GORGEOUSCORERUNTIME_API UClass_SOTOV : public USingleObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(UClass*, Value, ObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     UClass* Value;
 
     UClass_SOTOV()
@@ -100,7 +100,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_SOTOV : public USingleObjectTypeObject
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(TSoftObjectPtr<UObject>, Value, SoftObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSoftObjectPtr<UObject> Value;
 
     USoftObject_SOTOV()
@@ -120,7 +120,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_SOTOV : public USingleObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(TSoftClassPtr<UObject>, Value, SoftObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSoftClassPtr<UObject> Value;
 
     USoftClass_SOTOV()
@@ -140,7 +140,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_SOV  : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(bool, Value, Boolean)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     bool Value;
 
     UBoolean_SOV()
@@ -160,7 +160,7 @@ class GORGEOUSCORERUNTIME_API UByte_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(uint8, Value, Byte)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     uint8 Value;
 
     UByte_SOV()
@@ -180,7 +180,7 @@ class GORGEOUSCORERUNTIME_API UFloat_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(float, Value, Float)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     float Value;
 
     UFloat_SOV()
@@ -200,7 +200,7 @@ class GORGEOUSCORERUNTIME_API UDouble_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(double, Value, Double)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = ( AllowPrivateAccess = "true"))
     double Value;
 
     UDouble_SOV()
@@ -220,7 +220,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(int64, Value, Integer64)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     int64 Value;
 
     UInteger64_SOV()
@@ -240,7 +240,7 @@ class GORGEOUSCORERUNTIME_API UInteger_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(int32, Value, Integer)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     int32 Value;
 
     UInteger_SOV()
@@ -260,7 +260,7 @@ class GORGEOUSCORERUNTIME_API UName_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FName, Value, Name)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     FName Value;
 
     UName_SOV()
@@ -280,7 +280,7 @@ class GORGEOUSCORERUNTIME_API URotator_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FRotator, Value, Rotator)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     FRotator Value;
 
     URotator_SOV()
@@ -320,7 +320,7 @@ class GORGEOUSCORERUNTIME_API UText_SOV : public USingleObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_SINGLE_INTERFACE_IMPLEMENTATION(FText, Value, Text)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     FText Value;
 
     UText_SOV()
@@ -363,7 +363,7 @@ class GORGEOUSCORERUNTIME_API UObject_AOTOV : public UArrayObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UObject*>, Value, ObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<UObject*> Value;
 
     UObject_AOTOV()
@@ -383,7 +383,7 @@ class GORGEOUSCORERUNTIME_API UClass_AOTOV : public UArrayObjectTypeObjectVariab
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<UClass*>, Value, ObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<UClass*> Value;
 
     UClass_AOTOV()
@@ -403,7 +403,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_AOTOV : public UArrayObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<TSoftObjectPtr<UObject>> Value;
 
     USoftObject_AOTOV()
@@ -423,7 +423,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_AOTOV : public UArrayObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<TSoftClassPtr<UObject>> Value;
 
     USoftClass_AOTOV()
@@ -443,7 +443,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<bool>, Value, Boolean)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<bool> Value;
 
     UBoolean_AOV()
@@ -463,7 +463,7 @@ class GORGEOUSCORERUNTIME_API UByte_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<uint8>, Value, Byte)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<uint8> Value;
 
     UByte_AOV()
@@ -483,7 +483,7 @@ class GORGEOUSCORERUNTIME_API UFloat_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<float>, Value, Float)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<float> Value;
 
     UFloat_AOV()
@@ -503,7 +503,7 @@ class GORGEOUSCORERUNTIME_API UDouble_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array,  TArray<double>, Value, Double)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (AllowPrivateAccess = "true"))
     TArray<double> Value;
 
     UDouble_AOV()
@@ -523,7 +523,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int64>, Value, Integer64)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<int64> Value;
 
     UInteger64_AOV()
@@ -543,7 +543,7 @@ class GORGEOUSCORERUNTIME_API UInteger_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<int32>, Value, Integer)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<int32> Value;
 
     UInteger_AOV()
@@ -563,7 +563,7 @@ class GORGEOUSCORERUNTIME_API UName_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FName>, Value, Name)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<FName> Value;
     
     UName_AOV()
@@ -583,7 +583,7 @@ class GORGEOUSCORERUNTIME_API URotator_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FRotator>, Value, Rotator)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<FRotator> Value;
 
     URotator_AOV()
@@ -603,7 +603,7 @@ class GORGEOUSCORERUNTIME_API UString_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FString>, Value, String)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<FString> Value;
 
     UString_AOV()
@@ -623,7 +623,7 @@ class GORGEOUSCORERUNTIME_API UText_AOV : public UArrayObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FText>, Value, Text)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<FText> Value;
 
     UText_AOV()
@@ -3927,7 +3927,7 @@ class GORGEOUSCORERUNTIME_API UObject_MOTOV : public UMapObjectTypeObjectVariabl
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(UObject*, Value, ObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<UObject*, UGorgeousObjectVariable*> Value;
 
     UObject_MOTOV()
@@ -3948,7 +3948,7 @@ class GORGEOUSCORERUNTIME_API UClass_MOTOV : public UMapObjectTypeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(UClass*, Value, ObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<UClass*, UGorgeousObjectVariable*> Value;
 
     UClass_MOTOV()
@@ -3969,7 +3969,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_MOTOV : public UMapObjectTypeObjectVar
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(TSoftObjectPtr<UObject>, Value, SoftObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*> Value;
 
     USoftObject_MOTOV()
@@ -3990,7 +3990,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_MOTOV : public UMapObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(TSoftClassPtr<UObject>, Value, SoftObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> Value;
     
     USoftClass_MOTOV()
@@ -4011,7 +4011,7 @@ class GORGEOUSCORERUNTIME_API UByte_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(uint8, Value, Byte)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<uint8, UGorgeousObjectVariable*> Value;
     
     UByte_MOV()
@@ -4032,7 +4032,7 @@ class GORGEOUSCORERUNTIME_API UFloat_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(float, Value, Float)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<float, UGorgeousObjectVariable*> Value;
 
     UFloat_MOV()
@@ -4053,7 +4053,7 @@ class GORGEOUSCORERUNTIME_API UDouble_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(double, Value, Double)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<double, UGorgeousObjectVariable*> Value;
 
     UDouble_MOV()
@@ -4074,7 +4074,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(int64, Value, Integer64)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<int64, UGorgeousObjectVariable*> Value;
 
     UInteger64_MOV()
@@ -4095,7 +4095,7 @@ class GORGEOUSCORERUNTIME_API UInteger_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(int32, Value, Integer)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<int32, UGorgeousObjectVariable*> Value;
 
     UInteger_MOV()
@@ -4116,7 +4116,7 @@ class GORGEOUSCORERUNTIME_API UName_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FName, Value, Name)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<FName, UGorgeousObjectVariable*> Value;
 
     UName_MOV()
@@ -4137,7 +4137,7 @@ class GORGEOUSCORERUNTIME_API UString_MOV : public UMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(FString, Value, String)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<FString, UGorgeousObjectVariable*> Value;
 
     UString_MOV()
@@ -4844,7 +4844,7 @@ class GORGEOUSCORERUNTIME_API UObject_STOTOV : public USetObjectTypeObjectVariab
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UObject*>, Value, ObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<UObject*> Value;
 
     UObject_STOTOV()
@@ -4864,7 +4864,7 @@ class GORGEOUSCORERUNTIME_API UClass_STOTOV : public USetObjectTypeObjectVariabl
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<UClass*>, Value, ObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<UClass*> Value;
 
     UClass_STOTOV()
@@ -4884,7 +4884,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_STOTOV : public USetObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftObjectPtr<UObject>>, Value, SoftObjectObject)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<TSoftObjectPtr<UObject>> Value;
 
     USoftObject_STOTOV()
@@ -4904,7 +4904,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_STOTOV : public USetObjectTypeObjectVar
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<TSoftClassPtr<UObject>>, Value, SoftObjectClass)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<TSoftClassPtr<UObject>> Value;
 
     USoftClass_STOTOV()
@@ -4925,7 +4925,7 @@ class GORGEOUSCORERUNTIME_API UByte_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<uint8>, Value, Byte)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<uint8> Value;
 
     UByte_STOV()
@@ -4945,7 +4945,7 @@ class GORGEOUSCORERUNTIME_API UFloat_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<float>, Value, Float)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<float> Value;
 
     UFloat_STOV()
@@ -4965,7 +4965,7 @@ class GORGEOUSCORERUNTIME_API UDouble_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<double>, Value, Double)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (AllowPrivateAccess = "true"))
     TSet<double> Value;
 
     UDouble_STOV()
@@ -4985,7 +4985,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int64>, Value, Integer64)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<int64> Value;
 
     UInteger64_STOV()
@@ -5005,7 +5005,7 @@ class GORGEOUSCORERUNTIME_API UInteger_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<int32>, Value, Integer)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<int32> Value;
 
     UInteger_STOV()
@@ -5025,7 +5025,7 @@ class GORGEOUSCORERUNTIME_API UName_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FName>, Value, Name)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<FName> Value;
 
     UName_STOV()
@@ -5045,7 +5045,7 @@ class GORGEOUSCORERUNTIME_API UString_STOV : public USetObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Set, TSet<FString>, Value, String)
-    UPROPERTY(EditAnywhere, SaveGame, Category = "Default")
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TSet<FString> Value;
 
     UString_STOV()

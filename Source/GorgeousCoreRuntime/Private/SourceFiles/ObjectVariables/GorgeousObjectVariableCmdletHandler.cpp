@@ -100,7 +100,7 @@ namespace
 	static void LogCommandUsage(const TCHAR* CommandLabel, const TCHAR* UsageSuffix, const TCHAR* ContextTag)
 	{
 		const FString Usage = FString::Printf(TEXT("Usage: %s %s"), CommandLabel, UsageSuffix);
-		GT_W_LOG_MESSAGE(Usage, ContextTag);
+		GT_W_LOG(ContextTag, TEXT("%s"), *Usage);
 	}
 
 	static bool ConsumeRootArgument(
@@ -123,14 +123,14 @@ namespace
 		bOutAllRoots = false;
 		if (!FGorgeousVariableHierarchyHandler::TryParseRootName(Args[ArgIndex], OutRootName, bOutAllRoots))
 		{
-			GT_W_LOG_MESSAGE(FString::Printf(TEXT("Unknown root '%s'."), *Args[ArgIndex]), ContextTag);
+			GT_W_LOG(ContextTag, TEXT("Invalid root specified: '%s'."), *Args[ArgIndex]);
 			FGorgeousVariableHierarchyHandler::LogAvailableRoots(ContextTag);
 			return false;
 		}
 
 		if (bOutAllRoots && !bAllowAllRoots)
 		{
-			GT_W_LOG_MESSAGE(TEXT("The 'all' root selector is not supported for this command."), ContextTag);
+			GT_W_LOG(ContextTag, TEXT("The 'all' root selector is not supported for this command."));
 			return false;
 		}
 
@@ -174,7 +174,7 @@ UGorgeousObjectVariable* FGorgeousVariableHierarchyHandler::ResolveVariableToken
 		return nullptr;
 	}
 
-	UGorgeousObjectVariable* Result = nullptr;
+	UGorgeousObjectVariable* Result;
 	if (FGuid ParsedGuid; FGuid::Parse(Token, ParsedGuid))
 	{
 		Result = UGorgeousRootObjectVariable::FindVariableByIdentifier(ParsedGuid);
@@ -277,13 +277,8 @@ void FGorgeousVariableHierarchyHandler::LogAvailableRoots(const TCHAR* ContextTa
 		? FString::JoinBy(RegisteredRoots, TEXT(", "), [](const FName& Name) { return Name.ToString(); })
 		: FString(TEXT("<none>"));
 
-	GT_I_LOG_MESSAGE_FULL(
-		FString::Printf(TEXT("Registered roots: %s"), *RootListing),
-		ContextTag,
-		5.0f,
-		false,
-		true,
-		GWorld);
+	GT_I_LOG(ContextTag, TEXT("Available roots: %s"), *RootListing);
+	
 }
 
 void UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands()
@@ -337,8 +332,8 @@ void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FS
 			*Variable->UniqueIdentifier.ToString(),
 			*(Variable->GetOuter() ? Variable->GetOuter()->GetName() : TEXT("")),
 			*ReplicationState);
-
-		GT_I_LOG_MESSAGE_FULL(LogMessage, TEXT("GorgeousVariableHierarchy"), 5.0f, false, true, GWorld);
+		
+		GT_I_LOG(TEXT("GT.ObjectVariables.HierarchyTraversal"), TEXT("%s: Visited variable %s with identifier %s at depth %d."), *LogMessage, *Variable->GetDisplayNameOrFallback(), *Variable->UniqueIdentifier.ToString(), IndentLevel);
 	};
 
 	if (bAllRoots)
@@ -372,9 +367,7 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 
 	if (!Result)
 	{
-		GT_W_LOG_MESSAGE(
-			FString::Printf(TEXT("No Gorgeous Object Variable found for '%s' under root %s."), *Query, *RootName.ToString()),
-			TEXT("GorgeousVariableLookup"));
+		GT_W_LOG(TEXT("GT.ObjectVariables.LookupFailed"), TEXT("Lookup failed for query '%s' under root %s."), *Query, *RootName.ToString());
 		return;
 	}
 
@@ -387,7 +380,7 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 		*ReplicationState,
 		Result->bPersistent ? TEXT("Yes") : TEXT("No"));
 
-	GT_I_LOG_MESSAGE_FULL(Report, TEXT("GorgeousVariableLookup"), 5.0f, false, true, GWorld);
+	GT_I_LOG(TEXT("GT.ObjectVariables.Lookup"), TEXT("Lookup successful for query '%s' under root %s."), *Query, *RootName.ToString());
 }
 
 void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArray<FString>& Args)
@@ -406,9 +399,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		Scope = FGorgeousVariableHierarchyHandler::ResolveVariableToken(Args[ArgIndex], RootName);
 		if (!Scope)
 		{
-			GT_W_LOG_MESSAGE(
-				FString::Printf(TEXT("No Gorgeous Object Variable found for '%s' under root %s."), *Args[ArgIndex], *RootName.ToString()),
-				TEXT("GorgeousVariableStats"));
+			GT_W_LOG("GT.ObjectVariables.Stats.LookupFailed", TEXT("Failed to find variable for stats scope query '%s' under root %s."), *Args[ArgIndex], *RootName.ToString());
 			return;
 		}
 	}
@@ -418,9 +409,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		: FGorgeousVariableHierarchyHandler::GatherStatsForRoot(RootName);
 	if (Stats.TotalCount == 0)
 	{
-		GT_I_LOG_MESSAGE_FULL(
-			FString::Printf(TEXT("No Gorgeous Object Variables registered under root %s."), *RootName.ToString()),
-			TEXT("GorgeousVariableStats"), 5.0f, false, true, GWorld);
+		GT_I_LOG("GT.ObjectVariables.Stats.NoVariables", TEXT("No variables found for stats query under root %s."), *RootName.ToString());
 		return;
 	}
 
@@ -432,8 +421,8 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		Stats.AutoReplicationEligibleCount,
 		Stats.ReplicationActiveCount,
 		Stats.LegacyRegisteredCount);
-
-	GT_I_LOG_MESSAGE_FULL(Report, TEXT("GorgeousVariableStats"), 5.0f, false, true, GWorld);
+	
+	GT_I_LOG("GT.ObjectVariables.Stats", TEXT("Compiled stats for scope %s."), *ScopeLabel);
 }
 
 void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<FString>& Args)
@@ -441,15 +430,13 @@ void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<
 	const EGorgeousObjectVariableOrphanResolution CurrentMode = UGorgeousRootObjectVariable::GetDefaultOrphanResolution();
 	if (Args.Num() == 0)
 	{
-		GT_I_LOG_MESSAGE_FULL(
-			FString::Printf(TEXT("Current orphan policy: %s"), *DescribeOrphanResolution(CurrentMode)),
-			TEXT("GorgeousVariableOrphans"), 5.0f, false, true, GWorld);
+		GT_I_LOG("GT.ObjectVariables.OrphanPolicy.Current", TEXT("Queried current orphan policy %s."), *DescribeOrphanResolution(CurrentMode));
 		return;
 	}
 
 	FString ModeString = Args[0];
 	ModeString.ToLowerInline();
-	EGorgeousObjectVariableOrphanResolution DesiredMode = CurrentMode;
+	EGorgeousObjectVariableOrphanResolution DesiredMode;
 	if (ModeString == TEXT("reparent"))
 	{
 		DesiredMode = EGorgeousObjectVariableOrphanResolution::ReparentToRoot;
@@ -460,19 +447,16 @@ void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<
 	}
 	else
 	{
-		GT_W_LOG_MESSAGE(TEXT("Usage: gorgeous.ov.orphans [reparent|destroy]"), TEXT("GorgeousVariableOrphans"));
+		GT_W_LOG("GT.ObjectVariables.OrphanPolicy.InvalidArgument", TEXT("Invalid argument '%s' for gorgeous.ov.orphans command; expected 'reparent' or 'destroy'."), *Args[0]);
 		return;
 	}
 
 	if (DesiredMode == CurrentMode)
 	{
-		GT_I_LOG_MESSAGE_FULL(
-			TEXT("Orphan policy unchanged."), TEXT("GorgeousVariableOrphans"), 5.0f, false, true, GWorld);
+		GT_I_LOG("GT.ObjectVariables.OrphanPolicy.Unchanged", TEXT("Orphan policy is already set to %s."), *DescribeOrphanResolution(CurrentMode));
 		return;
 	}
 
 	UGorgeousRootObjectVariable::SetDefaultOrphanResolution(DesiredMode);
-	GT_S_LOG_MESSAGE(
-		FString::Printf(TEXT("Orphan policy set to %s."), *DescribeOrphanResolution(DesiredMode)),
-		TEXT("GorgeousVariableOrphans"));
+	GT_S_LOG("GT.ObjectVariables.OrphanPolicy.Changed", TEXT("Changed orphan policy from %s to %s."), *DescribeOrphanResolution(CurrentMode), *DescribeOrphanResolution(DesiredMode));
 }

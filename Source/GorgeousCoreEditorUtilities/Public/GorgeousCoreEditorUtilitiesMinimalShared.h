@@ -23,3 +23,4 @@
 MONOLITHIC_HEADER_BOILERPLATE()
 
 #include "AssetRegistration/GorgeousFactory.h"
+#include "AssetRegistration/GorgeousCoreBlueprintTypes.h"

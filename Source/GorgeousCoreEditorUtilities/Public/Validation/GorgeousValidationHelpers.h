@@ -11,7 +11,7 @@
 #pragma once
 
 #include "EditorValidatorBase.h"
-#include "Settings/GorgeousUsefulSettings.h"
+#include "GorgeousUsefulSettings.h"
 
 namespace GorgeousValidation
 {

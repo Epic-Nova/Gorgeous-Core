@@ -18,5 +18,4 @@ UGorgeousLoggingDeveloperSettings::UGorgeousLoggingDeveloperSettings()
 	bMirrorToOutputLog = true;
 	bShowOnScreen = true;
 	bShowInGame = false;
-	bEmitSampleLogsOnStartup = false;
 }

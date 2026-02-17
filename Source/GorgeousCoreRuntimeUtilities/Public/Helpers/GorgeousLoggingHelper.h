@@ -17,6 +17,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
+#include "Macros/GorgeousLoggingHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #if WITH_EDITOR
 #include "Framework/Notifications/NotificationManager.h"
@@ -173,11 +174,43 @@ FORCEINLINE static void ShowToastNotification(const FString& Title, const FStrin
 
 namespace GorgeousLogging
 {
+    
+    /**
+     * Converts various input types to FText for logging purposes.
+     *
+     * @param In The input value to convert.
+     * @return The converted FText.
+     */
+    FORCEINLINE FText GT_LogToText(const FText& In)
+    {
+        return In;
+    }
+
+    /** Converts various input types to FText for logging purposes.
+     *
+     * @param In The input value to convert.
+     * @return The converted FText.
+     */
+    FORCEINLINE FText GT_LogToText(const FString& In)
+    {
+        return FText::FromString(In);
+    }
+
+    /** Converts various input types to FText for logging purposes.
+     *
+     * @param In The input value to convert.
+     * @return The converted FText.
+     */
+    FORCEINLINE FText GT_LogToText(const TCHAR* In)
+    {
+        return FText::FromString(In);
+    }
+    
     // The messages that were logged and are currently on cooldown with their gameplay tag as key.
-    static TMap<FGameplayTag, FString> LoggedMessages;
+    inline TMap<FGameplayTag, FString> LoggedMessages;
     
     // The set of logging keys that are currently suppressed.
-    static TSet<FName> SuppressedLoggingKeys;
+    inline TSet<FName> SuppressedLoggingKeys;
 
     /**
      * Checks if the GameplayTags module is available for use.
@@ -212,14 +245,22 @@ namespace GorgeousLogging
         {
             return;
         }
+        
+        if (SuppressedLoggingKeys.Contains(LoggingKey))
+        {
+            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' is already suppressed."), *LoggingKey.ToString());
+             return;
+        }
 
         if (bShouldSuppress)
         {
             SuppressedLoggingKeys.Add(LoggingKey);
+            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been suppressed."), *LoggingKey.ToString());
         }
         else
         {
             SuppressedLoggingKeys.Remove(LoggingKey);
+            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been unsuppressed."), *LoggingKey.ToString());
         }
     }
 
@@ -370,11 +411,11 @@ namespace GorgeousLogging
             return;
         }
 
-        const FGorgeousLoggingSettingsSnapshot Settings = GetLoggingSettingsSnapshot();
-        const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(Settings.MinMessageLogVerbosity);
-        const bool bShouldSendToMessageLog = Settings.bEnableGorgeousMessageLog && bAllowedBySettings;
-        const bool bShouldPrintToLog = bPrintToLog && Settings.bMirrorToOutputLog;
-        const bool bShouldPrintToScreen = bPrintToScreen && Settings.bShowOnScreen;
+        const auto [bEnableGorgeousMessageLog, MessageLogListingName, MinMessageLogVerbosity, bMirrorToOutputLog, bShowOnScreen] = GetLoggingSettingsSnapshot();
+        const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(MinMessageLogVerbosity);
+        const bool bShouldSendToMessageLog = bEnableGorgeousMessageLog && bAllowedBySettings;
+        const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog;
+        const bool bShouldPrintToScreen = bPrintToScreen && bShowOnScreen;
 
         const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
         FGameplayTag GameplayLoggingKey = bShouldUseGameplayTags
@@ -535,7 +576,7 @@ namespace GorgeousLogging
         if (bShowAsToast)
         {
             const FString ToastTitle = LoggingKey.IsEmpty()
-                ? Settings.MessageLogListingName.ToString()
+                ? MessageLogListingName.ToString()
                 : LoggingKey;
             const int32 ToastIconKind = (Importancy == Logging_Error || Importancy == Logging_Fatal)
                 ? 3

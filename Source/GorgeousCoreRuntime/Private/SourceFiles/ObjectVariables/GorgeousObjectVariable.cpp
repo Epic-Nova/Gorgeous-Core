@@ -497,11 +497,11 @@ UGorgeousObjectVariable::UGorgeousObjectVariable():
 	bSupportsNetworking(true),
 	bReplicates(false),
 	Parent(nullptr),
+	ServerPropertyPollingIntervalSeconds(0.0f),
 	AutoReplicationEntryKey(NAME_None),
 	AutoReplicationReplicationIndex(INDEX_NONE),
 	bLegacyReplicationRegistered(false),
 	bAutoReplicationActivated(false),
-	ServerPropertyPollingIntervalSeconds(0.0f),
 	ClientPropertyPollingIntervalSeconds(0.0f),
 	bRemovedFromRegistry(false)
 {
@@ -522,7 +522,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	GORGEOUS_PROFILE_SCOPE(GOV_NewObjectVariable);
 	if (!Class && Class.Get() == nullptr)
 	{
-		GT_E_LOG_MESSAGE("You are trying to register a object variable without a valid class, check if the class is valid!", "GT.ObjectVariables.Registration.Invalid_Class");
+		GT_E_LOG("GT.ObjectVariables.Registration.Invalid_Class", TEXT("You are trying to register a object variable without a valid class, check if the class is valid!"));
 		return nullptr;
 	}
 
@@ -534,7 +534,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 			DesiredRootName = ClassDefaultObject->GetConfiguredRootName();
 		}
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable(DesiredRootName);
-		GT_I_LOG_MESSAGE("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		
+		GT_I_LOG("GT.ObjectVariables.Registration.No_Parent",
+			TEXT("No parent were specified for object variable with class %s, therefore the resolved root object variable will be used as the parent"),
+			*Class->GetName());
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
@@ -571,7 +574,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	GORGEOUS_PROFILE_SCOPE(GOV_InstantiateTransactional);
 	if (!Class)
 	{
-		GT_E_LOG_MESSAGE("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+		GT_E_LOG("GT.ObjectVariables.Transactional.Invalid_Class", TEXT("You are trying to create a transactional object variable without a valid class, check if the class is valid!"));
 		return nullptr;
 	}
 
@@ -583,7 +586,10 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 			DesiredRootName = ClassDefaultObject->GetConfiguredRootName();
 		}
 		InParent = UGorgeousRootObjectVariable::GetRootObjectVariable(DesiredRootName);
-		GT_I_LOG_MESSAGE("No parent were specified, therefore the resolved root object variable will be used as the parent", "GT.ObjectVariables.No_Parent");
+		
+		GT_I_LOG("GT.ObjectVariables.Transactional.No_Parent",
+			TEXT("No parent were specified for transactional object variable with class %s, therefore the resolved root object variable will be used as the parent"),
+			*Class->GetName());
 	}
 	
 	UGorgeousObjectVariable* NewInstance = NewObject<UGorgeousObjectVariable>(InParent, Class, NAME_None, RF_Transactional);
@@ -600,10 +606,15 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	{
 		Modify();
 
-		GT_S_LOG_MESSAGE("Created new transactional instance.", "GT.ObjectVariables.Transactional.Success");
+		GT_S_LOG("GT.ObjectVariables.Registration.Transactional",
+			TEXT("Created new transactional instance of class %s with name %s under parent %s (%s)"),
+			*Class->GetName(),
+			*NewInstance->GetDisplayNameOrFallback(),
+			*InParent->GetName(),
+			*InParent->UniqueIdentifier.ToString());
 		return NewInstance;
 	}
-	GT_E_LOG_MESSAGE("Failed to create new transactional instance", "GT.ObjectVariables.Transactional.Failed");
+	GT_E_LOG("GT.ObjectVariables.Transactional.Failed", TEXT("Failed to create new transactional instance of class %s under parent %s (%s)"), *Class->GetName(), *InParent->GetName(), *InParent->UniqueIdentifier.ToString());
 	return nullptr;
 }
 

@@ -15,23 +15,14 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
-#include "Blueprints/GorgeousCoreBlueprintTypes.h"
-#include "AssetToolsModule.h"
-#include "AssetTypeCategories.h"
-#include "IAssetTools.h"
-#include "Modules/ModuleManager.h"
+#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousIsValidConditionFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Factory class responsible for creating instances of UGorgeousIsValidCondition.
- *
- * Key features include:
- * - Registration of UGorgeousIsValidCondition as the target class.
- *
  * The configuration is encapsulated using FGorgeousFactoryInfo_S, which is passed to the base class.
  *
  * @author Nils Bergemann
@@ -56,30 +47,5 @@ public:
 	virtual FText GetDisplayName() const override
 	{
 		return NSLOCTEXT("GorgeousCore", "GorgeousIsValidConditionFactory", "Gorgeous Is Valid Condition");
-	}
-
-	virtual uint32 GetMenuCategories() const override
-	{
-		if (FModuleManager::Get().IsModuleLoaded("AssetTools"))
-		{
-			IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get();
-			return AssetTools.FindAdvancedAssetCategory("GorgeousThings");
-		}
-		return EAssetTypeCategories::Misc;
-	}
-
-	virtual const TArray<FText>& GetMenuCategorySubMenus() const override
-	{
-		static const TArray<FText> SubMenus = {
-			NSLOCTEXT("GorgeousCore", "Menu_GorgeousCore", "Gorgeous Core"),
-			NSLOCTEXT("GorgeousCore", "Menu_ConditionalChoosers", "Conditional Object Choosers"),
-			NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions")
-		};
-		return SubMenus;
-	}
-
-	virtual FName GetNewAssetThumbnailOverride() const override
-	{
-		return FName(TEXT("GorgeousCore.Condition.Icon"));
 	}
 };

@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿#if 0
+#pragma once
 
 #include "CoreMinimal.h"
 #include "K2Node.h"
@@ -17,14 +18,11 @@ public:
 	// Node metadata
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 	virtual bool ShouldDrawCompact() const override { return true; }
-	virtual FText GetCompactNodeTitle() const override { return INVTEXT("Get"); }
-	virtual FText GetTooltipText() const override;
-	virtual void AllocateDefaultPins() override;
-	virtual void ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph) override;
+	virtual FText GetCompactNodeTitle() const override { return INVTEXT("Get Value @TODO: for v1.1"); }
 	virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(0.066f, 0.46f, 0.63f); }
 	virtual bool IsNodePure() const override { return true; }
-
-
+	
+	virtual void AllocateDefaultPins() override;
 	virtual void ReconstructNode() override;
 
 	// Registration info
@@ -37,23 +35,33 @@ public:
 
 private:
 	
+	UEdGraphPin* BuildTargetPin();
+	UEdGraphPin* BuildReturnValuePin();
+	
 	UEdGraphPin* GetTargetPin() const {  return FindPin(TEXT("Target")); }
 	UEdGraphPin* GetReturnValuePin() const {  return FindPin(TEXT("ReturnValue")); }
 
-	static void CustomizeNodeForContext(UEdGraphNode* NewNode, bool bIsTemplateNode);
+	UClass* ResolveTargetClass() const;
+	//static void CustomizeNodeForContext(UEdGraphNode* NewNode, bool bIsTemplateNode);
 
-	UEdGraphPin* BuildReturnValuePin();
+	
+	virtual void PostPlacedNewNode() override;
+	virtual void PostLoad() override;
+	virtual void BeginDestroy() override;
+	
+	FDelegateHandle BlueprintCompiledHandle;
+	FDelegateHandle ObjectModifiedHandle;
 
-	/**
-	 * Attempts to retrieve the editor-time UObject instance connected to a specific input pin.
-	 * This function traverses through basic Reroute nodes (UK2Node_Knot).
-	 *
-	 * @param TargetPin The input pin on your node for which you want to find the connected source object.
-	 * @return The connected UObject* if found and determinable at editor time, otherwise nullptr.
-	 *
-	 * NOTE: This function relies on editor-time data (like DefaultObject) and reflection.
-	 * It may not accurately reflect runtime values, especially for function calls.
-	 * It only handles a limited set of node types (VariableGet, CallFunction, Literal, Knot).
-	 */
-	UClass* GetConnectedUObjectInstance(const UEdGraphPin* TargetPin);
+	void HandleBlueprintCompiled(UBlueprint* Blueprint);
+	void HandleObjectModified(UObject* Object);
+
+	void BindListeners();
+	void UnbindListeners();
+	
+	bool bRefreshQueued = false;
+
+	void QueueRefresh();
+	void PerformDeferredRefresh();
 };
+
+#endif
