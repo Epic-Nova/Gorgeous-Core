@@ -25,40 +25,6 @@
 #define GT_E_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 #define GT_F_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 
-namespace GorgeousLogging
-{
-	/**
-	 * Converts various input types to FText for logging purposes.
-	 *
-	 * @param In The input value to convert.
-	 * @return The converted FText.
-	 */
-	FORCEINLINE FText GT_LogToText(const FText& In)
-	{
-		return In;
-	}
-
-	/** Converts various input types to FText for logging purposes.
-	 *
-	 * @param In The input value to convert.
-	 * @return The converted FText.
-	 */
-	FORCEINLINE FText GT_LogToText(const FString& In)
-	{
-		return FText::FromString(In);
-	}
-
-	/** Converts various input types to FText for logging purposes.
-	 *
-	 * @param In The input value to convert.
-	 * @return The converted FText.
-	 */
-	FORCEINLINE FText GT_LogToText(const TCHAR* In)
-	{
-		return FText::FromString(In);
-	}
-}
-
 /**
  * Logs a message with customizable parameters.
  *
@@ -131,7 +97,7 @@ namespace GorgeousLogging
  */
 #define GT_I_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, 5.0f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, 5.0f, false, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -150,36 +116,10 @@ namespace GorgeousLogging
 }
 
 /**
- * Logs an information message.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- */
-#define GT_I_LOG_MESSAGE(Message, LoggingKey) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Information, Message, LoggingKey, 5.0f, true, true, true, false, nullptr, nullptr); \
-}
-
-/**
- * Logs an information message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param WorldContextObject The world context object.
- */
-#define GT_I_LOG_MESSAGE_FULL(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Information, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, true, false, WorldContextObject, nullptr); \
-}
-
-/**
  * Logs an information message with formatted arguments and customizable parameters.
  *
- * @param MessageFormat The format string for the message.
  * @param LoggingKey A unique key to manage the log message.
+ * @param MessageFormat The format string for the message.
  * @param Duration The duration to display the message on screen.
  * @param bPrintToScreen Whether to print the message to the screen.
  * @param bPrintToLog Whether to print the message to the log.
@@ -188,35 +128,15 @@ namespace GorgeousLogging
  * @param WorldContextObject The world context object.
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
-#define GT_I_LOG_FULL_EX(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
+#define GT_I_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
 { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
 }
 
-/**
- * Logs an information message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
- * @param bShowAsToast Whether to show the message as a toast notification.
- * @param WorldContextObject The world context object.
- * @param HyperlinkPtr Optional hyperlink associated with the log message.
- */
-#define GT_I_LOG_MESSAGE_FULL_EX(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Information, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr); \
-}
 #else
 #define GT_I_LOG(...) ((void)0)
 #define GT_I_LOG_FULL(...) ((void)0)
-#define GT_I_LOG_MESSAGE(...) ((void)0)
-#define GT_I_LOG_MESSAGE_FULL(...) ((void)0)
 #define GT_I_LOG_FULL_EX(...) ((void)0)
-#define GT_I_LOG_MESSAGE_FULL_EX(...) ((void)0)
 #endif
 
 
@@ -230,7 +150,7 @@ namespace GorgeousLogging
  */
 #define GT_S_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, 2.5f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -249,36 +169,10 @@ namespace GorgeousLogging
 }
 
 /**
- * Logs a success message.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- */
-#define GT_S_LOG_MESSAGE(Message, LoggingKey) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Success, Message, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-}
-
-/**
- * Logs a success message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param WorldContextObject The world context object.
- */
-#define GT_S_LOG_MESSAGE_FULL(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Success, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, true, false, WorldContextObject, nullptr); \
-}
-
-/**
  * Logs a success message with formatted arguments and customizable parameters.
  *
- * @param MessageFormat The format string for the message.
  * @param LoggingKey A unique key to manage the log message.
+ * @param MessageFormat The format string for the message.
  * @param Duration The duration to display the message on screen.
  * @param bPrintToScreen Whether to print the message to the screen.
  * @param bPrintToLog Whether to print the message to the log.
@@ -287,35 +181,15 @@ namespace GorgeousLogging
  * @param WorldContextObject The world context object.
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
-#define GT_S_LOG_FULL_EX(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
+#define GT_S_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
 { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
 }
 
-/**
- * Logs a success message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
- * @param bShowAsToast Whether to show the message as a toast notification.
- * @param WorldContextObject The world context object.
- * @param HyperlinkPtr Optional hyperlink associated with the log message.
- */
-#define GT_S_LOG_MESSAGE_FULL_EX(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Success, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr); \
-}
 #else
 #define GT_S_LOG(...) ((void)0)
 #define GT_S_LOG_FULL(...) ((void)0)
-#define GT_S_LOG_MESSAGE(...) ((void)0)
-#define GT_S_LOG_MESSAGE_FULL(...) ((void)0)
 #define GT_S_LOG_FULL_EX(...) ((void)0)
-#define GT_S_LOG_MESSAGE_FULL_EX(...) ((void)0)
 #endif
 
 
@@ -346,34 +220,10 @@ namespace GorgeousLogging
 }
 
 /**
- * Logs a warning message.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- */
-#define GT_W_LOG_MESSAGE(Message, LoggingKey) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Warning, Message, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-}
-
-/**
- * Logs a warning message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param WorldContextObject The world context object.
- */
-#define GT_W_LOG_MESSAGE_FULL(Message, LoggingKey, Duration, WorldContextObject) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Warning, Message, LoggingKey, Duration, true, true, true, false, WorldContextObject, nullptr); \
-}
-
-/**
  * Logs a warning message with formatted arguments and customizable parameters.
  *
- * @param MessageFormat The format string for the message.
  * @param LoggingKey A unique key to manage the log message.
+ * @param MessageFormat The format string for the message.
  * @param Duration The duration to display the message on screen.
  * @param bPrintToScreen Whether to print the message to the screen.
  * @param bPrintToLog Whether to print the message to the log.
@@ -382,35 +232,15 @@ namespace GorgeousLogging
  * @param WorldContextObject The world context object.
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
-#define GT_W_LOG_FULL_EX(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
+#define GT_W_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
 { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
 }
 
-/**
- * Logs a warning message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
- * @param bShowAsToast Whether to show the message as a toast notification.
- * @param WorldContextObject The world context object.
- * @param HyperlinkPtr Optional hyperlink associated with the log message.
- */
-#define GT_W_LOG_MESSAGE_FULL_EX(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Warning, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr); \
-}
 #else
 #define GT_W_LOG(...) ((void)0)
 #define GT_W_LOG_FULL(...) ((void)0)
-#define GT_W_LOG_MESSAGE(...) ((void)0)
-#define GT_W_LOG_MESSAGE_FULL(...) ((void)0)
 #define GT_W_LOG_FULL_EX(...) ((void)0)
-#define GT_W_LOG_MESSAGE_FULL_EX(...) ((void)0)
 #endif
 
 
@@ -441,7 +271,7 @@ namespace GorgeousLogging
 	{ \
 		FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
 		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-		ensureMsgf(Condition, *FormattedMessage); \
+		ensureMsgf(Condition, TEXT("%s"), *FormattedMessage); \
 	}\
 } \
 
@@ -459,7 +289,7 @@ namespace GorgeousLogging
 	{ \
 		FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
 		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-		verifyMsgf(Condition, *FormattedMessage); \
+		verifyf(Condition, TEXT("%s"), *FormattedMessage); \
 	}\
 } \
 
@@ -477,34 +307,10 @@ namespace GorgeousLogging
 }
 
 /**
- * Logs an error message with formatted arguments and default parameters.
- *
- * @param LoggingKey A unique key to manage the log message.
- * @param Message The message to log.
- */
-#define GT_E_LOG_MESSAGE(Message, LoggingKey) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Error, Message, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-}
-
-/**
  * Logs an error message with customizable parameters.
  *
- * @param Message The message to log.
  * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param WorldContextObject The world context object.
- */
-#define GT_E_LOG_MESSAGE_FULL(Message, LoggingKey, Duration, WorldContextObject) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Error, Message, LoggingKey, Duration, true, true, true, false, WorldContextObject, nullptr); \
-}
-
-/**
- * Logs an error message with customizable parameters.
- *
  * @param MessageFormat The format string for the message.
- * @param LoggingKey A unique key to manage the log message.
  * @param Duration The duration to display the message on screen.
  * @param bPrintToScreen Whether to print the message to the screen.
  * @param bPrintToLog Whether to print the message to the log.
@@ -513,37 +319,17 @@ namespace GorgeousLogging
  * @param WorldContextObject The world context object.
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
-#define GT_E_LOG_FULL_EX(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
+#define GT_E_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
 { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
 }
 
-/**
- * Logs an error message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
- * @param bShowAsToast Whether to show the message as a toast notification.
- * @param WorldContextObject The world context object.
- * @param HyperlinkPtr Optional hyperlink associated with the log message.
- */
-#define GT_E_LOG_MESSAGE_FULL_EX(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Error, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr); \
-}
 #else
 #define GT_E_LOG(...) ((void)0)
 #define GT_E_LOG_ENSURE(...) ((void)0)
 #define GT_E_LOG_VERIFY(...) ((void)0)
 #define GT_E_LOG_FULL(...) ((void)0)
-#define GT_E_LOG_MESSAGE(...) ((void)0)
-#define GT_E_LOG_MESSAGE_FULL(...) ((void)0)
 #define GT_E_LOG_FULL_EX(...) ((void)0)
-#define GT_E_LOG_MESSAGE_FULL_EX(...) ((void)0)
 #endif
 
 
@@ -591,33 +377,10 @@ namespace GorgeousLogging
 }
 
 /**
- * Logs a fatal message with formatted arguments and default parameters.
- *
- * @param LoggingKey A unique key to manage the log message.
- * @param Message The message to log.
- */
-#define GT_F_LOG_MESSAGE(Message, LoggingKey) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, Message, LoggingKey, 0.0f, true, true, true, false, nullptr, nullptr); \
-}
-
-/**
  * Logs a fatal message with customizable parameters.
  *
- * @param Message The message to log.
  * @param LoggingKey A unique key to manage the log message.
- * @param WorldContextObject The world context object.
- */
-#define GT_F_LOG_MESSAGE_FULL(Message, LoggingKey, WorldContextObject) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, Message, LoggingKey, 0.0f, true, true, true, false, WorldContextObject, nullptr); \
-}
-
-/**
- * Logs a fatal message with customizable parameters.
- *
  * @param MessageFormat The format string for the message.
- * @param LoggingKey A unique key to manage the log message.
  * @param Duration The duration to display the message on screen.
  * @param bPrintToScreen Whether to print the message to the screen.
  * @param bPrintToLog Whether to print the message to the log.
@@ -626,34 +389,21 @@ namespace GorgeousLogging
  * @param WorldContextObject The world context object.
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
-#define GT_F_LOG_FULL_EX(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
+#define GT_F_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
 { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
 }
 
-/**
- * Logs a fatal message with customizable parameters.
- *
- * @param Message The message to log.
- * @param LoggingKey A unique key to manage the log message.
- * @param Duration The duration to display the message on screen.
- * @param bPrintToScreen Whether to print the message to the screen.
- * @param bPrintToLog Whether to print the message to the log.
- * @param bOverrideLoggingIfPresent Whether to override existing log messages with the same key.
- * @param bShowAsToast Whether to show the message as a toast notification.
- * @param WorldContextObject The world context object.
- * @param HyperlinkPtr Optional hyperlink associated with the log message.
- */
-#define GT_F_LOG_MESSAGE_FULL_EX(Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
-	GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr); \
-}
 #else
 #define GT_F_LOG(...) ((void)0)
 #define GT_F_LOG_CHECKF(...) ((void)0)
 #define GT_F_LOG_FULL(...) ((void)0)
-#define GT_F_LOG_MESSAGE(...) ((void)0)
-#define GT_F_LOG_MESSAGE_FULL(...) ((void)0)
 #define GT_F_LOG_FULL_EX(...) ((void)0)
-#define GT_F_LOG_MESSAGE_FULL_EX(...) ((void)0)
 #endif
+
+#undef GT_LOGGING_ENABLED
+#undef GT_I_LOG_ENABLED
+#undef GT_S_LOG_ENABLED
+#undef GT_W_LOG_ENABLED
+#undef GT_E_LOG_ENABLED
+#undef GT_F_LOG_ENABLED

@@ -9,6 +9,8 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
+#if 0
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -18,7 +20,7 @@
 class UGorgeousObjectVariable;
 
 /**
- * TODO: Under construction
+ * TODO: Under construction: Planned to be available in v1.1
  * K2 node that constructs a Gorgeous Object Variable and honors ExposeOnSpawn properties.
  * Mirrors the NewObjectVariable helper while surfacing pins for exposed properties.
  */
@@ -60,3 +62,6 @@ private:
 	static const FName DisplayNamePinName;
 	static const FName IdentifierPinName;
 };
+
+
+#endif

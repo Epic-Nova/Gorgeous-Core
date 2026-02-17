@@ -10,6 +10,8 @@
 <==========================================================================*/
 #include "K2Nodes/GorgeousK2Node_NewObjectVariable.h"
 
+#if 0
+
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "EdGraph/EdGraphPin.h"
@@ -236,3 +238,6 @@ UEdGraphPin* UK2Node_GorgeousNewObjectVariable::GetIdentifierPin() const
 }
 
 #undef LOCTEXT_NAMESPACE
+
+
+#endif

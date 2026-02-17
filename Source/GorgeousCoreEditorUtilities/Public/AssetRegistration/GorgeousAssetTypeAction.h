@@ -21,19 +21,8 @@
 //<-------------------------------------------------------------------------->
 
 /**
- * Asset type action handler for Gorgeous Core custom assets.
- *
- * This class defines how a specific asset type appears and behaves within the Unreal Engine Editor.
- * It provides metadata such as display name, color, supported class, categories, and icon/thumbnail
- * brushes used in the content browser. This enhances the user experience when working with custom
- * Gorgeous Core assets by providing clear visual cues and proper categorization.
- *
- * Key features include:
- * - All data-driven via FGorgeousAssetTypeActionInfo_S for flexible reuse.
- *
- * This class is intended to be constructed with a FGorgeousAssetTypeActionInfo_S structure,
- * containing the relevant metadata for the associated asset type.
- *
+ * Custom asset type action class that defines how a specific asset type should be represented and behave in the Unreal Editor, for Gorgeous Core custom assets.
+ * 
  * @author Nils Bergemann
  */
 class GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Blueprint
@@ -115,9 +104,7 @@ private:
 	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
 };
 
-//=============================================================================
-// FGorgeousAssetTypeAction Inline Implementation
-//=============================================================================
+//<=============================--- Inline Definitions ---=============================>
 
 inline FGorgeousAssetTypeAction::FGorgeousAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo)
 	: AssetTypeActionInfos(InAssetTypeActionInfo)
@@ -158,3 +145,4 @@ inline const FSlateBrush* FGorgeousAssetTypeAction::GetIconBrush(const FAssetDat
 {
 	return AssetTypeActionInfos.IconBrush;
 }
+//<------------------------------------------------------------------------------------>

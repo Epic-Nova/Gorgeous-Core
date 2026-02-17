@@ -15,19 +15,14 @@
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 #include "GorgeousCoreMinimalShared.h"
-#include "Blueprints/GorgeousCoreBlueprintTypes.h"
+#include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousObjectVariableFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Factory class responsible for creating instances of UGorgeousObjectVariable.
- *
- * Key features include:
- * - Registration of UGorgeousObjectVariable as the target class.
- *
  * The configuration is encapsulated using FGorgeousFactoryInfo_S, which is passed to the base class.
  *
  * @author Nils Bergemann
@@ -38,6 +33,7 @@ class UGorgeousObjectVariableFactory : public UGorgeousFactory
 	GENERATED_BODY()
 	
 public:
+	
 	/**
 	 * Default constructor that sets up the factory with metadata describing its target class
 	 * and behavior within the Unreal Editor asset system.

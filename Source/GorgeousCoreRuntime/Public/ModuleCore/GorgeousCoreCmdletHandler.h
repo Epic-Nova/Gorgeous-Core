@@ -12,5 +12,36 @@
 //<=============================--- Pragmas ---==============================>
 #pragma once
 //<-------------------------------------------------------------------------->
+//<--------------------------=== Module Includes ===------------------------->
+#include "GorgeousSingleton.h"
+//<=============================--- Includes ---=============================>
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
+#include "GorgeousCoreCmdletHandler.generated.h"
+//<-------------------------------------------------------------------------->
 
-//@TODO: Planned for version 1.1 and upwards
+/**
+ * Handles console commands related to Gorgeous Core.
+ */
+UCLASS()
+class GORGEOUSCORERUNTIME_API UGorgeousCoreCmdletHandler : public UObject
+{
+	GENERATED_BODY()
+	
+public:
+	
+	virtual void PostInitProperties() override;
+	
+private:
+	
+	/**
+	 * Registers console commands related to Gorgeous Object Variables.
+	 */
+	void RegisterConsoleCommands();
+	
+	/**
+	 * Lists Gorgeous Variables based on the provided arguments.
+	 *
+	 * @param Args The arguments provided to the console command.
+	 */
+	void SuppressLoggingKey(const TArray<FString>& Args);
+};

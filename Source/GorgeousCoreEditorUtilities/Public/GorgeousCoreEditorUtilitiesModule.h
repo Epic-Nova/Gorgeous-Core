@@ -82,10 +82,11 @@ public:
 	virtual bool ProvidesCoreFunctionality() const override { return true; }
 	
 private:
+
+	
 	void HandleGorgeousLogEntry(const FGorgeousLogEntry& Entry);
 	void HandleBeginPIE(bool bIsSimulating);
 	void HandleEndPIE(bool bIsSimulating);
-
 
 private:
 	FDelegateHandle LogEntryHandle;

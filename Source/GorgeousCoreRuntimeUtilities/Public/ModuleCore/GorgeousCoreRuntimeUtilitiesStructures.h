@@ -24,6 +24,8 @@
  * Struct representing a hyperlink in a gorgeous log entry.
  * 
  * @author Nils Bergemann
+ * 
+ * @note https://c.tenor.com/m7WYX_Q1_mUAAAAd/tenor.gif - Bread
  */
 USTRUCT()
 struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogHyperlink

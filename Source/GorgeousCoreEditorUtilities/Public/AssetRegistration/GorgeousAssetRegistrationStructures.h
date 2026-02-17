@@ -14,15 +14,16 @@
 //<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "Engine/Blueprint.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/BlueprintGeneratedClass.h"
+#include "Engine/Blueprint.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousAssetRegistrationStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Metadata describing how a custom asset should appear and behave in the editor.
- * Used by deprecated asset type actions and editor registration helpers.
+ * Used by asset type actions and editor registration helpers.
  */
 struct FGorgeousAssetTypeActionInfo_S
 {
@@ -37,10 +38,6 @@ struct FGorgeousAssetTypeActionInfo_S
 
 /**
  * Structure that defines how the factory should behave within the editor.
- *
- * This struct provides the necessary metadata to configure object factories, such as
- * whether they support creating new objects, importing files, or handling text-based assets.
- * 
  * Used primarily in UGorgeousFactory-based classes to set up the object creation behavior.
  *
  * @author Nils Bergemann
@@ -63,7 +60,7 @@ struct FGorgeousFactoryInfo_S
 
 	// Parameterized constructor for custom behavior setup.
 	FGorgeousFactoryInfo_S(const TSubclassOf<UObject>& NewSupportedClass, const bool NewEditAfterNew, const bool NewEditorImport,
-	                       const bool NewbCreateNew, const bool NewText,
+	                       const bool NewCreateNew, const bool NewText,
 	                       const TSubclassOf<UBlueprint>& NewBlueprintClass = UBlueprint::StaticClass(),
 	                       const TSubclassOf<UBlueprintGeneratedClass>& NewBlueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass())
 		: SupportedClass(NewSupportedClass)
@@ -71,36 +68,28 @@ struct FGorgeousFactoryInfo_S
 		, BlueprintGeneratedClass(NewBlueprintGeneratedClass)
 		, bEditAfterNew(NewEditAfterNew)
 		, bEditorImport(NewEditorImport)
-		, bCreateNew(NewbCreateNew)
+		, bCreateNew(NewCreateNew)
 		, bText(NewText)
 	{}
 
-	/** The class manufactured by this factory. */
-	UPROPERTY()
+	// The class manufactured by this factory.
 	TSubclassOf<UObject> SupportedClass;
 
-	/** Blueprint asset class to create for this factory. */
-	UPROPERTY()
+	/// Blueprint asset class to create for this factory.
 	TSubclassOf<UBlueprint> BlueprintClass;
-
-	/** Generated class to use for this blueprint asset type. */
-	UPROPERTY()
+	
+	// Generated class to use for this blueprint asset type.
 	TSubclassOf<UBlueprintGeneratedClass> BlueprintGeneratedClass;
 
-	/** True if the associated editor should be opened after creating a new object. */
-	UPROPERTY()
+	// True if the associated editor should be opened after creating a new object.
 	bool bEditAfterNew;
-
-	/** True if the factory imports objects from files. */
-	UPROPERTY()
+	// True if the factory imports objects from files.
 	bool bEditorImport;
 
-	/** True if the factory supports object creation from scratch. */
-	UPROPERTY()
+	// True if the factory supports object creation from scratch.
 	bool bCreateNew;
 
-	/** True if the factory supports importing from text. */
-	UPROPERTY()
+	// True if the factory supports importing from text.
 	bool bText;
 };
 

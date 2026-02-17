@@ -30,6 +30,7 @@
 
 //<=================--- Delegates ---=================>
 DECLARE_DYNAMIC_DELEGATE(FOnVoiceLineFinishedNative);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnVoiceLineAudioReadyNative, UAudioComponent*, AudioComponent);
 //<--------------------------------------------------->
 
 /*
@@ -59,6 +60,7 @@ public:
 	 * @param Sound The soft object pointer to the sound asset to be played.
 	 * @param Actor The actor at whose location the sound will be played.
 	 * @param OnVoiceLineFinished A delegate that will be executed when the voice line has finished playing.
+	 * @param OnVoiceLineAudioReady A delegate that will be executed when the audio component is spawned.
 	 * @param WorldContextObject The world context object for locating the world in which to play the sound.
 	 * 
 	 * @TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function)
@@ -68,6 +70,7 @@ public:
 		const TSoftObjectPtr<USoundBase> Sound,
 		AActor* Actor,
 		FOnVoiceLineFinishedNative OnVoiceLineFinished,
+		FOnVoiceLineAudioReadyNative OnVoiceLineAudioReady,
 		UObject* WorldContextObject = nullptr)
 	{
 		if (Sound.IsNull() || !Actor)
@@ -77,9 +80,11 @@ public:
 
 		auto HandleLoadedObject = [=](UObject* LoadedObject)
 		{
+			UAudioComponent* Audio = nullptr;
+			
 			if (!LoadedObject)
-			{
-				return;
+			{	
+				return Audio;
 			}
 
 			if (UDialogueWave* DialogueSoundWave = Cast<UDialogueWave>(LoadedObject))
@@ -88,21 +93,26 @@ public:
 				//@TODO: Ask a runtime context provider to hand over a valid context
 				//@e.g. the Actor can be used as the speaker and the actors in the near distance could be the listeners
 
-				UGameplayStatics::PlayDialogueAtLocation(WorldContextObject, DialogueSoundWave, DialogueContext,
+				Audio = UGameplayStatics::SpawnDialogueAtLocation(WorldContextObject, DialogueSoundWave, DialogueContext,
 					Actor->GetActorLocation(),
 					Actor->GetActorRotation(),
 					1.f, 1.f, 0.f, nullptr);
 				//@TODO: Get the float & attenuation values from a config provider (e.g. Entertaining Audio Config Provider which would be base of Core Audio Config Provider)
+				OnVoiceLineAudioReady.ExecuteIfBound(Audio);
 				OnVoiceLineFinished.ExecuteIfBound();
-				return;
 			}
 
 			if (USoundBase* LoadedSound = Cast<USoundBase>(LoadedObject))
 			{
-				UGameplayStatics::PlaySoundAtLocation(WorldContextObject, LoadedSound, Actor->GetActorLocation());
+				Audio = UGameplayStatics::SpawnSoundAtLocation(WorldContextObject, LoadedSound, Actor->GetActorLocation());
+				OnVoiceLineAudioReady.ExecuteIfBound(Audio);
 				OnVoiceLineFinished.ExecuteIfBound();
 			}
+			
+			return Audio;
 		};
+
+		const FSoftObjectPath SoundPath = Sound.ToSoftObjectPath();
 
 		GORGEOUS_55_HIGHER(
 			Sound.LoadAsync(FLoadSoftObjectPathAsyncDelegate::CreateLambda([=](const FSoftObjectPath& LoadedPath, UObject* LoadedObject)
@@ -112,7 +122,6 @@ public:
 		)
 
 		GORGEOUS_54_LOWER(
-			const FSoftObjectPath SoundPath = Sound.ToSoftObjectPath();
 			if (!SoundPath.IsValid())
 			{
 				return;
@@ -136,4 +145,4 @@ public:
 	}
 };
 
-using UGT_AudioFunctionLibrary = UGorgeousAudioBlueprintFunctionLibrary;
+using UGT_Audio_FL = UGorgeousAudioBlueprintFunctionLibrary;

@@ -9,11 +9,16 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
+//<=============================--- Pragmas ---==============================>
 #pragma once
+//<-------------------------------------------------------------------------->
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/Blueprint.h"
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreBlueprintTypes.generated.h"
+//<-------------------------------------------------------------------------->
 
 UCLASS()
 class GORGEOUSCOREEDITORUTILITIES_API UGorgeousObjectVariableBlueprint : public UBlueprint

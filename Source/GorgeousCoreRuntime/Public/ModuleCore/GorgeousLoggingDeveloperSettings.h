@@ -56,15 +56,11 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "Output")
 	bool bShowOnScreen;
 
-	/** Shows an in-game logging widget. */
+	/** Shows an in-game logging widget. */ //@TODO: I like the idea of the in game wlog widget class, but maybe this property should be for if logs should show in game at all
 	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowOnScreen", EditConditionHides))
 	bool bShowInGame;
 
 	/** Widget class used for the in-game logging panel. */
 	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowInGame", EditConditionHides))
 	TSoftClassPtr<class UUserWidget> InGameLogWidgetClass;
-
-	/** Emits sample Message Log entries on editor startup for verification. */
-	UPROPERTY(EditAnywhere, Config, Category = "Editor")
-	bool bEmitSampleLogsOnStartup;
 };

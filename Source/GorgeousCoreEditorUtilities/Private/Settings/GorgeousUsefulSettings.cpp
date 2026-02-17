@@ -9,7 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
-#include "Settings/GorgeousUsefulSettings.h"
+#include "GorgeousUsefulSettings.h"
 
 #include "CookerSettings.h"
 #include "DataValidationSettings.h"

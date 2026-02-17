@@ -10,18 +10,8 @@
 <==========================================================================*/
 #include "GorgeousCoreEditorUtilitiesModule.h"
 #include "AssetRegistration/GorgeousAssetTypeAction.h"
-#include "Blueprints/GorgeousCoreBlueprintTypes.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousIsValidCondition.h"
-#include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
+#include "AssetRegistration/GorgeousCoreBlueprintTypes.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
-#include "QualityOfLife/GorgeousGameInstance.h"
-#include "QualityOfLife/GorgeousGameMode.h"
-#include "QualityOfLife/GorgeousGameState.h"
-#include "QualityOfLife/GorgeousPlayerController.h"
-#include "QualityOfLife/GorgeousPlayerState.h"
-#include "QualityOfLife/GorgeousWorldSettings.h"
 #include "MessageLogModule.h"
 #include "Logging/TokenizedMessage.h"
 #include "Framework/Notifications/NotificationManager.h"
@@ -30,13 +20,12 @@
 #include "Editor.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "GorgeousLoggingDeveloperSettings.h"
-#include "Libraries/GorgeousEditorLoggingUtility.h"
-#include "Libraries/GorgeousLoggingBlueprintFunctionLibrary.h"
 #include "Logging/MessageLog.h"
 #include "Styling/CoreStyle.h"
 #include "ToolMenus.h"
 #include "AssetToolsModule.h"
 #include "AssetTypeCategories.h"
+#include "GPUMessaging.h"
 #include "IAssetTools.h"
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
@@ -284,7 +273,7 @@ namespace
 		const FText Menu_Conditions = NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions");
 		const FText Menu_ObjectVariables = NSLOCTEXT("GorgeousCore", "Menu_ObjectVariables", "Object Variables");
 		const FText Menu_QualityOfLife = NSLOCTEXT("GorgeousCore", "Menu_QualityOfLife", "Quality of Life");
-
+		
 		auto MakeInfo = [&](const FText& DisplayName, UClass* SupportedClass, const FColor& TypeColor, TArray<FText> SubMenus,
 			const FName& IconKey)
 		{
@@ -469,7 +458,7 @@ namespace
 void FGorgeousCoreEditorUtilitiesModule::GorgeousStartupModule()
 {
 	const UGorgeousLoggingDeveloperSettings* Settings = GetDefault<UGorgeousLoggingDeveloperSettings>();
-	if (Settings && (Settings->bEnableGorgeousMessageLog || Settings->bEmitSampleLogsOnStartup))
+	if (Settings && (Settings->bEnableGorgeousMessageLog))
 	{
 		FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
 		FMessageLogInitializationOptions Options;
@@ -481,29 +470,6 @@ void FGorgeousCoreEditorUtilitiesModule::GorgeousStartupModule()
 	}
 
 	RegisterGorgeousAssetTypeActions();
-
-	if (Settings && Settings->bEmitSampleLogsOnStartup)
-	{
-		FGorgeousLogEntry Entry;
-		Entry.Message = TEXT("[GT.Core.MessageLog.Sample] Gorgeous Things Message Log is enabled.");
-		Entry.LoggingKey = TEXT("GT.Core.MessageLog.Sample");
-		Entry.Importance = Logging_Information;
-		Entry.Duration = 5.0f;
-		Entry.bPrintToLog = true;
-		Entry.bPrintToScreen = false;
-		EmitGorgeousLogEntry(Entry, true);
-
-		FGorgeousLogEntry HyperlinkEntry;
-		HyperlinkEntry.Message = TEXT("[GT.Core.MessageLog.Hyperlink] Example hyperlink log entry (click to open asset).");
-		HyperlinkEntry.LoggingKey = TEXT("GT.Core.MessageLog.Hyperlink");
-		HyperlinkEntry.Importance = Logging_Information;
-		HyperlinkEntry.Duration = 5.0f;
-		HyperlinkEntry.bPrintToLog = true;
-		HyperlinkEntry.bPrintToScreen = false;
-		HyperlinkEntry.Hyperlink.LinkText = TEXT("Open Asset");
-		HyperlinkEntry.Hyperlink.TargetAsset = FSoftObjectPath(TEXT("/Game/NewBlueprint.NewBlueprint"));
-		EmitGorgeousLogEntry(HyperlinkEntry, true);
-	}
 
 	LogEntryHandle = GetGorgeousLogEntryDelegate().AddRaw(this, &FGorgeousCoreEditorUtilitiesModule::HandleGorgeousLogEntry);
 	BeginPIEHandle = FEditorDelegates::BeginPIE.AddRaw(this, &FGorgeousCoreEditorUtilitiesModule::HandleBeginPIE);
@@ -552,8 +518,7 @@ TArray<FName> FGorgeousCoreEditorUtilitiesModule::GetDependentPlugins() const
 
 int32 FGorgeousCoreEditorUtilitiesModule::GetMinimumRequiredCoreVersion() const
 {
-	//Actually not needed as the Core does not perform checks against itself.
-	return 100; // Version 0.9
+	return 100; // Version 1.0
 }
 
 void FGorgeousCoreEditorUtilitiesModule::HandleGorgeousLogEntry(const FGorgeousLogEntry& Entry)

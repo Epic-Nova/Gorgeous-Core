@@ -25,19 +25,6 @@
 /**
  * Base class for all Gorgeous Core asset factories.
  *
- * This abstract factory class extends Unreal Engine's UFactory to provide a consistent,
- * metadata-driven system for creating custom Gorgeous Core assets in the editor.
- * It serves as the foundational layer for specialized asset factories, such as
- * UGorgeousBooleanConditionFactory, enabling standardized object creation workflows
- * and simplifying the process of registering and managing new asset types.
- * 
- * Key features include:
- * - A metadata structure (FGorgeousFactoryInfo_S) to define behavior for subclasses.
- * - An overridden FactoryCreateNew function for dynamic object instantiation.
- *
- * This class is intended to be extended and not used directly.
- * Each subclass should configure the FactoryInfos structure in its constructor.
- *
  * @author Nils Bergemann
  */
 UCLASS()

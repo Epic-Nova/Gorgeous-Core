@@ -24,14 +24,14 @@
 #include "GorgeousObjectVariableStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
+//<===========--- Forward Declarations ---===========>
 class UGorgeousObjectVariable;
+//<-------------------------------------------------->
 
 #if WITH_EDITORONLY_DATA
 
 /**
- * ...
- *
- * ...
+ * Configuration struct for defining the pin type of object variable nodes in Blueprints.
  *
  * @author Nils Bergemann
  */
@@ -75,50 +75,58 @@ struct FObjectVariablePinConfiguration_S
 	{
 	}
 
-	/** Category */
+	// Category found in the UEdGraphSchema_K2::PC_* constants or custom categories defined by plugins.
 	UPROPERTY(EditAnywhere)
 	FName PinCategory;
 
-	/** Sub-category */
+	// Sub-category for more specific type information, such as the struct name for a struct pin or the enum name for an enum pin.
 	UPROPERTY(EditAnywhere)
 	FName PinSubCategory;
 
-	/** Sub-category object */
+	// Sub-category object for even more specific type information, such as a reference to the UScriptStruct for a struct pin or the UEnum for an enum pin.
 	UPROPERTY(EditAnywhere)
 	UObject* PinSubCategoryObject;
 
+	// Container type for the pin, indicating whether it's a single value, array, map, set, etc.
 	UPROPERTY(EditAnywhere)
 	EObjectVariableContainerType_E ContainerType;
 
+	// Whether the pin is a reference (e.g., for output parameters) or a value pin.
 	UPROPERTY(EditAnywhere)
 	bool bIsReference;
-
-
+	
+	/** 
+	 * Whether to use a custom graph terminal type instead of deriving it from the pin type.
+	 * This allows for more control over how the pin is treated in the graph, such as constness and weak pointer semantics.
+	 */
 	UPROPERTY(EditAnywhere, AdvancedDisplay)
 	bool bCustomGraphTerminalType;
 	
-	/** Category */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	/** 
+	 * Custom graph terminal type information.
+	 * This allows for specifying a different terminal type than what would be derived from the pin type, which can affect how the pin is treated in the graph (e.g., constness, weak pointer semantics).
+	 */
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	FName TerminalCategory;
-
-	/** Sub-category */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	
+	// Sub-category for the custom graph terminal type, providing more specific type information if needed (e.g., struct name for a struct pin).
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	FName TerminalSubCategory;
 
-	/** Sub-category object */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	// Sub-category object for the custom graph terminal type, allowing for even more specific type information (e.g., reference to UScriptStruct for a struct pin).
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	TWeakObjectPtr<UObject> TerminalSubCategoryObject;
 
-	/** Whether this pin is a immutable const value */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	// Whether the custom graph terminal type should be treated as const, which can affect how the pin is used in the graph (e.g., preventing modification of the value).
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	bool bTerminalIsConst;
 
-	/** Whether this is a weak reference */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	// Whether the custom graph terminal type should be treated as a weak pointer, which can affect how the pin is used in the graph (e.g., allowing for null references without keeping the object alive).
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	bool bTerminalIsWeakPointer;
 
-	/** Whether this is a "wrapped" Unreal object ptr type (e.g. TSubclassOf<T> instead of UClass*) */
-	UPROPERTY(EditAnywhere, AdvancedDisplay)
+	// Whether the custom graph terminal type should be treated as a UObject wrapper, which can affect how the pin is used in the graph (e.g., allowing for special handling of UObject references).
+	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	bool bTerminalIsUObjectWrapper;
 
 	FEdGraphPinType GetMappedPinType() const
@@ -150,7 +158,6 @@ struct FObjectVariablePinConfiguration_S
 		}
 
 		FEdGraphPinType PinType = FEdGraphPinType(PinCategory, PinSubCategory, PinSubCategoryObject, UnrealContainerType, bIsReference, FEdGraphTerminalType());
-		
 		FEdGraphTerminalType GraphTerminalType;
 		
 		if (bCustomGraphTerminalType)
@@ -166,6 +173,7 @@ struct FObjectVariablePinConfiguration_S
 		{
 			GraphTerminalType = FEdGraphTerminalType::FromPinType(PinType);
 		}
+		
 
 		PinType.PinValueType = GraphTerminalType;
 
@@ -185,7 +193,7 @@ struct GORGEOUSCORERUNTIME_API FObjectVariableMultiMapValue
 {
 	GENERATED_BODY()
 
-public:
+	// Value array for the multi-map entry, allowing for multiple values to be associated with a single key.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Gorgeous Object Variables")
 	TArray<UGorgeousObjectVariable*> Values;
 };

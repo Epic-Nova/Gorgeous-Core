@@ -524,22 +524,22 @@ public:
 	FGorgeousAutoReplicationRPCPayloadEvent OnAutoReplicationRPCPayload;
 
 	/** Determines which networking stack(s) this object variable should use. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, DisplayAfter = "bSupportsNetworking"))
 	EGorgeousObjectVariableReplicationMode ReplicationMode;
 	
 	/** Per-instance tuning for the auto-replication backend. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
 		, meta = (EditCondition = "bSupportsNetworking", ShowOnlyInnerProperties, DisplayAfter = "ReplicationMode"))
 	FGorgeousAutoReplicationStreamConfig AutoReplicationConfig;
 
 	/** Optional root network stack configuration (only visible when networking is available and the shared stack is disabled). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, ShowOnlyInnerProperties, DisplayAfter = "AutoReplicationConfig"))
 	FGorgeousRootNetworkAccessConfig RootNetworkConfig;
 
 	/** Enables the shared network stack path when root access is disabled. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, DisplayAfter = "RootNetworkConfig"))
 	bool bUseSharedNetworkStack;
 
@@ -714,7 +714,7 @@ protected:
 	/**
 	 * Configuration values that provides the editor with information how to handle and display various object variables.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true), AdvancedDisplay)
 	FObjectVariablePinConfiguration_S PinConfiguration;
 
 	
