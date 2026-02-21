@@ -18,10 +18,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/DialogueWave.h"
 #include "Sound/SoundBase.h"
-#include "Engine/AssetManager.h"
-#include "Engine/StreamableManager.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->

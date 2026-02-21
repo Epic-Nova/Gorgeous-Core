@@ -15,16 +15,18 @@
 #include "GorgeousCoreMinimalShared.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 //<--------------------------=== Engine Includes ===------------------------->
+#include "Editor.h"
+#include "IMessageLogListing.h"
+#include "MessageLogModule.h"
+#if 0
+#include "GorgeousRainbowPinFactory.h"
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
 #include "EdGraphUtilities.h"
-#include "Editor.h"
-#include "GorgeousRainbowPinFactory.h"
-#include "IMessageLogListing.h"
-#include "MessageLogModule.h"
 #include "K2Nodes/GorgeousK2Node_Get.h"
 #include "K2Nodes/GorgeousK2Node_Set.h"
+#endif
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -35,9 +37,11 @@ namespace
 {
 	FDelegateHandle BeginPIEHandle;
 	FDelegateHandle EndPIEHandle;
-	TSharedPtr<FRainbowPinFactory> Factory;
-	TSharedPtr<FGorgeousRainbowGraphPinFactory> RainbowPinFactory;
-	TSharedPtr<FGorgeousRainbowConnectionFactory> RainbowConnectionFactory;
+	
+	//@TODO: Planned for version 1.1 and upwards
+	//TSharedPtr<FRainbowPinFactory> Factory;
+	//TSharedPtr<FGorgeousRainbowGraphPinFactory> RainbowPinFactory;
+	//TSharedPtr<FGorgeousRainbowConnectionFactory> RainbowConnectionFactory;
 
 	void HandleBeginPIE(bool bIsSimulating)
 	{
@@ -68,8 +72,9 @@ namespace
 
 void FGorgeousCoreEditorModule::GorgeousStartupModule()
 {
-	Factory = MakeShareable(new FRainbowPinFactory());
-	FEdGraphUtilities::RegisterVisualNodeFactory(Factory);
+	//@TODO: Planned for version 1.1 and upwards
+	//Factory = MakeShareable(new FRainbowPinFactory());
+	//FEdGraphUtilities::RegisterVisualNodeFactory(Factory);
 
 	//RainbowPinFactory = MakeShareable(new FGorgeousRainbowGraphPinFactory());
 	//FEdGraphUtilities::RegisterVisualPinFactory(RainbowPinFactory);
@@ -77,7 +82,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	//RainbowConnectionFactory = MakeShareable(new FGorgeousRainbowConnectionFactory());
 	//FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
 	
-	//@TODO: Planned for version 1.1 and upwards
+	
 	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomPropertyTypeLayout(
 		UGorgeousObjectVariable::StaticClass()->GetFName(),
@@ -101,11 +106,11 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 		EndPIEHandle.Reset();
 	}
 	
+	//@TODO: Planned for version 1.1 and upwards
 	//FEdGraphUtilities::UnregisterVisualNodeFactory(Factory);
 	//FEdGraphUtilities::UnregisterVisualPinFactory(RainbowPinFactory);
 	//FEdGraphUtilities::UnregisterVisualPinConnectionFactory(RainbowConnectionFactory);
 
-	//@TODO: Planned for version 1.1 and upwards
 	/*if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");

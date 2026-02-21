@@ -15,5 +15,6 @@
 
 /**
  * Endpoint URL for the Gorgeous API.
+ * @note Not used atm, planned to be introduced with upcoming new major version
  */
 #define GORGEOUS_API_ENDPOINT "https://api.gt.simsalabim.studio"

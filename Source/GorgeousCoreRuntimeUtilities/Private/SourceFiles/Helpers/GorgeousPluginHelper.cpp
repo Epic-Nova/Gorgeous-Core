@@ -24,7 +24,7 @@
 //=============================================================================
 
 // Helper function to convert version number to readable format (e.g., 90 -> "0.9")
-static FString VersionToString(int32 Version)
+static FString VersionToString(const int32 Version)
 {
 	const int32 Major = Version / 100;
 	const int32 Minor = (Version % 100) / 10;
