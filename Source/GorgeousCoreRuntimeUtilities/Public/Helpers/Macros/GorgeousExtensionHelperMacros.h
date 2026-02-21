@@ -17,5 +17,6 @@
  * Checks if the specified Gorgeous Plugin by checking for the existence of a predefined macro
  * 
  * @param PluginName The name of the plugin that should be checked for its existence.
+ * @note Not used atm, planned to be introduced with upcoming new major version
  */
 #define GORGEOUS_PLUGIN_INSTALLED(PluginName) (GORGEOUSTHINGS_WITH_##PluginName)

@@ -16,6 +16,8 @@
 
 enum class ECookProgressDisplayMode : int32;
 
+//@TODO: Document this properly
+
 /**
  * This class surfaces hidden editor settings and CVars for convenience.
  * It modifies the corresponding editor settings/CVars when toggled.

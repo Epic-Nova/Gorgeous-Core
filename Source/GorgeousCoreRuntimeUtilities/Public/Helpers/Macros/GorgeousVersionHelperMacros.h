@@ -27,6 +27,7 @@
 <======================================================================================================================*/
 
 //@TODO: Reconsider to drop the planned support for UE 4.23 - 4.27 and only support UE 5.0 and higher going forward, depending on the communities needs.
+//@TODO: concider removing this class all-together as we dont want re reinvent the weel (@see UE_VERSION_NEWER_THAN & UE_VERSION_OLDER_THAN macros)
 
 /**
  * Multiplies the major engine version by 100 and adds the minor version for better usage in the macros below.
