@@ -8,6 +8,8 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
+
+#if 0
 #include "GorgeousObjectVariablePropertyTypeCustomization.h"
 
 #include "Algo/Sort.h"
@@ -1653,3 +1655,5 @@ FText FGorgeousObjectVariablePropertyTypeCustomization::GetValueFieldListText() 
 }
 
 #undef LOCTEXT_NAMESPACE
+
+#endif

@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
@@ -19,10 +16,12 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
+#include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
+#include "QualityOfLife/GorgeousPlayerConnectionInfo_I.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousPlayerController.generated.h"
 //<-------------------------------------------------------------------------->
@@ -52,6 +51,7 @@ UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerController : public APlayerController
 	, public IGorgeousAutoReplicationRPCResponder_I
 	, public IGorgeousQualityOfLifeNodeTarget_I
+	, public IGorgeousPlayerConnectionInfo_I
 {
 	GENERATED_BODY()
 	
@@ -84,6 +84,15 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	/** Removes this controller from the shared SelfReference OV when it is destroyed. */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	// IGorgeousPlayerConnectionInfo_I
+	virtual bool IsRemoteNetConnection_Implementation() const override;
+	virtual FUniqueNetIdRepl GetPlayerNetId_Implementation() const override;
+	virtual FString GetGorgeousStablePlayerId_Implementation() const override;
+	virtual int32 GetPlayerConnectionIndex_Implementation() const override;
 	
 	//<-------------------------------------------------------------------------->
 
@@ -95,6 +104,18 @@ public:
 
 	UFUNCTION()
 	void Automation_Multicast(int32 Sequence, const FString& Stamp);
+
+	/**
+	 * Universal owner-side RPC handler used by ALL async-action unit tests.
+	 * Implements the first-parameter OV return-value convention: the backend constructs a
+	 * UInteger_SOV*, passes it as ReturnValue, and this handler populates it with
+	 *   ReturnValue->Value = TestInputInt * RPC_TRANSFORM_MULTIPLY + RPC_TRANSFORM_ADD
+	 * Parameter names match the arguments added by BuildVerifiablePayload exactly so that
+	 * InvokeNativeAutoReplicationRPCHandlerOnObject can map them without error.
+	 * The E9 assertion in RunAsyncRPCActionTest verifies the computed value round-trips.
+	 */
+	UFUNCTION()
+	void Automation_HandleRPC_WithReturnOV(UInteger_SOV* ReturnValue, int32 TestInputInt, const FString& TestInputString, int32 Sequence, const FString& Origin, const FString& Timestamp);
 
 	/** Enables networking features for this controller's AutoReplication data. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking")

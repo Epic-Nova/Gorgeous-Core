@@ -14,7 +14,8 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
-#include "AutoReplication/Helpers/GorgeousAutoReplicationHelperMacros.h"
+#include "QualityOfLife/GorgeousPlayerState.h"
+#include "AutoReplication/GorgeousAutoReplicationHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 //<-------------------------------------------------------------------------->
@@ -39,4 +40,4 @@ UE_DECLARE_AUTOREPLICATION_CLASS_ON_REP_VARIABLES(AGorgeousGameMode)
 
 UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(AGorgeousGameMode)
 
-
+UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS(AGorgeousGameMode)

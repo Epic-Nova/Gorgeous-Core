@@ -16,6 +16,8 @@
 #include "Misc/Guid.h"
 
 class AActor;
+class AGorgeousPlayerState;
+class AGorgeousGameState;
 
 /** Common helper dropped into QoL class constructors to bind the mixin and ensure the self reference entry exists. */
 #define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
@@ -108,6 +110,74 @@ class AActor;
 		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
 		UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA_WITH_RELAY \
 		Super::BeginPlay(); \
+	}
+
+/**
+ * Defines EndPlay to remove the owner from the shared SelfReference OV the moment the actor
+ * is destroyed on any machine.  Used by both AGorgeousPlayerController and AGorgeousPlayerState.
+ */
+#define UE_QOL_DEFINE_END_PLAY(Class) \
+	void Class::EndPlay(const EEndPlayReason::Type EndPlayReason) \
+	{ \
+		FGorgeousQualityOfLifeStatics::RemoveOwnerFromSelfReference(this, AdditionalGorgeousData); \
+		Super::EndPlay(EndPlayReason); \
+	}
+
+/**
+ * Defines PostLogin and Logout overrides for the GameMode.
+ * Fires OnPlayerLoggedIn / OnPlayerLoggedOut BlueprintImplementableEvents so BP subclasses
+ * can react without overriding the C++ function.
+ * OV cleanup for the leaving PlayerController is handled by UE_QOL_DEFINE_END_PLAY in
+ * AGorgeousPlayerController and does NOT need to be done here.
+ */
+// UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS requires AGorgeousPlayerState to be a complete type
+// at the instantiation site — include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
+#define UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS(Class) \
+	void Class::PostLogin(APlayerController* NewPlayer) \
+	{ \
+		Super::PostLogin(NewPlayer); \
+		/* Super::PostLogin internally broadcasts FGameModeEvents::GameModePostLoginEvent, which the */ \
+		/* LocalPlayerRegistry GIS listens to in order to auto-assign the stable ID for NewPlayer.  */ \
+		/* RefreshReplicatedStableId must therefore run AFTER Super so the GIS entry is guaranteed   */ \
+		/* to exist before we try to push it into ReplicatedGorgeousStableId.                        */ \
+		if (AGorgeousPlayerState* GorgeousPS = NewPlayer ? Cast<AGorgeousPlayerState>(NewPlayer->PlayerState) : nullptr) \
+		{ \
+			GorgeousPS->RefreshReplicatedStableId(); \
+		} \
+		OnPlayerLoggedIn(NewPlayer); \
+	} \
+	void Class::Logout(AController* Exiting) \
+	{ \
+		OnPlayerLoggedOut(Exiting); \
+		Super::Logout(Exiting); \
+	}
+
+/**
+ * Defines AddPlayerState and RemovePlayerState overrides for the GameState.
+ * Fires the GS-level OnPlayerStateAdded / OnPlayerStateRemoved events AND forwards to the
+ * matching AGorgeousPlayerState events (OnAddedToPlayerArray / OnRemovedFromPlayerArray)
+ * so individual player states can react entirely in BP without any C++ overrides.
+ * Requires AGorgeousPlayerState to be a complete type at the instantiation site —
+ * include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
+ */
+#define UE_QOL_DEFINE_GAME_STATE_PLAYER_STATE_CALLBACKS(Class) \
+	void Class::AddPlayerState(APlayerState* PlayerState) \
+	{ \
+		Super::AddPlayerState(PlayerState); \
+		OnPlayerStateAdded(PlayerState); \
+		if (AGorgeousPlayerState* GorgeousPS = Cast<AGorgeousPlayerState>(PlayerState)) \
+		{ \
+			GorgeousPS->OnAddedToPlayerArray(); \
+		} \
+	} \
+	void Class::RemovePlayerState(APlayerState* PlayerState) \
+	{ \
+		if (AGorgeousPlayerState* GorgeousPS = Cast<AGorgeousPlayerState>(PlayerState)) \
+		{ \
+			GorgeousPS->OnRemovedFromPlayerArray(); \
+		} \
+		OnPlayerStateRemoved(PlayerState); \
+		Super::RemovePlayerState(PlayerState); \
 	}
 
 /** Defines a Blueprint-callable registration function for runtime AutoReplication entries. */

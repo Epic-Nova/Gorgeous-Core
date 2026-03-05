@@ -30,7 +30,7 @@
 #include "Containers/Set.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
-#include "GorgeousObjectVariablePerfTestTypes.h"
+#include "Helpers/GorgeousObjectVariablePerfTestTypes.h"
 #include "GorgeousLoggingBlueprintFunctionLibrary.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "Serialization/ArchiveCountMem.h"
@@ -1072,11 +1072,11 @@ namespace GorgeousObjectVariablePerf
 			}
 
 			++Count;
-			for (UGorgeousObjectVariable* Child : Current->VariableRegistry)
+			for (auto& [Key, Child] : Current->VariableRegistry)
 			{
 				if (IsValid(Child))
 				{
-					Stack.Push(Child);
+					Stack.Push(Child.Get());
 				}
 			}
 		}

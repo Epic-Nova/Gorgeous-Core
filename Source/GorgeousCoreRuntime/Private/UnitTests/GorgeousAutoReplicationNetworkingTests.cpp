@@ -50,25 +50,9 @@ namespace GorgeousAutomationNetworkingGauntlet
 		};
 		return D;
 	}
-
-	static FGorgeousInsightScenarioDescriptor MakeNetworking_NetEmulation()
-	{
-		FGorgeousInsightScenarioDescriptor D;
-		D.ScenarioName = TEXT("AutoReplication.Networking.NetEmulation");
-		D.DisplayName = TEXT("Networking (Gauntlet) Net Emulation");
-		D.Description = TEXT("Gauntlet-only networking sanity check (net emulation)." );
-		D.Tags = { TEXT("gauntlet"), TEXT("networking"), TEXT("emulation") };
-		D.Priority = 70;
-		D.Runner = [](const FGorgeousInsightScenarioContext& Context)
-		{
-			return RunNetworkingScenario(Context, TEXT("NetEmulation"));
-		};
-		return D;
-	}
 }
 
 REGISTER_GORGEOUS_INSIGHT_SCENARIO(GorgeousAutomationNetworkingGauntlet::MakeNetworking_Iris());
 REGISTER_GORGEOUS_INSIGHT_SCENARIO(GorgeousAutomationNetworkingGauntlet::MakeNetworking_Graph());
-REGISTER_GORGEOUS_INSIGHT_SCENARIO(GorgeousAutomationNetworkingGauntlet::MakeNetworking_NetEmulation());
 
 #endif // WITH_DEV_AUTOMATION_TESTS

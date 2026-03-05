@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -414,7 +411,9 @@ namespace GorgeousLogging
         const auto [bEnableGorgeousMessageLog, MessageLogListingName, MinMessageLogVerbosity, bMirrorToOutputLog, bShowOnScreen] = GetLoggingSettingsSnapshot();
         const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(MinMessageLogVerbosity);
         const bool bShouldSendToMessageLog = bEnableGorgeousMessageLog && bAllowedBySettings;
-        const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog;
+        // When a message is already being routed to the Gorgeous Message Log, suppress the parallel
+        // UE_LOG call to avoid duplicating the same line in both output destinations.
+        const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog && !bShouldSendToMessageLog;
         const bool bShouldPrintToScreen = bPrintToScreen && bShowOnScreen;
 
         const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
@@ -575,13 +574,16 @@ namespace GorgeousLogging
 
         if (bShowAsToast)
         {
-            const FString ToastTitle = LoggingKey.IsEmpty()
+            FGorgeousToastParams ToastParams;
+            ToastParams.Title = LoggingKey.IsEmpty()
                 ? MessageLogListingName.ToString()
                 : LoggingKey;
-            const int32 ToastIconKind = (Importancy == Logging_Error || Importancy == Logging_Fatal)
+            ToastParams.Message = Message.ToString();
+            ToastParams.ToastIconKind = (Importancy == Logging_Error || Importancy == Logging_Fatal)
                 ? 3
                 : (Importancy == Logging_Warning ? 1 : (Importancy == Logging_Success ? 2 : 0));
-            ::ShowToastNotification(ToastTitle, Message.ToString(), ToastIconKind);
+            ToastParams.ExpireDuration = Duration;
+            ::ShowToastNotification(ToastParams);
         }
 #endif
 	}

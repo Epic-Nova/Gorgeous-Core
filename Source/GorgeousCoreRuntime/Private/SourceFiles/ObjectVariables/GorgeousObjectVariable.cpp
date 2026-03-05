@@ -15,7 +15,7 @@
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
-#include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
+#include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
@@ -31,11 +31,14 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/Pawn.h"
+#include "Engine/NetConnection.h"
 #include "Engine/NetDriver.h"
 #include "Engine/World.h"
 #include "Engine/ActorChannel.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
+#include "Serialization/BitWriter.h"
+#include "Serialization/BitReader.h"
 #include "Serialization/StructuredArchive.h"
 #include "Serialization/Formatters/BinaryArchiveFormatter.h"
 #include "UObject/SoftObjectPath.h"
@@ -44,6 +47,7 @@
 #include "UObject/UnrealType.h"
 #include "Misc/ScopeLock.h"
 #include "Containers/Ticker.h"
+#include "GameFramework/PlayerState.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "Stats/Stats.h"
 #include "Net/UnrealNetwork.h"
@@ -52,6 +56,8 @@
 //=============================================================================
 // UGorgeousObjectVariable Implementation
 //=============================================================================
+
+FSimpleMulticastDelegate UGorgeousObjectVariable::OnVariableTreeChanged;
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousObjectVariable, Log, All);
 
@@ -192,7 +198,6 @@ namespace GorgeousObjectVariable_Private
 	static constexpr int32 MaxTrackedRPCResults = 8;
 	static const FName GorgeousRPCResultsDisplayName(TEXT("GorgeousRPCResults"));
 	static TWeakObjectPtr<UGorgeousObjectVariable> CachedRPCResultsParent;
-	static const FName ValuePropertyName(TEXT("Value"));
 
 	static bool SerializePropertyValue(const FProperty* Property, void* ValuePtr, const EGorgeousReplicationMode Mode, UPackageMap* PackageMap, TArray<uint8>& OutBytes)
 	{
@@ -207,19 +212,59 @@ namespace GorgeousObjectVariable_Private
 		{
 		case EGorgeousReplicationMode::EProperty:
 		{
+			// Serialize via the structured binary path.  Use FObjectAndNameAsStringProxyArchive so
+			// that UObject references (FObjectProperty, FSoftObjectProperty, etc.) inside structs or
+			// arrays are written as portable string paths rather than raw pointers, which would crash
+			// FMemoryArchive.  Path-based serialization is safe across connections without PackageMap.
 			FMemoryWriter Writer(OutBytes, true);
-			FBinaryArchiveFormatter Formatter(Writer);
+			FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, true);
+			FBinaryArchiveFormatter Formatter(ProxyWriter);
 			FStructuredArchive Archive(Formatter);
 			FStructuredArchive::FSlot Slot = Archive.Open();
 			Property->SerializeItem(Slot, ValuePtr, nullptr);
 			Archive.Close();
-			return !Writer.IsError();
+			return !ProxyWriter.IsError();
 		}
 		case EGorgeousReplicationMode::ENetSerialize:
 		{
-			FMemoryWriter Writer(OutBytes, true);
-			const bool bNetSerialized = Property->NetSerializeItem(Writer, PackageMap, ValuePtr);
-			return bNetSerialized && !Writer.IsError();
+			// FArrayProperty::NetSerializeItem, FMapProperty::NetSerializeItem, and
+			// FSetProperty::NetSerializeItem are unconditionally deprecated in UE5.7+ (they
+			// checkf(false) regardless of the archive type).  Only call NetSerializeItem on
+			// properties that are known to support it — i.e. FStructProperty whose struct has a
+			// custom WithNetSerializer implementation, or FObjectProperty / FEnumProperty etc.
+			// For collection types fall back to the string-proxy structured path so we don't crash.
+			const bool bIsCollection =
+				CastField<FArrayProperty>(Property) != nullptr ||
+				CastField<FMapProperty>(Property) != nullptr ||
+				CastField<FSetProperty>(Property) != nullptr;
+			if (bIsCollection)
+			{
+				GT_W_LOG("GT.ObjectVariables.Replication.CollectionNetSerializeFallback",
+					TEXT("Property %s is a collection type — NetSerializeItem is deprecated in UE5.7+ for collections. Falling back to structured serialization."),
+					*Property->GetName());
+				FMemoryWriter Writer(OutBytes, true);
+				FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, true);
+				FBinaryArchiveFormatter Formatter(ProxyWriter);
+				FStructuredArchive Archive(Formatter);
+				FStructuredArchive::FSlot Slot = Archive.Open();
+				Property->SerializeItem(Slot, ValuePtr, nullptr);
+				Archive.Close();
+				return !ProxyWriter.IsError();
+			}
+			// Non-collection path: use FBitWriter which is required by FStructProperty types that
+			// have WithNetSerializer (e.g. FVector_NetQuantize, custom net structs, FObjectProperty).
+			// Store a uint32 bit-count prefix so the deserializer can reconstruct an exact FBitReader.
+			FBitWriter BitWriter(0, true);
+			const bool bNetSerialized = Property->NetSerializeItem(BitWriter, PackageMap, ValuePtr);
+			if (!bNetSerialized || BitWriter.IsError())
+			{
+				return false;
+			}
+			const uint32 NumBits = (uint32)BitWriter.GetNumBits();
+			OutBytes.Append(reinterpret_cast<const uint8*>(&NumBits), sizeof(uint32));
+			// GetBuffer() returns TArray<uint8>* — dereference to get the TArray for Append.
+			OutBytes.Append(*BitWriter.GetBuffer());
+			return true;
 		}
 		case EGorgeousReplicationMode::ECustomPayload:
 		default:
@@ -234,21 +279,53 @@ namespace GorgeousObjectVariable_Private
 			return false;
 		}
 
-		FMemoryReader Reader(InBytes, true);
-
 		switch (Mode)
 		{
 		case EGorgeousReplicationMode::EProperty:
 		{
-			FBinaryArchiveFormatter Formatter(Reader);
+			// Use the same string-proxy path as the serializer so object references round-trip
+			// correctly as portable path strings.
+			FMemoryReader Reader(InBytes, true);
+			FObjectAndNameAsStringProxyArchive ProxyReader(Reader, true);
+			FBinaryArchiveFormatter Formatter(ProxyReader);
 			FStructuredArchive Archive(Formatter);
 			FStructuredArchive::FSlot Slot = Archive.Open();
 			Property->SerializeItem(Slot, ValuePtr, nullptr);
 			Archive.Close();
-			return !Reader.IsError();
+			return !ProxyReader.IsError();
 		}
 		case EGorgeousReplicationMode::ENetSerialize:
-			return Property->NetSerializeItem(Reader, PackageMap, ValuePtr) && !Reader.IsError();
+		{
+			// Mirror the collection-type fallback from the serializer: use the string-proxy structured
+			// path for array/map/set, FBitReader for non-collection structs with WithNetSerializer.
+			const bool bIsCollection =
+				CastField<FArrayProperty>(Property) != nullptr ||
+				CastField<FMapProperty>(Property) != nullptr ||
+				CastField<FSetProperty>(Property) != nullptr;
+			if (bIsCollection)
+			{
+				FMemoryReader Reader(InBytes, true);
+				FObjectAndNameAsStringProxyArchive ProxyReader(Reader, true);
+				FBinaryArchiveFormatter Formatter(ProxyReader);
+				FStructuredArchive Archive(Formatter);
+				FStructuredArchive::FSlot Slot = Archive.Open();
+				Property->SerializeItem(Slot, ValuePtr, nullptr);
+				Archive.Close();
+				return !ProxyReader.IsError();
+			}
+			// Deserialize the bit-count prefix written by the serializer and construct a FBitReader
+			// so that struct types with WithNetSerializer (e.g. FVector_NetQuantize) work correctly.
+			if (InBytes.Num() < (int32)sizeof(uint32))
+			{
+				return false;
+			}
+			uint32 NumBits = 0;
+			FMemory::Memcpy(&NumBits, InBytes.GetData(), sizeof(uint32));
+			// FBitReader constructor takes uint8* (non-const) — const_cast is safe here as it only reads.
+			uint8* PayloadData = const_cast<uint8*>(InBytes.GetData()) + sizeof(uint32);
+			FBitReader BitReader(PayloadData, (int64)NumBits);
+			return Property->NetSerializeItem(BitReader, PackageMap, ValuePtr) && !BitReader.IsError();
+		}
 		case EGorgeousReplicationMode::ECustomPayload:
 		default:
 			return false;
@@ -300,32 +377,75 @@ namespace GorgeousObjectVariable_Private
 		return FString::Printf(TEXT("%ss-%s"), FirstNamePool[FirstIndex], SecondNamePool[SecondIndex]);
 	}
 
-	static bool CopyArgumentToProperty(UGorgeousObjectVariable* ArgumentVariable, FProperty* ParameterProperty, uint8* ParameterData)
+	/**
+	 * Copy the serialized bytes stored in @p Arg into the handler's pre-allocated
+	 * parameter slot described by @p ParameterProperty / @p ParameterData.
+	 *
+	 * Three paths:
+	 *   1. Struct types   – FStructuredArchive deserialization via SerializeTaggedProperties.
+	 *   2. String / Text  – FMemoryReader + SerializeItem (heap-allocated, needs archive).
+	 *   3. All others     – raw memcpy (POD scalar types: int, float, double, bool, FName …).
+	 */
+	static bool CopyArgumentToProperty(
+		const FGorgeousRPCArgumentContainer& Arg,
+		FProperty* ParameterProperty,
+		uint8* ParameterData)
 	{
-		if (!ArgumentVariable || !ParameterProperty || !ParameterData)
+		if (Arg.ValueBytes.IsEmpty() || !ParameterProperty || !ParameterData)
 		{
 			return false;
 		}
 
-		FProperty* SourceProperty = ArgumentVariable->GetClass()->FindPropertyByName(ValuePropertyName);
-		if (!SourceProperty)
+		// Verify the stored property class matches the handler parameter.
+		if (Arg.PropertyClassName != ParameterProperty->GetClass()->GetFName())
 		{
-			GT_W_LOG("GT.ObjectVariables.RPC.ArgumentNoValue", TEXT("%s does not expose a Value property and cannot be used as a AutoReplication RPC argument."), *ArgumentVariable->GetName());
+			GT_W_LOG("GT.ObjectVariables.RPC.ArgumentTypeMismatch",
+				TEXT("AutoReplication RPC argument '%s': stored type '%s' is incompatible with "
+				     "handler parameter '%s' (type '%s')."),
+				*Arg.ArgumentName.ToString(), *Arg.PropertyClassName.ToString(),
+				*ParameterProperty->GetName(), *ParameterProperty->GetClass()->GetName());
 			return false;
 		}
 
-		void* SourceValuePtr = SourceProperty->ContainerPtrToValuePtr<void>(ArgumentVariable);
-		void* DestValuePtr = ParameterProperty->ContainerPtrToValuePtr<void>(ParameterData);
+		void* DestPtr = ParameterProperty->ContainerPtrToValuePtr<void>(ParameterData);
 
-		if (SourceProperty->SameType(ParameterProperty))
+		// ── Path 1: Struct ────────────────────────────────────────────────────────────
+		if (const FStructProperty* AsStruct = CastField<FStructProperty>(ParameterProperty))
 		{
-			ParameterProperty->CopyCompleteValue(DestValuePtr, SourceValuePtr);
+			if (!AsStruct->Struct || AsStruct->Struct->GetFName() != Arg.StructTypeName)
+			{
+				GT_W_LOG("GT.ObjectVariables.RPC.ArgumentStructMismatch",
+					TEXT("AutoReplication RPC argument '%s': stored struct '%s' != parameter struct '%s'."),
+					*Arg.ArgumentName.ToString(), *Arg.StructTypeName.ToString(),
+					AsStruct->Struct ? *AsStruct->Struct->GetName() : TEXT("<null>"));
+				return false;
+			}
+			// The struct value was serialized via SerializeTaggedProperties – deserialize the same way.
+			FMemoryReader Reader(Arg.ValueBytes);
+			AsStruct->Struct->SerializeTaggedProperties(Reader, static_cast<uint8*>(DestPtr), AsStruct->Struct, nullptr);
 			return true;
 		}
 
-		GT_W_LOG("GT.ObjectVariables.RPC.ArgumentTypeMismatch", TEXT("AutoReplication RPC argument %s (property type %s) is incompatible with parameter %s (type %s)."),
-			*ArgumentVariable->GetName(), *SourceProperty->GetClass()->GetName(), *ParameterProperty->GetName(), *ParameterProperty->GetClass()->GetName());
-		return false;
+		// ── Path 2: FString / FText (heap-allocated, archive round-trip) ──────────────
+		if (CastField<FStrProperty>(ParameterProperty) || CastField<FTextProperty>(ParameterProperty))
+		{
+			FMemoryReader Reader(Arg.ValueBytes);
+			ParameterProperty->SerializeItem(FStructuredArchiveFromArchive(Reader).GetSlot(), DestPtr);
+			return true;
+		}
+
+		// ── Path 3: POD / scalar – raw memcpy ─────────────────────────────────────────
+		GORGEOUS_55_HIGHER(const int32 PropSize = ParameterProperty->GetElementSize();)
+		GORGEOUS_54_LOWER(const int32 PropSize  = ParameterProperty->GetSize();)
+		if (Arg.ValueBytes.Num() != PropSize)
+		{
+			GT_W_LOG("GT.ObjectVariables.RPC.ArgumentSizeMismatch",
+				TEXT("AutoReplication RPC argument '%s': stored size %d != parameter size %d."),
+				*Arg.ArgumentName.ToString(), Arg.ValueBytes.Num(), PropSize);
+			return false;
+		}
+		FMemory::Memcpy(DestPtr, Arg.ValueBytes.GetData(), PropSize);
+		return true;
 	}
 
 	namespace Snapshot
@@ -405,7 +525,7 @@ namespace GorgeousObjectVariable_Private
 		}
 	}
 
-	static bool InvokeNativeHandler(UObject* TargetObject, UGorgeousObjectVariable* InvocationContext, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)
+	static bool InvokeNativeHandler(UObject* TargetObject, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable, bool* OutIsDeferred = nullptr)
 	{
 		if (!TargetObject || QueuedRPC.Payload.HandlerName.IsNone())
 		{
@@ -425,12 +545,88 @@ namespace GorgeousObjectVariable_Private
 			{
 				*OutReturnVariable = nullptr;
 			}
+			if (OutIsDeferred)
+			{
+				*OutIsDeferred = false;
+			}
 			return true;
 		}
 
 		TArray<uint8> ParameterStorage;
 		ParameterStorage.SetNumZeroed(HandlerFunction->ParmsSize);
 		HandlerFunction->InitializeStruct(ParameterStorage.GetData());
+
+		// ── QueuedRPC parameter detection ─────────────────────────────────────────────────
+		// If any in-parameter is an FStructProperty wrapping FGorgeousQueuedRPC, the runtime
+		// auto-injects it with the current RPC descriptor. This replaces the deprecated
+		// FGorgeousAutoReplicationRPCHandlerContext pattern.
+		FStructProperty* QueuedRPCProperty = nullptr;
+		{
+			UScriptStruct* QueuedRPCType = FGorgeousQueuedRPC::StaticStruct();
+			for (FProperty* P = HandlerFunction->PropertyLink; P; P = P->PropertyLinkNext)
+			{
+				if (!P->HasAnyPropertyFlags(CPF_Parm) || P->HasAnyPropertyFlags(CPF_ReturnParm))
+					continue;
+				// Allow const reference parameters (CPF_OutParm + CPF_ConstParm)
+				if (P->HasAnyPropertyFlags(CPF_OutParm) && !P->HasAnyPropertyFlags(CPF_ConstParm))
+					continue;
+				FStructProperty* AsStructProp = CastField<FStructProperty>(P);
+				if (!AsStructProp || AsStructProp->Struct != QueuedRPCType)
+					continue;
+
+				void* QueuedRPCPtr = AsStructProp->ContainerPtrToValuePtr<void>(ParameterStorage.GetData());
+				FGorgeousQueuedRPC* QueuedRPCParam = reinterpret_cast<FGorgeousQueuedRPC*>(QueuedRPCPtr);
+				*QueuedRPCParam = QueuedRPC;
+				QueuedRPCProperty = AsStructProp;
+				break;
+			}
+		}
+
+		// ── Return OV parameter detection ─────────────────────────────────────────────────
+		// If the FIRST in-parameter is an FObjectProperty wrapping a UGorgeousObjectVariable
+		// subclass and the caller has NOT supplied a matching payload argument, the runtime
+		// constructs a fresh instance of that type and injects it before calling the handler.
+		// After ProcessEvent the (possibly populated) OV is returned via *OutReturnVariable
+		// as the explicit "return value OV" of this RPC call.
+		FObjectProperty* ReturnOVProperty = nullptr;
+		UGorgeousObjectVariable* ConstructedReturnOV = nullptr;
+		{
+			for (FProperty* P = HandlerFunction->PropertyLink; P; P = P->PropertyLinkNext)
+			{
+				if (!P->HasAnyPropertyFlags(CPF_Parm) || P->HasAnyPropertyFlags(CPF_ReturnParm))
+					continue;
+				if (P->HasAnyPropertyFlags(CPF_OutParm) && !P->HasAnyPropertyFlags(CPF_ConstParm))
+					continue;
+				// Inspect the FIRST in-parm only
+				FObjectProperty* AsObjProp = CastField<FObjectProperty>(P);
+				if (!AsObjProp || !AsObjProp->PropertyClass ||
+					!AsObjProp->PropertyClass->IsChildOf(UGorgeousObjectVariable::StaticClass()))
+				{
+					break;
+				}
+				// Only activate when the caller did NOT supply a matching payload argument
+				const bool bInPayload = QueuedRPC.Payload.Arguments.ContainsByPredicate(
+					[P](const FGorgeousRPCArgumentContainer& C)
+					{
+						return C.ArgumentName == P->GetFName();
+					});
+				if (bInPayload)
+					break;
+				// Use GetTransientPackage() as Outer, NOT TargetObject.
+				// If we used TargetObject (a PIE-world OV), then after PIE ends the
+				// return OV — stored in CachedResults.TargetVariable (TObjectPtr) on the
+				// async action — would anchor the full Outer chain all the way up to the
+				// PIE UWorld, causing EndPlayMap to assert "still referenced".
+				// GetTransientPackage() breaks that chain: the return OV lives in the
+				// transient package and cannot anchor any PIE actors or worlds.
+				ConstructedReturnOV = NewObject<UGorgeousObjectVariable>(GetTransientPackage(), AsObjProp->PropertyClass);
+				if (!ConstructedReturnOV)
+					break;
+				ReturnOVProperty = AsObjProp;
+				ReturnOVProperty->SetObjectPropertyValue_InContainer(ParameterStorage.GetData(), ConstructedReturnOV);
+				break;
+			}
+		}
 
 		bool bAllParametersFilled = true;
 		int32 ParameterIndex = 0;
@@ -445,27 +641,48 @@ namespace GorgeousObjectVariable_Private
 			{
 				continue;
 			}
-			
+			// Skip parameters that were already injected during the detection passes above
+			if ((ReturnOVProperty && Property == ReturnOVProperty) ||
+				(QueuedRPCProperty && Property == QueuedRPCProperty))
+			{
+				++ParameterIndex;
+				continue;
+			}
+
 			const FGorgeousRPCArgumentContainer* ArgumentContainer = QueuedRPC.Payload.Arguments.FindByPredicate(
 				[&](const FGorgeousRPCArgumentContainer& Container)
 				{
 					return Container.ArgumentName == Property->GetFName();
 				});
-			
-			UGorgeousObjectVariable* ArgumentVariable = (ArgumentContainer && ArgumentContainer->ArgumentValue) ? ArgumentContainer->ArgumentValue.Get() : nullptr;
 
-			if (!ArgumentVariable)
+			if (!ArgumentContainer || ArgumentContainer->ValueBytes.IsEmpty())
 			{
-				GT_W_LOG("GT.ObjectVariables.RPC.MissingParam", TEXT("AutoReplication RPC %s expected parameter %s but it was not provided."),
-					*QueuedRPC.Payload.HandlerName.ToString(), *Property->GetName());
+				// Build a comma-separated list of argument names that ARE in the payload so the
+				// developer can see exactly what they need to rename their arguments to.
+				TArray<FString> AvailableNames;
+				for (const FGorgeousRPCArgumentContainer& Arg : QueuedRPC.Payload.Arguments)
+				{
+					AvailableNames.Add(Arg.ArgumentName.ToString());
+				}
+				const FString AvailableList = AvailableNames.Num() > 0
+					? FString::Join(AvailableNames, TEXT(", "))
+					: TEXT("<none>");
+
+				GT_W_LOG("GT.ObjectVariables.RPC.MissingParam",
+					TEXT("AutoReplication RPC %s expected parameter '%s' but no matching argument was provided. "
+					     "Argument names in payload: [%s]. "
+					     "Argument names must match the handler function parameter names exactly (case-sensitive)."),
+					*QueuedRPC.Payload.HandlerName.ToString(), *Property->GetName(), *AvailableList);
 				bAllParametersFilled = false;
 				break;
 			}
 
-			if (!CopyArgumentToProperty(ArgumentVariable, Property, ParameterStorage.GetData()))
+			if (!CopyArgumentToProperty(*ArgumentContainer, Property, ParameterStorage.GetData()))
 			{
-				GT_W_LOG("GT.ObjectVariables.RPC.ApplyArgumentFailed", TEXT("Failed to apply argument %s to parameter %s for handler %s."),
-					*ArgumentVariable->GetName(), *Property->GetName(), *QueuedRPC.Payload.HandlerName.ToString());
+				GT_W_LOG("GT.ObjectVariables.RPC.ApplyArgumentFailed",
+					TEXT("Failed to copy argument '%s' to parameter '%s' for handler '%s'."),
+					*ArgumentContainer->ArgumentName.ToString(), *Property->GetName(),
+					*QueuedRPC.Payload.HandlerName.ToString());
 				bAllParametersFilled = false;
 				break;
 			}
@@ -476,13 +693,31 @@ namespace GorgeousObjectVariable_Private
 		if (bAllParametersFilled)
 		{
 			TargetObject->ProcessEvent(HandlerFunction, ParameterStorage.GetData());
+			// ── Extract the handler-written return OV after ProcessEvent ──
+			// The handler may have modified the pre-constructed OV (or replaced the pointer).
+			if (ReturnOVProperty)
+			{
+				UGorgeousObjectVariable* PostCallOV = Cast<UGorgeousObjectVariable>(
+					ReturnOVProperty->GetObjectPropertyValue_InContainer(ParameterStorage.GetData()));
+				ConstructedReturnOV = PostCallOV ? PostCallOV : ConstructedReturnOV;
+			}
+		}
+		else
+		{
+			// Failed to fill params — the pre-constructed OV was never seen by the handler
+			ConstructedReturnOV = nullptr;
 		}
 
 		HandlerFunction->DestroyStruct(ParameterStorage.GetData());
 
 		if (OutReturnVariable)
 		{
-			*OutReturnVariable = nullptr;
+			*OutReturnVariable = ConstructedReturnOV;
+		}
+
+		if (OutIsDeferred)
+		{
+			*OutIsDeferred = (QueuedRPCProperty != nullptr) && bAllParametersFilled;
 		}
 
 		return bAllParametersFilled;
@@ -492,7 +727,6 @@ namespace GorgeousObjectVariable_Private
 UGorgeousObjectVariable::UGorgeousObjectVariable(): 
 	ReplicationMode(EGorgeousObjectVariableReplicationMode::EFullAutoReplication),
 	bUseSharedNetworkStack(false),
-	VariableRegistry(TArray<TObjectPtr<UGorgeousObjectVariable>>() ),
 	bPersistent(false),
 	bSupportsNetworking(true),
 	bReplicates(false),
@@ -517,7 +751,7 @@ UGorgeousObjectVariable::~UGorgeousObjectVariable()
 {
 }
 
-UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist, const FString& DisplayNameOverride)
+UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist, const FString& DisplayNameOverride, const bool bInSupportsNetworking)
 {
 	GORGEOUS_PROFILE_SCOPE(GOV_NewObjectVariable);
 	if (!Class && Class.Get() == nullptr)
@@ -541,7 +775,8 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	}
 	
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
-	NewObjectVariable->AddToRoot();
+	NewObjectVariable->SetFallbackOwner(InParent);
+	
 	INC_DWORD_STAT(STAT_GOV_Created);
 	INC_DWORD_STAT(STAT_GOV_Alive);
 	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
@@ -551,11 +786,13 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
 	NewObjectVariable->UniqueIdentifier = NewObjectVariableIdentifier;
-	
+	NewObjectVariable->bSupportsNetworking = bInSupportsNetworking;
 	NewObjectVariable->Parent = InParent;
 	NewObjectVariable->bPersistent = bShouldPersist;
-	InParent->RegisterWithRegistry(NewObjectVariable);
+	// Priority: DisplayNameOverride (explicit) → random name (generated when empty) → GUID (unreachable here, kept as final safety net).
+	// SetDisplayName must run BEFORE RegisterWithRegistry so the key is derived from DisplayName, not an empty string.
 	NewObjectVariable->SetDisplayName(DisplayNameOverride);
+	InParent->RegisterWithRegistry(NewObjectVariable);
 	GORGEOUS_TRACE_BOOKMARK(TEXT("ObjectVariable.Create %s (%s)"), *NewObjectVariable->GetName(), *NewObjectVariable->GetClass()->GetName());
 
 	GT_S_LOG("GT.ObjectVariables.Registration.Successful",
@@ -924,9 +1161,9 @@ void UGorgeousObjectVariable::SetNetworkAccessPolicy(const EGorgeousObjectVariab
 	}
 }
 
-void UGorgeousObjectVariable::EnsureSharedNetworkStackOwner(UObject* FallbackOwner)
+void UGorgeousObjectVariable::EnsureSharedNetworkStackOwner(UObject* NewOwner)
 {
-	if (!FallbackOwner)
+	if (!NewOwner)
 	{
 		return;
 	}
@@ -943,12 +1180,12 @@ void UGorgeousObjectVariable::EnsureSharedNetworkStackOwner(UObject* FallbackOwn
 		return;
 	}
 
-	AutoReplicationOwner = FallbackOwner;
-	SetCachedOwner(FallbackOwner);
+	AutoReplicationOwner = NewOwner;
+	SetFallbackOwner(NewOwner);
 
 	if (SupportsLegacyReplication() && bReplicates)
 	{
-		RegisterLegacyReplication(FallbackOwner);
+		RegisterLegacyReplication(NewOwner);
 	}
 }
 
@@ -1074,7 +1311,7 @@ FString UGorgeousObjectVariable::GetDisplayNameOrFallback() const
 	return DisplayName.IsEmpty() ? GetName() : DisplayName;
 }
 
-void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable)
+void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable, FName RegistryKey)
 {
 	if (!NewObjectVariable)
 	{
@@ -1088,9 +1325,92 @@ void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewO
 
 	if (!UGorgeousRootObjectVariable::IsVariableRegistered(NewObjectVariable))
 	{
-		VariableRegistry.Add(NewObjectVariable);
+		// Derive a stable map key following the priority chain:
+		//   1. Explicit RegistryKey passed by the caller.
+		//   2. DisplayName — set before this call to either the user-supplied DisplayNameOverride or a
+		//      randomly generated name (see SetDisplayName), so this branch is taken in virtually all cases.
+		//   3. GUID string — final safety net for any code path that bypasses SetDisplayName.
+		FName Key = RegistryKey;
+		if (Key == NAME_None)
+		{
+			Key = !NewObjectVariable->DisplayName.IsEmpty()
+				? FName(*NewObjectVariable->DisplayName)
+				: FName(*NewObjectVariable->UniqueIdentifier.ToString());
+		}
+		// Avoid key collision: append a GUID fragment only for genuine live-variable collisions.
+		// If the existing slot is null/invalid (stale GC'd entry), replace it directly.
+		if (const TObjectPtr<UGorgeousObjectVariable>* ExistingSlot = VariableRegistry.Find(Key))
+		{
+			if (*ExistingSlot && IsValid(ExistingSlot->Get()))
+			{
+				// Genuine collision with a live variable — append GUID fragment
+				Key = FName(*FString::Printf(TEXT("%s_%s"), *Key.ToString(),
+					*NewObjectVariable->UniqueIdentifier.ToString().Left(8)));
+			}
+			// else: stale / null slot — replace in-place without suffix
+		}
+		VariableRegistry.Add(Key, NewObjectVariable);
 		UGorgeousRootObjectVariable::TrackRegisteredVariable(NewObjectVariable);
+		OnVariableTreeChanged.Broadcast();
 	}
+}
+
+UGorgeousObjectVariable* UGorgeousObjectVariable::FindInRegistry(FName Key, const TSubclassOf<UGorgeousObjectVariable> Class,
+	const EFindInRegistryMatchCase MatchCase) const
+{
+	auto PassesClassFilter = [&Class](UGorgeousObjectVariable* Variable) -> bool
+	{
+		return !Class || Variable->IsA(Class);
+	};
+
+	// Exact is a direct TMap lookup — O(1)
+	if (MatchCase == EFindInRegistryMatchCase::Exact)
+	{
+		const TObjectPtr<UGorgeousObjectVariable>* Found = VariableRegistry.Find(Key);
+		if (!Found || !(*Found))
+		{
+			return nullptr;
+		}
+		UGorgeousObjectVariable* Variable = Found->Get();
+		return PassesClassFilter(Variable) ? Variable : nullptr;
+	}
+
+	// Contains / StartsWith / EndsWith — iterate all keys, case-insensitive
+	const FString KeyStr = Key.ToString();
+	for (const auto& Pair : VariableRegistry)
+	{
+		if (!Pair.Value || !IsValid(Pair.Value.Get()))
+		{
+			continue;
+		}
+
+		const FString EntryKey = Pair.Key.ToString();
+		bool bMatches = false;
+		switch (MatchCase)
+		{
+		case EFindInRegistryMatchCase::Contains:
+			bMatches = EntryKey.Contains(KeyStr, ESearchCase::IgnoreCase);
+			break;
+		case EFindInRegistryMatchCase::StartsWith:
+			bMatches = EntryKey.StartsWith(KeyStr, ESearchCase::IgnoreCase);
+			break;
+		case EFindInRegistryMatchCase::EndsWith:
+			bMatches = EntryKey.EndsWith(KeyStr, ESearchCase::IgnoreCase);
+			break;
+		default:
+			break;
+		}
+
+		if (bMatches)
+		{
+			UGorgeousObjectVariable* Variable = Pair.Value.Get();
+			if (PassesClassFilter(Variable))
+			{
+				return Variable;
+			}
+		}
+	}
+	return nullptr;
 }
 
 bool UGorgeousObjectVariable::HandleUniqueRegistrationPolicy(UGorgeousObjectVariable* Candidate)
@@ -1229,10 +1549,18 @@ void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyNam
 		return;
 	}
 
+	// Properties that contain UObject references cannot be serialized via a plain FMemoryWriter
+	// (EProperty mode) because FMemoryArchive asserts when asked to serialize object pointers.
+	// We now use FObjectAndNameAsStringProxyArchive in the EProperty path, so the auto-promotion to
+	// ENetSerialize is no longer needed.  Collection types (FArrayProperty, FMapProperty,
+	// FSetProperty) must NOT be promoted to ENetSerialize because FArrayProperty::NetSerializeItem is
+	// unconditionally deprecated (checkf(false)) in UE5.7+ — promoting them would cause a hard crash.
+	const EGorgeousReplicationMode ResolvedMode = Mode;
+
 	FReplicatedPropertyDeclaration& Declaration = RegisteredReplicatedProperties.AddDefaulted_GetRef();
 	Declaration.PropertyName = PropertyName;
 	Declaration.CachedProperty = Property;
-	Declaration.Mode = Mode;
+	Declaration.Mode = ResolvedMode;
 	Declaration.bSendInitialState = bSendInitialState;
 	Declaration.ReplicationCondition = AdvancedConfig.ReplicationCondition;
 	Declaration.RepNotifyFunction = AdvancedConfig.RepNotifyFunction;
@@ -1333,7 +1661,7 @@ bool UGorgeousObjectVariable::BuildAutoReplicationPropertyPayload(const FGorgeou
 	return bSerializedAny;
 }
 
-bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeousAutoReplicationPropertyPayload& Payload, UPackageMap* PackageMap)
+bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeousAutoReplicationPropertyPayload& Payload, UPackageMap* PackageMap, bool bSyncChangeShadow)
 {
 	if (Payload.IsEmpty())
 	{
@@ -1379,6 +1707,21 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 			continue;
 		}
 
+		// On the CLIENT: sync the change shadow to the freshly applied value.  Without
+		// this, any in-flight mutation the polling ticker had already stamped into the
+		// shadow would leave shadow != live, causing the poller to re-detect a spurious
+		// dirty state and repeat the send indefinitely.  (Correction-loop fix.)
+		//
+		// On the SERVER (C2S relay path): intentionally skip the shadow update so that
+		// the next HandleServerPropertyPollingTick detects the relay-applied value as
+		// dirty and fans it out to all connected clients via the normal S2C pipeline.
+		// Without this, shadow == live after apply and the polling tick sees no change,
+		// preventing the multicast / S2C fan-out leg of C2S and C2MC scenarios.
+		if (bSyncChangeShadow)
+		{
+			UpdateChangeShadowForProperty(*Declaration);
+		}
+
 		bAppliedAny = true;
 	}
 
@@ -1394,6 +1737,13 @@ bool UGorgeousObjectVariable::BuildCustomAutoReplicationPayload_Implementation(F
 bool UGorgeousObjectVariable::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, bool bIsInitialState)
 {
 	return false;
+}
+
+void UGorgeousObjectVariable::OnReplicationActivated_Implementation(const FGorgeousAutoReplicationContext& Context)
+{
+	// Default: no additional properties to register.
+	// Subclasses (or the UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION macro) override this
+	// to call RegisterReplicatedProperty() for their custom fields.
 }
 
 void UGorgeousObjectVariable::BindRPCHandler(const FName RPCName, const EGorgeousAutoReplicationRPCType Reliability)
@@ -1416,45 +1766,7 @@ void UGorgeousObjectVariable::BindRPCHandler(const FName RPCName, const EGorgeou
 	GT_I_LOG("GT.ObjectVariables.RPC.HandlerRegistered", TEXT("Registered AutoReplication RPC handler %s on %s."), *RPCName.ToString(), *GetName());
 }
 
-bool UGorgeousObjectVariable::RequestAutoReplicationRPC(const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const FName OverrideKey, UObject* OverrideContext, const EGorgeousAutoReplicationTargetKind TargetKind)
-{
-	if (!SupportsAutoReplicationFeatures())
-	{
-		GT_W_LOG("GT.ObjectVariables.RPC.ManualNetworking", TEXT("%s cannot queue AutoReplication RPC because it is configured for manual networking."), *GetName());
-		return false;
-	}
-
-	FName ResolvedKey;
-	UObject* ResolvedContext = nullptr;
-	if (!ResolveAutoReplicationRPCContext(OverrideKey, OverrideContext, ResolvedKey, ResolvedContext))
-	{
-		GT_W_LOG("GT.ObjectVariables.RPC.NoContext", TEXT("%s cannot queue AutoReplication RPC because no owning context could be resolved."), *GetName());
-		return false;
-	}
-
-	return UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPC(ResolvedContext, ResolvedKey, Type, Payload, TargetKind);
-}
-
-UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousObjectVariable::RequestAutoReplicationRPCAsync(const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const FName OverrideKey, UObject* OverrideContext, const EGorgeousAutoReplicationTargetKind TargetKind)
-{
-	if (!SupportsAutoReplicationFeatures())
-	{
-		GT_W_LOG("GT.ObjectVariables.RPCAsync.ManualNetworking", TEXT("%s cannot queue AutoReplication RPC async action because it is configured for manual networking."), *GetName());
-		return nullptr;
-	}
-
-	FName ResolvedKey;
-	UObject* ResolvedContext = nullptr;
-	if (!ResolveAutoReplicationRPCContext(OverrideKey, OverrideContext, ResolvedKey, ResolvedContext))
-	{
-		GT_W_LOG("GT.ObjectVariables.RPCAsync.NoContext", TEXT("%s cannot queue AutoReplication RPC async action because no owning context could be resolved."), *GetName());
-		return nullptr;
-	}
-
-	return UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(ResolvedKey, Type, Payload, TargetKind, ResolvedContext);
-}
-
-bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)
+bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable, bool* OutIsDeferred)
 {
 	if (!SupportsAutoReplicationFeatures())
 	{
@@ -1485,7 +1797,13 @@ bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC
 		GT_I_LOG("GT.ObjectVariables.RPC.ReliabilityMismatch", TEXT("AutoReplication RPC %s on %s expected %s but received %s. Continuing execution."), *QueuedRPC.Payload.HandlerName.ToString(), *GetName(), *Expected, *Received);
 	}
 
-	const bool bExecutedNativeHandler = InvokeNativeAutoReplicationRPCHandler(QueuedRPC, nullptr);
+	UGorgeousObjectVariable* NativeReturnOV = nullptr;
+	bool bNativeIsDeferred = false;
+	const bool bExecutedNativeHandler = InvokeNativeAutoReplicationRPCHandler(QueuedRPC, &NativeReturnOV, &bNativeIsDeferred);
+	if (OutIsDeferred)
+	{
+		*OutIsDeferred = bNativeIsDeferred;
+	}
 	if (!bExecutedNativeHandler)
 	{
 		GT_I_LOG("GT.ObjectVariables.RPC.NoNativeHandler", TEXT("AutoReplication RPC %s on %s did not match a native function. Blueprint event will be fired instead."),
@@ -1501,20 +1819,37 @@ bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC
 	}
 	if (OutReturnVariable)
 	{
-		*OutReturnVariable = ResultContainer;
+		// When the handler wrote an explicit return OV (first-param pattern), expose that OV
+		// directly so that ExecuteOnVariable → EmitResult → NotifyRequestCompleted all carry
+		// the handler-populated value as TargetVariable (matching the EOwner path behaviour).
+		// ResultContainer is still used internally for RegisterReplicatedRPCResult above.
+		*OutReturnVariable = NativeReturnOV ? static_cast<UGorgeousObjectVariable*>(NativeReturnOV)
+		                                    : static_cast<UGorgeousObjectVariable*>(ResultContainer);
 	}
+
+	// When the handler wrote an explicit return OV via its first parameter, use that OV as
+	// TargetVariable so callers retrieve the handler-populated value via GetCachedTargetVariable().
+	// The UGorgeousRPC_OV wrapper (ResultContainer) is still created for the async machinery.
+	UGorgeousObjectVariable* EffectiveTargetVariable = NativeReturnOV
+		? static_cast<UGorgeousObjectVariable*>(NativeReturnOV)
+		: (ResultContainer ? static_cast<UGorgeousObjectVariable*>(ResultContainer) : this);
 
 	FGorgeousAutoReplicationRPCResult Result;
 	Result.QueuedRPC = QueuedRPC;
 	Result.TargetKind = EGorgeousAutoReplicationTargetKind::EObjectVariable;
-	Result.TargetVariable = ResultContainer ? static_cast<UGorgeousObjectVariable*>(ResultContainer) : this;
+	Result.TargetVariable = EffectiveTargetVariable;
 	Result.TargetOwner = nullptr;
-	Result.TargetVariableIdentifier = ResultContainer ? ResultContainer->GetUniqueIdentifierForObjectVariable() : GetUniqueIdentifierForObjectVariable();
+	Result.TargetVariableIdentifier = EffectiveTargetVariable
+		? IGorgeousObjectVariableInteraction_I::Execute_GetUniqueIdentifierForObjectVariable(EffectiveTargetVariable)
+		: GetUniqueIdentifierForObjectVariable();
 	if (ResultContainer)
 	{
 		ResultContainer->CaptureResult(Result);
 	}
-	UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(Result);
+	// NOTE: Do NOT call NotifyRequestCompleted here.
+	// The mixin's EmitResult lambda calls it after ExecuteAutoReplicationRPC returns for
+	// the EObjectVariable/EAuto paths.  Calling it here too produces a duplicate
+	// per-responder callback: TotalReceivedResponders > TotalExpectedResponders → test fail.
 	if (UWorld* TargetWorld = GetWorld())
 	{
 		FGorgeousAutoReplicationCoordinator::Get(TargetWorld).NotifyRPCBroadcast(QueuedRPC, this);
@@ -1522,13 +1857,12 @@ bool UGorgeousObjectVariable::ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC
 	return true;
 }
 
-bool UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)
+bool UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable, bool* OutIsDeferred)
 {
-	const bool bHandled = GorgeousObjectVariable_Private::InvokeNativeHandler(this, this, QueuedRPC, nullptr);
-	if (OutReturnVariable)
-	{
-		*OutReturnVariable = nullptr;
-	}
+	// Thread OutReturnVariable and OutIsDeferred through so InvokeNativeHandler can return the
+	// handler-written return OV (first-param OV pattern) and signal deferred mode when the
+	// handler signature includes FGorgeousAutoReplicationRPCHandlerContext.
+	const bool bHandled = GorgeousObjectVariable_Private::InvokeNativeHandler(this, QueuedRPC, OutReturnVariable, OutIsDeferred);
 	return bHandled;
 }
 
@@ -1568,18 +1902,16 @@ FName UGorgeousObjectVariable::GetEffectiveNetworkChannel() const
 	return ChannelName;
 }
 
-bool UGorgeousObjectVariable::CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller) const
+bool UGorgeousObjectVariable::CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller, FName PropertyName) const
 {
+	// PropertyName is intentionally unused in the default implementation — the base policy grants
+	// access to all properties on this OV when the controller is the owner.  Subclasses or Blueprint
+	// overrides can inspect PropertyName to implement per-property access granularity.
 	return Controller && Controller == ResolveOwningPlayerController();
 }
 
 EGorgeousObjectVariableAccessPolicy UGorgeousObjectVariable::ResolveRespectAccessPolicy_Implementation(UGorgeousObjectVariable* Variable) const
 {
-	if (!Variable)
-	{
-		return EGorgeousObjectVariableAccessPolicy::Everyone;
-	}
-
 	return EGorgeousObjectVariableAccessPolicy::Everyone;
 }
 
@@ -1627,7 +1959,7 @@ bool UGorgeousObjectVariable::DoesConfiguredRootSupportNetworking() const
 	return !Entry || Entry->bSupportsNetworking;
 }
 
-bool UGorgeousObjectVariable::EvaluateAccessPolicyForController(AController* Controller) const
+bool UGorgeousObjectVariable::EvaluateAccessPolicyForController(AController* Controller, FName PropertyName) const
 {
 	if (!ShouldUseRootNetworkStack())
 	{
@@ -1639,10 +1971,11 @@ bool UGorgeousObjectVariable::EvaluateAccessPolicyForController(AController* Con
 	case EGorgeousObjectVariableAccessPolicy::Everyone:
 		return true;
 	case EGorgeousObjectVariableAccessPolicy::OwningControllerOnly:
+		// OwningControllerOnly is always a whole-OV gate; PropertyName has no effect here.
 		return Controller && Controller == ResolveOwningPlayerController();
 	case EGorgeousObjectVariableAccessPolicy::Custom:
 	default:
-		return CanControllerAccessVariable(Cast<AGorgeousPlayerController>(Controller));
+		return CanControllerAccessVariable(Cast<AGorgeousPlayerController>(Controller), PropertyName);
 	}
 }
 
@@ -1679,17 +2012,34 @@ AGorgeousPlayerController* UGorgeousObjectVariable::ResolveOwningPlayerControlle
 	return nullptr;
 }
 
-bool UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable)
+bool UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable, bool* OutIsDeferred)
 {
-	UGorgeousRPC_OV* ResultContainer = nullptr;
-	const bool bHandled = GorgeousObjectVariable_Private::InvokeNativeHandler(Target, nullptr, QueuedRPC, nullptr);
+	UGorgeousObjectVariable* NativeReturnOV = nullptr;
+	const bool bHandled = GorgeousObjectVariable_Private::InvokeNativeHandler(Target, QueuedRPC, &NativeReturnOV, OutIsDeferred);
 	if (bHandled)
 	{
-		ResultContainer = CreateStandaloneRPCResultContainer(Target);
+		if (NativeReturnOV)
+		{
+			// Handler declared a return OV as its first parameter; the backend injected and the
+			// handler may have populated it.  Pass it directly so the caller sets TargetVariable
+			// to the handler-written OV instead of a generic UGorgeousRPC_OV wrapper.
+			if (OutReturnVariable)
+			{
+				*OutReturnVariable = NativeReturnOV;
+			}
+		}
+		else
+		{
+			UGorgeousRPC_OV* ResultContainer = CreateStandaloneRPCResultContainer(Target);
+			if (OutReturnVariable)
+			{
+				*OutReturnVariable = ResultContainer;
+			}
+		}
 	}
-	if (OutReturnVariable)
+	else if (OutReturnVariable)
 	{
-		*OutReturnVariable = ResultContainer;
+		*OutReturnVariable = nullptr;
 	}
 	return bHandled;
 }
@@ -1714,7 +2064,8 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::GetOrCreateRPCResultParent()
 	}
 
 	FGuid Identifier;
-	UGorgeousObjectVariable* NewParent = Root->NewObjectVariable(UGorgeousObjectVariable::StaticClass(), Identifier, Root, true, GorgeousObjectVariable_Private::GorgeousRPCResultsDisplayName.ToString());
+	// UGorgeousObjectVariable is abstract — use the concrete UGorgeousRPC_OV as the grouping parent.
+	UGorgeousObjectVariable* NewParent = Root->NewObjectVariable(UGorgeousRPC_OV::StaticClass(), Identifier, Root, true, GorgeousObjectVariable_Private::GorgeousRPCResultsDisplayName.ToString());
 	if (NewParent)
 	{
 		NewParent->RootNetworkConfig.bExposeThroughRootNetworkStack = true;
@@ -1746,6 +2097,7 @@ UGorgeousRPC_OV* UGorgeousObjectVariable::CreateAutoRPCResultContainer()
 	ResultContainer->AutoReplicationOwner = AutoReplicationOwner;
 	ResultContainer->AutoReplicationEntryKey = AutoReplicationEntryKey;
 	ResultContainer->AutoReplicationReplicationIndex = INDEX_NONE;
+	ResultContainer->SetNetworkingEnabled(true);
 	FGorgeousAutoReplicationContext Context;
 	Context.OwningObject = AutoReplicationOwner.Get();
 	Context.EntryKey = AutoReplicationEntryKey;
@@ -1758,7 +2110,6 @@ UGorgeousRPC_OV* UGorgeousObjectVariable::CreateAutoRPCResultContainer()
 	{
 		GT_I_LOG("GT.ObjectVariables.RPC.ResultNoOwner", TEXT("%s created an RPC result container without an AutoReplication owner. Networking may be skipped."), *GetName());
 	}
-	ResultContainer->SetNetworkingEnabled(true);
 	ResultContainer->SetFlags(RF_Transient);
 	return ResultContainer;
 }
@@ -1782,6 +2133,8 @@ UGorgeousRPC_OV* UGorgeousObjectVariable::CreateStandaloneRPCResultContainer(UOb
 	ResultContainer->AutoReplicationOwner = OwningContext;
 	ResultContainer->AutoReplicationEntryKey = NAME_None;
 	ResultContainer->AutoReplicationReplicationIndex = INDEX_NONE;
+	// Enable networking before ActivateReplication — same reason as CreateRPCResultContainer.
+	ResultContainer->SetNetworkingEnabled(true);
 	FGorgeousAutoReplicationContext Context;
 	Context.OwningObject = OwningContext;
 	Context.EntryKey = NAME_None;
@@ -1790,7 +2143,6 @@ UGorgeousRPC_OV* UGorgeousObjectVariable::CreateStandaloneRPCResultContainer(UOb
 	{
 		ResultContainer->ActivateReplication(Context);
 	}
-	ResultContainer->SetNetworkingEnabled(true);
 	ResultContainer->SetFlags(RF_Transient);
 	return ResultContainer;
 }
@@ -1826,7 +2178,7 @@ bool UGorgeousObjectVariable::SerializeRPCSnapshotRecursive(UGorgeousObjectVaria
 	FString ClassPathString = Variable->GetClass()->GetPathName();
 	Ar << ClassPathString;
 
-	FGuid Identifier = Variable->GetUniqueIdentifierForObjectVariable();
+	FGuid Identifier = IGorgeousObjectVariableInteraction_I::Execute_GetUniqueIdentifierForObjectVariable(Variable);
 	Ar << Identifier;
 
 	FString LocalDisplayName = Variable->GetDisplayName();
@@ -1858,9 +2210,9 @@ bool UGorgeousObjectVariable::SerializeRPCSnapshotRecursive(UGorgeousObjectVaria
 
 	int32 ChildCount = Variable->VariableRegistry.Num();
 	Ar << ChildCount;
-	for (UGorgeousObjectVariable* Child : Variable->VariableRegistry)
+	for (auto& [ChildKey, Child] : Variable->VariableRegistry)
 	{
-		if (!SerializeRPCSnapshotRecursive(Child, Ar))
+		if (!SerializeRPCSnapshotRecursive(Child.Get(), Ar))
 		{
 			return false;
 		}
@@ -2010,7 +2362,7 @@ void UGorgeousObjectVariable::RegisterReplicatedRPCResult(const FGorgeousQueuedR
 
 	FGorgeousAutoReplicationRPCResultDescriptor Descriptor;
 	Descriptor.RequestGuid = QueuedRPC.RequestGuid;
-	Descriptor.ResultIdentifier = ResultContainer->GetUniqueIdentifierForObjectVariable();
+	Descriptor.ResultIdentifier = IGorgeousObjectVariableInteraction_I::Execute_GetUniqueIdentifierForObjectVariable(ResultContainer);
 	if (!Descriptor.ResultIdentifier.IsValid())
 	{
 		return;
@@ -2353,6 +2705,26 @@ void UGorgeousObjectVariable::TryClientAutoReplicateProperty(const FName Propert
 			UpdateChangeShadowForProperty(*Declaration);
 		}
 	}
+	else
+	{
+		// The send failed (no relay component, not a client context, networking disabled, etc.).
+		// Revert the live property back to the change shadow — the last value that was successfully
+		// acknowledged by the server — to prevent a silent local/server divergence.
+		// If the shadow is not yet initialized the write was the very first one, so there is nothing
+		// to revert to and the value stays as written (it will be sent once the connection is ready).
+		if (FReplicatedPropertyDeclaration* Declaration = FindReplicatedDeclarationByName(PropertyName))
+		{
+			if (Declaration->bChangeShadowInitialized && Declaration->ChangeShadow.Num() > 0 && Declaration->CachedProperty)
+			{
+				void* PropertyData = Declaration->CachedProperty->ContainerPtrToValuePtr<void>(this);
+				if (PropertyData)
+				{
+					Declaration->CachedProperty->CopyCompleteValue(PropertyData, Declaration->ChangeShadow.GetData());
+					GT_I_LOG("GT.ObjectVariables.ClientSync.Reverted", TEXT("%s: Property %s reverted to last server-consistent value because the send dispatch failed."), *GetName(), *PropertyName.ToString());
+				}
+			}
+		}
+	}
 }
 
 bool UGorgeousObjectVariable::TryClientAutoReplicateProperties(const TSet<FName>& DirtyProperties)
@@ -2397,7 +2769,44 @@ bool UGorgeousObjectVariable::TryClientAutoReplicateProperties(const TSet<FName>
 	// For client-to-server property sync, we need to use the RPC relay component
 	// because it exists as a default subobject on both server and client (unlike dynamically created transporters).
 	// The relay component is created in the PlayerController constructor, so Server RPCs work properly.
-	UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = OwnerActor->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+	// If the owner is a PlayerState, we must use its PlayerController instead, because PlayerState
+	// doesn't have the right kind of owning connection for Server RPCs to work.
+	AActor* RelayActor = OwnerActor;
+	if (APlayerState* PS = Cast<APlayerState>(OwnerActor))
+	{
+		if (APlayerController* PC = PS->GetPlayerController())
+		{
+			RelayActor = PC;
+			GT_I_LOG("GT.ObjectVariables.ClientSync.ResolvedToPC", TEXT("%s: Resolved PlayerState %s to PlayerController %s for relay."), 
+				*GetName(), *PS->GetName(), *PC->GetName());
+		}
+		else
+		{
+			// PlayerState doesn't have a PlayerController yet (timing during initialization).
+			// On a client, we can use the local PlayerController instead.
+			if (UWorld* World = OwnerActor->GetWorld())
+			{
+				if (APlayerController* LocalPC = World->GetFirstPlayerController())
+				{
+					RelayActor = LocalPC;
+					GT_I_LOG("GT.ObjectVariables.ClientSync.FallbackToLocalPC", TEXT("%s: PlayerState %s has no PC yet, using local PlayerController %s for relay."), 
+						*GetName(), *PS->GetName(), *LocalPC->GetName());
+				}
+				else
+				{
+					GT_W_LOG("GT.ObjectVariables.ClientSync.NoLocalPC", TEXT("%s: PlayerState %s has no PlayerController and no local PC found. Cannot sync."), *GetName(), *PS->GetName());
+					return false;
+				}
+			}
+			else
+			{
+				GT_W_LOG("GT.ObjectVariables.ClientSync.NoWorld", TEXT("%s: PlayerState %s has no World. Cannot sync."), *GetName(), *PS->GetName());
+				return false;
+			}
+		}
+	}
+	
+	UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = RelayActor->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
 	if (!RelayComponent)
 	{
 		GT_W_LOG("GT.ObjectVariables.ClientSync.NoRelayComponent", TEXT("%s: No RPC relay component found on owner actor %s."), *GetName(), *OwnerActor->GetName());
@@ -2410,6 +2819,21 @@ bool UGorgeousObjectVariable::TryClientAutoReplicateProperties(const TSet<FName>
 
 	FGorgeousAutoReplicationConditionContext ConditionContext;
 	ConditionContext.bIsOwnerConnection = OwnerActor->HasLocalNetOwner();
+
+	// Resolve the PackageMap for this connection so UObject references inside replicated properties
+	// (e.g. TArray<UObject*>) are serialized correctly. OVs replicated via the auto-replication mixin
+	// bypass the standard UE replication path and therefore do not receive automatic PackageMap injection.
+	if (UNetConnection* OwnerConn = OwnerActor->GetNetConnection())
+	{
+		ConditionContext.PackageMap = OwnerConn->PackageMap;
+	}
+	else if (UWorld* OVWorld = OwnerActor->GetWorld())
+	{
+		if (UNetDriver* NetDriver = OVWorld->GetNetDriver())
+		{
+			ConditionContext.PackageMap = NetDriver->ServerConnection ? NetDriver->ServerConnection->PackageMap : nullptr;
+		}
+	}
 
 	FGorgeousAutoReplicationPropertyPayload Payload;
 	if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
@@ -2711,6 +3135,46 @@ bool UGorgeousObjectVariable::HandleServerPropertyPollingTick(float DeltaSeconds
 	return true;
 }
 
+bool UGorgeousObjectVariable::ShouldSendAutoReplicationPayloadToController(APlayerController* PC, FName PropertyName) const
+{
+	if (!PC)
+	{
+		return false;
+	}
+
+	// If this OV does not participate in the root network stack there are no access restrictions.
+	if (!ShouldUseRootNetworkStack())
+	{
+		return true;
+	}
+
+	UWorld* OVWorld = GetWorld();
+	if (!OVWorld)
+	{
+		return EvaluateAccessPolicyForController(PC, PropertyName);
+	}
+
+	if (UGorgeousRootNetworkStackSubsystem* RootNetworkStack = UGorgeousRootNetworkStackSubsystem::Get(OVWorld))
+	{
+		// When PropertyName is None this is a whole-OV gate: validate channel subscription and
+		// whole-OV access policy via the root stack (TryAutoSubscribeController + CanControllerAccess).
+		// When PropertyName is set, the channel gate was already passed by the whole-OV call that
+		// preceded the per-property loop, so we only re-evaluate the access policy with the property
+		// context to allow Blueprint overrides of CanControllerAccessVariable to discriminate per-property.
+		if (PropertyName.IsNone())
+		{
+			RootNetworkStack->TryAutoSubscribeController(this, PC);
+			return RootNetworkStack->CanControllerAccess(this, PC);
+		}
+
+		// Per-property path: channel already validated by the prior whole-OV gate.
+		return EvaluateAccessPolicyForController(PC, PropertyName);
+	}
+
+	// Fallback when the subsystem is unavailable (e.g. during tests).
+	return EvaluateAccessPolicyForController(PC, PropertyName);
+}
+
 bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& DirtyProperties)
 {
 	if (DirtyProperties.Num() == 0)
@@ -2729,35 +3193,15 @@ bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& Di
 		return false;
 	}
 
-	// Build the property payload
-	FGorgeousAutoReplicationConditionContext ConditionContext;
-	ConditionContext.bIsOwnerConnection = false; // Server sending to all clients
+	// Resolve the owner actor once so we can determine per-connection ownership below.
+	AActor* OwnerActor = ResolveReplicationOwnerActor();
 
-	FGorgeousAutoReplicationPropertyPayload Payload;
-	if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
-	{
-		GT_W_LOG("GT.ObjectVariables.ServerSync.BuildPayloadFailed", TEXT("%s: Failed to build property payload for server replication."), *GetName());
-		return false;
-	}
-
-	// Filter to only dirty properties
-	Payload.Properties.RemoveAll([&](const FGorgeousAutoReplicationPropertyValue& Value)
-	{
-		return !DirtyProperties.Contains(Value.PropertyName);
-	});
-
-	if (Payload.Properties.Num() == 0)
-	{
-		return false;
-	}
-
-	// Build the envelope
-	FGorgeousAutoReplicationPropertyEnvelope Envelope;
-	Envelope.EntryKey = AutoReplicationEntryKey;
-	Envelope.Payload = Payload;
-
-	// Send to all connected clients via their relay components
+	// Build and send one payload per client connection. OVs replicated via the auto-replication mixin
+	// bypass the standard UE replication path, so they do not receive automatic PackageMap injection.
+	// Serializing per-connection ensures that UObject references (e.g. TArray<UObject*>) are mapped
+	// through the correct per-connection PackageMap, matching how the standard replication path works.
 	int32 ClientsSent = 0;
+	int32 TotalPropertiesSent = 0;
 	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 	{
 		APlayerController* PC = It->Get();
@@ -2772,6 +3216,15 @@ bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& Di
 			continue;
 		}
 
+		// Enforce access policy before sending — mirrors the access check performed by the transporter
+		// path (FGorgeousAutoReplicationMixin::CanControllerReceivePropertyPayload) so that the
+		// relay-component polling path is equally protected.
+		if (!ShouldSendAutoReplicationPayloadToController(PC))
+		{
+			GT_I_LOG("GT.ObjectVariables.ServerSync.AccessDenied", TEXT("%s: Skipping property payload for PlayerController %s due to access policy."), *GetName(), *PC->GetName());
+			continue;
+		}
+
 		// Find the relay component on the player controller
 		UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
 		if (!RelayComponent)
@@ -2779,6 +3232,55 @@ bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& Di
 			GT_I_LOG("GT.ObjectVariables.ServerSync.NoRelayComponent", TEXT("%s: PlayerController %s has no AutoReplicationRPCRelayComponent."), *GetName(), *PC->GetName());
 			continue;
 		}
+
+		// Per-connection condition context: inject this client's PackageMap so UObject references inside
+		// replicated properties are serialized correctly for its connection. Also determine whether this
+		// particular connection is the net owner of the variable's owning actor, for conditional replication.
+		UNetConnection* PCConnection = PC->GetNetConnection();
+		FGorgeousAutoReplicationConditionContext ConditionContext;
+		ConditionContext.PackageMap = PCConnection ? PCConnection->PackageMap : nullptr;
+		ConditionContext.bIsOwnerConnection = OwnerActor && PCConnection && (OwnerActor->GetNetConnection() == PCConnection);
+
+		FGorgeousAutoReplicationPropertyPayload Payload;
+		if (!BuildAutoReplicationPropertyPayload(ConditionContext, Payload))
+		{
+			GT_I_LOG("GT.ObjectVariables.ServerSync.BuildPayloadFailed", TEXT("%s: Failed to build property payload for client %s — skipping."), *GetName(), *PC->GetName());
+			continue;
+		}
+
+		// Filter to only dirty properties, and apply per-property access policy so that Blueprint
+		// overrides of CanControllerAccessVariable with a specific PropertyName can suppress
+		// individual properties for this connection without blocking the whole payload.
+		Payload.Properties.RemoveAll([&](const FGorgeousAutoReplicationPropertyValue& Value)
+		{
+			if (!DirtyProperties.Contains(Value.PropertyName))
+			{
+				return true; // not dirty
+			}
+
+			// Channel subscription was already validated by ShouldSendAutoReplicationPayloadToController
+			// above.  Here we only re-run the access policy with the concrete property name so that
+			// Custom-policy CanControllerAccessVariable overrides can gate individual UPROPERTY fields.
+			if (!ShouldSendAutoReplicationPayloadToController(PC, Value.PropertyName))
+			{
+				GT_I_LOG("GT.ObjectVariables.ServerSync.PropertyAccessDenied",
+					TEXT("%s: Property %s suppressed for PlayerController %s by per-property access policy."),
+					*GetName(), *Value.PropertyName.ToString(), *PC->GetName());
+				return true; // remove from payload
+			}
+
+			return false; // keep
+		});
+
+		if (Payload.Properties.Num() == 0)
+		{
+			continue;
+		}
+
+		// Build the per-client envelope and dispatch
+		FGorgeousAutoReplicationPropertyEnvelope Envelope;
+		Envelope.EntryKey = AutoReplicationEntryKey;
+		Envelope.Payload = Payload;
 
 		// Set the target mixin on the relay so the client can process the payload
 		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(PC))
@@ -2789,6 +3291,7 @@ bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& Di
 		if (RelayComponent->RelayPropertyPayloadToClient(Envelope))
 		{
 			ClientsSent++;
+			TotalPropertiesSent += Envelope.Payload.Properties.Num();
 		}
 	}
 
@@ -2796,7 +3299,7 @@ bool UGorgeousObjectVariable::TryServerReplicateProperties(const TSet<FName>& Di
 	FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
 	Coordinator.MarkStreamDirty(this);
 
-	GT_I_LOG("GT.ObjectVariables.ServerSync.Replicated", TEXT("%s: Sent %d properties to %d clients for replication."), *GetName(), Payload.Properties.Num(), ClientsSent);
+	GT_I_LOG("GT.ObjectVariables.ServerSync.Replicated", TEXT("%s: Sent %d properties to %d clients for replication."), *GetName(), TotalPropertiesSent, ClientsSent);
 	return ClientsSent > 0;
 }
 

@@ -65,7 +65,11 @@ FGorgeousAutoReplicationRPCResponderHandle FGorgeousAutoReplicationRPCResponderH
 		return Handle;
 	}
 
-	Handle.bIsServer = Controller->HasAuthority();
+	// bIsServer is true only when this controller IS the local authority endpoint
+	// (i.e. the listen-server host's own PC).  Remote client PCs that live on the
+	// server also have HasAuthority()==true, but they represent client-side responders
+	// and must use their ConnectionKey so the debug timeline shows distinct labels.
+	Handle.bIsServer = Controller->HasAuthority() && Controller->IsLocalController();
 	Handle.ConnectionKey = GorgeousAutoReplicationNetworkingTypes_Private::BuildConnectionKeyFromController(Controller);
 	if (const ULocalPlayer* LocalPlayer = Controller->GetLocalPlayer())
 	{
@@ -75,7 +79,9 @@ FGorgeousAutoReplicationRPCResponderHandle FGorgeousAutoReplicationRPCResponderH
 	{
 		Handle.PlayerControllerId = INDEX_NONE;
 	}
-	Handle.PlayerDisplayName = Controller->PlayerState ? Controller->PlayerState->GetPlayerName() : Controller->GetName();
+	// Use the UObject name (e.g. "BP_GPC_0") so the timeline shows a stable,
+	// immediately recognisable identifier rather than the player-set display name.
+	Handle.PlayerDisplayName = Controller->GetName();
 	Handle.DebugLabel = FString::Printf(TEXT("%s_%s"), Handle.bIsServer ? TEXT("Srv") : TEXT("Cli"), *Handle.PlayerDisplayName);
 	return Handle;
 }

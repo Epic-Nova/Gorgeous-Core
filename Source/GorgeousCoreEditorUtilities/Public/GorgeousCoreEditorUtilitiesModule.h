@@ -8,12 +8,12 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * This module defines the editor utilities for the Gorgeous Things plugin.
@@ -22,6 +22,7 @@
  */
 class FGorgeousCoreEditorUtilitiesModule final : public IGorgeousThingsModuleInterface
 {
+	//<============================--- Overrides ---============================>
 public:
 
 	/**
@@ -47,15 +48,6 @@ public:
 	 * @return The functionality type as an EGorgeousModuleFunctionality enum value.
 	 */
 	virtual EGorgeousModuleFunctionality GetModuleFunctionality() const override { return EGorgeousModuleFunctionality::EditorUtilities; }
-
-	/**
-	 * We return false here because we don't want the core to be participated in any hot reload/live coding actions.
-	 * As long term debugging shows that reloading the gorgeous core module invokes the corruption of the current object variable registry instance, and finally a crash of the current unreal instance.
-	 */
-	virtual bool SupportsDynamicReloading() override
-	{
-		return false;
-	}
 	
 	/**
 	 * Returns an array of names from other gorgeous plugins that this module depends on.
@@ -63,7 +55,7 @@ public:
 	 * 
 	 * @return All plugins that provide functionality that is used within this current module.
 	 */
-	virtual TArray<FName> GetDependentPlugins() const override;
+	virtual TArray<FName> GetDependentPlugins() const override { return TArray<FName>(); }
 	
 	/**
 	 * Returns the minimum required core version for this module to work properly.
@@ -71,7 +63,7 @@ public:
 	 * 
 	 * @return The minimum required core version as an integer. Represented as Major * 100 + (Minor * 10)
 	 */
-	virtual int32 GetMinimumRequiredCoreVersion() const override;
+	virtual int32 GetMinimumRequiredCoreVersion() const override { return 100; } // Version 1.0
 
 	/**
 	 * Returns whether this module provides core functionality.
@@ -80,17 +72,16 @@ public:
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const override { return true; }
-	
-private:
+	//<------------------------------------------------------------------------->
 
 	
-	void HandleGorgeousLogEntry(const FGorgeousLogEntry& Entry);
-	void HandleBeginPIE(bool bIsSimulating);
-	void HandleEndPIE(bool bIsSimulating);
-
+	//<============================--- Variables ---============================>
 private:
+
+	// The delegate handle for the Gorgeous log entry delegate, used to unregister the delegate on module shutdown.
 	FDelegateHandle LogEntryHandle;
-	FDelegateHandle BeginPIEHandle;
-	FDelegateHandle EndPIEHandle;
+	
+	// The name of the registered message log listing for Gorgeous log entries, used to unregister the listing on module shutdown.
 	FName RegisteredLogListingName = NAME_None;
+	//<------------------------------------------------------------------------->
 };

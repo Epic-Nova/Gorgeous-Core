@@ -13,6 +13,8 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Templates/Function.h"
 #include "Misc/CoreMisc.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousRootObjectVariable, Log, All);
 
@@ -30,7 +32,7 @@ FSimpleMulticastDelegate UGorgeousRootObjectVariable::OnRootRegistryChanged;
 
 namespace GorgeousRootObjectVariable_Private
 {
-	static void ForEachRootRegistry(TFunctionRef<void(TArray<TObjectPtr<UGorgeousObjectVariable>>&, UGorgeousRootObjectVariable*)> Callback)
+	static void ForEachRootRegistry(TFunctionRef<void(TMap<FName, TObjectPtr<UGorgeousObjectVariable>>&, UGorgeousRootObjectVariable*)> Callback)
 	{
 			if (UGorgeousRootObjectVariable::NamedRootInstances.Num() == 0)
 		{
@@ -71,11 +73,11 @@ namespace GorgeousRootObjectVariable_Private
 		}
 
 		Callback(Variable);
-		for (UGorgeousObjectVariable* Child : Variable->VariableRegistry)
+		for (auto& [Key, Child] : Variable->VariableRegistry)
 		{
 			if (IsValid(Child))
 			{
-				ForEachVariableRecursive(Child, Callback);
+				ForEachVariableRecursive(Child.Get(), Callback);
 			}
 		}
 	}
@@ -147,7 +149,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetRootObjectVariable(
 	{
 		return TryGetExistingRoot(ResolvedName);
 	}
-
+	
 	return GetOrCreateRootInternal(ResolvedName);
 }
 
@@ -302,7 +304,7 @@ bool UGorgeousRootObjectVariable::RestoreRootRegistryOwnership(const FString& St
 	return false;
 }
 
-void UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(const FGorgeousRootRegistryOwnerHandle& Handle, UObject* FallbackOwner)
+void UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(const FGorgeousRootRegistryOwnerHandle& Handle, UObject* CachedOwner)
 {
 	if (!Handle.IsValid())
 	{
@@ -319,18 +321,18 @@ void UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(const FGorgeousRo
 		if (State->Handle.OwnerToken == Handle.OwnerToken)
 		{
 			State->Owner.Reset();
-			if (FallbackOwner)
+			if (CachedOwner)
 			{
-				PromoteRootRegistryOwner(ResolvedRootName, FallbackOwner);
+				PromoteRootRegistryOwner(ResolvedRootName, CachedOwner);
 			}
 			OnRootRegistryChanged.Broadcast();
 		}
 	}
 }
 
-void UGorgeousRootObjectVariable::PromoteRootRegistryOwner(const FName RootName, UObject* FallbackOwner)
+void UGorgeousRootObjectVariable::PromoteRootRegistryOwner(const FName RootName, UObject* CachedOwner)
 {
-	if (!FallbackOwner)
+	if (!CachedOwner)
 	{
 		return;
 	}
@@ -347,11 +349,11 @@ void UGorgeousRootObjectVariable::PromoteRootRegistryOwner(const FName RootName,
 	}
 
 	GorgeousRootObjectVariable_Private::ForEachVariableRecursive(Root,
-		[FallbackOwner](UGorgeousObjectVariable* Variable)
+		[CachedOwner](UGorgeousObjectVariable* Variable)
 		{
 			if (Variable)
 			{
-				Variable->EnsureSharedNetworkStackOwner(FallbackOwner);
+				Variable->EnsureSharedNetworkStackOwner(CachedOwner);
 			}
 		});
 
@@ -363,7 +365,7 @@ void UGorgeousRootObjectVariable::PromoteRootRegistryOwner(const FName RootName,
 	}
 	if (State.Handle.StableIdentifier.IsEmpty())
 	{
-		State.Handle.StableIdentifier = FallbackOwner->GetName();
+		State.Handle.StableIdentifier = CachedOwner->GetName();
 	}
 
 	OnRootRegistryChanged.Broadcast();
@@ -385,17 +387,17 @@ TArray<UGorgeousObjectVariable*> UGorgeousRootObjectVariable::GetVariableHierarc
 		Visited.Add(Variable);
 		Result.Add(Variable);
 
-		for (UGorgeousObjectVariable* Child : Variable->VariableRegistry)
+		for (auto& [Key, Child] : Variable->VariableRegistry)
 		{
-			GatherEntries(Child);
+			GatherEntries(Child.Get());
 		}
 	};
 
 	if (UGorgeousRootObjectVariable* Root = GetRootObjectVariable(RootName))
 	{
-		for (UGorgeousObjectVariable* Entry : Root->VariableRegistry)
+		for (auto& [Key, Entry] : Root->VariableRegistry)
 		{
-			GatherEntries(Entry);
+			GatherEntries(Entry.Get());
 		}
 	}
 
@@ -408,9 +410,9 @@ TArray<UGorgeousObjectVariable*> UGorgeousRootObjectVariable::GetRootVariableReg
 	{
 		TArray<UGorgeousObjectVariable*> Copy;
 		Copy.Reserve(Root->VariableRegistry.Num());
-		for (UGorgeousObjectVariable* Entry : Root->VariableRegistry)
+		for (auto& [Key, Entry] : Root->VariableRegistry)
 		{
-			Copy.Add(Entry);
+			Copy.Add(Entry.Get());
 		}
 		return Copy;
 	}
@@ -444,22 +446,29 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 	}
 	else
 	{
-		TFunction<bool(TArray<TObjectPtr<UGorgeousObjectVariable>>&)> RemoveFromRegistry;
-		RemoveFromRegistry = [&](TArray<TObjectPtr<UGorgeousObjectVariable>>& Registry) -> bool
+		TFunction<bool(TMap<FName, TObjectPtr<UGorgeousObjectVariable>>&)> RemoveFromRegistry;
+		RemoveFromRegistry = [&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry) -> bool
 		{
-			for (int32 i = 0; i < Registry.Num(); ++i)
+			for (auto It = Registry.CreateIterator(); It; ++It)
 			{
-				if (Registry[i] == VariableToRemove)
+				// Prune null/invalid slots accumulated by GC or missed BeginDestroy paths
+				if (!It->Value || !IsValid(It->Value.Get()))
+				{
+					It.RemoveCurrent();
+					continue;
+				}
+
+				if (It->Value == VariableToRemove)
 				{
 					if (VariableToRemove->IsRooted())
 					{
 						VariableToRemove->RemoveFromRoot();
 					}
-					Registry.RemoveAt(i);
+					It.RemoveCurrent();
 					return true;
 				}
 
-				if (IsValid(Registry[i]) && RemoveFromRegistry(Registry[i]->VariableRegistry))
+				if (RemoveFromRegistry(It->Value->VariableRegistry))
 				{
 					return true;
 				}
@@ -469,7 +478,7 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 		};
 
 		GorgeousRootObjectVariable_Private::ForEachRootRegistry(
-			[&](TArray<TObjectPtr<UGorgeousObjectVariable>>& Registry, UGorgeousRootObjectVariable*)
+			[&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry, UGorgeousRootObjectVariable*)
 			{
 				if (!bRemoved)
 				{
@@ -519,44 +528,145 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 
 	int32 RemovedCount = 0;
 
-	TFunction<void(TArray<TObjectPtr<UGorgeousObjectVariable>>&)> PurgeRegistry;
-	PurgeRegistry = [&](TArray<TObjectPtr<UGorgeousObjectVariable>>& Registry)
+	// -----------------------------------------------------------------------
+	// Step 1: clean non-root OVs from every registry tree.
+	//
+	// bFullCleanup == false  (level switch): remove only dangling (invalid)
+	//   entries — persistent OVs survive.
+	// bFullCleanup == true   (session end):  remove dangling AND
+	//   non-persistent entries.
+	// -----------------------------------------------------------------------
+	TFunction<void(TMap<FName, TObjectPtr<UGorgeousObjectVariable>>&)> PurgeRegistry;
+	PurgeRegistry = [&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry)
 	{
-		for (int32 Index = Registry.Num() - 1; Index >= 0; --Index)
+		// Collect removal candidates before touching the map to avoid iterator invalidation.
+		TArray<FName> KeysToRemove;
+		for (auto& [Key, OVPtr] : Registry)
 		{
-			UGorgeousObjectVariable* Entry = Registry.IsValidIndex(Index) ? Registry[Index].Get() : nullptr;
+			UGorgeousObjectVariable* Entry = OVPtr.Get();
 			const bool bEntryValid = IsValid(Entry);
 			const bool bShouldRemove = !bEntryValid || (bFullCleanup && Entry && !Entry->bPersistent);
 			if (bShouldRemove)
 			{
+				// Reset FallbackOwner (TStrongObjectPtr / FGCObject) BEFORE
+				// removal so it no longer keeps the PIE world reachable.
+				if (bFullCleanup && bEntryValid && Entry)
+				{
+					Entry->SetFallbackOwner(nullptr);
+				}
 				++RemovedCount;
-				RemoveVariableFromRegistry(Entry);
-				continue;
+				KeysToRemove.Add(Key);
 			}
-
-			if (Entry)
+			else if (Entry)
 			{
 				PurgeRegistry(Entry->VariableRegistry);
+			}
+		}
+		// RemoveVariableFromRegistry recurses through all root registries; call it outside
+		// the range-for to avoid modifying the map while iterating.
+		for (const FName& KeyToRemove : KeysToRemove)
+		{
+			if (const TObjectPtr<UGorgeousObjectVariable>* Found = Registry.Find(KeyToRemove))
+			{
+				RemoveVariableFromRegistry(Found->Get());
 			}
 		}
 	};
 
 	GorgeousRootObjectVariable_Private::ForEachRootRegistry(
-		[&](TArray<TObjectPtr<UGorgeousObjectVariable>>& Registry, UGorgeousRootObjectVariable*)
+		[&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry, UGorgeousRootObjectVariable*)
 		{
 			PurgeRegistry(Registry);
 		});
 
-	const FString Message = RemovedCount > 0
-		? FString::Printf(TEXT("Registry cleaned (%d dangling entries removed)."), RemovedCount)
-		: TEXT("Registry scan completed – no dangling entries detected.");
-	
-	GT_S_LOG("GT.ObjectVariables.Registry.Cleaned", TEXT("%s"), *Message);
-	
+	// -----------------------------------------------------------------------
+	// Step 2  (session-end only): release root OVs and unroot everything.
+	//
+	// EndPlayMap calls ForEachObjectWithOuter(GameInstance, MarkAsGarbage) which asserts
+	// !IsRooted() on every object in the GI's outer chain.
+	// Root OVs carry RF_RootSet; child OVs do NOT (AddToRoot is intentionally NOT called on
+	// child OVs — see NewObjectVariable).  Walk the full tree and clear FallbackOwner on each
+	// descendant (releases the TStrongObjectPtr FGCObject that would otherwise keep the PIE world
+	// reachable past GC), then RemoveFromRoot on the root OV itself.
+	// -----------------------------------------------------------------------
+	int32 RootsReleased = 0;
+
+	if (bFullCleanup)
+	{
+		TFunction<void(UGorgeousObjectVariable*)> UnrootTree;
+		UnrootTree = [&UnrootTree](UGorgeousObjectVariable* OV)
+		{
+			if (!OV) return;
+			for (auto& [ChildKey, Child] : OV->VariableRegistry)
+			{
+				if (UGorgeousObjectVariable* C = Child.Get())
+				{
+					UnrootTree(C);
+					// Clear FallbackOwner so the TStrongObjectPtr (FGCObject) no longer
+					// independently keeps the PIE world reachable during GC.
+					// Child OVs are NOT rooted (AddToRoot is only called on root OVs),
+					// so no RemoveFromRoot() is needed here.
+					C->SetFallbackOwner(nullptr);
+				}
+			}
+		};
+
+		TArray<FName> NamesToRelease;
+		for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : NamedRootInstances)
+		{
+			NamesToRelease.Add(Pair.Key);
+		}
+
+		for (const FName& RootName : NamesToRelease)
+		{
+			if (TObjectPtr<UGorgeousRootObjectVariable>* Entry = NamedRootInstances.Find(RootName))
+			{
+				if (UGorgeousRootObjectVariable* Root = Entry->Get())
+				{
+					UnrootTree(Root);
+					Root->SetFallbackOwner(nullptr);
+					if (Root->IsRooted())
+					{
+						Root->RemoveFromRoot();
+					}
+					// Sever the UObject outer reference back to the PIE GameInstance.
+					// If any descendent OV is still alive via a TStrongObjectPtr (e.g.
+					// RuntimeContext in GorgeousEntertaining_GIS), its outer chain will
+					// now lead to GetTransientPackage() rather than to GameInstance,
+					// allowing GC to collect GameInstance when PIE ends.
+					if (UObject* RootOuter = Root->GetOuter();
+						RootOuter && RootOuter != GetTransientPackage())
+					{
+						Root->Rename(nullptr, GetTransientPackage(),
+							REN_DontCreateRedirectors | REN_ForceNoResetLoaders);
+					}
+				}
+				NamedRootInstances.Remove(RootName);
+				++RootsReleased;
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Logging
+	// -----------------------------------------------------------------------
+	if (RootsReleased > 0 || RemovedCount > 0)
+	{
+		GT_S_LOG("GT.ObjectVariables.Registry.Cleaned",
+			TEXT("Registry cleaned [%s]: removed %d OV(s), released %d root OV(s)."),
+			bFullCleanup ? TEXT("SessionEnd") : TEXT("LevelSwitch"),
+			RemovedCount, RootsReleased);
+	}
+	else
+	{
+		GT_S_LOG("GT.ObjectVariables.Registry.Cleaned",
+			TEXT("Registry scan completed – no dangling entries detected."));
+	}
+
 	DefaultOrphanResolution = PreviousResolution;
 }
 
-void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable)
+void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable, FName RegistryKey)
 {
 	if (!NewObjectVariable)
 	{
@@ -568,14 +678,27 @@ void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* 
 		return;
 	}
 	
-	if (!VariableRegistry.Contains(NewObjectVariable))
+	if (!IsVariableRegistered(NewObjectVariable))
 	{
-		VariableRegistry.Add(NewObjectVariable);
+		FName Key = RegistryKey;
+		if (Key == NAME_None)
+		{
+			Key = !NewObjectVariable->DisplayName.IsEmpty()
+				? FName(*NewObjectVariable->DisplayName)
+				: FName(*NewObjectVariable->UniqueIdentifier.ToString());
+		}
+		if (VariableRegistry.Contains(Key))
+		{
+			Key = FName(*FString::Printf(TEXT("%s_%s"), *Key.ToString(),
+				*NewObjectVariable->UniqueIdentifier.ToString().Left(8)));
+		}
+		VariableRegistry.Add(Key, NewObjectVariable);
 	}
 
 	TrackRegisteredVariable(NewObjectVariable);
 
 	OnRootRegistryChanged.Broadcast();
+	OnVariableTreeChanged.Broadcast();
 }
 
 FString UGorgeousRootObjectVariable::ReserveDisplayName(UGorgeousObjectVariable* Variable, const FString& CandidateLabel)
@@ -698,12 +821,40 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetOrCreateRootInterna
 		}
 	}
 
-	UGorgeousRootObjectVariable* NewRoot = NewObject<UGorgeousRootObjectVariable>(GetTransientPackage(), RootClass);
+	// Find a world-providing outer so UObject::GetWorld() works directly.
+	// Prefer the GameInstance from an active PIE/Game world; fall back to
+	// GetTransientPackage() only during very early startup before any world exists.
+	UObject* RootOuter = GetTransientPackage();
+	if (GEngine)
+	{
+		for (const FWorldContext& Context : GEngine->GetWorldContexts())
+		{
+			if (Context.WorldType != EWorldType::PIE && Context.WorldType != EWorldType::Game)
+			{
+				continue;
+			}
+			if (UWorld* World = Context.World())
+			{
+				if (UGameInstance* GI = World->GetGameInstance())
+				{
+					RootOuter = GI;
+					break;
+				}
+			}
+		}
+	}
+
+	UGorgeousRootObjectVariable* NewRoot = NewObject<UGorgeousRootObjectVariable>(RootOuter, RootClass);
 	NewRoot->AddToRoot();
 	NewRoot->RegisteredRootName = RootName;
 	NewRoot->UniqueIdentifier = FGuid::NewGuid();
 	NamedRootInstances.Add(RootName, NewRoot);
 	TrackRegisteredVariable(NewRoot);
+
+	// Notify listeners (e.g. UGorgeousGameInstance) so the new root gets its
+	// FallbackOwner set and any roots still on GetTransientPackage() re-outered.
+	OnRootRegistryChanged.Broadcast();
+
 	return NewRoot;
 }
 
@@ -722,7 +873,8 @@ void UGorgeousRootObjectVariable::HandleOrphanedChildren(UGorgeousObjectVariable
 		TargetRootForReparent = GetRootObjectVariable(OwningRootName);
 	}
 
-	TArray<TObjectPtr<UGorgeousObjectVariable>> OrphanedChildren = RemovedParent->VariableRegistry;
+	TArray<TObjectPtr<UGorgeousObjectVariable>> OrphanedChildren;
+	RemovedParent->VariableRegistry.GenerateValueArray(OrphanedChildren);
 	RemovedParent->VariableRegistry.Reset();
 
 	for (UGorgeousObjectVariable* Orphan : OrphanedChildren)

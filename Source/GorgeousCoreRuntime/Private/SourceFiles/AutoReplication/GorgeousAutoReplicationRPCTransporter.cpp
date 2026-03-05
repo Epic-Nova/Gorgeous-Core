@@ -13,7 +13,7 @@
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-#include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
+#include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "Engine/World.h"
 #include "Engine/Player.h"
 #include "GameFramework/Actor.h"
@@ -245,11 +245,22 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 	}
 
 	APlayerController* TargetController = nullptr;
-	if (OwnerActor->GetNetOwningPlayer())
+
+	// 1. When the owning actor IS a PlayerController (e.g. a PC subclass receiving a
+	//    server→client RPC), use it directly — GetNetOwningPlayer() is often null for
+	//    a PC instance that lives on the server side before the connection is fully set.
+	if (APlayerController* DirectPC = Cast<APlayerController>(OwnerActor))
+	{
+		TargetController = DirectPC;
+	}
+
+	// 2. Fall back to the UPlayer → PlayerController resolution path.
+	if (!TargetController && OwnerActor->GetNetOwningPlayer())
 	{
 		TargetController = OwnerActor->GetNetOwningPlayer()->GetPlayerController(GetWorld());
 	}
 
+	// 3. Broadcast the override event so the caller can provide an explicit target.
 	if (!TargetController)
 	{
 		OnResolveClientTarget.Broadcast(this, QueuedRPC);
@@ -417,10 +428,39 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 						return;
 					}
 				}
+
+				// UE multicast RPCs deliver to ALL connections unconditionally — the engine provides no
+				// per-connection filtering hook. Pivot to per-PC unicasts via each PC's relay component
+				// so that CanControllerReceivePropertyPayload is enforced for every individual client,
+				// identical to the access enforcement done in TryServerReplicateProperties.
+				for (FConstPlayerControllerIterator It = VariableWorld->GetPlayerControllerIterator(); It; ++It)
+				{
+					APlayerController* PC = It->Get();
+					if (!PC || PC->IsLocalController())
+					{
+						continue;
+					}
+
+					if (!OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, PC))
+					{
+						UE_LOG(LogGorgeousAutoReplicationTransporter, Verbose,
+							TEXT("Blocked AutoReplication multicast payload %s for controller %s due to access policy."),
+							*Envelope.EntryKey.ToString(), *PC->GetName());
+						continue;
+					}
+
+					if (UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
+					{
+						RelayComponent->RelayPropertyPayloadToClient(Envelope);
+					}
+				}
+				// Do not fall through to the UE multicast RPC — all eligible clients were served above.
+				return;
 			}
 		}
 	}
 
+	// No root network stack restrictions — all connections are eligible. Use the UE multicast RPC.
 	if (GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType))
 	{
 		MulticastReceivePropertyPayloadReliable(Envelope, RouteType);
@@ -549,12 +589,61 @@ void UGorgeousAutoReplicationRPCTransporter::MulticastReceiveRPCUnreliable_Imple
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received reliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+
+	// For server-bound route types the payload is delivered locally without passing through
+	// ForwardPropertyPayloadToClient / ForwardPropertyPayloadToMulticast, which are the two other
+	// sites that call CanControllerReceivePropertyPayload. Validate the sending client here so an
+	// unauthorized client cannot push data to a variable it does not own or lacks channel access to.
+	if (RouteType == EGorgeousAutoReplicationRPCType::EReliableServer
+		|| RouteType == EGorgeousAutoReplicationRPCType::EUnreliableServer)
+	{
+		APlayerController* SenderController = nullptr;
+		if (AActor* OwnerActor = GetOwner())
+		{
+			if (UPlayer* NetPlayer = OwnerActor->GetNetOwningPlayer())
+			{
+				SenderController = NetPlayer->GetPlayerController(GetWorld());
+			}
+		}
+
+		if (OwningMixin && !OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, SenderController))
+		{
+			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
+				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),
+				*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+			return;
+		}
+	}
+
 	RoutePropertyPayload(Envelope, RouteType);
 }
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnreliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+
+	// Same sender validation as the reliable variant — see comment above.
+	if (RouteType == EGorgeousAutoReplicationRPCType::EReliableServer
+		|| RouteType == EGorgeousAutoReplicationRPCType::EUnreliableServer)
+	{
+		APlayerController* SenderController = nullptr;
+		if (AActor* OwnerActor = GetOwner())
+		{
+			if (UPlayer* NetPlayer = OwnerActor->GetNetOwningPlayer())
+			{
+				SenderController = NetPlayer->GetPlayerController(GetWorld());
+			}
+		}
+
+		if (OwningMixin && !OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, SenderController))
+		{
+			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
+				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),
+				*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+			return;
+		}
+	}
+
 	RoutePropertyPayload(Envelope, RouteType);
 }
 

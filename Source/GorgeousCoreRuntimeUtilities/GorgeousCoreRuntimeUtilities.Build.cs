@@ -39,9 +39,7 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "CoreUObject", 
                 "Engine",
                 "GameplayTags",
-                "Projects",
-                "DeveloperSettings",
-                "UMG"
+                "Projects"
             });
 
         PublicDefinitions.Add("CSV_PROFILER=1");

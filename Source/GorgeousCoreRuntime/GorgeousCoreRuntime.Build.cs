@@ -39,7 +39,7 @@ public class GorgeousCoreRuntime : ModuleRules
             Path.Combine(ModuleDirectory, "..", "GorgeousCoreRuntimeUtilities", "Public"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore" });
+        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore", "OnlineSubsystemUtils" });
 
         PrivateDependencyModuleNames.AddRange(new[]
         {
@@ -52,6 +52,14 @@ public class GorgeousCoreRuntime : ModuleRules
             "Json",
             "JsonUtilities",
         });
+
+        // ── GorgeousVault (precompiled third-party DLL) ──────────────────
+        // Provides the C-linkage API header and runtime DLL deployment.
+        // The Vault is loaded at runtime via GorgeousVaultLoader.
+        PrivateDependencyModuleNames.Add("GorgeousVault");
+
+        // Include the VaultLoader source files
+        PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousVault", "Loader"));
         
         
         if (Target.bBuildEditor)

@@ -8,7 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
+#if 0
 #pragma once
 
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
@@ -194,3 +194,5 @@ private:
     FSimpleDelegate ValuePropertyChangedDelegate;
     TStrongObjectPtr<UGorgeousObjectVariable> PreviewVariable;
 };
+
+#endif

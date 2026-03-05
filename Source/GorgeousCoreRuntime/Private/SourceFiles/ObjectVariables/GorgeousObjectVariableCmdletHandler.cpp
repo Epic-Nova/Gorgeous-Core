@@ -32,9 +32,9 @@ namespace
 		}
 
 		Visitor(Node, Depth);
-		for (TObjectPtr<UGorgeousObjectVariable> Child : Node->VariableRegistry)
+		for (auto& [Key, Child] : Node->VariableRegistry)
 		{
-			TraverseInternal(Child, Depth + 1, Visitor);
+			TraverseInternal(Child.Get(), Depth + 1, Visitor);
 		}
 	}
 

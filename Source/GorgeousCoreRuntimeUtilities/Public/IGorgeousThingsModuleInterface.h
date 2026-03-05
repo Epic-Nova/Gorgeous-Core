@@ -8,14 +8,9 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Module Includes ===------------------------->
-#include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Modules/ModuleManager.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
@@ -23,6 +18,7 @@
 //<-------------------------------------------------------------------------->
 
 //<===========--- Forward Declarations ---===========>
+class FSlateStyleSet;
 class IGorgeousInsightMatrixProvider;
 //<-------------------------------------------------->
 
@@ -60,6 +56,21 @@ enum class EGorgeousModuleLoadFailureHandling : uint8
 class GORGEOUSCORERUNTIMEUTILITIES_API IGorgeousThingsModuleInterface : public IModuleInterface
 {
 	
+	//<============================--- Overrides ---============================>
+	
+	/**
+	 * The override function of the module interface that is called to load up this module.
+	 */
+	virtual void StartupModule() override;
+
+	/**
+	 * The override function of the module interface that is called to unload this module.
+	 */
+	virtual void ShutdownModule() override;
+	//<------------------------------------------------------------------------->
+
+	
+	//<============================--- C++ Only ---=============================>
 public:
 	
 	/**
@@ -111,34 +122,34 @@ public:
 	virtual int32 GetMinimumRequiredCoreVersion() const = 0;
 	
 	/**
+	 * Returns the style set provided by this module for editor modules.
+	 * This is used to define used slate brushes and other style elements for editor modules of the gorgeous plugin family.
+	 * 
+	 * @return The style set as a shared pointer to an FSlateStyleSet. Defaults to nullptr.
+	 */
+	virtual TSharedPtr<FSlateStyleSet> GetModuleStyleSet() const { return ModuleStyleSet; }
+	
+	/**
 	 * Returns whether this module provides core functionality.
 	 * Core functionality modules are essential for the operation of the gorgeous plugin family.
 	 * 
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const;
-
-protected:
 	
-	/** Assign the runtime Insight Matrix provider instance for this module. */
-	void SetInsightProvider(IGorgeousInsightMatrixProvider* Provider) { InsightProvider = Provider; }
+protected:
 
 	/** Returns the Insight Matrix provider instance for this module (if any). */
 	IGorgeousInsightMatrixProvider* GetInsightProvider() const { return InsightProvider; }
-	
-	
-private:
-	
-	/**
-	 * The override function of the module interface that is called to load up this module.
-	 */
-	virtual void StartupModule() override;
+	//<------------------------------------------------------------------------->
 
-	/**
-	 * The override function of the module interface that is called to unload this module.
-	 */
-	virtual void ShutdownModule() override;
-
-	/** Optional Insight Matrix provider for runtime modules. */
+	
+	//<============================--- Variables ---============================>
+	
+	// Optional style set for editor modules.
+	TSharedPtr<FSlateStyleSet> ModuleStyleSet;
+	
+	// Optional Insight Matrix provider for runtime modules.
 	IGorgeousInsightMatrixProvider* InsightProvider = nullptr;
+	//<------------------------------------------------------------------------->
 };

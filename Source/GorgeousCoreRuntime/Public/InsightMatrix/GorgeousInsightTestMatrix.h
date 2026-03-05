@@ -95,6 +95,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScenarioResult
 	TArray<FString> Warnings;
 	TArray<FString> Notes;
 	TMap<FString, FString> Metrics;
+	TArray<FString> LogCapture;
 
 	void AddError(const FString& Message)
 	{
@@ -223,6 +224,27 @@ private:
 /**
  * Static utility that manages scenario registration and matrix execution helpers.
  * TODO: Add hooks into Unreal Automation, Insights/Trace, Gauntlet, and profiler pipelines.
+ *
+ * TODO [StandaloneOrchestrator]: Currently all tests run exclusively inside PIE (in-process,
+ * multi-world). For real-world / shipping-config validation we need to support Standalone
+ * game instances communicating across OS process boundaries. Planned design:
+ *
+ *   - One Standalone instance acts as the "Test Orchestrator": it registers test scenarios,
+ *     drives the stimulus side and owns the result aggregation.
+ *   - Additional Standalone instances act as "Test Participants": they receive stimuli and
+ *     report outcome metrics back to the orchestrator.
+ *   - Cross-process communication channel: Unreal Beacons (AOnlineBeaconClient /
+ *     AOnlineBeaconHostObject) are the preferred lightweight RPC mechanism so we do not
+ *     depend on a full game session stack. Alternatively, a dedicated UDP control socket
+ *     could be used for ultra-low-overhead metric reporting.
+ *   - The orchestrator collects FGorgeousInsightScenarioResult fragments from each
+ *     participant, merges them, and calls SaveScenarioResult — identical output format
+ *     to the current PIE path so the Insight Matrix panel can display results unchanged.
+ *   - Scenario descriptors need a new bSupportsStandalone flag so the panel / Gauntlet
+ *     launcher can filter and route them appropriately.
+ *   - A command-line entry point (e.g. -GorgeousInsightOrchestrator -ScenarioFilter=...)
+ *     should launch the orchestrator headlessly for CI integration.
+ *
  */
 class GORGEOUSCORERUNTIME_API FGorgeousInsightTestMatrix
 {

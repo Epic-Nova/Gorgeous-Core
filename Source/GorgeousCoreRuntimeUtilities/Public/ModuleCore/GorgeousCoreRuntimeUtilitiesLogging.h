@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 /**
  * Defines a static logging category used by the logging functions.

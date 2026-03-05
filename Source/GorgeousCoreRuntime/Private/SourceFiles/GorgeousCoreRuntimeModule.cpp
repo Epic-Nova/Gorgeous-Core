@@ -19,13 +19,16 @@
 #include "Interfaces/IPluginManager.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/Paths.h"
+#include "GorgeousCoreUtilitiesMinimalShared.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
+#include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
+#include "Engine/World.h"
 //<-------------------------------------------------------------------------->
-
 //=============================================================================
 // FGorgeousCoreRuntimeModule Implementation
 //=============================================================================
@@ -54,23 +57,25 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
-
-	InsightProvider = MakeUnique<FGorgeousCoreInsightMatrixProvider>();
-	SetInsightProvider(InsightProvider.Get());
+	
+	InsightProvider = new FGorgeousCoreInsightMatrixProvider();
 
 	// Try immediate registration first; if subsystem not ready, defer to post-engine init
 	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
 	{
-		Subsystem->RegisterProvider(InsightProvider.Get());
+		Subsystem->RegisterProvider(InsightProvider);
 	}
 	else
 	{
 		// Defer registration until engine subsystems are initialized
 		FCoreDelegates::OnPostEngineInit.AddLambda([this]()
 		{
-			if (InsightProvider && UGorgeousInsightMatrixSubsystem::Get())
+			if (UGorgeousInsightMatrixSubsystem* Sub = UGorgeousInsightMatrixSubsystem::Get())
 			{
-				UGorgeousInsightMatrixSubsystem::Get()->RegisterProvider(InsightProvider.Get());
+				if (InsightProvider)
+				{
+					Sub->RegisterProvider(InsightProvider);
+				}
 			}
 		});
 	}
@@ -89,11 +94,10 @@ void FGorgeousCoreRuntimeModule::GorgeousShutdownModule()
 	{
 		if (InsightProvider)
 		{
-			Subsystem->UnregisterProvider(InsightProvider.Get());
+			Subsystem->UnregisterProvider(InsightProvider);
 		}
 	}
-	SetInsightProvider(nullptr);
-	InsightProvider.Reset();
+	InsightProvider = nullptr;
 
 #if WITH_DEV_AUTOMATION_TESTS
 	FGorgeousInsightScenarioRegistrar::DeactivateAll();

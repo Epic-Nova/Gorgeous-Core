@@ -42,31 +42,28 @@ public class GorgeousCoreEditorUtilities : ModuleRules
             "Core", 
             "CoreUObject", 
             "Engine", 
+            "Slate", 
+            "SlateCore", 
             "InputCore", 
             "EditorSubsystem",
-            "DeveloperToolSettings"
+            "DeveloperToolSettings",
+            "DataValidation",
+            "AssetRegistry",
+            "AssetTools",
         });
         
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
-                "Slate", 
-                "SlateCore", 
                 "Projects",
-                "UnrealEd", 
                 "EditorStyle",
-                "ToolMenus",
+                "UnrealEd",
                 "BlueprintGraph",
-                "PropertyEditor", 
-                "MessageLog",
-                "DataValidation",
-                "AssetRegistry",
-                "AssetTools",
-                "UMG", 
                 "Kismet",
-                "HTTP",
-                "Json",
-                "JsonUtilities",
+                "PropertyEditor", 
+                "EditorFramework",
+                "MessageLog",
+                "UMG", 
                 "ContentBrowser",
                 "DeveloperSettings",
                 "GameplayTags"

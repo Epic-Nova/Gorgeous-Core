@@ -22,15 +22,10 @@ UWorld* UGorgeousBaseWorldContextUObject::GetWorld() const
         {
             return World;
         }
-	 
-        if (CachedOwner)
+
+        if (FallbackOwner.IsValid())
         {
-            return CachedOwner->GetWorld();
-        }
-	 
-        if (const UObject* Outer = GetOuter())
-        {
-            return Outer->GetWorld();
+            return FallbackOwner->GetWorld();
         }
     }
 

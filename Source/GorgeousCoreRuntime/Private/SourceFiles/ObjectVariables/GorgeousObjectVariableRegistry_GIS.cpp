@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -32,6 +33,18 @@ void UGorgeousObjectVariableRegistry_GIS::Deinitialize()
 	Super::Deinitialize();
 
 	UGorgeousRootObjectVariable::CleanupRegistry(true);
+
+	// Tear down the auto-replication coordinator.  The OnWorldCleanup delegate
+	// registered in the module never fires in PIE teardown, so we do it here
+	// where Deinitialize() is guaranteed to run.
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UWorld* World = GI->GetWorld())
+		{
+			FGorgeousAutoReplicationCoordinator::TearDownForWorld(World);
+		}
+	}
+
 	FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
 }
 

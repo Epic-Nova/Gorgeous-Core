@@ -15,10 +15,7 @@
 |                                ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                               |
 |     TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntimeUtilities" MODULE     |
 <======================================================================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 MONOLITHIC_HEADER_BOILERPLATE()
 

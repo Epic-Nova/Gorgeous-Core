@@ -77,7 +77,7 @@ protected:
 	virtual void ForwardPropertyPayloadToMulticast(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType);
 	virtual bool IsOwnerLocallyAuthoritative() const;
 	virtual bool IsOwnerLocallyControlledClient() const;
-
+	
 	UFUNCTION(Server, Reliable)
 	void ServerReceiveRPCReliable(const FGorgeousQueuedRPC& QueuedRPC);
 

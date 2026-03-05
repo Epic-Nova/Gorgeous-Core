@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -94,6 +91,13 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return true if the module interface is registered, false otherwise.
 	 */
 	bool IsModuleRegistered(const IGorgeousThingsModuleInterface* ModuleInterface) const;
+	
+	/**
+	 * Gets the list of known gorgeous plugins.
+	 *
+	 * @return Array of known gorgeous plugin names.
+	 */
+	TSet<FName> GetKnownGorgeousPlugins() const { return KnownGorgeousPlugins; }
 	
 	/**
 	 * Checks if a gorgeous things module interface satisfies the minimum requirements.

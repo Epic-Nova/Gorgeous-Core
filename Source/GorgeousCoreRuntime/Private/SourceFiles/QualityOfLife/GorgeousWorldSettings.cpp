@@ -14,7 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
-#include "AutoReplication/Helpers/GorgeousAutoReplicationHelperMacros.h"
+#include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 //<-------------------------------------------------------------------------->

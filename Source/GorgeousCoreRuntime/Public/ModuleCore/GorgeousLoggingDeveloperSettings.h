@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 #include "Engine/DeveloperSettings.h"
@@ -31,7 +28,7 @@ public:
 
 #if WITH_EDITOR
 	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
-	virtual FName GetSectionName() const override { return TEXT("00_Core|Logging"); }
+	virtual FName GetSectionName() const override { return TEXT("Core|Logging"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousLogging", "SectionName", "Core ↪ Logging"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousLogging", "SectionDescription", "Configure logging outputs, message log routing, and in-game log widgets."); }
 #endif

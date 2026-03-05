@@ -31,6 +31,13 @@ class GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationCoordinator
 public:
 	static FGorgeousAutoReplicationCoordinator& Get(UWorld* World);
 
+	/**
+	 * Tears down the coordinator only if its currently cached world matches DyingWorld.
+	 * Safe to call from world-cleanup callbacks; does NOT re-initialize the coordinator.
+	 * Used by FGorgeousCoreRuntimeModule to clean up before GC sweeps a PIE world.
+	 */
+	static void TearDownForWorld(UWorld* DyingWorld);
+
 	void Initialize(UWorld* World);
 	void TearDown();
 

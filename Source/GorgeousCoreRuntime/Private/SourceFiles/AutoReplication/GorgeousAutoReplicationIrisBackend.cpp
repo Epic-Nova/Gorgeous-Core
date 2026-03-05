@@ -14,7 +14,7 @@
 #if GORGEOUSCORE_WITH_IRIS
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
-#include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
+#include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "Engine/World.h"
 #include "Algo/Sort.h"
 

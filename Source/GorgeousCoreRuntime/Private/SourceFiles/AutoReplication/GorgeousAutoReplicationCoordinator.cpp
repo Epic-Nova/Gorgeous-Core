@@ -24,6 +24,10 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationCoordinator, Log, All);
 
+// The singleton lives inside Get(); we keep a bare pointer to it so that
+// TearDownForWorld can call TearDown() without re-initializing the singleton.
+static FGorgeousAutoReplicationCoordinator* GCoordinatorInstance = nullptr;
+
 FGorgeousAutoReplicationCoordinator::FGorgeousAutoReplicationCoordinator()
 	: bIrisInitialized(false)
 	, bReplicationGraphInitialized(false)
@@ -35,8 +39,22 @@ FGorgeousAutoReplicationCoordinator::FGorgeousAutoReplicationCoordinator()
 FGorgeousAutoReplicationCoordinator& FGorgeousAutoReplicationCoordinator::Get(UWorld* World)
 {
 	static FGorgeousAutoReplicationCoordinator Coordinator;
+	GCoordinatorInstance = &Coordinator;
 	Coordinator.Initialize(World);
 	return Coordinator;
+}
+
+void FGorgeousAutoReplicationCoordinator::TearDownForWorld(UWorld* DyingWorld)
+{
+	if (!DyingWorld || !GCoordinatorInstance)
+	{
+		return;
+	}
+
+	if (GCoordinatorInstance->CachedWorld.Get() == DyingWorld)
+	{
+		GCoordinatorInstance->TearDown();
+	}
 }
 
 // QoL override API: set/clear runtime overrides that take precedence over developer settings.

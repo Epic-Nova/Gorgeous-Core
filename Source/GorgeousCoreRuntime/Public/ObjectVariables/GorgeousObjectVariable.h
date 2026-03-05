@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -19,7 +16,7 @@
 #include "GorgeousObjectVariableStructures.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "Interfaces/GorgeousObjectVariableInteraction_I.h"
-#include "ObjectVariables/Helpers/GorgeousObjectVariableHelperMacros.h"
+#include "ObjectVariables/GorgeousObjectVariableHelperMacros.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesSetter_I.h"
 #include "ObjectVariables/Interfaces/GorgeousArrayObjectVariablesGetter_I.h"
@@ -72,6 +69,15 @@ enum class EGorgeousObjectVariableUniqueRegistrationPolicy : uint8
 		RemoveAllExisting UMETA(DisplayName = "Remove All Existing")
 };
 
+UENUM(BlueprintType)
+enum EFindInRegistryMatchCase
+{
+	Contains,
+	StartsWith,
+	EndsWith,
+	Exact
+};
+
 USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableRootConfiguration
 {
@@ -101,7 +107,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	bool bExposeThroughRootNetworkStack;
 
-	/** Determines which controllers are allowed to receive replicated data. */
+	/**
+	 * Determines which controllers are allowed to receive replicated data.
+	 * When set to custom, the CanControllerAccessVariable override can restrict the access to single properties inside this object variable based on the property name and controller in question.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	EGorgeousObjectVariableAccessPolicy AccessPolicy;
 
@@ -256,12 +265,13 @@ public:
 	 * @param Parent The parent of this object variable. The chain can be followed up to the root object variable.
 	 * @param bShouldPersist Weather this object variable should be persistent across level switches.
 	 * @param DisplayNameOverride An optional display name override for the object variable.
+	 * @param bSupportsNetworking Whether this object variable should support networking features. Enabling this will allow the variable to be replicated and interact with the AutoReplication system, but may introduce additional overhead. This setting cannot be changed after creation, so it should be set according to the intended use case of the variable.
 	 * @return A new variable in object format.
 	 *
 	 * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "");
+	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "", const bool bSupportsNetworking = false);
 
 	/**
 	 * Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
@@ -299,10 +309,36 @@ public:
     /**
      * Registers the object variable with the registry.
      *
+     * The key written into the VariableRegistry TMap follows a fixed priority chain:
+     *   1. RegistryKey   — explicit override passed by the caller (rarely needed).
+     *   2. DisplayName   — always present when reached through NewObjectVariable because
+     *                      SetDisplayName() is called before this function; produces either
+     *                      the user-supplied DisplayNameOverride or a randomly generated name.
+     *   3. UniqueIdentifier string — last resort for any code path that bypasses SetDisplayName.
+     *
      * @param NewObjectVariable The object variable to register.
+     * @param RegistryKey       Optional explicit key. When NAME_None (default) the key is
+     *                          derived from DisplayName, falling back to the GUID string.
      */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
-    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable);
+    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable, FName RegistryKey = NAME_None);
+
+	/**
+	 * Finds a child variable registered under the given key in this variable's VariableRegistry.
+	 *
+	 * Combines the two-step "get VariableRegistry → find by key" pattern into a single compact
+	 * Blueprint node.  Use this instead of breaking the registry TMap out manually.
+	 *
+	 * @param Key          The stable registry key to look up (DisplayNameOverride, or the
+	 *                     randomly-generated name assigned at creation time).
+	 * @param Class        Optional type filter — the result is cast to this class. Use
+	 *                     UGorgeousObjectVariable (the default) to receive any variable type.
+	 * @return             The registered child variable, or nullptr when the key is absent or
+	 *                     the found object does not match Class.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables",
+		meta = (CompactNodeTitle = "Find in Registry", DeterminesOutputType = "Class"))
+	UGorgeousObjectVariable* FindInRegistry(FName Key, TSubclassOf<UGorgeousObjectVariable> Class = nullptr, const EFindInRegistryMatchCase MatchCase = EFindInRegistryMatchCase::Exact) const;
 
 	/**
 	 * Sets the new parent oft this object variable.
@@ -328,20 +364,20 @@ public:
 	/** Binds a named RPC handler that can react to async AutoReplication networking events. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	void BindRPCHandler(FName RPCName, EGorgeousAutoReplicationRPCType Reliability);
-
-	/** Queues an AutoReplication RPC using the stored binding (or the provided override data). */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-	bool RequestAutoReplicationRPC(EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, FName OverrideKey = NAME_None, UObject* OverrideContext = nullptr, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EObjectVariable);
-
-	/** Blueprint async helper that mirrors the mixin RPC request node using this variable's binding. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-	UGorgeousAutoReplicationRPCRequestAsyncAction* RequestAutoReplicationRPCAsync(EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, FName OverrideKey = NAME_None, UObject* OverrideContext = nullptr, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EObjectVariable);
-
+	
 	/** Serializes the registered properties into a custom payload when the native path is bypassed. */
 	bool BuildAutoReplicationPropertyPayload(const FGorgeousAutoReplicationConditionContext& ConditionContext, FGorgeousAutoReplicationPropertyPayload& OutPayload) const;
 
-	/** Applies a previously serialized property payload on the receiving endpoint. */
-	bool ApplyAutoReplicationPropertyPayload(const FGorgeousAutoReplicationPropertyPayload& Payload, UPackageMap* PackageMap = nullptr);
+	/**
+	 * Applies a previously serialized property payload on the receiving endpoint.
+	 *
+	 * @param bSyncChangeShadow  When true (default), updates the internal change-shadow
+	 *   after each property is applied so the polling ticker does not re-detect the
+	 *   value as dirty.  Set to false on the SERVER relay path: the shadow stays stale,
+	 *   the next HandleServerPropertyPollingTick detects the change and fans it out to
+	 *   all connected clients via the normal S2C pipeline.
+	 */
+	virtual bool ApplyAutoReplicationPropertyPayload(const FGorgeousAutoReplicationPropertyPayload& Payload, UPackageMap* PackageMap = nullptr, bool bSyncChangeShadow = true);
 
 	/** Override to serialize custom payloads when EGorgeousReplicationMode::CustomPayload is selected. Return true to include the payload in the batch. */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Auto Replication", DisplayName = "Build Custom Auto Replication Payload")
@@ -374,10 +410,10 @@ public:
 	bool IsExecutingOnReplicationOwner() const;
 
 	/** Executes a previously queued AutoReplication RPC that targets this object variable instance. */
-	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr);
+	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
 
 	/** Invokes a AutoReplication RPC handler on any UObject using the payload's named arguments. */
-	static bool InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr);
+	static bool InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
 
 	/** Creates a standalone UGorgeousRPC_OV result container when no object variable context is available. */
 	static UGorgeousRPC_OV* CreateStandaloneRPCResultContainer(UObject* OwningContext);
@@ -405,9 +441,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	bool SupportsLegacyReplication() const { return ReplicationMode != EGorgeousObjectVariableReplicationMode::EFullAutoReplication; }
 
-	/** Blueprint hook used to opt-in properties/RPC handlers right after the mixin activates replication. */
-	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
+	/** Hook called right after the mixin activates replication. Override in C++ or Blueprint to register additional properties/RPC handlers. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	void OnReplicationActivated(const FGorgeousAutoReplicationContext& Context);
+	virtual void OnReplicationActivated_Implementation(const FGorgeousAutoReplicationContext& Context);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreNetReceive() override;
@@ -425,10 +462,18 @@ public:
 	void HandleAutoReplicationRPCPayload(const FGorgeousQueuedRPC& QueuedRPC);
 	virtual void HandleAutoReplicationRPCPayload_Implementation(const FGorgeousQueuedRPC& QueuedRPC);
 
-	/** Allows Blueprints to override controller-based access checks for the root network stack. */
-	UFUNCTION(BlueprintNativeEvent, BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-	bool CanControllerAccessVariable(AGorgeousPlayerController* Controller) const;
-	virtual bool CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller) const;
+	/**
+	 * Allows Blueprints to override controller-based access checks for the root network stack.
+	 *
+	 * @param Controller  The player controller whose access is being evaluated.
+	 * @param PropertyName  When specified, restricts the check to a single UPROPERTY within this
+	 *                      Object Variable.  Pass NAME_None (the default) to evaluate access to
+	 *                      the entire Object Variable.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking",
+		meta = (AutoCreateRefTerm = "PropertyName"))
+	bool CanControllerAccessVariable(AGorgeousPlayerController* Controller, FName PropertyName = NAME_None) const;
+	virtual bool CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller, FName PropertyName = NAME_None) const;
 
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	AGorgeousPlayerController* GetOwningGorgeousPlayerController() const { return ResolveOwningPlayerController(); }
@@ -499,7 +544,7 @@ public:
 
 	/** Ensures this variable (and its shared/root stack path) keeps a valid owner for networking purposes. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-	void EnsureSharedNetworkStackOwner(UObject* FallbackOwner);
+	void EnsureSharedNetworkStackOwner(UObject* NewOwner);
 
 	/** Resolves the replication channel used by the active networking stack. */
 	FName GetEffectiveNetworkChannel() const;
@@ -544,7 +589,7 @@ public:
 	bool bUseSharedNetworkStack;
 
 private:
-	bool InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr);
+	bool InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
 
 public:
 	/**
@@ -652,16 +697,26 @@ protected:
 	
 public:
 	/**
+	 * Broadcast whenever any variable is registered into any registry (root or child).
+	 * Listeners can use this to auto-refresh UI panels such as the OV Browser.
+	 */
+	static FSimpleMulticastDelegate OnVariableTreeChanged;
+
+	/**
 	 * The unique identifier of the object variable.
 	 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	FGuid UniqueIdentifier;
 
 	/**
-	 * The registry of object variables.
+	 * The registry of object variables, keyed by a stable name derived from each child's
+	 * DisplayName.  Key priority: user-supplied DisplayNameOverride → randomly generated name
+	 * (when no override) → GUID string (last resort / legacy).  Using a TMap instead of a
+	 * flat TArray gives every child a stable, named slot so external code can look it up by
+	 * a meaningful key rather than a fragile index.
 	 */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
-	TArray<TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
+	TMap<FName, TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
 
 	/**
 	 * Whether the object variable is persistent across level switches.
@@ -792,6 +847,26 @@ private:
 	void StopServerPropertyPolling();
 	bool HandleServerPropertyPollingTick(float DeltaSeconds);
 	bool TryServerReplicateProperties(const TSet<FName>& DirtyProperties);
+
+	/**
+	 * Evaluates whether a player controller is allowed to receive the auto-replication property payload
+	 * for this object variable. Mirrors the access-policy enforcement performed by the transporter path
+	 * (FGorgeousAutoReplicationMixin::CanControllerReceivePropertyPayload) so that the relay-component
+	 * polling path enforces identical rules.
+	 *
+	 * Returns true when:
+	 * - This variable does not use the root network stack (no access restriction configured), OR
+	 * - The controller passes the channel-subscription check and EvaluateAccessPolicyForController.
+	 */
+	/**
+	 * Returns whether a server-side property payload should be dispatched to the given controller.
+	 *
+	 * @param PC            The target player controller.
+	 * @param PropertyName  When non-None, also evaluates per-property access via
+	 *                      CanControllerAccessVariable in addition to the whole-OV channel/policy
+	 *                      gate.  Pass NAME_None (the default) for the whole-OV-level check.
+	 */
+	bool ShouldSendAutoReplicationPayloadToController(APlayerController* PC, FName PropertyName = NAME_None) const;
 	FTSTicker::FDelegateHandle ServerPropertyPollingHandle;
 	float ServerPropertyPollingIntervalSeconds;
 	void NotifyDisplayNameChanged();
@@ -805,7 +880,15 @@ private:
 	bool ShouldUseRootNetworkStack() const;
 	bool DoesRootEnforceNetworking() const;
 	bool DoesConfiguredRootSupportNetworking() const;
-	bool EvaluateAccessPolicyForController(AController* Controller) const;
+	/**
+	 * Evaluates the configured access policy for the given controller.
+	 *
+	 * @param Controller    The controller to test.
+	 * @param PropertyName  When non-None, forwards a per-property context to any Custom policy
+	 *                      override via CanControllerAccessVariable.  Pass NAME_None (the default)
+	 *                      to evaluate whole-Object-Variable access.
+	 */
+	bool EvaluateAccessPolicyForController(AController* Controller, FName PropertyName = NAME_None) const;
 	AGorgeousPlayerController* ResolveOwningPlayerController() const;
 	UGorgeousRPC_OV* CreateAutoRPCResultContainer();
 	void RegisterReplicatedRPCResult(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable* ResultContainer);

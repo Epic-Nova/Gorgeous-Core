@@ -16,6 +16,7 @@
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
+#include "QualityOfLife/GorgeousLocalPlayerRegistry_GIS.h"
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
@@ -175,25 +176,52 @@ UObject* UGorgeousCoreRuntimeGlobals::GetNamedObjectReference(const FName Displa
 
 UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* WorldContextObject, const TSubclassOf<UObject> QualityOfLifeClass)
 {
+	const TArray<UObject*> All = GetQualityOfLifeReferences(WorldContextObject, QualityOfLifeClass);
+	return All.Num() > 0 ? All[0] : nullptr;
+}
+
+TArray<UObject*> UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReferences(const UObject* WorldContextObject, const TSubclassOf<UObject> QualityOfLifeClass, const FString& StablePlayerId)
+{
 	if (!*QualityOfLifeClass)
 	{
-		GT_W_LOG("GT.RuntimeGlobals.QoL.InvalidClass", TEXT("GetQualityOfLifeReference requires a valid QoL class selection."));
-		return nullptr;
+		GT_W_LOG("GT.RuntimeGlobals.QoL.InvalidClass", TEXT("GetQualityOfLifeReferences requires a valid QoL class selection."));
+		return {};
 	}
-
-	_CRT_UNUSED(WorldContextObject);
 
 	if (!QualityOfLifeClass->ImplementsInterface(UGorgeousQualityOfLifeNodeTarget_I::StaticClass()))
 	{
 		GT_W_LOG("GT.RuntimeGlobals.QoL.InvalidInterface", TEXT("Class %s does not implement IGorgeousQualityOfLifeNodeTarget_I."), *QualityOfLifeClass->GetName());
-		return nullptr;
-	}
-	if (UObject* Resolved = FGorgeousQualityOfLifeStatics::ResolveSelfReference(QualityOfLifeClass))
-	{
-		return Resolved;
+		return {};
 	}
 
-	return nullptr;
+	return FGorgeousQualityOfLifeStatics::ResolveSelfReferences(WorldContextObject, QualityOfLifeClass, StablePlayerId);
+}
+
+// ── Local Player Stable ID ────────────────────────────────────────────────────
+
+bool UGorgeousCoreRuntimeGlobals::RegisterLocalPlayerStableId(const UObject* WorldContextObject, APlayerController* PlayerController, const FString& StableId)
+{
+	return FGorgeousQualityOfLifeStatics::RegisterLocalPlayerStableId(PlayerController, StableId);
+}
+
+bool UGorgeousCoreRuntimeGlobals::RenameLocalPlayerStableId(const UObject* WorldContextObject, APlayerController* PlayerController, const FString& NewStableId)
+{
+	return FGorgeousQualityOfLifeStatics::RenameLocalPlayerStableId(PlayerController, NewStableId);
+}
+
+FString UGorgeousCoreRuntimeGlobals::GetLocalPlayerStableId(const UObject* WorldContextObject, const APlayerController* PlayerController)
+{
+	return FGorgeousQualityOfLifeStatics::GetLocalPlayerStableId(PlayerController);
+}
+
+APlayerController* UGorgeousCoreRuntimeGlobals::GetPlayerControllerForStableId(const UObject* WorldContextObject, const FString& StableId)
+{
+	return FGorgeousQualityOfLifeStatics::GetPlayerControllerForStableId(WorldContextObject, StableId);
+}
+
+void UGorgeousCoreRuntimeGlobals::GetAllRegisteredLocalPlayers(const UObject* WorldContextObject, TArray<FString>& OutStableIds, TArray<int32>& OutPlayerIndices)
+{
+	FGorgeousQualityOfLifeStatics::GetAllRegisteredLocalPlayers(WorldContextObject, OutStableIds, OutPlayerIndices);
 }
 
 #pragma region AutoReplication_Networking_Functions
@@ -248,47 +276,6 @@ bool UGorgeousCoreRuntimeGlobals::SetNetGorgeousAutoReplicationValue(UObject* Wo
 	const FString ContextLabel = AutoReplicationOwner ? AutoReplicationOwner->GetName() : (WorldContextObject ? WorldContextObject->GetName() : TEXT("<null>"));
 	GT_W_LOG("GT.RuntimeGlobals.AutoReplication.EntryMissing", TEXT("Unable to locate AutoReplication entry %s for context %s."), *Key.ToString(), *ContextLabel);
 	return false;
-}
-
-bool UGorgeousCoreRuntimeGlobals::RequestAutoReplicationRPC(UObject* WorldContextObject, const FName Key, const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, UObject* AutoReplicationOwner)
-{
-	FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner);
-	if (!AutoReplicationMixin)
-	{
-		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.RpcResolve", TEXT("Unable to resolve AutoReplication mixin for RPC request (key: %s)."), *Key.ToString());
-		return false;
-	}
-
-	if (!AutoReplicationMixin->IsNetworkingEnabled())
-	{
-		GT_W_LOG("GT.RuntimeGlobals.AutoReplication.RpcDisabled", TEXT("Cannot queue AutoReplication RPC %s because networking is disabled."), *Key.ToString());
-		return false;
-	}
-
-	return AutoReplicationMixin->RequestRPC(Key, Type, Payload, TargetKind);
-}
-
-bool UGorgeousCoreRuntimeGlobals::HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner)
-{
-	if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner))
-	{
-		return AutoReplicationMixin->HasPendingRPCs();
-	}
-
-	return false;
-}
-
-bool UGorgeousCoreRuntimeGlobals::DequeuePendingAutoReplicationRPC(UObject* WorldContextObject, FGorgeousQueuedRPC& OutRPC, UObject* AutoReplicationOwner)
-{
-	FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, AutoReplicationOwner);
-	if (!AutoReplicationMixin)
-	{
-		const FString ContextLabel = AutoReplicationOwner ? AutoReplicationOwner->GetName() : (WorldContextObject ? WorldContextObject->GetName() : TEXT("<null>"));
-		GT_I_LOG("GT.RuntimeGlobals.AutoReplication.PendingDequeue", TEXT("Unable to resolve AutoReplication mixin for pending RPC dequeue on context %s."), *ContextLabel);
-		return false;
-	}
-
-	return AutoReplicationMixin->DequeuePendingRPC(OutRPC);
 }
 
 FGorgeousAutoReplicationStreamConfig UGorgeousCoreRuntimeGlobals::GetDefaultAutoReplicationStreamConfig()

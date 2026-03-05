@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 #include "Helpers/GorgeousLoggingHelper.h"
@@ -24,6 +21,34 @@
 #define GT_W_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 #define GT_E_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 #define GT_F_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
+
+/**
+ * Default parameters for the logging macros. These can be overridden by defining them before including this header.
+ */
+#ifndef GT_DURATION
+#define GT_DURATION 4.0f
+#endif
+
+#ifndef GT_PRINT_TO_SCREEN
+#define GT_PRINT_TO_SCREEN true
+#endif
+
+#ifndef GT_PRINT_TO_SCREEN_ON_INFO
+#define GT_PRINT_TO_SCREEN_ON_INFO false
+#endif
+
+#ifndef GT_PRINT_TO_LOG
+#define GT_PRINT_TO_LOG true
+#endif
+
+#ifndef GT_OVERRIDE_LOGGING_IF_PRESENT
+#define GT_OVERRIDE_LOGGING_IF_PRESENT true
+#endif
+
+#ifndef GT_SHOW_AS_TOAST
+#define GT_SHOW_AS_TOAST false
+#endif
+
 
 /**
  * Logs a message with customizable parameters.
@@ -97,7 +122,7 @@
  */
 #define GT_I_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, 5.0f, false, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN_ON_INFO, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -112,7 +137,7 @@
  */
 #define GT_I_LOG_FULL(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, true, false, WorldContextObject, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -150,7 +175,7 @@
  */
 #define GT_S_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, 2.5f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -165,7 +190,7 @@
  */
 #define GT_S_LOG_FULL(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, true, false, WorldContextObject, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -203,7 +228,7 @@
  */
 #define GT_W_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -216,7 +241,7 @@
  */
 #define GT_W_LOG_FULL(MessageFormat, LoggingKey, Duration, WorldContextObject, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, Duration, true, true, true, false, WorldContextObject, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, Duration, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -254,7 +279,7 @@
  */
 #define GT_E_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -267,12 +292,12 @@
  */
 #define GT_E_LOG_ENSURE(Condition, LoggingKey, MessageFormat, ...) \
 { \
-	if(Condition) \
+	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
+	if(!Condition) \
 	{ \
-		FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-		ensureMsgf(Condition, TEXT("%s"), *FormattedMessage); \
+		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
+	ensureMsgf(Condition, TEXT("%s"), *FormattedMessage); \
 } \
 
 /**
@@ -285,12 +310,12 @@
  */
 #define GT_E_LOG_VERIFY(Condition, LoggingKey, MessageFormat, ...) \
 { \
-	if(Condition) \
+	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
+	if(!Condition) \
 	{ \
-		FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, 2.0f, true, true, true, false, nullptr, nullptr); \
-		verifyf(Condition, TEXT("%s"), *FormattedMessage); \
+		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
+	verifyf(Condition, TEXT("%s"), *FormattedMessage); \
 } \
 
 /**
@@ -303,7 +328,7 @@
  */
 #define GT_E_LOG_FULL(MessageFormat, LoggingKey, Duration, WorldContextObject, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, Duration, true, true, true, false, WorldContextObject, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, Duration, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -343,7 +368,7 @@
  */
 #define GT_F_LOG(LoggingKey, MessageFormat, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, 0.0f, true, true, true, false, nullptr, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
 }
 
 /**
@@ -356,12 +381,12 @@
  */
 #define GT_F_LOG_CHECKF(Condition, LoggingKey, MessageFormat, ...) \
 { \
-	if(Condition) \
+	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
+	if(!Condition) \
 	{ \
-		FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-		GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, FormattedMessage, LoggingKey, 0.0f, true, true, true, false, nullptr, nullptr); \
-		checkf(Condition, TEXT("%s"), *FormattedMessage); \
+		GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
+	checkf(Condition, TEXT("%s"), *FormattedMessage); \
 } \
 
 /**
@@ -373,7 +398,7 @@
  */
 #define GT_F_LOG_FULL(MessageFormat, LoggingKey, WorldContextObject, ...) \
 { \
-	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, 0.0f, true, true, true, false, WorldContextObject, nullptr, ##__VA_ARGS__); \
+	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
 }
 
 /**

@@ -67,9 +67,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|AutoReplication|Networking")
 	bool GetResultByConnectionKey(const FString& ConnectionKey, FGorgeousAutoReplicationRPCResult& OutResult) const;
 
-	/** Convenience helper that returns an argument stored on the cached payload. */
+	/**
+	 * Returns the raw argument container stored on the cached payload.
+	 * Use UGorgeousAutoReplicationRPCPayloadLibrary::GetArgumentValue (CustomThunk) in
+	 * Blueprint to extract the typed value from the container.
+	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|AutoReplication|Networking")
-	UGorgeousObjectVariable* GetArgumentByName(FName ArgumentName) const;
+	bool GetArgumentContainerByName(FName ArgumentName, FGorgeousRPCArgumentContainer& OutContainer) const;
 
 
 private:

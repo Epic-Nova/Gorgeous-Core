@@ -1123,16 +1123,6 @@ FGorgeousInsightTestResult UGorgeousInsightMatrixSubsystem::RunTest(const FName 
 		INC_DWORD_STAT(STAT_GIM_TestsRun);
 		GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(InsightTestsRun, 1);
 		GORGEOUS_TRACE_BOOKMARK(TEXT("InsightTest %s.%s"), *ProviderName.ToString(), *TestId.ToString());
-		TArray<FGorgeousInsightTest> Tests;
-		Provider->GetTests(Tests);
-		for (const FGorgeousInsightTest& Test : Tests)
-		{
-			if (Test.Id == TestId)
-			{
-				FGorgeousInsightHarness::SaveTestResult(ProviderName, Test, Result);
-				break;
-			}
-		}
 		SavePanelState(); // Save after test execution
 		return Result;
 	}
