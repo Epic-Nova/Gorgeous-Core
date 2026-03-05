@@ -8,9 +8,6 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //@TODO: Planned for future versions of the core with support for multiple languages, even in the logging strings. (ReadMessageFromDatabaseWithIdentifier)

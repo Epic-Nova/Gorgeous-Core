@@ -248,8 +248,21 @@ IMPLEMENT_COMPLEX_AUTOMATION_TEST(FGorgeousInsightMatrixAutomationTest, "Gorgeou
 
 void FGorgeousInsightMatrixAutomationTest::GetTests(TArray<FString>& OutBeautifiedNames, TArray<FString>& OutTestCommands) const
 {
+	// "All" entry runs every registered scenario in sequence.
 	OutBeautifiedNames.Add(TEXT("All"));
 	OutTestCommands.Add(TEXT(""));
+
+	// Per-scenario entries so each scenario is individually selectable in
+	// Unreal's Session Frontend and can be filtered / run in isolation.
+	const TArray<FGorgeousInsightScenarioDescriptor> Scenarios = FGorgeousInsightTestMatrix::GetRegisteredScenarios();
+	for (const FGorgeousInsightScenarioDescriptor& Descriptor : Scenarios)
+	{
+		const bool bIsGauntlet = Descriptor.Tags.Contains(FName(TEXT("gauntlet")));
+		const FString Suffix = bIsGauntlet ? TEXT(" [Gauntlet]") : TEXT("");
+		OutBeautifiedNames.Add(Descriptor.GetDisplayName() + Suffix);
+		// Encode the scenario name as the command so RunTest can target it.
+		OutTestCommands.Add(FString::Printf(TEXT("Scenario=%s"), *Descriptor.ScenarioName.ToString()));
+	}
 }
 
 bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)

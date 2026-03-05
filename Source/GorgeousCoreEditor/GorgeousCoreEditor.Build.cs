@@ -30,58 +30,54 @@ public class GorgeousCoreEditor : ModuleRules
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "HeaderFiles", "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
         });
         
         PrivateIncludePaths.AddRange(new string[]
         {
             Path.Combine(privateIncludePath),
             Path.Combine(privateIncludePath, "CodeGenerators"),
+            Path.Combine(privateIncludePath, "ExtensionResourceGuards"),
             Path.Combine(privateIncludePath, "Factories"),
             Path.Combine(privateIncludePath, "K2Nodes"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations") // Public Export Path for the Macros
         });
         
         PublicDependencyModuleNames.AddRange(new[]
         {
             "Core", 
-            "CoreUObject", 
-            "Engine", 
-            "InputCore", 
-            "EditorSubsystem",
-            "GameplayTags"
+            "PropertyEditor" 
         });
         
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
+                "Engine",
+                "CoreUObject",
+                "InputCore", 
+                "GameplayTags",
+                "MessageLog",
                 "Slate", 
+                "ToolMenus",
                 "SlateCore", 
                 "Projects",
                 "UnrealEd", 
-                "EditorStyle",
-                "BlueprintGraph",
-                "GraphEditor",
-                "PropertyEditor", 
-                "MessageLog",
-                "UMG", 
-                "Kismet",
-                "KismetCompiler",
-                "HTTP",
-                "Json",
-                "JsonUtilities",
-                "ContentBrowser",
-                "DeveloperSettings"
+                "AssetTools"
             });
         
-        AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
+        /* Planned for 2.0
+            "HTTP",
+            "Json",
+            "JsonUtilities",
+            AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
+         */
+        
         
         PrivateDependencyModuleNames.AddRange(new[]
         {
-            "GorgeousCoreEditorUtilities",
             "GorgeousCoreRuntime", 
-            "GorgeousCoreRuntimeUtilities"
+            "GorgeousCoreRuntimeUtilities",
+            "GorgeousCoreEditorUtilities"
         });
     }
 }

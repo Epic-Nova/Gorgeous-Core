@@ -8,12 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
-//<--------------------------=== Module Includes ===------------------------->
-#include "GorgeousSingleton.h"
 //<=============================--- Includes ---=============================>
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousCoreCmdletHandler.generated.h"
@@ -27,9 +22,13 @@ class GORGEOUSCORERUNTIME_API UGorgeousCoreCmdletHandler : public UObject
 {
 	GENERATED_BODY()
 	
+	//<============================--- Overrides ---============================>
+	
 public:
 	
+	// Called after the object's properties have been initialized. Used here to register console commands.
 	virtual void PostInitProperties() override;
+	//<------------------------------------------------------------------------->
 	
 private:
 	

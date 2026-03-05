@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -52,15 +49,6 @@ public:
 	 * @return The functionality type as an EGorgeousModuleFunctionality enum value.
 	 */
 	virtual EGorgeousModuleFunctionality GetModuleFunctionality() const override { return EGorgeousModuleFunctionality::RuntimeUtilities; }
-
-	/**
-	 * We return false here because we don't want the core to be participated in any hot reload/live coding actions.
-	 * As long term debugging shows that reloading the gorgeous core module invokes the corruption of the current object variable registry instance, and finally a crash of the current unreal instance.
-	 */
-	virtual bool SupportsDynamicReloading() override
-	{
-		return false;
-	}
 	
 	/**
 	 * Returns an array of names from other gorgeous plugins that this plugin depends on.

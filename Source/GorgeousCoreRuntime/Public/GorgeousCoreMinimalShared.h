@@ -15,13 +15,12 @@
 |                                ONLY INCLUDE CLASSES THAT ARE WITHIN THIS MODULE DEFINED                               |
 |          TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE         |
 <======================================================================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 MONOLITHIC_HEADER_BOILERPLATE()
 
+// Module Core Includes
+#include "GorgeousCoreBlueprintTypes.h"
 #include "GorgeousCoreRuntimeGlobals.h"
 
 //Object Variable Includes
@@ -32,7 +31,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 
-#include "ObjectVariables/Helpers/GorgeousObjectVariableHelperMacros.h"
+#include "ObjectVariables/GorgeousObjectVariableHelperMacros.h"
 
 #include "ObjectVariables/Interfaces/GorgeousObjectVariableInteraction_I.h"
 #include "ObjectVariables/Interfaces/GorgeousSingleObjectVariablesGetter_I.h"
@@ -55,6 +54,17 @@ MONOLITHIC_HEADER_BOILERPLATE()
 
 //Functional Structure Includes
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
+
+// Insight Matrix
+#include "InsightMatrix/GorgeousInsightBaselineSettings.h"
+#include "InsightMatrix/GorgeousInsightGauntletController.h"
+#include "InsightMatrix/GorgeousInsightHarness.h"
+#include "InsightMatrix/GorgeousInsightMatrixProvider.h"
+#include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "InsightMatrix/GorgeousInsightMatrixTypes.h"
+#include "InsightMatrix/GorgeousInsightTestMatrix.h"
+
+#include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 
 //Quality of Life Includes
 #include "QualityOfLife/GorgeousGameInstance.h"

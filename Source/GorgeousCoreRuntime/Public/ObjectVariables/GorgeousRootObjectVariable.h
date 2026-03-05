@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 
 //<=============================--- Includes ---=============================>
@@ -171,11 +168,11 @@ public:
 
    /** Releases a previously claimed ownership handle and optionally promotes a fallback owner. */
    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-   static void ReleaseRootRegistryOwnership(const FGorgeousRootRegistryOwnerHandle& Handle, UObject* FallbackOwner = nullptr);
+   static void ReleaseRootRegistryOwnership(const FGorgeousRootRegistryOwnerHandle& Handle, UObject* CachedOwner = nullptr);
 
    /** Ensures the specified root keeps a valid network owner by assigning the provided fallback. */
    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
-   static void PromoteRootRegistryOwner(FName RootName, UObject* FallbackOwner);
+   static void PromoteRootRegistryOwner(FName RootName, UObject* CachedOwner);
 
 	/** Resolves an explicit root name against the developer settings to produce a canonical entry key. */
 	static FName ResolveRootName(FName RequestedRootName);
@@ -186,6 +183,22 @@ public:
      * @param bFullCleanup Whether to perform a full cleanup.
      */
     static void CleanupRegistry(bool bFullCleanup = false);
+
+    /**
+     * Removes all registry entries whose owning world matches DyingWorld from every root
+     * object-variable registry.  This must be called before GC sweeps the dying world so
+     * the AddToRoot'd root OV no longer holds a UPROPERTY reference chain that reaches
+     * the world object, which would otherwise block PIE world collection and trigger the
+     * "Object from PIE level still referenced" hard check in EndPlayMap.
+     *
+     * @param DyingWorld     The world that is about to be garbage-collected.
+     * @param bSessionEnded  true when the game session is ending (PIE close, game exit)
+     *                       — performs a full purge including root OVs outered to the
+     *                       GameInstance and the GI itself.  false during a level switch
+     *                       — only purges non-persistent OVs directly outered to the
+     *                       dying world, preserving persistent root OVs and the GI.
+     */
+    //static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);
 
     /**
      * Sets the value of a property with any type for an object variable identified by its unique identifier.
@@ -310,8 +323,9 @@ public:
      * Registers a new object variable with the registry.
      *
      * @param NewObjectVariable The object variable to register.
+     * @param RegistryKey       Optional explicit key; derived from DisplayName / GUID when NAME_None.
      */
-    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable) override;
+    virtual void RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable, FName RegistryKey = NAME_None) override;
 
    static FString ReserveDisplayName(UGorgeousObjectVariable* Variable, const FString& CandidateLabel);
    static void ReleaseDisplayName(UGorgeousObjectVariable* Variable);

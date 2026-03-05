@@ -1,5 +1,5 @@
 #include "InsightMatrix/GorgeousInsightHarness.h"
-#include "GorgeousObjectVariablePerfTestTypes.h"
+#include "Helpers/GorgeousObjectVariablePerfTestTypes.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "Engine/Engine.h"

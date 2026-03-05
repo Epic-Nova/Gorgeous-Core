@@ -12,6 +12,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/TimerHandle.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
@@ -76,7 +77,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableEntry
 public:
 	FGorgeousObjectVariableEntry();
 
-	/** Default value that will be instanced or used when networking is disabled. */
+	// Default value that will be instanced or used when networking is disabled.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication", meta = (GorgeousObjectVariableTrunk = "DefaultObjectVariableTrunk"))
 	TObjectPtr<UGorgeousObjectVariable> DefaultValue;
 
@@ -131,6 +132,22 @@ public:
 
 /**
  * Lightweight mixin dropped into each AutoReplication class to consolidate data registration, replication, and async hooks.
+ *
+ * @TODO NOTE (future plan): Replication currently requires variables to be registered inside the
+ * AdditionalGorgeousData map of a QoL class (e.g. GorgeousPlayerController, GorgeousPlayerState).
+ * A replication slot is only allocated when InitializeAdditionalData() iterates entries with
+ * bReplicate=true.  We plan to extend this so that replication is also available for object
+ * variables that are NOT registered in AdditionalGorgeousData — e.g. standalone variables
+ * created at runtime or owned by non-QoL actors — by allowing direct slot allocation through
+ * the mixin without requiring an AdditionalGorgeousData entry.
+ *
+ * @TODO NOTE (future plan): We also plan to support runtime registration of individual
+ * replicated variables into the slot array without having to recall InitializeAdditionalData().
+ * Currently, adding a new entry at runtime forces a full re-initialization pass which resets
+ * and rebuilds the entire ReplicatedVariables array.  A dedicated method (e.g.
+ * RegisterReplicatedSlot(FName Key, UGorgeousObjectVariable* Value)) would allocate a single
+ * slot on demand, making hot-path runtime registration cheaper and avoiding side-effects on
+ * already-active slots.
  */
 class GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationMixin
 {
@@ -216,5 +233,8 @@ private:
 	TWeakObjectPtr<UGorgeousAutoReplicationRPCRelayComponent> RPCRelayComponent;
 
 	TArray<FGorgeousQueuedRPC> PendingRPCs;
+
+	/** One-shot timer used to introduce a brief dispatch delay (see EnqueueRPCInternal). */
+	FTimerHandle PendingDispatchTimerHandle;
 };
 

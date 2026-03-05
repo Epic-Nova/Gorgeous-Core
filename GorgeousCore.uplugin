@@ -25,11 +25,6 @@
 			]
 		},
 		{
-			"Name": "GorgeousCoreEditor",
-			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
-		},
-		{
 			"Name": "GorgeousCoreRuntimeUtilities",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault",
@@ -39,16 +34,17 @@
 			]
 		},
 		{
+			"Name": "GorgeousCoreEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostDefault"
+		},
+		{
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
-		{
-			"Name": "SQLiteSupport",
-			"Enabled": true
-		},
 		{
 			"Name": "DataValidation",
 			"Enabled": true
@@ -70,5 +66,6 @@
 			"Enabled": true
 		}
 	],
-	"IsExperimentalVersion": false
+	"IsExperimentalVersion": false,
+	"Installed": false
 }

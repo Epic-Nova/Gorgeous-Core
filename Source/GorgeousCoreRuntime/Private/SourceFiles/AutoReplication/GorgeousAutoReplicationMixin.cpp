@@ -15,10 +15,11 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+#include "InsightMatrix/GorgeousRPCDebugTracker.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
-#include "ObjectVariables/Networking/GorgeousRootNetworkStackSubsystem.h"
+#include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Misc/AutomationTest.h"
 #include "GameFramework/Actor.h"
@@ -27,7 +28,9 @@
 #include "Components/ActorComponent.h"
 #include "Engine/NetConnection.h"
 #include "Engine/NetDriver.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "TimerManager.h"
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
@@ -350,7 +353,7 @@ bool FGorgeousAutoReplicationMixin::TrySetReplicatedValue(const FName Key, UGorg
 		return true;
 	}
 
-	GT_I_LOG("GT.AutoReplication.Mixin.SetValue.NoSlot", TEXT("Failed to set replicated value for key %s - no replication slot registered."), *Key.ToString());
+	GT_E_LOG("GT.AutoReplication.Mixin.SetValue.NoSlot", TEXT("Failed to set replicated value for key %s - no replication slot registered."), *Key.ToString());
 	return false;
 }
 
@@ -492,6 +495,15 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 		*OutRequestGuid = QueuedRPC.RequestGuid;
 	}
 
+	// ── RPC Debug Tracker hook ───────────────────────────────────────────
+	if (FGorgeousRPCDebugTracker::IsEnabled())
+	{
+		FGorgeousRPCDebugTracker::Get().OnRPCInitiated(
+			QueuedRPC.RequestGuid, Key, Payload.HandlerName, Type,
+			Payload.Arguments,
+			Owner.IsValid() ? Owner->GetName() : TEXT("<unknown>"));
+	}
+
 	// For server-bound, client-bound, or multicast RPCs from a client, use the relay component instead of the transporter
 	// since the transporter is dynamically created and doesn't exist on the server.
 	// Client RPCs also go through the server first, then the server forwards to the owning client.
@@ -500,22 +512,45 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 	const bool bIsMulticast = (Type == EGorgeousAutoReplicationRPCType::EReliableMulticast || Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast);
 	const bool bIsOnClient = !IsAuthorityContext();
 	
-	if ((bIsServerBound || bIsClientBound || bIsMulticast) && bIsOnClient && RPCRelayComponent.IsValid())
+	if ((bIsServerBound || bIsClientBound || bIsMulticast) && bIsOnClient)
 	{
-		const bool bReliable = (Type == EGorgeousAutoReplicationRPCType::EReliableServer || Type == EGorgeousAutoReplicationRPCType::EReliableClient || Type == EGorgeousAutoReplicationRPCType::EReliableMulticast);
-		if (RPCRelayComponent->RelayRPCToServer(QueuedRPC, bReliable, this))
+		// Resolve the correct relay component. If the owner is a PlayerState, we must use the
+		// PlayerController's relay component instead, because PlayerState doesn't have the right
+		// kind of owning connection for Server RPCs to work properly.
+		UGorgeousAutoReplicationRPCRelayComponent* RelayToUse = RPCRelayComponent.Get();
+		if (AActor* OwnerActor = Cast<AActor>(Owner.Get()))
 		{
-			const UEnum* TypeEnum = StaticEnum<EGorgeousAutoReplicationRPCType>();
-			const FString TypeString = TypeEnum ? TypeEnum->GetNameStringByValue(static_cast<int64>(Type)) : FString(TEXT("<unknown>"));
-			const UEnum* TargetEnum = StaticEnum<EGorgeousAutoReplicationTargetKind>();
-			const FString TargetString = TargetEnum ? TargetEnum->GetNameStringByValue(static_cast<int64>(QueuedRPC.TargetKind)) : FString(TEXT("<unknown>"));
-			const FString TargetLabel = (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable && ResolvedVariable)
-				? ResolvedVariable->GetName()
-				: (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && ResolvedOwner)
-					? ResolvedOwner->GetName()
-					: FString(TEXT("<unresolved>"));
-			GT_I_LOG("GT.AutoReplication.Mixin.RPC.DispatchedViaRelay", TEXT("Dispatched AutoReplication RPC (%s -> %s:%s) for key %s through relay on %s."), *TypeString, *TargetString, *TargetLabel, *Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
-			return true;
+			if (APlayerState* PS = Cast<APlayerState>(OwnerActor))
+			{
+				if (APlayerController* PC = PS->GetPlayerController())
+				{
+					if (UGorgeousAutoReplicationRPCRelayComponent* PCRelay = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
+					{
+						RelayToUse = PCRelay;
+						GT_I_LOG("GT.AutoReplication.Mixin.RPC.ResolvedRelay", TEXT("Resolved relay from PlayerState %s to PlayerController %s for RPC key %s."), 
+							*PS->GetName(), *PC->GetName(), *Key.ToString());
+					}
+				}
+			}
+		}
+		
+		if (RelayToUse)
+		{
+			const bool bReliable = (Type == EGorgeousAutoReplicationRPCType::EReliableServer || Type == EGorgeousAutoReplicationRPCType::EReliableClient || Type == EGorgeousAutoReplicationRPCType::EReliableMulticast);
+			if (RelayToUse->RelayRPCToServer(QueuedRPC, bReliable, this))
+			{
+				const UEnum* TypeEnum = StaticEnum<EGorgeousAutoReplicationRPCType>();
+				const FString TypeString = TypeEnum ? TypeEnum->GetNameStringByValue(static_cast<int64>(Type)) : FString(TEXT("<unknown>"));
+				const UEnum* TargetEnum = StaticEnum<EGorgeousAutoReplicationTargetKind>();
+				const FString TargetString = TargetEnum ? TargetEnum->GetNameStringByValue(static_cast<int64>(QueuedRPC.TargetKind)) : FString(TEXT("<unknown>"));
+				const FString TargetLabel = (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable && ResolvedVariable)
+					? ResolvedVariable->GetName()
+					: (QueuedRPC.TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && ResolvedOwner)
+						? ResolvedOwner->GetName()
+						: FString(TEXT("<unresolved>"));
+				GT_I_LOG("GT.AutoReplication.Mixin.RPC.DispatchedViaRelay", TEXT("Dispatched AutoReplication RPC (%s -> %s:%s) for key %s through relay on %s."), *TypeString, *TargetString, *TargetLabel, *Key.ToString(), RelayToUse->GetOwner() ? *RelayToUse->GetOwner()->GetName() : TEXT("<invalid>"));
+				return true;
+			}
 		}
 	}
 
@@ -555,7 +590,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 {
 	EnsureBound();
 
-	auto EmitResult = [this, &QueuedRPC](const EGorgeousAutoReplicationTargetKind TargetKind, UGorgeousObjectVariable* TargetVariable, UObject* TargetOwner)
+	auto EmitResult = [this, &QueuedRPC](const EGorgeousAutoReplicationTargetKind TargetKind, UGorgeousObjectVariable* TargetVariable, UObject* TargetOwner, bool bIsDeferred)
 	{
 		FGorgeousAutoReplicationRPCResult Result;
 		Result.QueuedRPC = QueuedRPC;
@@ -572,7 +607,15 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 			}
 		}
 
-		if (IsAuthorityContext())
+		// For multicast RPCs, the listen-server host is both authoritative AND a local player.
+		// Always prefer a controller-derived identity so the host's result matches the responder
+		// key pre-registered by ForwardRPCToMulticast (which uses FromController, not "Server").
+		// For all other RPC types, authority machines retain the "Server" label.
+		const bool bIsMulticastType =
+			QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EReliableMulticast ||
+			QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast;
+
+		if (!bIsMulticastType && IsAuthorityContext())
 		{
 			Result.Responder = FGorgeousAutoReplicationRPCResponderHandle::MakeServerHandle();
 		}
@@ -594,9 +637,70 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 			UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, Result.Responder);
 		}
 
-		UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(Result);
+		if (bIsDeferred && QueuedRPC.RequestGuid.IsValid())
+		{
+			// Deferred mode: store the result and wait for MarkAutoReplicationRPCResponderReady
+			const FString DeferredKey = Result.Responder.IsValid() ? Result.Responder.GetStableKey() : FString();
+			UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterDeferredResult(QueuedRPC.RequestGuid, DeferredKey, Result);
+		}
+		else
+		{
+			UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(Result);
+		}
 
-		if (!IsAuthorityContext())
+		// ── RPC Debug Tracker: record execution result ───────────────────
+		if (FGorgeousRPCDebugTracker::IsEnabled() && QueuedRPC.RequestGuid.IsValid())
+		{
+			FString ReturnPreview;
+			// Guard against GC: TargetVariable is a raw UObject* stored in FGorgeousAutoReplicationRPCResult
+			// without UPROPERTY. Use IsValid() so a GC-collected pointer is safely skipped.
+			if (IsValid(TargetVariable))
+			{
+				// Build a pretty-printed JSON preview:
+				// OV_DisplayName
+				// {
+				//   "Key": "Value",
+				//   "Key2": "Value2"
+				// }
+				const FString OVName = TargetVariable->GetDisplayNameOrFallback();
+				TArray<FString> PropertyEntries;
+				const UClass* StopAtClass = UGorgeousObjectVariable::StaticClass();
+				for (TFieldIterator<FProperty> PropIt(TargetVariable->GetClass()); PropIt; ++PropIt)
+				{
+					const FProperty* Prop = *PropIt;
+					// Only show properties declared below UGorgeousObjectVariable
+					if (Prop->GetOwnerClass()->IsChildOf(StopAtClass)
+						&& Prop->GetOwnerClass() != StopAtClass
+						&& Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
+					{
+						FString ValueStr;
+						Prop->ExportText_Direct(ValueStr, Prop->ContainerPtrToValuePtr<void>(TargetVariable), nullptr, TargetVariable, PPF_None);
+						// Escape inner quotes so the preview is valid JSON-like text
+						ValueStr.ReplaceInline(TEXT("\\"), TEXT("\\\\"));
+						ValueStr.ReplaceInline(TEXT("\""), TEXT("\\\""));
+						PropertyEntries.Add(FString::Printf(TEXT("  \"%s\": \"%s\""), *Prop->GetName(), *ValueStr));
+					}
+				}
+				if (PropertyEntries.Num() > 0)
+				{
+					ReturnPreview = OVName
+						+ LINE_TERMINATOR TEXT("{")
+						+ LINE_TERMINATOR + FString::Join(PropertyEntries, TEXT(",") LINE_TERMINATOR)
+						+ LINE_TERMINATOR TEXT("}");
+				}
+				else
+				{
+					ReturnPreview = OVName;
+				}
+			}
+			FGorgeousRPCDebugTracker::Get().OnRPCExecuted(
+				QueuedRPC.RequestGuid, Result.Responder, ReturnPreview, bIsDeferred);
+		}
+
+		// Only relay to authority immediately for non-deferred results.
+		// Deferred results are relayed (with the populated OV) later when
+		// MarkAutoReplicationRPCResponderReady is called by the handler.
+		if (!bIsDeferred && !IsAuthorityContext())
 		{
 			if (UObject* OwnerObject = ResolveOwnerObject())
 			{
@@ -614,10 +718,11 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 		}
 
 		UGorgeousObjectVariable* ReturnContainer = nullptr;
-		const bool bHandledByOwner = UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(OwnerObject, QueuedRPC, &ReturnContainer);
+		bool bIsDeferred = false;
+		const bool bHandledByOwner = UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(OwnerObject, QueuedRPC, &ReturnContainer, &bIsDeferred);
 		if (bHandledByOwner)
 		{
-			EmitResult(TargetKindOverride, ReturnContainer, OwnerObject);
+			EmitResult(TargetKindOverride, ReturnContainer, OwnerObject, bIsDeferred);
 		}
 		return bHandledByOwner;
 	};
@@ -644,10 +749,11 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 		for (UActorComponent* Component : Components)
 		{
 			UGorgeousObjectVariable* ReturnContainer = nullptr;
-			if (Component && UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(Component, QueuedRPC, &ReturnContainer))
+			bool bIsDeferred = false;
+			if (Component && UGorgeousObjectVariable::InvokeNativeAutoReplicationRPCHandlerOnObject(Component, QueuedRPC, &ReturnContainer, &bIsDeferred))
 			{
 				UGorgeousObjectVariable* ResultVariable = ReturnContainer;
-				EmitResult(EGorgeousAutoReplicationTargetKind::EActorComponent, ResultVariable, Component);
+				EmitResult(EGorgeousAutoReplicationTargetKind::EActorComponent, ResultVariable, Component, bIsDeferred);
 				return true;
 			}
 		}
@@ -658,10 +764,11 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 	auto ExecuteOnVariable = [&](UGorgeousObjectVariable* TargetVariable) -> bool
 	{
 		UGorgeousObjectVariable* ReturnContainer = nullptr;
-		if (TargetVariable && TargetVariable->ExecuteAutoReplicationRPC(QueuedRPC, &ReturnContainer))
+		bool bIsDeferred = false;
+		if (TargetVariable && TargetVariable->ExecuteAutoReplicationRPC(QueuedRPC, &ReturnContainer, &bIsDeferred))
 		{
 			UGorgeousObjectVariable* ResultVariable = ReturnContainer ? ReturnContainer : TargetVariable;
-			EmitResult(EGorgeousAutoReplicationTargetKind::EObjectVariable, ResultVariable, nullptr);
+			EmitResult(EGorgeousAutoReplicationTargetKind::EObjectVariable, ResultVariable, nullptr, bIsDeferred);
 			return true;
 		}
 		return false;
@@ -838,10 +945,15 @@ void FGorgeousAutoReplicationMixin::InitializeTransporter()
 	// Components created dynamically must be created on the server and replicate to clients.
 	if (!TransporterInstance)
 	{
-		// First, try to find an existing transporter that isn't linked to any mixin yet
+		// Try to adopt an unlinked (replicated) transporter — one that arrived from the server
+		// but hasn't been bound to a mixin yet (OwningMixin == nullptr).
+		// NOTE: IsLinkedToMixin(nullptr) returns true when OwningMixin IS null, so this
+		// correctly finds transporter components that are waiting to be claimed by a mixin
+		// on the client.  The previous code used !IsLinkedToMixin which was inverted and
+		// caused clients to never adopt their transporter, making DeliverRPCLocally no-op.
 		for (TInlineComponentArray<UGorgeousAutoReplicationRPCTransporter*> AllTransporters(OwnerActor); UGorgeousAutoReplicationRPCTransporter* Candidate : AllTransporters)
 		{
-			if (Candidate && !Candidate->IsLinkedToMixin(nullptr))
+			if (Candidate && Candidate->IsLinkedToMixin(nullptr))
 			{
 				TransporterInstance = Candidate;
 				break;
@@ -894,7 +1006,7 @@ bool FGorgeousAutoReplicationMixin::EnqueueRPCInternal(const FGorgeousQueuedRPC&
 	const UEnum* EnumClass = StaticEnum<EGorgeousAutoReplicationRPCType>();
 	const FString TypeString = EnumClass ? EnumClass->GetNameStringByValue(static_cast<int64>(QueuedRPC.Type)) : FString(TEXT("<unknown>"));
 	GT_I_LOG("GT.AutoReplication.Mixin.RPC.Queued", TEXT("Queued AutoReplication RPC (%s) for key %s on %s."), *TypeString, *QueuedRPC.Key.ToString(), Owner.IsValid() ? *Owner->GetName() : TEXT("<invalid>"));
-
+	
 	DispatchPendingRPCs();
 	return true;
 }
@@ -994,8 +1106,14 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 		}
 	}
 
+	// On the server (authority), skip the change-shadow sync so that the server
+	// polling tick detects the relay-applied value as dirty and replicates it to
+	// all connected clients (the S2C fan-out leg for C2S/C2MC scenarios).
+	// On clients, sync the shadow to prevent the correction-loop re-send.
+	const bool bSyncChangeShadow = !IsAuthorityContext();
+
 	TargetVariable->PreNetReceive();
-	const bool bApplied = TargetVariable->ApplyAutoReplicationPropertyPayload(Envelope.Payload, PackageMap);
+	const bool bApplied = TargetVariable->ApplyAutoReplicationPropertyPayload(Envelope.Payload, PackageMap, bSyncChangeShadow);
 	TargetVariable->PostNetReceive();
 	if (!bApplied)
 	{

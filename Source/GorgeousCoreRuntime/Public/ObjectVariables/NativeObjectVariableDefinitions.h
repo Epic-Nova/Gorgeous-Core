@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -37,6 +34,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API USingleObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -340,6 +338,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UArrayObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -1586,6 +1585,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UStackObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -2507,6 +2507,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UDequeObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -3904,6 +3905,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UMapObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -4158,6 +4160,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UMultiMapObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**
@@ -4821,6 +4824,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API USetObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
 };
 
 /**

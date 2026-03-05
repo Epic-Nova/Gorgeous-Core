@@ -8,10 +8,7 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Engine Includes ===-------------------------->
@@ -54,9 +51,9 @@ public:
 	/**
 	 * Updates the factory information necessary for this class to execute its overwritten functions properly.
 	 * 
-	 * @param NewFactoryInfos The new factory information
+	 * @param NewFactoryInfo The new factory information
 	 */
-	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfos);
+	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo);
 
 private:
 
@@ -64,5 +61,5 @@ private:
 	 * The factory configuration used to determine the creation behavior of this factory instance.
 	 * This structure must be set by subclasses using SetFactoryInformation to ensure correct behavior.
 	 */
-	FGorgeousFactoryInfo_S FactoryInfos;
+	FGorgeousFactoryInfo_S FactoryInfo;
 };

@@ -10,32 +10,64 @@
 <==========================================================================*/
 #include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
 
-#include "ObjectVariables/GorgeousObjectVariable.h"
-#include "ObjectVariables/NativeObjectVariableDefinitions.h"
+#include "Serialization/MemoryWriter.h"
+#include "Serialization/StructuredArchive.h"
+#include "UObject/UnrealType.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
-namespace GorgeousAutoReplicationRPCPayloadLibrary_Private
+//-----------------------------------------------------------------------------
+// Internal helpers
+//-----------------------------------------------------------------------------
+namespace GorgeousRPCPayloadLibrary_Private
 {
-	template <typename TObjectVariableType>
-	TObjectVariableType* NewLiteral(UObject* DesiredOuter)
+	/**
+	 * Serialize a value described by @p Property / @p ValuePtr into a byte array.
+	 * - Struct / scalar types that are trivially copyable: raw memcpy.
+	 * - FString / FText / FName / dynamic containers: FMemoryWriter archive path.
+	 */
+	static bool SerializeValueToBytes(const FProperty* Property, const void* ValuePtr, TArray<uint8>& OutBytes, FName& OutPropertyClassName, FName& OutStructTypeName)
 	{
-		UObject* Outer = DesiredOuter ? DesiredOuter : GetTransientPackage();
-		return NewObject<TObjectVariableType>(Outer);
+		if (!Property || !ValuePtr)
+		{
+			return false;
+		}
+
+		OutPropertyClassName = Property->GetClass()->GetFName();
+		OutStructTypeName    = NAME_None;
+
+		if (const FStructProperty* AsStruct = CastField<FStructProperty>(Property))
+		{
+			if (!AsStruct->Struct)
+			{
+				return false;
+			}
+			OutStructTypeName = AsStruct->Struct->GetFName();
+			// Structs: use FMemoryWriter so nested FStrings / TArrays inside the struct
+			// are properly serialized, not shallow-copied.
+			FMemoryWriter Writer(OutBytes);
+			AsStruct->Struct->SerializeTaggedProperties(Writer, const_cast<uint8*>(static_cast<const uint8*>(ValuePtr)), AsStruct->Struct, nullptr);
+			return true;
+		}
+
+		if (CastField<FStrProperty>(Property) || CastField<FTextProperty>(Property))
+		{
+			// Heap-allocated string/text: archive path.
+			FMemoryWriter Writer(OutBytes);
+			Property->SerializeItem(FStructuredArchiveFromArchive(Writer).GetSlot(), const_cast<void*>(ValuePtr));
+			return true;
+		}
+
+		// All remaining types (int32, float, double, bool, FName, int64, byte, etc.) are
+		// either POD or have a fixed in-place representation that is safe to memcpy.
+		GORGEOUS_55_HIGHER(const int32 PropSize = Property->GetElementSize();)
+		GORGEOUS_54_LOWER(const int32 PropSize  = Property->GetSize();)
+		OutBytes.SetNumUninitialized(PropSize);
+		FMemory::Memcpy(OutBytes.GetData(), ValuePtr, PropSize);
+		return true;
 	}
 }
 
-template <typename TObjectVariableType, typename TValueType>
-UGorgeousObjectVariable* UGorgeousAutoReplicationRPCPayloadLibrary::CreateLiteralArgument(UObject* DesiredOuter, const TValueType& Value)
-{
-	TObjectVariableType* Literal = GorgeousAutoReplicationRPCPayloadLibrary_Private::NewLiteral<TObjectVariableType>(DesiredOuter);
-	if (!Literal)
-	{
-		return nullptr;
-	}
-
-	Literal->Value = Value;
-	return Literal;
-}
-
+//-----------------------------------------------------------------------------
 FGorgeousRPCPayload UGorgeousAutoReplicationRPCPayloadLibrary::MakeAutoReplicationRPCPayload(const FName HandlerName)
 {
 	FGorgeousRPCPayload Payload;
@@ -43,72 +75,131 @@ FGorgeousRPCPayload UGorgeousAutoReplicationRPCPayloadLibrary::MakeAutoReplicati
 	return Payload;
 }
 
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCObjectArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, UGorgeousObjectVariable* ArgumentValue, const bool bDuplicateForContext)
+//-----------------------------------------------------------------------------
+bool UGorgeousAutoReplicationRPCPayloadLibrary::AddArgumentFromProperty(
+	FGorgeousRPCPayload& Payload, FName ArgumentName,
+	const FProperty* Property, const void* ValuePtr)
 {
-	if (ArgumentName.IsNone() || !ArgumentValue)
+	if (ArgumentName.IsNone() || !Property || !ValuePtr)
 	{
 		return false;
 	}
 
-	if (UGorgeousObjectVariable* UsableArgument = PrepareArgumentForPayload(WorldContextObject, ArgumentValue, bDuplicateForContext))
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	if (!GorgeousRPCPayloadLibrary_Private::SerializeValueToBytes(Property, ValuePtr, Arg.ValueBytes, Arg.PropertyClassName, Arg.StructTypeName))
 	{
-		
-		Payload.Arguments.Add(FGorgeousRPCArgumentContainer(ArgumentName, UsableArgument));
-		return true;
+		return false;
 	}
 
-	return false;
+	// Replace any existing entry with the same name so callers can overwrite.
+	const int32 ExistingIdx = Payload.Arguments.IndexOfByPredicate(
+		[&](const FGorgeousRPCArgumentContainer& C) { return C.ArgumentName == ArgumentName; });
+	if (ExistingIdx != INDEX_NONE)
+	{
+		Payload.Arguments[ExistingIdx] = MoveTemp(Arg);
+	}
+	else
+	{
+		Payload.Arguments.Add(MoveTemp(Arg));
+	}
+	return true;
 }
 
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCBoolArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const bool bValue)
+//-----------------------------------------------------------------------------
+// CustomThunk – wildcard "add any value as RPC argument"
+//-----------------------------------------------------------------------------
+DEFINE_FUNCTION(UGorgeousAutoReplicationRPCPayloadLibrary::execAddAutoReplicationRPCArgument)
 {
-	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UBoolean_SOV>(WorldContextObject, bValue))
-	{
-		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
-	}
-	return false;
+	// Param 1: Payload (ref)
+	P_GET_STRUCT_REF(FGorgeousRPCPayload, Payload);
+	// Param 2: ArgumentName
+	P_GET_PROPERTY(FNameProperty, ArgumentName);
+	// Param 3: Value – wildcard, harvested via MostRecentProperty
+	Stack.MostRecentProperty        = nullptr;
+	Stack.MostRecentPropertyAddress = nullptr;
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* ValueProperty = Stack.MostRecentProperty;
+	void*            ValueAddr     = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+
+	P_NATIVE_BEGIN;
+	UGorgeousAutoReplicationRPCPayloadLibrary::AddArgumentFromProperty(Payload, ArgumentName, ValueProperty, ValueAddr);
+	*(FGorgeousRPCPayload*)RESULT_PARAM = Payload;
+	P_NATIVE_END;
 }
 
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCIntegerArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const int32 Value)
+// Native stub required by DECLARE_FUNCTION – never called directly.
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCArgument(
+	FGorgeousRPCPayload& Payload, FName /*ArgumentName*/, int32 /*Value*/)
 {
-	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UInteger_SOV>(WorldContextObject, Value))
-	{
-		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
-	}
-	return false;
+	check(false && "AddAutoReplicationRPCArgument: call via Blueprint (CustomThunk) only.");
+	return Payload;
 }
 
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCFloatArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const float Value)
+//-----------------------------------------------------------------------------
+// Typed convenience helpers
+//-----------------------------------------------------------------------------
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCBoolArgument(
+	FGorgeousRPCPayload& Payload, FName ArgumentName, bool bValue)
 {
-	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UFloat_SOV>(WorldContextObject, static_cast<double>(Value)))
-	{
-		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
-	}
-	return false;
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	Arg.PropertyClassName = FName("BoolProperty");
+	Arg.ValueBytes.SetNumUninitialized(sizeof(bool));
+	FMemory::Memcpy(Arg.ValueBytes.GetData(), &bValue, sizeof(bool));
+	Payload.Arguments.Add(MoveTemp(Arg));
+	return Payload;
 }
 
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(UObject* WorldContextObject, FGorgeousRPCPayload& Payload, const FName ArgumentName, const FString& Value)
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCIntArgument(
+	FGorgeousRPCPayload& Payload, FName ArgumentName, int32 Value)
 {
-	if (UGorgeousObjectVariable* Literal = CreateLiteralArgument<UString_SOV>(WorldContextObject, Value))
-	{
-		return AddAutoReplicationRPCObjectArgument(WorldContextObject, Payload, ArgumentName, Literal, false);
-	}
-	return false;
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	Arg.PropertyClassName = FName("IntProperty");
+	Arg.ValueBytes.SetNumUninitialized(sizeof(int32));
+	FMemory::Memcpy(Arg.ValueBytes.GetData(), &Value, sizeof(int32));
+	Payload.Arguments.Add(MoveTemp(Arg));
+	return Payload;
 }
 
-UGorgeousObjectVariable* UGorgeousAutoReplicationRPCPayloadLibrary::PrepareArgumentForPayload(UObject* DesiredOuter, UGorgeousObjectVariable* ArgumentValue, const bool bDuplicateForContext)
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCFloatArgument(
+	FGorgeousRPCPayload& Payload, FName ArgumentName, double Value)
 {
-	if (!ArgumentValue)
-	{
-		return nullptr;
-	}
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	// Blueprint float pins are doubles in UE5.
+	Arg.PropertyClassName = FName("DoubleProperty");
+	Arg.ValueBytes.SetNumUninitialized(sizeof(double));
+	FMemory::Memcpy(Arg.ValueBytes.GetData(), &Value, sizeof(double));
+	Payload.Arguments.Add(MoveTemp(Arg));
+	return Payload;
+}
 
-	UObject* Outer = DesiredOuter ? DesiredOuter : GetTransientPackage();
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(
+	FGorgeousRPCPayload& Payload, FName ArgumentName, const FString& Value)
+{
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	Arg.PropertyClassName = FName("StrProperty");
+	FMemoryWriter Writer(Arg.ValueBytes);
+	FString Mutable = Value;
+	Writer << Mutable;
+	Payload.Arguments.Add(MoveTemp(Arg));
+	return Payload;
+}
 
-	if (ArgumentValue->GetOuter() == Outer || !bDuplicateForContext)
-	{
-		return ArgumentValue;
-	}
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCNameArgument(
+	FGorgeousRPCPayload& Payload, FName ArgumentName, FName Value)
+{
+	FGorgeousRPCArgumentContainer Arg(ArgumentName);
+	Arg.PropertyClassName = FName("NameProperty");
+	Arg.ValueBytes.SetNumUninitialized(sizeof(FName));
+	FMemory::Memcpy(Arg.ValueBytes.GetData(), &Value, sizeof(FName));
+	Payload.Arguments.Add(MoveTemp(Arg));
+	return Payload;
+}
 
-	return DuplicateObject<UGorgeousObjectVariable>(ArgumentValue, Outer);
+//-----------------------------------------------------------------------------
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::SetAutoReplicationRPCTimeout(
+	FGorgeousRPCPayload& Payload, float TimeoutSeconds)
+{
+	Payload.TimeoutSeconds = TimeoutSeconds;
+	return Payload;
 }

@@ -49,7 +49,7 @@ bool FGorgeousCoreLicenseHelper::CreateEncryptedLicenseFile(const TArray<FString
 	}
 
 	TArray<uint8> PlainBytes;
-	FTCHARToUTF8 Converter(*Combined);
+	const FTCHARToUTF8 Converter(*Combined);
 	PlainBytes.Append((uint8*)Converter.Get(), Converter.Length());
 
 	const FAES::FAESKey Key = MakeAESKey(ProjectId);

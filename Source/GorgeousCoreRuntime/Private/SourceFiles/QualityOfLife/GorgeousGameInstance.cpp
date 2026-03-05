@@ -109,7 +109,15 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 		const bool bSupportsSharedOwnership = UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName);
 		if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(RootName))
 		{
-			Root->SetCachedOwner(this);
+			Root->SetFallbackOwner(this);
+
+			// Re-outer roots that were created before any world existed
+			// (still on GetTransientPackage) so UObject::GetWorld() works.
+			if (Root->GetOuter() == GetTransientPackage())
+			{
+				Root->Rename(nullptr, this);
+			}
+
 			if (bSupportsSharedOwnership)
 			{
 				Root->EnsureSharedNetworkStackOwner(this);
@@ -127,7 +135,12 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 	{
 		if (UGorgeousRootObjectVariable* RootInstance = Pair.Value)
 		{
-			RootInstance->SetCachedOwner(this);
+			RootInstance->SetFallbackOwner(this);
+
+			if (RootInstance->GetOuter() == GetTransientPackage())
+			{
+				RootInstance->Rename(nullptr, this);
+			}
 		}
 	}
 }
@@ -173,5 +186,6 @@ void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& Proper
 
 void UGorgeousGameInstance::HandleRootRegistryChanged()
 {
+	bIsEnsuringRootFallback = false;
 	EnsureRootVariablesFallbackToGameInstance();
 }

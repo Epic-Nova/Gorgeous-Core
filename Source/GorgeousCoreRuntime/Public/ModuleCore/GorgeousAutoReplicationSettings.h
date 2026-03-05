@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 #include "CoreMinimal.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
@@ -63,7 +60,7 @@ public:
 
 #if WITH_EDITOR
 	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
-	virtual FName GetSectionName() const override { return TEXT("10_Core|Auto Replication"); }
+	virtual FName GetSectionName() const override { return TEXT("Core|Auto Replication"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionName", "Core ↪ Auto Replication"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionDescription", "Configure Iris and Replication Graph backends for auto-replicated objects."); }
 #endif

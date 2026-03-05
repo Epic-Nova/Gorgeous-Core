@@ -13,15 +13,11 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "DetailWidgetRow.h"
-#include "PropertyHandle.h"
-#include "PropertyEditorModule.h"
 #include "IDetailChildrenBuilder.h"
+#include "IDetailGroup.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
-#include "IDetailGroup.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
-#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -108,7 +104,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 			AdvancedGroup.AddPropertyRow(AdvancedHandle);
 		}
 		
-		// Delay the collapse slightly because when we don't do this we are greeted with an expanded category
+		// Delay the collapse slightly because when we don't do this, we are greeted with an expanded category
 		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([&AdvancedGroup](float)
 		{
 			AdvancedGroup.ToggleExpansion(false);
@@ -127,13 +123,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 			FunctionalStructureInstance = static_cast<FGorgeousFunctionalStructure_S*>(StructInstance);
 			if (FunctionalStructureInstance)
 			{
-				GT_I_LOG_FULL(TEXT("Gorgeous Struct Instance received for: %s"),
-					"GT.FunctionalStructures.Struct_Instance_Received",
-					2.f,
-					false,
-					true,
-					nullptr,
-					*FunctionalStructureInstance->Identifier.ToString());
+				GT_I_LOG("GT.FunctionalStructures.Struct_Instance_Received", TEXT("Gorgeous Struct Instance received for: %s"), *FunctionalStructureInstance->Identifier.ToString());
 
 				TArray<UObject*> OuterObjects;
 				PropertyHandle->GetOuterObjects(OuterObjects);
@@ -150,53 +140,24 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 
 void FGorgeousFunctionalStructurePropertyTypeCustomization::OnPreChildPropertyChanged(TSharedRef<IPropertyHandle> PropertyHandle) const
 {
-	if (PropertyHandle->IsValidHandle() && PropertyHandle->GetProperty())
+	if (!PropertyHandle->IsValidHandle() || !PropertyHandle->GetProperty() || !FunctionalStructureInstance)
 	{
-		GT_I_LOG_FULL(TEXT("Property: '%s' is about to be changed!"),
-			"GT.FunctionalStructures.PreEditChangeProperty.Queued",
-			2.f,
-			false,
-			true,
-			nullptr,
-			*PropertyHandle->GetProperty()->GetFName().ToString());
-
-		if (FunctionalStructureInstance)
-		{
-			FunctionalStructureInstance->PreEditChangeProperty(PropertyHandle);
-			GT_S_LOG_FULL(TEXT("PreEditChangeProperty called for '%s'"),
-				"GT.FunctionalStructures.PreEditChangeProperty.Called",
-				0.0f,
-				true,
-				true,
-				nullptr,
-				*FunctionalStructureInstance->Identifier.ToString());
-		}
+		GT_E_LOG("GT.FunctionalStructures.PreEditChangeProperty.Invalid", TEXT("Invalid property handle or struct instance in PreEditChangeProperty callback"));
+		return;
 	}
+	
+	FunctionalStructureInstance->PreEditChangeProperty(PropertyHandle);
+	GT_S_LOG("GT.FunctionalStructures.PreEditChangeProperty.Called", TEXT("PreEditChangeProperty called for '%s'"), *FunctionalStructureInstance->Identifier.ToString());
 }
 
-void FGorgeousFunctionalStructurePropertyTypeCustomization::OnChildPropertyChangedWithData(
-	const FPropertyChangedEvent& PropertyChangedEvent) const
+void FGorgeousFunctionalStructurePropertyTypeCustomization::OnChildPropertyChangedWithData(const FPropertyChangedEvent& PropertyChangedEvent) const
 {
-	if (PropertyChangedEvent.Property)
+	if (!PropertyChangedEvent.Property || !FunctionalStructureInstance)
 	{
-		GT_I_LOG_FULL(TEXT("Property: '%s' changed!"),
-			"GT.FunctionalStructures.PostEditChangeProperty.Queued",
-			2.f,
-			false,
-			true,
-			nullptr,
-			*PropertyChangedEvent.Property->GetFName().ToString());
-
-		if (FunctionalStructureInstance)
-		{
-			FunctionalStructureInstance->PostEditChangeProperty(PropertyChangedEvent);
-			GT_S_LOG_FULL(TEXT("PostEditChangeProperty called for '%s'"),
-				"GT.FunctionalStructures.PostEditChangeProperty.Called",
-				0.0f,
-				true,
-				true,
-				nullptr,
-				*FunctionalStructureInstance->Identifier.ToString());
-		}
+		GT_E_LOG("GT.FunctionalStructures.PostEditChangeProperty.Invalid", TEXT("Invalid property or struct instance in PostEditChangeProperty callback"));
+		return;
 	}
+	
+	FunctionalStructureInstance->PostEditChangeProperty(PropertyChangedEvent);
+	GT_S_LOG("GT.FunctionalStructures.PostEditChangeProperty.Called", TEXT("PostEditChangeProperty called for '%s'"), *FunctionalStructureInstance->Identifier.ToString());
 }

@@ -236,7 +236,7 @@ public:
 			return SNew(SBorder)
 				.Padding(FMargin(6.f, 4.f))
 				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
-				.BorderBackgroundColor(FLinearColor(0.06f, 0.06f, 0.06f, 0.9f))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColor(); }))
 				[ 
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
@@ -280,27 +280,56 @@ public:
 		}
 		if (ColumnName == ColumnTestCategory)
 		{
-			return SNew(STextBlock)
-				.Text(FText::FromName(Test.Category));
+			return SNew(SBorder)
+				.Padding(FMargin(6.f, 4.f))
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColorFlat(); }))
+				[
+					SNew(STextBlock)
+					.Text(FText::FromName(Test.Category))
+				];
 		}
 		if (ColumnName == ColumnTestInputs)
 		{
-			return OwnerWidget ? OwnerWidget->BuildTestInputsWidget(RowData) : SNew(STextBlock).Text(FText::GetEmpty());
+			return SNew(SBorder)
+				.Padding(FMargin(6.f, 4.f))
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColorFlat(); }))
+				[
+					OwnerWidget ? OwnerWidget->BuildTestInputsWidget(RowData) : StaticCastSharedRef<SWidget>(SNew(STextBlock).Text(FText::GetEmpty()))
+				];
 		}
 		if (ColumnName == ColumnTestResult)
 		{
-			return SNew(STextBlock)
-				.Text(OwnerWidget ? OwnerWidget->FormatTestResultText(*RowData) : FText::GetEmpty());
+			return SNew(SBorder)
+				.Padding(FMargin(6.f, 4.f))
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColorFlat(); }))
+				[
+					SNew(STextBlock)
+					.Text(OwnerWidget ? OwnerWidget->FormatTestResultText(*RowData) : FText::GetEmpty())
+				];
 		}
 		if (ColumnName == ColumnTestBaseline)
 		{
-			return SNew(STextBlock)
-				.Text(OwnerWidget ? OwnerWidget->FormatBaselineText(*RowData) : FText::GetEmpty())
-				.ColorAndOpacity(FSlateColor::UseSubduedForeground());
+			return SNew(SBorder)
+				.Padding(FMargin(6.f, 4.f))
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColorFlat(); }))
+				[
+					SNew(STextBlock)
+					.Text(OwnerWidget ? OwnerWidget->FormatBaselineText(*RowData) : FText::GetEmpty())
+					.ColorAndOpacity(FSlateColor::UseSubduedForeground())
+				];
 		}
 		if (ColumnName == ColumnTestRun)
 		{
-			return SNew(SHorizontalBox)
+			return SNew(SBorder)
+				.Padding(FMargin(2.f, 0.f))
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([this]() { return GetRowHoverBgColorFlat(); }))
+				[
+				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.Padding(0.f, 0.f, 4.f, 0.f)
@@ -343,15 +372,47 @@ public:
 						]
 					]
 					.OnClicked(OwnerWidget, &SGorgeousInsightDebugPanel::OnQueueTestClicked, RowData)
-				];
+				]
+			];
 		}
 
 		return SNew(STextBlock).Text(FText::GetEmpty());
 	}
 
+	virtual void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
+	{
+		bIsHovered_Custom = true;
+		Invalidate(EInvalidateWidgetReason::Paint);
+		SMultiColumnTableRow<TSharedPtr<SGorgeousInsightDebugPanel::FTestRow>>::OnMouseEnter(MyGeometry, MouseEvent);
+	}
+
+	virtual void OnMouseLeave(const FPointerEvent& MouseEvent) override
+	{
+		bIsHovered_Custom = false;
+		Invalidate(EInvalidateWidgetReason::Paint);
+		SMultiColumnTableRow<TSharedPtr<SGorgeousInsightDebugPanel::FTestRow>>::OnMouseLeave(MouseEvent);
+	}
+
 private:
+	// Used for ColumnTestName — keeps a dark base and transitions to a blue-ish highlight on hover.
+	FSlateColor GetRowHoverBgColor() const
+	{
+		return bIsHovered_Custom
+			? FLinearColor(0.13f, 0.22f, 0.35f, 1.f)
+			: FLinearColor(0.06f, 0.06f, 0.06f, 0.9f);
+	}
+
+	// Used for all other columns — transparent at rest, same highlight on hover.
+	FSlateColor GetRowHoverBgColorFlat() const
+	{
+		return bIsHovered_Custom
+			? FLinearColor(0.13f, 0.22f, 0.35f, 1.f)
+			: FLinearColor(0.f, 0.f, 0.f, 0.f);
+	}
+
 	TSharedPtr<SGorgeousInsightDebugPanel::FTestRow> RowData;
 	SGorgeousInsightDebugPanel* OwnerWidget = nullptr;
+	bool bIsHovered_Custom = false;
 };
 
 void SGorgeousInsightDebugPanel::Construct(const FArguments& InArgs)
@@ -1525,7 +1586,7 @@ FReply SGorgeousInsightDebugPanel::OnRunTestClicked(TSharedPtr<FTestRow> RowData
 		RowData->bHasRun = true;
 		if (TestsListView.IsValid())
 		{
-			TestsListView->RequestListRefresh();
+			TestsListView->RebuildList();
 		}
 	}
 
@@ -1573,7 +1634,7 @@ FReply SGorgeousInsightDebugPanel::OnRunQueuedTestsClicked()
 		}
 		if (TestsListView.IsValid())
 		{
-			TestsListView->RequestListRefresh();
+			TestsListView->RebuildList();
 		}
 	}
 

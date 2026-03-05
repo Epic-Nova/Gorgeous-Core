@@ -68,7 +68,7 @@ enum class EGorgeousAutoReplicationRPCType : uint8
 {
 	EReliableServer UMETA(DisplayName = "Reliable Server", ToolTip = "Reliable RPC sent to the server."),
 	EReliableClient UMETA(DisplayName = "Reliable Client", ToolTip = "Reliable RPC sent to the client."),
-	EReliableMulticast UMETA(DisplayName = "Reliable Milticast", ToolTip = "Reliable RPC sent to all clients."),
+	EReliableMulticast UMETA(DisplayName = "Reliable Multicast", ToolTip = "Reliable RPC sent to all clients."),
 	EUnreliableServer UMETA(DisplayName = "Unreliable Server", ToolTip = "Unreliable RPC sent to the server."),
 	EUnreliableClient UMETA(DisplayName = "Unreliable Client", ToolTip = "Unreliable RPC sent to the client."),
 	EUnreliableMulticast UMETA(DisplayName = "Unreliable Multicast", ToolTip = "Unreliable RPC sent to all clients.")
@@ -102,24 +102,77 @@ enum class EGorgeousAutoReplicationTargetKind : uint8
 	EActorComponent = 3 UMETA(DisplayName = "Actor Component", ToolTip = "The Actor Component attached to the owning Actor will handle the RPC.") //@TODO: Implement ActorComponent target handling
 };
 
+/**
+ * Readiness state a responder can report for an in-flight AutoReplication RPC.
+ *
+ * Call MarkAutoReplicationRPCResponderReady() from inside HandleAutoReplicationRPC
+ * (or from any async continuation) to signal how far along the handler is.  The
+ * state is forwarded to the RPC debug tracker so the inspector panel can show
+ * per-responder progress in real time.
+ *
+ * NotReadyToCollect          — default; the handler has not finished processing yet.
+ * ReadyForSingleResponderCallback — the return value has been produced and will be
+ *                                   delivered via OnSingleResponderCompleted shortly.
+ * Ready                      — the handler is fully done; results may be collected.
+ */
+UENUM(BlueprintType)
+enum class EGorgeousRPCReadyState : uint8
+{
+	NotReadyToCollect               UMETA(DisplayName = "Not Ready To Collect"),
+	ReadyForSingleResponderCallback UMETA(DisplayName = "Ready For Single Responder Callback"),
+	Ready                           UMETA(DisplayName = "Ready")
+};
+
+/**
+ * A single named argument passed to an AutoReplication RPC handler.
+ *
+ * The value is stored as a plain byte array so that:
+ *  - No UObject wrapper (and therefore no GC risk) is needed for simple scalars.
+ *  - The container can be trivially network-serialized without UObject lifetime concerns.
+ *
+ * Use UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCArgument (CustomThunk)
+ * in Blueprint to fill this struct, or the typed helpers (AddAutoReplicationRPCIntArgument etc.).
+ *
+ * On dispatch the runtime matches ArgumentName to the handler function's parameter FName and
+ * copies the bytes directly into the pre-allocated parameter slot via FProperty::CopyCompleteValue
+ * (for scalar/struct types) or FMemoryReader deserialization (for FString / dynamic types).
+ */
 USTRUCT(BlueprintType)
 struct FGorgeousRPCArgumentContainer
 {
 	GENERATED_BODY()
 
-	explicit FGorgeousRPCArgumentContainer(FName InArgumentName = NAME_None, UGorgeousObjectVariable* InArgumentValue = nullptr)
+	explicit FGorgeousRPCArgumentContainer(FName InArgumentName = NAME_None)
 		: ArgumentName(InArgumentName)
-		, ArgumentValue(InArgumentValue)
 	{
 	}
 
-	/** Name of the argument as defined in the handler signature. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	/** Name must match the handler function parameter exactly (case-insensitive FName compare). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Auto Replication")
 	FName ArgumentName;
 
-	/** Value passed into the argument. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced)
-	TObjectPtr<UGorgeousObjectVariable> ArgumentValue;
+	/**
+	 * Raw serialized value bytes.
+	 * - Scalar/struct types: raw memory layout (identical to what FProperty::CopyCompleteValue expects).
+	 * - FString / FText: binary UE archive (FMemoryWriter << Value).
+	 */
+	UPROPERTY()
+	TArray<uint8> ValueBytes;
+
+	/**
+	 * FProperty subclass name of the stored value, e.g. "IntProperty", "FloatProperty",
+	 * "DoubleProperty", "BoolProperty", "StrProperty", "NameProperty", "StructProperty".
+	 * Used by the dispatch code to verify compatibility before copying.
+	 */
+	UPROPERTY()
+	FName PropertyClassName;
+
+	/**
+	 * For StructProperty arguments: the UScriptStruct name, e.g. "Vector", "Transform",
+	 * "Rotator".  Empty for all non-struct types.
+	 */
+	UPROPERTY()
+	FName StructTypeName;
 };
 
 /** Serializable payload forwarded through async auto-replication RPC requests. */
@@ -130,6 +183,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRPCPayload
 
     FGorgeousRPCPayload()
 		: HandlerName(NAME_None)
+		, TimeoutSeconds(0.f)
 		, bReplicateResultToAllConnections(true)
 	{
 	}
@@ -141,6 +195,14 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRPCPayload
 	/** Named arguments passed into the handler. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Auto Replication", meta = (ShowOnlyInnerProperties))
 	TArray<FGorgeousRPCArgumentContainer> Arguments;
+
+	/**
+	 * Maximum time in seconds to wait for all expected responders before the request is
+	 * considered timed-out.  Set to 0 to use the global default (30 seconds).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, AdvancedDisplay, Category = "Gorgeous Core|Auto Replication",
+		meta = (ClampMin = "0", UIMin = "0", UIMax = "120"))
+	float TimeoutSeconds;
 
 	/**
 	 * When enabled, the generated RPC result container replicates to every connection.
@@ -180,6 +242,44 @@ struct GORGEOUSCORERUNTIME_API FGorgeousQueuedRPC
 	/** Correlation identifier assigned when the RPC is queued so async nodes can await completion. */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FGuid RequestGuid;
+};
+
+/**
+ * Handler context struct for RPC handlers that need deferred completion.
+ *
+ * DEPRECATED: This struct is no longer auto-injected into handler signatures.
+ * Handler functions should simply take const FGorgeousQueuedRPC& as a parameter.
+ *
+ * To signal readiness, call:
+ *   MarkAutoReplicationRPCResponderReady(this, QueuedRPC, Ready)
+ *
+ * @code
+ *   // Blueprint or C++ handler with deferred mode:
+ *   void MyHandler(const FGorgeousQueuedRPC& QueuedRPC)
+ *   {
+ *       DoAsyncWork([this, QueuedRPC](){ MarkAutoReplicationRPCResponderReady(this, QueuedRPC, Ready); });
+ *   }
+ * @endcode
+ */
+USTRUCT(BlueprintType)
+struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCHandlerContext
+{
+	GENERATED_BODY()
+
+	/** Opaque RPC descriptor — pass directly to MarkAutoReplicationRPCResponderReady. */
+	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
+	FGorgeousQueuedRPC QueuedRPC;
+
+	/** Name of the handler function being invoked (useful for logging / assertions). */
+	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
+	FName HandlerName;
+
+	/**
+	 * Stable responder key for this invocation ("Server" / "Client_0" / ...).
+	 * Matches what the RPC debug tracker and MarkAutoReplicationRPCResponderReady use.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
+	FString ResponderKey;
 };
 
 /** Rich result returned once an AutoReplication RPC finishes executing. */
@@ -222,6 +322,59 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResult
 	bool WasHandledByActorComponent() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EActorComponent && TargetOwner != nullptr; }
 };
 
+/** One name/value property entry inside a serialized OV node. */
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousOVPropertyCapture
+{
+	GENERATED_BODY()
+
+	/** Property name as returned by FProperty::GetName(). */
+	UPROPERTY()
+	FString PropertyName;
+
+	/** Value serialized via FProperty::ExportTextItem. */
+	UPROPERTY()
+	FString ExportedValue;
+};
+
+/**
+ * One node of a captured OV tree.
+ * The tree is flattened into an ordered array; the root has an invalid ParentIdentifier.
+ * Nodes always appear before their children so reconstruction can proceed in-order.
+ */
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousSerializedOVNode
+{
+	GENERATED_BODY()
+
+	/** This OV's GUID — preserved on the reconstructed instance. */
+	UPROPERTY()
+	FGuid Identifier;
+
+	/** Parent OV's GUID. Invalid for the root node. */
+	UPROPERTY()
+	FGuid ParentIdentifier;
+
+	/** Full class path for reconstruction (e.g. "/Script/MyModule.UInteger_SOV"). */
+	UPROPERTY()
+	FString ClassPath;
+
+	/**
+	 * The key under which this node was registered in its parent's VariableRegistry TMap.
+	 * Invalid (NAME_None) for the root node.
+	 */
+	UPROPERTY()
+	FName RegistryKey;
+
+	/**
+	 * All eligible non-structural UPROPERTY values exported as text.
+	 * Skipped: VariableRegistry, UniqueIdentifier, object-pointer properties,
+	 *          Transient / EditorOnly / Config flags.
+	 */
+	UPROPERTY()
+	TArray<FGorgeousOVPropertyCapture> Properties;
+};
+
 /** Lightweight payload replicated through the relay component so the server can rebuild the full result. */
 USTRUCT()
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
@@ -242,8 +395,31 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 	UPROPERTY()
 	FGorgeousAutoReplicationRPCResponderHandle Responder;
 
+	/**
+	 * GUID of the root return OV — kept for backwards-compat / same-machine optimisation
+	 * (when the OV already lives in the receiver's registry, the tree is not re-created).
+	 */
 	UPROPERTY()
 	FGuid TargetVariableIdentifier;
+
+	/**
+	 * Full recursive capture of the handler's return OV tree.
+	 * Non-empty only when the result originated on a remote endpoint (client-side handler)
+	 * and the OV therefore does not exist in the receiving registry.
+	 * The first entry is always the root (return OV); subsequent entries are children in
+	 * depth-first order.
+	 */
+	UPROPERTY()
+	TArray<FGorgeousSerializedOVNode> OVTree;
+
+	/**
+	 * The ready state under which this result was relayed.
+	 *   Ready (default) — result is final; server should call NotifyRequestCompleted.
+	 *   ReadyForSingleResponderCallback — interim signal; server should fire
+	 *     ExecuteSingleResponderCallback without completing the overall request.
+	 */
+	UPROPERTY()
+	EGorgeousRPCReadyState RelayedReadyState = EGorgeousRPCReadyState::Ready;
 };
 
 /** Context passed into object variables when auto replication activates. */

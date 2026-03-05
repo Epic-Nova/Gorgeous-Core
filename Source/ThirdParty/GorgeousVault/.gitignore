@@ -1,0 +1,33 @@
+# GorgeousVault — Git Ignore Rules
+# ============================================================================
+# The Vault source and build artifacts should NEVER be committed to the
+# public repository. Only the prebuilt binaries and public headers ship.
+# ============================================================================
+
+# CMake build directory
+Build/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+
+# Compiled binaries in source tree (only Prebuilt/ copies ship)
+Source/**/*.o
+Source/**/*.obj
+
+# Debug symbols — NEVER ship these
+*.pdb
+*.dSYM/
+*.dSYM
+
+# Anti-tamper tools (private CI pipeline)
+Tools/
+
+# Ignore actual DLL/SO/DYLIB in Prebuilt/ from THIS repo
+# (they are tracked in the distribution repo, not the source repo)
+# Uncomment the lines below if this is the SOURCE repo:
+# Prebuilt/Win64/*.dll
+# Prebuilt/Win64/*.lib
+# Prebuilt/Linux/*.so
+# Prebuilt/Mac/*.dylib

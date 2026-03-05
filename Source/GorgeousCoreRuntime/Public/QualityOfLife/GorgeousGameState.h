@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
@@ -67,6 +64,20 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	/**
+	 * Called on ALL machines (server + clients via replication) when a new
+	 * PlayerState is added to the PlayerArray.  The PS's BeginPlay fires before
+	 * this, so its OV self-registration is already complete by this point.
+	 */
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+
+	/**
+	 * Called on ALL machines when a PlayerState is removed from the PlayerArray
+	 * (player left or disconnected).  The PS's EndPlay handles OV cleanup;
+	 * this override fires the BP event and calls Super.
+	 */
+	virtual void RemovePlayerState(APlayerState* PlayerState) override;
 	
 	//<-------------------------------------------------------------------------->
 
@@ -88,6 +99,21 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Networking")
 	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	/**
+	 * Fired on ALL machines when a new PlayerState is added to the PlayerArray.
+	 * Safe to query GetQualityOfLifeReferences(PlayerState) here — the new PS
+	 * will already be in the OV array.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Players")
+	void OnPlayerStateAdded(APlayerState* PlayerState);
+
+	/**
+	 * Fired on ALL machines when a PlayerState is removed from the PlayerArray.
+	 * The PS is still valid at this point but will be destroyed shortly after.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Players")
+	void OnPlayerStateRemoved(APlayerState* PlayerState);
 
 	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;

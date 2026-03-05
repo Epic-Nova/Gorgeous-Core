@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
@@ -92,7 +89,7 @@ public:
 
 #if WITH_EDITOR
 	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
-	virtual FName GetSectionName() const override { return TEXT("20_Core|Object Variable Roots"); }
+	virtual FName GetSectionName() const override { return TEXT("Core|Object Variable Roots"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionName", "Core ↪ Object Variable Roots"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionDescription", "Define available Object Variable roots and their default networking behavior."); }
 #endif

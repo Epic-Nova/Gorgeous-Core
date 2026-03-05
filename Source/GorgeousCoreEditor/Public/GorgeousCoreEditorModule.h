@@ -8,12 +8,12 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * This module defines the editor functionality of the Gorgeous Things plugin.
@@ -22,6 +22,7 @@
  */
 class FGorgeousCoreEditorModule final : public IGorgeousThingsModuleInterface
 {
+	//<============================--- Overrides ---============================>
 public:
 
 	/**
@@ -49,21 +50,12 @@ public:
 	virtual EGorgeousModuleFunctionality GetModuleFunctionality() const override { return EGorgeousModuleFunctionality::Editor; }
 	
 	/**
-	 * We return false here because we don't want the core to be participated in any hot reload/live coding actions.
-	 * As long term debugging shows that reloading the gorgeous core module invokes the corruption of the current object variable registry instance, and finally a crash of the current unreal instance.
-	 */
-	virtual bool SupportsDynamicReloading() override
-	{
-		return false;
-	}
-	
-	/**
 	 * Returns an array of names from other gorgeous plugins that this module depends on.
 	 * This is used for the shop extension to download the full dependency chain for a gorgeous plugin.
 	 * 
 	 * @return All plugins that provide functionality that is used within this current module.
 	 */
-	virtual TArray<FName> GetDependentPlugins() const override;
+	virtual TArray<FName> GetDependentPlugins() const override { return TArray<FName>(); }
 	
 	/**
 	 * Returns the minimum required core version for this module to work properly.
@@ -71,7 +63,7 @@ public:
 	 * 
 	 * @return The minimum required core version as an integer. Represented as Major * 100 + (Minor * 10)
 	 */
-	virtual int32 GetMinimumRequiredCoreVersion() const override;
+	virtual int32 GetMinimumRequiredCoreVersion() const override { return 100; /* Version 1.0 */ }
 	
 	/**
 	 * Returns whether this module provides core functionality.
@@ -80,4 +72,22 @@ public:
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const override { return true; }
+	//<------------------------------------------------------------------------->
+
+	
+	//<============================--- Variables ---============================>
+private:
+	
+	// The delegate handles for the BeginPIE and EndPIE editor delegates, used to unregister the delegates on module shutdown.
+	FDelegateHandle BeginPIEHandle;
+	
+	// The delegate handle for the EndPIE editor delegate, used to unregister the delegate on module shutdown.
+	FDelegateHandle EndPIEHandle;
+	
+		
+	//@TODO: Planned for version 1.1 and upwards
+	//TSharedPtr<FRainbowPinFactory> Factory;
+	//TSharedPtr<FGorgeousRainbowGraphPinFactory> RainbowPinFactory;
+	//TSharedPtr<FGorgeousRainbowConnectionFactory> RainbowConnectionFactory;
+	//<------------------------------------------------------------------------->
 };

@@ -100,6 +100,7 @@ struct FGorgeousInsightTestResult
 	TArray<FString> Warnings;
 	TArray<FString> Notes;
 	TMap<FString, FString> Metrics;
+	TArray<FString> LogCapture;
 };
 
 /** Shared chart value types for provider-defined charts. */

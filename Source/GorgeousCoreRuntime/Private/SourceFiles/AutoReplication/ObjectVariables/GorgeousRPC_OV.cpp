@@ -53,11 +53,11 @@ void UGorgeousRPC_OV::ResetResult()
 	bHasCachedResult = false;
 }
 
-UGorgeousObjectVariable* UGorgeousRPC_OV::GetArgumentByName(const FName ArgumentName) const
+bool UGorgeousRPC_OV::GetArgumentContainerByName(const FName ArgumentName, FGorgeousRPCArgumentContainer& OutContainer) const
 {
 	if (!bHasCachedResult || ArgumentName.IsNone())
 	{
-		return nullptr;
+		return false;
 	}
 	
 	const FGorgeousAutoReplicationRPCResult& PrimaryResult = GetCachedResult();
@@ -69,10 +69,11 @@ UGorgeousObjectVariable* UGorgeousRPC_OV::GetArgumentByName(const FName Argument
 	);
 	if (FoundArgument)
 	{
-		return FoundArgument->ArgumentValue;
+		OutContainer = *FoundArgument;
+		return true;
 	}
 
-	return nullptr;
+	return false;
 }
 
 bool UGorgeousRPC_OV::GetResultByConnectionKey(const FString& ConnectionKey, FGorgeousAutoReplicationRPCResult& OutResult) const

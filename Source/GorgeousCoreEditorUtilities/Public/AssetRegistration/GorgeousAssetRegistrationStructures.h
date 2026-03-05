@@ -8,10 +8,7 @@
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
@@ -25,7 +22,7 @@
  * Metadata describing how a custom asset should appear and behave in the editor.
  * Used by asset type actions and editor registration helpers.
  */
-struct FGorgeousAssetTypeActionInfo_S
+struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeActionInfo_S
 {
 	FText DisplayName = FText::GetEmpty();
 	TWeakObjectPtr<UClass> SupportedClass = nullptr;
@@ -43,7 +40,7 @@ struct FGorgeousAssetTypeActionInfo_S
  * @author Nils Bergemann
  */
 USTRUCT()
-struct FGorgeousFactoryInfo_S
+struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousFactoryInfo_S
 {
 	GENERATED_BODY()
 
@@ -83,6 +80,7 @@ struct FGorgeousFactoryInfo_S
 
 	// True if the associated editor should be opened after creating a new object.
 	bool bEditAfterNew;
+	
 	// True if the factory imports objects from files.
 	bool bEditorImport;
 

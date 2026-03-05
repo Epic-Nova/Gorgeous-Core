@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
@@ -49,10 +46,10 @@ public:
 	/**
 	 * Sets the cached owner of this object. This is used as an absolute failsafe to ensure the consistent availability of the world to the current active instance.
 	 * 
-	 * @param NewCachedOwner the new chaced owner that has the capability to a valid GetWorld() call.
+	 * @param NewFallbackOwner the new chaced owner that has the capability to a valid GetWorld() call.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
-	void SetCachedOwner(UObject* NewCachedOwner) const { CachedOwner = NewCachedOwner; }
+	void SetFallbackOwner(UObject* NewFallbackOwner) const { FallbackOwner = MakeWeakObjectPtr(NewFallbackOwner); }
 
 protected:
 	
@@ -64,6 +61,5 @@ protected:
 	virtual UWorld* GetWorld() const override;
 
 	// The cached owner object used to retrieve the world context.
-	UPROPERTY()
-	mutable UObject* CachedOwner;
+	mutable TWeakObjectPtr<UObject> FallbackOwner;
 };

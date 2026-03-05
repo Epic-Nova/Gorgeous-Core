@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -23,6 +20,7 @@
 //<-------------------------------------------------------------------------->
 
 class UGorgeousAutoReplicationRPCRequestAsyncAction;
+class APlayerController;
 
 /**
  * Class extended by all other classes that are part of the Gorgeous Things ecosystem.
@@ -85,15 +83,76 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Object Variables")
 	static UObject* GetNamedObjectReference(FName DisplayName, bool bLogWarning = true);
 
-	/** Fetches a registered QoL object reference using a constrained dropdown that updates the return type. */
+	/**
+	 * Fetches a registered QoL object reference using a constrained dropdown that updates the return type.
+	 * Intended for singleton QoL classes (GameMode, GameState, PlayerState, WorldSettings, etc.) where
+	 * exactly one instance exists. For PlayerController classes in splitscreen use GetQualityOfLifeReferences.
+	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life", meta = (WorldContext = "WorldContextObject", DeterminesOutputType = "QualityOfLifeClass", CompactNodeTitle = "Get QoL Reference"))
 	static UObject* GetQualityOfLifeReference(const UObject* WorldContextObject,
 		UPARAM(meta = (MustImplement = "/Script/GorgeousCoreRuntime.GorgeousQualityOfLifeNodeTarget_I", AllowAbstract = "false"))
 		TSubclassOf<UObject> QualityOfLifeClass);
 
+	/**
+	 * Returns ALL objects stored in the shared SelfReference OV for this class.
+	 * This variant is only meaningfully different from GetQualityOfLifeReference for
+	 * PlayerController QoL classes in splitscreen: each local PC self-registers into
+	 * the same shared OV, so the array contains one entry per active local player.
+	 * For all singleton classes (GameMode, GameState, etc.) the array will always
+	 * contain at most one element — use GetQualityOfLifeReference instead.
+	 * If StablePlayerId is non-empty only the entry whose owning PlayerController is
+	 * registered under that stable ID is returned (at most one element).
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life",
+		meta = (WorldContext = "WorldContextObject",
+			   DeterminesOutputType = "QualityOfLifeClass",
+			   CompactNodeTitle = "Get QoL References",
+			   AdvancedDisplay = "StablePlayerId"))
+	static TArray<UObject*> GetQualityOfLifeReferences(
+		const UObject* WorldContextObject,
+		UPARAM(meta = (MustImplement = "/Script/GorgeousCoreRuntime.GorgeousQualityOfLifeNodeTarget_I", AllowAbstract = "false"))
+		TSubclassOf<UObject> QualityOfLifeClass,
+		const FString& StablePlayerId = TEXT(""));
 
+#pragma region LocalPlayer_StableId
 
+	/** Explicitly registers (or re-registers) a PlayerController under a custom stable string ID. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Quality Of Life|Local Players",
+		meta = (WorldContext = "WorldContextObject", ReturnDisplayName = "Success"))
+	static bool RegisterLocalPlayerStableId(const UObject* WorldContextObject,
+		APlayerController* PlayerController, const FString& StableId);
 
+	/**
+	 * Renames the stable ID already associated with a PlayerController.
+	 * Returns false when NewStableId is taken by a different live player.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Quality Of Life|Local Players",
+		meta = (WorldContext = "WorldContextObject", ReturnDisplayName = "Success"))
+	static bool RenameLocalPlayerStableId(const UObject* WorldContextObject,
+		APlayerController* PlayerController, const FString& NewStableId);
+
+	/** Returns the stable string ID registered for a PlayerController, or an empty string. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life|Local Players",
+		meta = (WorldContext = "WorldContextObject"))
+	static FString GetLocalPlayerStableId(const UObject* WorldContextObject,
+		const APlayerController* PlayerController);
+
+	/** Returns the PlayerController currently registered under StableId, or nullptr. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life|Local Players",
+		meta = (WorldContext = "WorldContextObject"))
+	static APlayerController* GetPlayerControllerForStableId(const UObject* WorldContextObject,
+		const FString& StableId);
+
+	/**
+	 * Returns all registered stable IDs (OutStableIds) and their corresponding
+	 * auto-assigned numeric player indices (OutPlayerIndices) as two parallel arrays.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Quality Of Life|Local Players",
+		meta = (WorldContext = "WorldContextObject"))
+	static void GetAllRegisteredLocalPlayers(const UObject* WorldContextObject,
+		TArray<FString>& OutStableIds, TArray<int32>& OutPlayerIndices);
+
+#pragma endregion LocalPlayer_StableId
 
 #pragma region AutoReplication_Networking_Functions
 	/** Fetches the network-aware AutoReplication value stored under the provided key on the given AutoReplication context. */
@@ -103,18 +162,6 @@ public:
 	/** Sets a AutoReplication value through the mixin, routing through replication when available. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject"))
 	static bool SetNetGorgeousAutoReplicationValue(UObject* WorldContextObject, FName Key, UGorgeousObjectVariable* NewValue, UObject* AutoReplicationOwner = nullptr);
-
-	/** Queues an asynchronous AutoReplication RPC request driven by the owning mixin. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|AutoReplication|Networking", meta = (WorldContext = "WorldContextObject", DeprecatedFunction, DeprecationMessage = "Use the Request AutoReplication RPC async action node to receive dispatcher callbacks."))
-	static bool RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind = EGorgeousAutoReplicationTargetKind::EAuto, UObject* AutoReplicationOwner = nullptr);
-
-	/** Returns true when any RPC requests are waiting to be processed on the provided context. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Networking", meta = (WorldContext = "WorldContextObject"))
-	static bool HasPendingAutoReplicationRPC(UObject* WorldContextObject, UObject* AutoReplicationOwner = nullptr);
-
-	/** Pops the next queued RPC so Blueprint logic can respond asynchronously. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Networking", meta = (WorldContext = "WorldContextObject"))
-	static bool DequeuePendingAutoReplicationRPC(UObject* WorldContextObject, FGorgeousQueuedRPC& OutRPC, UObject* AutoReplicationOwner = nullptr);
 
 	/** Returns the default AutoReplication stream config currently applied to newly created variables. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|AutoReplication|Configuration")

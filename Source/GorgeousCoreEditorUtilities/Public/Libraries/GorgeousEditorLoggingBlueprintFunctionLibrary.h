@@ -8,10 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -33,9 +30,7 @@
 <--------------------------=== Class Description ===------------------------>
 | Function Library providing logging functionalities from the Logging Helper
 | exposed to Blueprints in the Editor. 
-| Allows logging messages with different importance levels, 
-| managing logging keys, and controlling suppression of log messages. 
-| Also provides functionalities to create hyperlinks in the Message Log,
+| Provides functionalities to create hyperlinks in the Message Log,
 | that can open assets or execute registered actions when clicked.
 <--------------------------------------------------------------------------->
 <===========================================================================>
@@ -47,6 +42,17 @@ class GORGEOUSCOREEDITORUTILITIES_API UGorgeousEditorLoggingBlueprintFunctionLib
 
 public:
 
+	/**
+	 * Registers a callable action that can be executed when a hyperlink in the Message Log is clicked.
+	 *
+	 * @param HandlerClass The class that will handle the action when the hyperlink is clicked.
+	 * @param ActionName A unique name for the action to be registered.
+	 * @param FunctionName The name of the function on the HandlerObject that will be called when the hyperlink is clicked. 
+	 *                     This function must be a UFUNCTION and should accept a single FString parameter for the payload.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
+	static void RegisterLogHyperlinkAction(const TSubclassOf<UObject> HandlerClass, const FName ActionName, const FName FunctionName);
+	
 	/** 
 	 * Emits a Message Log entry with a clickable hyperlink to an asset. 
 	 * If the asset is missing, a notification is shown.
@@ -62,17 +68,6 @@ public:
 	static void LogMessageWithAssetHyperlink(const FString Message, const FString LoggingKey,
 		const EGorgeousLoggingImportance Importance, const FSoftObjectPath& AssetPath,
 		const FString LinkText, UObject* WorldContextObject = nullptr);
-	
-	/**
-	 * Registers a callable action that can be executed when a hyperlink in the Message Log is clicked.
-	 *
-	 * @param HandlerObject The object that will handle the action when the hyperlink is clicked.
-	 * @param ActionName A unique name for the action to be registered.
-	 * @param FunctionName The name of the function on the HandlerObject that will be called when the hyperlink is clicked. 
-	 *                     This function must be a UFUNCTION and should accept a single FString parameter for the payload.
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
-	static void RegisterLogHyperlinkAction(UObject* HandlerObject, const FName ActionName, const FName FunctionName);
 	
 	/**
 	 * Emits a Message Log entry with a clickable hyperlink that executes a registered action when clicked.

@@ -206,6 +206,14 @@ bool FGorgeousInsightHarness::SaveScenarioResult(const FGorgeousInsightScenarioD
 			Lines.Add(FString::Printf(TEXT(" - %s = %s"), *M.Key, *M.Value));
 		}
 	}
+	if (Result.LogCapture.Num() > 0)
+	{
+		Lines.Add(TEXT("Log Capture:"));
+		for (const FString& L : Result.LogCapture)
+		{
+			Lines.Add(FString::Printf(TEXT(" %s"), *L));
+		}
+	}
 
 	IFileManager::Get().MakeDirectory(*BaseDir, true);
 	if (!FFileHelper::SaveStringArrayToFile(Lines, *FullPath))
@@ -260,6 +268,14 @@ bool FGorgeousInsightHarness::SaveTestResult(const FName ProviderName, const FGo
 		for (const TPair<FString, FString>& M : Result.Metrics)
 		{
 			Lines.Add(FString::Printf(TEXT(" - %s = %s"), *M.Key, *M.Value));
+		}
+	}
+	if (Result.LogCapture.Num() > 0)
+	{
+		Lines.Add(TEXT("Log Capture:"));
+		for (const FString& L : Result.LogCapture)
+		{
+			Lines.Add(FString::Printf(TEXT(" %s"), *L));
 		}
 	}
 
