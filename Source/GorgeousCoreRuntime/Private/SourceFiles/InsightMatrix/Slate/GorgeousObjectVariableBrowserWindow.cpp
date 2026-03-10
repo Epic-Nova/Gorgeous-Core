@@ -1043,6 +1043,75 @@ void SGorgeousObjectVariableBrowserWindow::BuildManipulatorSection(UGorgeousObje
 			.OnTextCommitted(this, &SGorgeousObjectVariableBrowserWindow::OnValueTextCommitted)
 		);
 	}
+	
+	// Variable registry display (comma-separated list of child keys)
+	if (Variable->VariableRegistry.Num() > 0)
+	{
+		FString RegistryStr;	
+		for (const auto& [ChildKey, ChildPtr] : Variable->VariableRegistry)
+		{
+			if (!RegistryStr.IsEmpty())
+			{
+				RegistryStr += TEXT(", ");
+			}
+			RegistryStr += ChildKey.ToString();
+		}
+
+		MakeManipulatorRow(TEXT("Variable Registry"),
+			SNew(STextBlock)
+			.Text(FText::FromString(RegistryStr))
+			.Font(FAppStyle::GetFontStyle("SmallFont"))
+			.AutoWrapText(true)
+		);
+	}
+	
+	// Manipulator for every FProperty that has the BlueprintVisible flag, so that blueprint added variables can be edited here
+	for (TFieldIterator<FProperty> PropIt(Variable->GetClass()); PropIt; ++PropIt)
+	{
+		// A list of properties to exclude since we already have dedicated manipulators for them, and some that are not safe to edit via text import/export
+		TArray<FString> PropExcludeList = {
+			TEXT("DisplayName"),
+			TEXT("bPersistent"),
+			TEXT("bReplicates"),
+			TEXT("bUseSharedNetworkStack"),
+			TEXT("Value"),
+			TEXT("UniqueIdentifier"),
+			TEXT("VariableRegistry"),
+			TEXT("Parent"),
+			TEXT("PinConfiguration"),
+			TEXT("bSupportsNetworking"),
+			TEXT("ReplicationMode")
+		};
+		
+		if (PropExcludeList.Contains(PropIt->GetName())) { continue; }
+
+		if (FProperty* Prop = *PropIt; Prop->HasAnyPropertyFlags(CPF_BlueprintVisible))
+		{
+			FString PropValueStr;
+			Prop->ExportTextItem_Direct(PropValueStr, Prop->ContainerPtrToValuePtr<void>(Variable), nullptr, Variable, PPF_None);
+
+			MakeManipulatorRow(Prop->GetName(),
+				SNew(SEditableTextBox)
+				.Text(FText::FromString(PropValueStr))
+				.Font(FAppStyle::GetFontStyle("SmallFont"))
+				.OnTextCommitted_Lambda([this, Variable, Prop](const FText& NewText, ETextCommit::Type CommitType)
+				{
+					if (!Variable || !Prop)
+					{
+						return;
+					}
+
+					void* ValuePtr = Prop->ContainerPtrToValuePtr<void>(Variable);
+					const FString NewValueStr = NewText.ToString();
+
+					// Use ImportText to parse the string back into the property
+					Prop->ImportText_Direct(*NewValueStr, ValuePtr, Variable, PPF_None);
+
+					RefreshDetailsPanel();
+				})
+			);
+		}
+	}
 }
 
 void SGorgeousObjectVariableBrowserWindow::OnDisplayNameCommitted(const FText& NewText, ETextCommit::Type CommitType)

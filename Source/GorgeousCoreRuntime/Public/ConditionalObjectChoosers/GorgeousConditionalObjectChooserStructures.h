@@ -26,7 +26,7 @@
  *
  * @author Nils Bergemann
  */
-USTRUCT(Blueprintable)
+USTRUCT(Blueprintable, BlueprintType)
 struct FGameplayTagContainerWrapper_S
 {
 	GENERATED_BODY()
@@ -39,7 +39,7 @@ struct FGameplayTagContainerWrapper_S
 	/**
 	 * The underlying Gameplay Tag Container.
 	 */
-	UPROPERTY(EditAnywhere, Category = "Gorgeous Conditional Object Chooser")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Conditional Object Chooser")
 	FGameplayTagContainer Container;
 
 	/**

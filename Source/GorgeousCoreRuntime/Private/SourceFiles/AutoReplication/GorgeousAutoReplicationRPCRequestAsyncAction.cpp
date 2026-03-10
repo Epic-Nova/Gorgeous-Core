@@ -28,7 +28,7 @@
 TMap<FGuid, UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState> UGorgeousAutoReplicationRPCRequestAsyncAction::PendingRequests;
 TMap<FGuid, TMap<FString, FGorgeousAutoReplicationRPCResult>> UGorgeousAutoReplicationRPCRequestAsyncAction::ClientDeferredResultCache;
 
-UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, EGorgeousAutoReplicationTargetKind TargetKind)
+UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, AActor* OptionalTarget)
 {
 	UGorgeousAutoReplicationRPCRequestAsyncAction* Action = NewObject<UGorgeousAutoReplicationRPCRequestAsyncAction>();
 	Action->RequestKey = Key;
@@ -38,7 +38,13 @@ UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCReques
 	
 	// Auto-resolve owner from world context
 	UObject* AutoReplicationOwner = nullptr;
-	if (WorldContextObject)
+	
+	if (OptionalTarget)
+	{
+		AutoReplicationOwner = OptionalTarget;
+	}
+	
+	if (WorldContextObject && !AutoReplicationOwner)
 	{
 		// Try to resolve from common patterns
 		if (APlayerController* PC = Cast<APlayerController>(WorldContextObject))

@@ -59,8 +59,6 @@ FString UGorgeousAutoReplicationNetworkingLibrary::MakeStablePlayerConnectionId(
 	}
 
 	const FGorgeousAutoReplicationRPCResponderHandle Handle = FGorgeousAutoReplicationRPCResponderHandle::FromController(PlayerController);
-	const FString StableKey = Handle.GetStableKey();
-	const FString ControllerKey = StableKey.IsEmpty() ? PlayerController->GetName() : StableKey;
 	const FString MachineFingerprint = GorgeousAutoReplicationNetworkingLibrary_Private::GetCachedMachineFingerprint();
-	return FString::Printf(TEXT("%s|%s"), *MachineFingerprint, *ControllerKey);
+	return MachineFingerprint;
 }

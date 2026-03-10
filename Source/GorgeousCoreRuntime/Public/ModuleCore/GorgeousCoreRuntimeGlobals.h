@@ -94,6 +94,20 @@ public:
 		TSubclassOf<UObject> QualityOfLifeClass);
 
 	/**
+	 * Shorthand function to refresh the replication entries for GorgeousAdditionalData of a QoL class, intended for use in Blueprint after registering new AutoReplication entries at runtime.
+	 * This function will soon be deprecated as the Auto Replication system currently does not have functionality for detecting a newly registered entry and refreshing the replication state accordingly, 
+	 * but we plan to add that in the near future. Therefore, we provide this function as a temporary workaround to allow Blueprint users to manually trigger the replication refresh when they know they've registered new entries at runtime
+	 * 
+	 * @param WorldContextObject The world context object used to find the relevant QoL class instance.
+	 * @param QualityOfLifeClass The QoL class to refresh replication for. Must implement the GorgeousQualityOfLifeNodeTarget_I interface.
+	 * @see FGorgeousAutoReplicationMixin::InitializeAdditionalData() for the underlying logic that iterates AdditionalGorgeousData and sets up replication for entries with bReplicate=true, which is what this function calls under the hood.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Quality Of Life", meta = (WorldContext = "WorldContextObject"))
+	static void RefreshQualityOfLifeReplication(UObject* WorldContextObject,
+		UPARAM(meta = (MustImplement = "/Script/GorgeousCoreRuntime.GorgeousQualityOfLifeNodeTarget_I", AllowAbstract = "false"))
+		TSubclassOf<UObject> QualityOfLifeClass);
+
+	/**
 	 * Returns ALL objects stored in the shared SelfReference OV for this class.
 	 * This variant is only meaningfully different from GetQualityOfLifeReference for
 	 * PlayerController QoL classes in splitscreen: each local PC self-registers into

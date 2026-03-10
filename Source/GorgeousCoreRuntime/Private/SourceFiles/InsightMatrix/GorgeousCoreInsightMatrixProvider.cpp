@@ -29,15 +29,11 @@
 
 namespace
 {
-	const FName ActionHarnessStart(TEXT("Core.Harness.Start"));
-	const FName ActionHarnessStop(TEXT("Core.Harness.Stop"));
-	const FName ActionHarnessDump(TEXT("Core.Harness.Dump"));
 	const FName ActionOpenOVBrowser(TEXT("Core.OV.Browser"));
 
 	// ── AutoReplication merged actions ────────────────────────────────────
 	const FName ActionOpenTrafficInspector(TEXT("AR.Window.TrafficInspector"));
 	const FName ActionOpenRPCInspector(TEXT("AR.Window.RPCInspector"));
-	const FName ActionDumpARStatus(TEXT("AR.Dump.Status"));
 
 	FString BuildParameterString(const TMap<FString, FString>& Parameters)
 	{
@@ -822,27 +818,6 @@ void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightCha
 
 void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightAction>& OutActions) const
 {
-	FGorgeousInsightAction StartAction;
-	StartAction.Id = ActionHarnessStart;
-	StartAction.DisplayName = FText::FromString(TEXT("Start Harness"));
-	StartAction.Description = FText::FromString(TEXT("Starts the server/client harness (optional parameters supported)."));
-	StartAction.Category = FName(TEXT("Harness"));
-	OutActions.Add(StartAction);
-
-	FGorgeousInsightAction StopAction;
-	StopAction.Id = ActionHarnessStop;
-	StopAction.DisplayName = FText::FromString(TEXT("Stop Harness"));
-	StopAction.Description = FText::FromString(TEXT("Stops the server/client harness."));
-	StopAction.Category = FName(TEXT("Harness"));
-	OutActions.Add(StopAction);
-
-	FGorgeousInsightAction DumpAction;
-	DumpAction.Id = ActionHarnessDump;
-	DumpAction.DisplayName = FText::FromString(TEXT("Dump Harness Status"));
-	DumpAction.Description = FText::FromString(TEXT("Logs current harness status to output log."));
-	DumpAction.Category = FName(TEXT("Harness"));
-	OutActions.Add(DumpAction);
-
 	FGorgeousInsightAction BrowserAction;
 	BrowserAction.Id = ActionOpenOVBrowser;
 	BrowserAction.DisplayName = FText::FromString(TEXT("Object Variable Browser"));
@@ -867,46 +842,10 @@ void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightActio
 		Action.Category = FName(TEXT("Windows"));
 		OutActions.Add(Action);
 	}
-	{
-		FGorgeousInsightAction Action;
-		Action.Id = ActionDumpARStatus;
-		Action.DisplayName = FText::FromString(TEXT("Dump AR Status"));
-		Action.Description = FText::FromString(TEXT("Logs current AutoReplication state to the output log."));
-		Action.Category = FName(TEXT("Diagnostics"));
-		OutActions.Add(Action);
-	}
 }
 
 void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGorgeousInsightActionContext& Context)
 {
-	if (ActionId == ActionHarnessStart)
-	{
-		const FString Parameters = BuildParameterString(Context.Parameters);
-		const FGorgeousInsightMatrixRequest Request = FGorgeousInsightMatrixRequest::FromParameters(Parameters);
-		const bool bStarted = FGorgeousInsightHarness::StartHarness(Request);
-		GT_I_LOG("GT.InsightMatrix.Harness.ActionStart", TEXT("[InsightHarness] Start requested (success=%s)"), bStarted ? TEXT("true") : TEXT("false"));
-		return;
-	}
-
-	if (ActionId == ActionHarnessStop)
-	{
-		FGorgeousInsightHarness::StopHarness();
-		return;
-	}
-
-	if (ActionId == ActionHarnessDump)
-	{
-		const FGorgeousInsightHarnessStatus Status = FGorgeousInsightHarness::GetStatus();
-		GT_I_LOG("GT.InsightMatrix.Harness.Status", TEXT("[InsightHarness] Active=%s Gauntlet=%s Conn=%s Map=%s Addr=%s Port=%d"),
-			Status.bHarnessActive ? TEXT("true") : TEXT("false"),
-			Status.bUsingGauntlet ? TEXT("true") : TEXT("false"),
-			Status.bHasConnection ? TEXT("true") : TEXT("false"),
-			*Status.HarnessMapPath,
-			*Status.ListenAddress,
-			Status.ServerPort);
-		return;
-	}
-
 	if (ActionId == ActionOpenOVBrowser)
 	{
 		SGorgeousObjectVariableBrowserWindow::Open();
@@ -923,35 +862,6 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 	if (ActionId == ActionOpenRPCInspector)
 	{
 		SGorgeousRPCInspectorWindow::Open();
-		return;
-	}
-
-	if (ActionId == ActionDumpARStatus)
-	{
-		const TArray<UGorgeousObjectVariable*> AllVariables = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(NAME_None);
-		int32 ARReplicating = 0, ARNetCapable = 0, ARWithBinding = 0;
-		for (const UGorgeousObjectVariable* Var : AllVariables)
-		{
-			if (!IsValid(Var))
-			{
-				continue;
-			}
-			if (Var->bSupportsNetworking)
-			{
-				++ARNetCapable;
-			}
-			if (Var->IsReplicationActive())
-			{
-				++ARReplicating;
-			}
-			if (Var->HasAutoReplicationBinding())
-			{
-				++ARWithBinding;
-			}
-		}
-		GT_I_LOG("GT.InsightMatrix.AR.Status",
-			TEXT("[AutoReplication] Total=%d NetCapable=%d Replicating=%d WithBinding=%d"),
-			AllVariables.Num(), ARNetCapable, ARReplicating, ARWithBinding);
 		return;
 	}
 }
