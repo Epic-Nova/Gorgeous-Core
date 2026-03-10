@@ -14,7 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
-#include "GorgeousVisualDataGatheringResourceGuard.generated.h"
+#include "GorgeousVisualDataGeatheringResourceGuard.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**

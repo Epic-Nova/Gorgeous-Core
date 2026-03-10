@@ -20,6 +20,7 @@
 
 #include "GorgeousObjectVariableTrunk.generated.h"
 
+struct FGorgeousObjectVariableTrunk;
 class FProperty;
 class FStructProperty;
 

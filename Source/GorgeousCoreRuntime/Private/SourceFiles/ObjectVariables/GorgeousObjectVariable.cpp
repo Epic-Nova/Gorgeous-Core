@@ -420,9 +420,11 @@ namespace GorgeousObjectVariable_Private
 					AsStruct->Struct ? *AsStruct->Struct->GetName() : TEXT("<null>"));
 				return false;
 			}
-			// The struct value was serialized via SerializeTaggedProperties – deserialize the same way.
-			FMemoryReader Reader(Arg.ValueBytes);
-			AsStruct->Struct->SerializeTaggedProperties(Reader, static_cast<uint8*>(DestPtr), AsStruct->Struct, nullptr);
+			// The struct value was serialized via FObjectAndNameAsStringProxyArchive – deserialize the same way
+			// so that UObject references (FSoftObjectPtr, FSoftObjectPath, etc.) round-trip correctly.
+			FMemoryReader Reader(Arg.ValueBytes, true);
+			FObjectAndNameAsStringProxyArchive ProxyReader(Reader, true);
+			AsStruct->Struct->SerializeTaggedProperties(ProxyReader, static_cast<uint8*>(DestPtr), AsStruct->Struct, nullptr);
 			return true;
 		}
 
