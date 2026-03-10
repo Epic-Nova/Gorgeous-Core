@@ -10,6 +10,7 @@
 <==========================================================================*/
 #include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
 
+#include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/StructuredArchive.h"
 #include "UObject/UnrealType.h"
@@ -55,6 +56,33 @@ namespace GorgeousRPCPayloadLibrary_Private
 			FMemoryWriter Writer(OutBytes);
 			Property->SerializeItem(FStructuredArchiveFromArchive(Writer).GetSlot(), const_cast<void*>(ValuePtr));
 			return true;
+		}
+
+		// ── ObjectProperty – UGorgeousObjectVariable subclasses use the RPC snapshot format ──
+		// A raw pointer cannot be transmitted over the wire; instead we serialize the OV's
+		// capturable state so the receiving machine can reconstruct a fresh transient instance.
+		if (const FObjectProperty* AsObject = CastField<FObjectProperty>(Property))
+		{
+			UObject* RawObj = AsObject->GetObjectPropertyValue(ValuePtr);
+			if (!RawObj)
+			{
+				UE_LOG(LogScript, Warning,
+					TEXT("GorgeousRPC: FObjectProperty '%s' holds a null reference."
+					     " A null UObject cannot be serialized as an RPC argument."),
+					*Property->GetName());
+				return false;
+			}
+			UGorgeousObjectVariable* AsOV = Cast<UGorgeousObjectVariable>(RawObj);
+			if (!AsOV)
+			{
+				UE_LOG(LogScript, Warning,
+					TEXT("GorgeousRPC: FObjectProperty '%s' holds a non-UGorgeousObjectVariable UObject ('%s')."
+					     " Only UGorgeousObjectVariable subclasses are supported as RPC argument object references."),
+					*Property->GetName(), *RawObj->GetClass()->GetName());
+				return false;
+			}
+			OutStructTypeName = FName(*AsOV->GetClass()->GetPathName());
+			return UGorgeousObjectVariable::SerializeOVToRPCArgumentBytes(AsOV, OutBytes);
 		}
 
 		// All remaining types (int32, float, double, bool, FName, int64, byte, etc.) are
