@@ -294,6 +294,33 @@ public:
 	bool DeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload);
 
 	/**
+	 * Serializes an OV's capturable state into a compact transport byte array suitable for embedding
+	 * in FGorgeousRPCArgumentContainer::ValueBytes.  Used by AddAutoReplicationRPCArgument when an
+	 * FObjectProperty referencing a UGorgeousObjectVariable subclass is passed as a wildcard argument.
+	 *
+	 * The format is identical to the RPC result snapshot so the same version-guarded deserialization
+	 * path can be reused on the receiving machine.
+	 *
+	 * @param OV       The object variable instance to capture. Must be non-null.
+	 * @param OutBytes Receives the serialized snapshot bytes.
+	 * @return true on success.
+	 */
+	static bool SerializeOVToRPCArgumentBytes(UGorgeousObjectVariable* OV, TArray<uint8>& OutBytes);
+
+	/**
+	 * Reconstructs a transient UGorgeousObjectVariable from bytes produced by SerializeOVToRPCArgumentBytes.
+	 * Called by the RPC dispatch path (CopyArgumentToProperty) when filling an FObjectProperty parameter
+	 * from RPC payload data.
+	 *
+	 * The returned instance is registered under the shared RPC result parent hierarchy so its lifetime
+	 * is managed correctly.  Returns nullptr when the bytes are invalid or the class cannot be loaded.
+	 *
+	 * @param Bytes Snapshot bytes previously produced by SerializeOVToRPCArgumentBytes.
+	 * @return The reconstructed OV, or nullptr on failure.
+	 */
+	static UGorgeousObjectVariable* DeserializeOVFromRPCArgumentBytes(const TArray<uint8>& Bytes);
+
+	/**
 	 * Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
 	 * 
 	 * @param NewUniqueIdentifier The new unique identifier.

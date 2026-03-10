@@ -434,6 +434,29 @@ namespace GorgeousObjectVariable_Private
 			return true;
 		}
 
+		// ── Path X: FObjectProperty – UGorgeousObjectVariable snapshot reconstruction ─
+		if (const FObjectProperty* AsObject = CastField<FObjectProperty>(ParameterProperty))
+		{
+			UGorgeousObjectVariable* ReconstructedOV = UGorgeousObjectVariable::DeserializeOVFromRPCArgumentBytes(Arg.ValueBytes);
+			if (!ReconstructedOV)
+			{
+				GT_W_LOG("GT.ObjectVariables.RPC.ArgumentOVDeserializeFailed",
+					TEXT("AutoReplication RPC argument '%s': failed to reconstruct UGorgeousObjectVariable from snapshot bytes."),
+					*Arg.ArgumentName.ToString());
+				return false;
+			}
+			if (AsObject->PropertyClass && !ReconstructedOV->GetClass()->IsChildOf(AsObject->PropertyClass))
+			{
+				GT_W_LOG("GT.ObjectVariables.RPC.ArgumentOVClassMismatch",
+					TEXT("AutoReplication RPC argument '%s': reconstructed OV class '%s' is not compatible with handler parameter type '%s'."),
+					*Arg.ArgumentName.ToString(), *ReconstructedOV->GetClass()->GetName(),
+					*AsObject->PropertyClass->GetName());
+				return false;
+			}
+			AsObject->SetObjectPropertyValue(DestPtr, ReconstructedOV);
+			return true;
+		}
+
 		// ── Path 3: POD / scalar – raw memcpy ─────────────────────────────────────────
 		GORGEOUS_55_HIGHER(const int32 PropSize = ParameterProperty->GetElementSize();)
 		GORGEOUS_54_LOWER(const int32 PropSize  = ParameterProperty->GetSize();)
@@ -2345,6 +2368,49 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::DeserializeRPCSnapshotRecursiv
 	}
 
 	return NewInstance;
+}
+
+bool UGorgeousObjectVariable::SerializeOVToRPCArgumentBytes(UGorgeousObjectVariable* OV, TArray<uint8>& OutBytes)
+{
+	if (!OV)
+	{
+		return false;
+	}
+	// BuildRPCResultSnapshot only uses its parameters and not `this`, so calling it on OV itself
+	// is safe and avoids the need for any special context instance.
+	return OV->BuildRPCResultSnapshot(OV, OutBytes);
+}
+
+UGorgeousObjectVariable* UGorgeousObjectVariable::DeserializeOVFromRPCArgumentBytes(const TArray<uint8>& Bytes)
+{
+	if (Bytes.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	TArray<uint8> WorkingCopy = Bytes;
+	FMemoryReader Reader(WorkingCopy, true);
+	Reader.SetIsPersistent(true);
+
+	uint32 Version = 0;
+	Reader << Version;
+	if (Version != GorgeousObjectVariable_Private::Snapshot::SnapshotVersion)
+	{
+		GT_W_LOG("GT.ObjectVariables.RPC.ArgumentOVVersionMismatch",
+			TEXT("RPC argument OV snapshot version mismatch (expected %u, received %u)."),
+			GorgeousObjectVariable_Private::Snapshot::SnapshotVersion, Version);
+		return nullptr;
+	}
+
+	UGorgeousObjectVariable* ResultsParent = GetOrCreateRPCResultParent();
+	if (!ResultsParent)
+	{
+		GT_W_LOG("GT.ObjectVariables.RPC.ArgumentOVNoResultParent",
+			TEXT("DeserializeOVFromRPCArgumentBytes: RPC result parent is unavailable — cannot reconstruct argument OV."));
+		return nullptr;
+	}
+
+	return ResultsParent->DeserializeRPCSnapshotRecursive(ResultsParent, Reader);
 }
 
 void UGorgeousObjectVariable::RegisterReplicatedRPCResult(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable* ResultContainer)
