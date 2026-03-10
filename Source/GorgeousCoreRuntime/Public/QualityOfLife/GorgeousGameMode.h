@@ -63,6 +63,8 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	
+	void Test();
 
 	/**
 	 * Called on the server when a player successfully logs in.

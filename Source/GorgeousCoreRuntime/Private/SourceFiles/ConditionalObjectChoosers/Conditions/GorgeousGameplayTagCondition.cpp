@@ -19,16 +19,17 @@
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
 
+
 uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 {
-	if (GetGameplayTagContainer().IsEmpty())
-	{
-		return 0;
-	}
-
 	if (GameplayTagChooserFightMode == EConditionalGameplayTagChooserFightMode_E::RULE)
 	{
 		return EvaluateCustomRule();
+	}
+	
+	if (GetGameplayTagContainer().IsEmpty())
+	{
+		return 0;
 	}
 
 	TArray<FGameplayTag> FoundTags;
@@ -84,6 +85,21 @@ uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 	default:
 		return 0;
 	}
+}
+
+bool UGorgeousGameplayTagCondition::FindConditionMappingForTagContainer(const FGameplayTagContainer& Container,
+	int32& OutValue) const
+{
+	FGameplayTagContainerWrapper_S AssembledContainer;
+	AssembledContainer.Container = Container;
+	
+	if (const int32* FoundValue = GameplayTagConditionMapping.Find(AssembledContainer))
+	{
+		OutValue = *FoundValue;
+		return true;
+	}
+	OutValue = -1;
+	return false;
 }
 
 FGameplayTagContainer UGorgeousGameplayTagCondition::GetGameplayTagContainer() const

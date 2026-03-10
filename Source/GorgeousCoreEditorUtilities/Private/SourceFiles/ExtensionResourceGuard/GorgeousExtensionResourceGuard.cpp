@@ -14,6 +14,7 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetRegistryModule.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "AssetRegistry/AssetData.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 

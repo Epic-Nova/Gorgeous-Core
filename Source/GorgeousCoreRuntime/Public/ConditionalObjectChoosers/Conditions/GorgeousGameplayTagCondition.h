@@ -50,6 +50,8 @@ public:
 	
 	/**
 	 * The conditional mapping, when Key is present in the container then it's Value is returned for the Condition array.
+	 * Only used when the fight mode is not set to RULE, otherwise the custom rule is evaluated to determine the condition index.
+	 * In some rare cases you might want to use the mapping even with a custom rule, therefore we dont add a EditCondition on the mapping.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Gameplay Tag Condition")
 	TMap<FGameplayTagContainerWrapper_S, int32> GameplayTagConditionMapping;
@@ -67,6 +69,16 @@ public:
 	 */
 	UFUNCTION(BlueprintImplementableEvent, BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
 	uint8 EvaluateCustomRule();
+	
+	/**
+	 * Finds the condition mapping for the given gameplay tag container based on the specified mapping.
+	 *
+	 * @param Container The gameplay tag container to check against the mapping.
+	 * @param OutValue The value associated with the first matching tag container in the mapping, if found.
+	 * @return true if a matching condition index was found, false otherwise.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion", meta = (CompactNodeTitle = "Find in Condition Mapping"))
+	bool FindConditionMappingForTagContainer(const FGameplayTagContainer& Container, int32& OutValue) const;
 	
 	/**
 	 * Evaluates the gameplay tag condition based on the selected mode.

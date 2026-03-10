@@ -563,30 +563,6 @@ public:
 	FObjectVariablePinConfiguration_S GetObjectVariablePinConfiguration() const { return PinConfiguration; }
 	
 #endif WITH_EDITOR
-	
-	/** Multicast dispatcher triggered for every executed AutoReplication RPC payload. */
-	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Object Variable|Networking")
-	FGorgeousAutoReplicationRPCPayloadEvent OnAutoReplicationRPCPayload;
-
-	/** Determines which networking stack(s) this object variable should use. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
-		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, DisplayAfter = "bSupportsNetworking"))
-	EGorgeousObjectVariableReplicationMode ReplicationMode;
-	
-	/** Per-instance tuning for the auto-replication backend. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
-		, meta = (EditCondition = "bSupportsNetworking", ShowOnlyInnerProperties, DisplayAfter = "ReplicationMode"))
-	FGorgeousAutoReplicationStreamConfig AutoReplicationConfig;
-
-	/** Optional root network stack configuration (only visible when networking is available and the shared stack is disabled). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
-		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, ShowOnlyInnerProperties, DisplayAfter = "AutoReplicationConfig"))
-	FGorgeousRootNetworkAccessConfig RootNetworkConfig;
-
-	/** Enables the shared network stack path when root access is disabled. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", AdvancedDisplay
-		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, DisplayAfter = "RootNetworkConfig"))
-	bool bUseSharedNetworkStack;
 
 private:
 	bool InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
@@ -721,12 +697,36 @@ public:
 	/**
 	 * Whether the object variable is persistent across level switches.
 	 */
-	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
 	/** Whether this variable supports networking features at all. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	bool bSupportsNetworking;
+	
+	/** Multicast dispatcher triggered for every executed AutoReplication RPC payload. */
+	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Object Variable|Networking")
+	FGorgeousAutoReplicationRPCPayloadEvent OnAutoReplicationRPCPayload;
+
+	/** Determines which networking stack(s) this object variable should use. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
+	EGorgeousObjectVariableReplicationMode ReplicationMode;
+	
+	/** Per-instance tuning for the auto-replication backend. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+		, meta = (EditCondition = "bSupportsNetworking", ShowOnlyInnerProperties))
+	FGorgeousAutoReplicationStreamConfig AutoReplicationConfig;
+
+	/** Optional root network stack configuration (only visible when networking is available and the shared stack is disabled). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, ShowOnlyInnerProperties))
+	FGorgeousRootNetworkAccessConfig RootNetworkConfig;
+
+	/** Enables the shared network stack path when root access is disabled. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
+		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
+	bool bUseSharedNetworkStack;
 
 	/** Per-instance binding that opts the variable into a specific root registry. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup", meta = (ShowOnlyInnerProperties))

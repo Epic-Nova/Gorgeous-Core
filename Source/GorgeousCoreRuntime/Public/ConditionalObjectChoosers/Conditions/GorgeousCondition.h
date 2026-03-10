@@ -36,6 +36,7 @@ public:
 
 	/**
 	 * The mode of the condition.
+	 * Only used for algebraic conditions, for gameplay tag conditions the mode is determined by the fight mode.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Condition")
 	EConditionalChooserMode_E Mode;

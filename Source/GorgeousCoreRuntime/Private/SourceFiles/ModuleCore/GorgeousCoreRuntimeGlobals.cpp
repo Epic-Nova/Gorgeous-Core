@@ -180,6 +180,26 @@ UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* W
 	return All.Num() > 0 ? All[0] : nullptr;
 }
 
+void UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(UObject* WorldContextObject,
+	TSubclassOf<UObject> QualityOfLifeClass)
+{
+	UObject* QoLInstance = GetQualityOfLifeReference(WorldContextObject, QualityOfLifeClass); // Ensure references are resolved and cached.
+	if (!QoLInstance)
+	{
+		GT_W_LOG("GT.RuntimeGlobals.QoL.RefreshReplication.NoInstance", TEXT("Unable to refresh replication for QoL class %s because no instance could be found."), *QualityOfLifeClass->GetName());
+		return;
+	}
+	
+if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, QoLInstance))
+	{
+		AutoReplicationMixin->InitializeAdditionalData(true);
+	}
+	else
+	{
+		GT_W_LOG("GT.RuntimeGlobals.QoL.RefreshReplication.NoMixin", TEXT("Unable to refresh replication for QoL class %s because no AutoReplication mixin could be found on the instance."), *QualityOfLifeClass->GetName());
+	}
+}
+
 TArray<UObject*> UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReferences(const UObject* WorldContextObject, const TSubclassOf<UObject> QualityOfLifeClass, const FString& StablePlayerId)
 {
 	if (!*QualityOfLifeClass)

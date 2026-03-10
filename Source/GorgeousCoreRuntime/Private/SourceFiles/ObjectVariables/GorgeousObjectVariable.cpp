@@ -558,8 +558,7 @@ namespace GorgeousObjectVariable_Private
 
 		// ── QueuedRPC parameter detection ─────────────────────────────────────────────────
 		// If any in-parameter is an FStructProperty wrapping FGorgeousQueuedRPC, the runtime
-		// auto-injects it with the current RPC descriptor. This replaces the deprecated
-		// FGorgeousAutoReplicationRPCHandlerContext pattern.
+		// auto-injects it with the current RPC descriptor.
 		FStructProperty* QueuedRPCProperty = nullptr;
 		{
 			UScriptStruct* QueuedRPCType = FGorgeousQueuedRPC::StaticStruct();
@@ -725,10 +724,10 @@ namespace GorgeousObjectVariable_Private
 }
 
 UGorgeousObjectVariable::UGorgeousObjectVariable(): 
-	ReplicationMode(EGorgeousObjectVariableReplicationMode::EFullAutoReplication),
-	bUseSharedNetworkStack(false),
 	bPersistent(false),
 	bSupportsNetworking(true),
+	ReplicationMode(EGorgeousObjectVariableReplicationMode::EFullAutoReplication),
+	bUseSharedNetworkStack(false),
 	bReplicates(false),
 	Parent(nullptr),
 	ServerPropertyPollingIntervalSeconds(0.0f),

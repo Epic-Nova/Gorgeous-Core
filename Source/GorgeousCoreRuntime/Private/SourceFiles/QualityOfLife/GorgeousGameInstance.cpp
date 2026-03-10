@@ -104,7 +104,8 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 		}
 	}
 
-	for (const FName& RootName : RootsToInitialize)
+	//@TODO: Somehow leads to a crash without any log & crash context
+	/*for (const FName& RootName : RootsToInitialize)
 	{
 		const bool bSupportsSharedOwnership = UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName);
 		if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(RootName))
@@ -129,7 +130,7 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 			const FString Label = RootName.IsNone() ? TEXT("<DefaultRoot>") : RootName.ToString();
 			UE_LOG(LogGorgeousGameInstance, Warning, TEXT("Failed to assign cached owner for root object variable '%s'."), *Label);
 		}
-	}
+	}*/
 
 	for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 	{
