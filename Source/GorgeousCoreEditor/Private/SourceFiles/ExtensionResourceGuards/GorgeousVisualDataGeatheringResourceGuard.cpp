@@ -8,7 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "ExtensionResourceGuards/GorgeousVisualDataGatheringResourceGuard.h"
+#include "ExtensionResourceGuards/GorgeousVisualDataGeatheringResourceGuard.h"
 
 //=============================================================================
 // UGorgeousVisualDataGatheringResourceGuard Implementation

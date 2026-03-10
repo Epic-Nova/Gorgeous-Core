@@ -13,6 +13,7 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/StructuredArchive.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 #include "UObject/UnrealType.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
@@ -43,10 +44,13 @@ namespace GorgeousRPCPayloadLibrary_Private
 				return false;
 			}
 			OutStructTypeName = AsStruct->Struct->GetFName();
-			// Structs: use FMemoryWriter so nested FStrings / TArrays inside the struct
-			// are properly serialized, not shallow-copied.
-			FMemoryWriter Writer(OutBytes);
-			AsStruct->Struct->SerializeTaggedProperties(Writer, const_cast<uint8*>(static_cast<const uint8*>(ValuePtr)), AsStruct->Struct, nullptr);
+			// Structs: use FObjectAndNameAsStringProxyArchive so that UObject references
+			// (FObjectProperty, FSoftObjectProperty, FSoftObjectPath, etc.) inside the struct
+			// are written as portable path strings rather than raw pointers. Plain FMemoryWriter
+			// (FArchive) asserts on FSoftObjectPtr serialization.
+			FMemoryWriter Writer(OutBytes, true);
+			FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, true);
+			AsStruct->Struct->SerializeTaggedProperties(ProxyWriter, const_cast<uint8*>(static_cast<const uint8*>(ValuePtr)), AsStruct->Struct, nullptr);
 			return true;
 		}
 
