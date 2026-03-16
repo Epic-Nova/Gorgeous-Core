@@ -1,19 +1,20 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
 
 //=============================================================================
 // UGorgeousCondition Implementation
 //=============================================================================
-uint8 UGorgeousCondition::CheckCondition()
+
+uint8 UGorgeousCondition::CheckCondition_Implementation()
 {
 	return 0;
 }

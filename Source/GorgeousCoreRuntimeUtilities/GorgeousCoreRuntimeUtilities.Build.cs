@@ -1,12 +1,12 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 using System.IO;
@@ -22,6 +22,9 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
         SharedPCHHeaderFile = Path.Combine(publicIncludePath, "GorgeousCoreRuntimeSharedPCH.h");
         PrivatePCHHeaderFile = SharedPCHHeaderFile;
         
+        PrecompileForTargets = PrecompileTargetsType.Any;
+        bUsePrecompiled = false;
+
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,
@@ -35,14 +38,21 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "Core", 
                 "CoreUObject", 
                 "Engine",
-                "InputCore",
                 "GameplayTags",
                 "Projects"
             });
-        
+
+        PublicDefinitions.Add("CSV_PROFILER=1");
+        PrivateDefinitions.Add("CSV_PROFILER=1");
+
         if (Target.bBuildEditor)
         {
-            PublicDependencyModuleNames.Add("Kismet");
+            PrivateDependencyModuleNames.AddRange(new[]
+            {
+                "UnrealEd",
+                "Slate",
+                "SlateCore"
+            });
         }
     }
 }

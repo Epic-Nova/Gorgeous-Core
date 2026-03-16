@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousConditionalObjectChooserStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -23,28 +20,27 @@
  *
  * This struct is primarily intended to enable the use of Gameplay Tag Containers as keys in
  * TSet or TMap by providing an explicit `GetTypeHash` implementation and equality operator.
- * It can also be exposed to Blueprints if needed via the `Blueprintable` specifier.
  *
  * @note While FGameplayTagContainer already supports comparison, this wrapper adds better support
  *       for hash-based containers.
  *
  * @author Nils Bergemann
  */
-USTRUCT(Blueprintable)
+USTRUCT(Blueprintable, BlueprintType)
 struct FGameplayTagContainerWrapper_S
 {
 	GENERATED_BODY()
 
 	/**
-	 * The underlying Gameplay Tag Container.
-	 */
-	UPROPERTY(EditAnywhere, Category = "Gorgeous Conditional Object Chooser")
-	FGameplayTagContainer Container;
-
-	/**
 	 * Default constructor. Initializes an empty container.
 	 */
 	FGameplayTagContainerWrapper_S() : Container() {}
+	
+	/**
+	 * The underlying Gameplay Tag Container.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Conditional Object Chooser")
+	FGameplayTagContainer Container;
 
 	/**
 	 * Constructs the wrapper using an existing Gameplay Tag Container.

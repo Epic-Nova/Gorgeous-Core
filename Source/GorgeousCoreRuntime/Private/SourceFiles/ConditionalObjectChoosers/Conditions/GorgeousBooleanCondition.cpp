@@ -1,25 +1,26 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
-#include "GorgeousLoggingBlueprintFunctionLibrary.h"
+//<--------------------------=== Module Includes ===------------------------->
+#include "GorgeousCoreUtilitiesMinimalShared.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // UGorgeousBooleanCondition Implementation
 //=============================================================================
 
-uint8 UGorgeousBooleanCondition::CheckCondition()
+uint8 UGorgeousBooleanCondition::CheckCondition_Implementation()
 {
 	switch (Mode)
 	{
@@ -42,7 +43,7 @@ uint8 UGorgeousBooleanCondition::CheckCondition()
 		case EConditionalChooserMode_E::N_B_ONLY:
 			return !B;
 	default:
-			UGorgeousLoggingBlueprintFunctionLibrary::LogWarningMessage(FString::Printf(TEXT("Invalid mode for UGorgeousBooleanCondition: %d"), static_cast<int32>(Mode)), "GT.ConditionalObjectChoosers.Invalid_Mode");
+			GT_W_LOG("GT.ConditionalObjectChoosers.Invalid_Mode", TEXT("Invalid mode for UGorgeousBooleanCondition: %d"), static_cast<int32>(Mode));
 			return false;
 	}
 }

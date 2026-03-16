@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousSetObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -100,14 +97,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Byte")
     TSet<uint8> GetByteSetObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets a set of floats.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return A set of floats.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
+	TSet<float> GetFloatSetObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets a set of doubles.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A set of doubles.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Float")
-    TSet<double> GetFloatSetObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Double")
+    TSet<double> GetDoubleSetObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a set of 64-bit integers.
@@ -144,22 +150,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|String")
     TSet<FString> GetStringSetObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a set of FTransforms.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A set of FTransforms.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Transform")
-    TSet<FTransform> GetTransformSetObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a set of FVectors.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A set of FVectors.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Set|Vector")
-    TSet<FVector> GetVectorSetObjectVariable(const FName OptionalVariableName) const;
 };

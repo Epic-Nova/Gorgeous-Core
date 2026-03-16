@@ -1,17 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
 //<-------------------------------------------------------------------------->
 
@@ -19,16 +19,17 @@
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
 
-uint8 UGorgeousGameplayTagCondition::CheckCondition()
-{
-	if (GetGameplayTagContainer().IsEmpty())
-	{
-		return 0;
-	}
 
+uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
+{
 	if (GameplayTagChooserFightMode == EConditionalGameplayTagChooserFightMode_E::RULE)
 	{
 		return EvaluateCustomRule();
+	}
+	
+	if (GetGameplayTagContainer().IsEmpty())
+	{
+		return 0;
 	}
 
 	TArray<FGameplayTag> FoundTags;
@@ -84,6 +85,21 @@ uint8 UGorgeousGameplayTagCondition::CheckCondition()
 	default:
 		return 0;
 	}
+}
+
+bool UGorgeousGameplayTagCondition::FindConditionMappingForTagContainer(const FGameplayTagContainer& Container,
+	int32& OutValue) const
+{
+	FGameplayTagContainerWrapper_S AssembledContainer;
+	AssembledContainer.Container = Container;
+	
+	if (const int32* FoundValue = GameplayTagConditionMapping.Find(AssembledContainer))
+	{
+		OutValue = *FoundValue;
+		return true;
+	}
+	OutValue = -1;
+	return false;
 }
 
 FGameplayTagContainer UGorgeousGameplayTagCondition::GetGameplayTagContainer() const

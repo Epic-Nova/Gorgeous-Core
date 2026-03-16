@@ -1,42 +1,37 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
-|								TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                    |
+|                                  TO AVOID MISTAKES READ THIS BEFORE EDITING THIS FILE                                 |
 | --------------------------------------------------------------------------------------------------------------------- |
-|									USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                     |
+|                                    USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                    |
 <======================================================================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
-/*==============================>
-| Std Includes					|
-<==============================*/
-
+// Std Includes
 #if PLATFORM_WINDOWS
 #include <functional>
 #endif
 
-/*==============================>
-| Engine Includes               |
-<==============================*/
+// Engine Includes
 #include "CoreMinimal.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 
 #include "CoreUObject.h"
+#include "UObject/UObjectGlobals.h"
 #include "UObject/Interface.h"
 #include "UObject/UnrealTypePrivate.h"
+
+#include "Engine/DataAsset.h"
 
 #include "Misc/MonolithicHeaderBoilerplate.h"
 
@@ -56,8 +51,4 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Info.h"
 
-
-/*==============================>
-| Module Includes               |
-<==============================*/
-#include "IGorgeousThingsModuleInterface.h"
+#include "GameFramework/Controller.h"

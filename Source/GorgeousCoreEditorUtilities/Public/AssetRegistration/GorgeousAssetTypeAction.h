@@ -1,42 +1,28 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "AssetTypeActions/AssetTypeActions_Blueprint.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousAssetRegistrationStructures.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * Asset type action handler for Gorgeous Core custom assets.
+ * Custom asset type action class that defines how a specific asset type should be represented and behave in the Unreal Editor, for Gorgeous Core custom assets.
  * 
- * This class defines how a specific asset type appears and behaves within the Unreal Engine Editor.
- * It provides metadata such as display name, color, supported class, categories, and icon/thumbnail
- * brushes used in the content browser. This enhances the user experience when working with custom
- * Gorgeous Core assets by providing clear visual cues and proper categorization.
- *
- * Key features include:
- * - All data-driven via FGorgeousAssetTypeActionInfo_S for flexible reuse.
- *
- * This class is intended to be constructed with a FGorgeousAssetTypeActionInfo_S structure,
- * containing the relevant metadata for the associated asset type.
- *
  * @author Nils Bergemann
  */
-class GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Base
+class GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Blueprint
 {
 public:
 
@@ -46,6 +32,9 @@ public:
 	 * @param InAssetTypeActionInfo Metadata describing how the asset type should behave in the editor.
 	 */
 	explicit FGorgeousAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo);
+
+	/** Destructor. */
+	virtual ~FGorgeousAssetTypeAction() override;
 	
 	//<============================--- Overrides ---=============================>
 
@@ -106,6 +95,8 @@ public:
 		
 	//<-------------------------------------------------------------------------->
 
+	
+	//<============================--- Variables ---============================>
 private:
 
 	/**
@@ -113,4 +104,5 @@ private:
 	 * of this asset type. Set during construction and used by override functions.
 	 */
 	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
+	//<------------------------------------------------------------------------->
 };

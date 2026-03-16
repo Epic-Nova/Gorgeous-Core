@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
@@ -22,21 +22,22 @@
 UObject* UGorgeousFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
 	return FKismetEditorUtilities::CreateBlueprint(
-		SupportedClass,
+		FactoryInfo.SupportedClass,
 		InParent,
 		InName,
 		BPTYPE_Normal,
-		UBlueprint::StaticClass(),
-		UBlueprintGeneratedClass::StaticClass(),
+		FactoryInfo.BlueprintClass ? FactoryInfo.BlueprintClass.Get() : UBlueprint::StaticClass(),
+		FactoryInfo.BlueprintGeneratedClass ? FactoryInfo.BlueprintGeneratedClass.Get() : UBlueprintGeneratedClass::StaticClass(),
 		NAME_None
 	);
 }
 
-void UGorgeousFactory::SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfos)
+void UGorgeousFactory::SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo)
 {
-	SupportedClass = NewFactoryInfos.SupportedClass;
-	bEditAfterNew = NewFactoryInfos.bEditAfterNew;
-	bEditorImport = NewFactoryInfos.bEditorImport;
-	bCreateNew = NewFactoryInfos.bCreateNew;
-	bText = NewFactoryInfos.bText;
+	FactoryInfo = NewFactoryInfo;
+	SupportedClass = NewFactoryInfo.BlueprintClass ? NewFactoryInfo.BlueprintClass.Get() : UBlueprint::StaticClass();
+	bEditAfterNew = NewFactoryInfo.bEditAfterNew;
+	bEditorImport = NewFactoryInfo.bEditorImport;
+	bCreateNew = NewFactoryInfo.bCreateNew;
+	bText = NewFactoryInfo.bText;
 }

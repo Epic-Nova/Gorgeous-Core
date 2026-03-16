@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousSingleObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -109,14 +106,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Byte")
     uint8 GetByteSingleObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets a float.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return A float.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
+	float GetFloatSingleObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets a double.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A double.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
-    double GetFloatSingleObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Double")
+    double GetDoubleSingleObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a 64-bit integer.
@@ -171,22 +177,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Text")
     FText GetTextSingleObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets an FTransform.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return An FTransform.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Transform")
-    FTransform GetTransformSingleObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets an FVector.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return An FVector.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Vector")
-    FVector GetVectorSingleObjectVariable(const FName OptionalVariableName) const;
 };
