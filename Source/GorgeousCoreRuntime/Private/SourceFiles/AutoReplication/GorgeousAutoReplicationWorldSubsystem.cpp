@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
 #include "AutoReplication/GorgeousAutoReplicationWorldSubsystem.h"
 

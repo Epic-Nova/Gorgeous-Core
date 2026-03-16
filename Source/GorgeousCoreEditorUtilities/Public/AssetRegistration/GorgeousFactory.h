@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
@@ -55,6 +55,8 @@ public:
 	 */
 	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo);
 
+	
+	//<============================--- Variables ---============================>
 private:
 
 	/**
@@ -62,4 +64,5 @@ private:
 	 * This structure must be set by subclasses using SetFactoryInformation to ensure correct behavior.
 	 */
 	FGorgeousFactoryInfo_S FactoryInfo;
+	//<------------------------------------------------------------------------->
 };

@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
@@ -93,7 +93,7 @@ namespace GorgeousStyleRegistration
 
 	/**
 	 * Helper function to register a TrueType / OpenType font file into a Slate style set.
-	 * The font is stored under @p FontKey and can be retrieved via
+	 * The font is stored under FontKey and can be retrieved via
 	 * Style->GetFontStyle(FontKey) or ISlateStyle::GetFontStyle.
 	 *
 	 * @param Style          The style set to register the font into.

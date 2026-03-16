@@ -1,139 +1,115 @@
+# 🧾 Epic Nova — Contributor Code of Conduct
 
-# 🧾 Contributor Covenant Code of Conduct
+Welcome to **Epic Nova**! We're building something great together, and that starts with treating each other well. This Code of Conduct keeps our GitHub repos, discussions, and contributions welcoming for everyone.
 
-Welcome to the Gorgeous Core Community! We believe in fostering a space that’s welcoming, respectful, and inclusive for everyone. Please take a moment to read our Code of Conduct before participating.
-
-> 🧠 **Why This Exists:**
-> We want every contributor and community member to feel safe and valued. This code helps ensure that.
+> 📚 **Full Details:** This is a quick-reference version. For complete policies, see our [Community Ethic Guideline](https://epicnova.net/legal/community-guidelines/long) and [Network Rules](https://epicnova.net/legal/network-rules/long).
 
 ---
 
 ## 🤝 Our Pledge
 
-We, as contributors and maintainers, pledge to make participation in our community a **harassment-free experience** for everyone — regardless of:
+We pledge to make participation **harassment-free for everyone** — regardless of age, disability, ethnicity, gender identity, experience level, nationality, appearance, race, religion, or sexual orientation.
 
-  - Age
-  - Body size
-  - Visible or invisible disability
-  - Ethnicity
-  - Sex characteristics
-  - Gender identity and expression
-  - Level of experience
-  - Education
-  - Socio-economic status
-  - Nationality
-  - Personal appearance
-  - Race
-  - Caste
-  - Color
-  - Religion
-  - Sexual identity and orientation
+We act and interact in ways that build an **open, diverse, inclusive, and healthy** community.
 
-We pledge to **act and interact** in ways that build an open, diverse, inclusive, and healthy community.
+> 📖 *See [Community Ethic Guideline §2](https://epicnova.net/legal/community-guidelines/long#2-core-values--principles) for our complete inclusion principles.*
 
 ---
 
-## ✅ Our Standards
+## ✅ What We Encourage
 
-Here’s what we encourage:
+| Behavior | Why It Matters |
+|----------|----------------|
+| 🌱 **Empathy & kindness** | Makes everyone feel welcome |
+| 🧠 **Respect differences** | Diverse perspectives strengthen us |
+| 🛠️ **Constructive feedback** | Helps everyone improve |
+| 🙋 **Own your mistakes** | Growth comes from accountability |
+| 🌍 **Community-first thinking** | We succeed together |
 
-  - 🌱 **Empathy and kindness** toward others
-  - 🧠 Respect for different opinions and experiences
-  - 🛠️ Constructive feedback — given and received gracefully
-  - 🙋 Owning mistakes and learning from them
-  - 🌍 Thinking about the good of the community as a whole
-
----
-
-## 🚫 Not OK: Unacceptable Behavior
-
-These actions are **not tolerated**:
-
-  - ❌ Sexualized language or imagery
-  - ❌ Unwanted attention or advances
-  - ❌ Trolling, insults, or political attacks
-  - ❌ Harassment (public or private)
-  - ❌ Doxxing or publishing private info without consent
-  - ❌ Anything inappropriate in a professional setting
+> 📖 *See [Community Ethic Guideline §3](https://epicnova.net/legal/community-guidelines/long#3-expected-behavior) for detailed positive conduct standards.*
 
 ---
 
-## 🛡️ Enforcement Responsibilities
+## 🚫 What's Not OK
 
-Community leaders are responsible for:
+These are **never tolerated**:
 
-  - Clarifying and enforcing standards
-  - Taking fair corrective actions for harmful behavior
-  - Editing, removing, or rejecting contributions that violate this code
+| ❌ Prohibited | Reference |
+|---------------|-----------|
+| Sexualized language/imagery | [Community Guideline §4.3](https://epicnova.net/legal/community-guidelines/long#43-sexual-misconduct--exploitation) |
+| Harassment (public or private) | [Community Guideline §4.1](https://epicnova.net/legal/community-guidelines/long#41-harassment--discrimination) |
+| Trolling, insults, personal attacks | [Community Guideline §4.1](https://epicnova.net/legal/community-guidelines/long#41-harassment--discrimination) |
+| Doxxing or sharing private info | [Community Guideline §4.2](https://epicnova.net/legal/community-guidelines/long#42-privacy-violations--doxxing) |
+| Discrimination of any kind | [Community Guideline §4.1](https://epicnova.net/legal/community-guidelines/long#41-harassment--discrimination) |
 
-They will always **communicate the reasons** behind decisions when appropriate.
-
----
-
-## 🌐 Scope
-
-This Code of Conduct applies:
-
-  - **Everywhere** in the community (repos, issues, forums, Discord, etc.)
-  - Whenever someone represents the community officially
-    (e.g. posting as part of the team, at events, via official accounts)
-  
----
-
-## 📢 Reporting Issues
-
-See something harmful? Let us know:
-
-📧 [enforcement@epicnova.net](mailto:enforcement@epicnova.net)
-
-We take every report seriously and ensure **confidentiality** for reporters.
+> 📖 *Full prohibited conduct list: [Community Ethic Guideline §4](https://epicnova.net/legal/community-guidelines/long#4-unacceptable-behavior)*
 
 ---
 
-## 🧭 Enforcement Guidelines
+## 🌐 Where This Applies
 
-Community leaders use the following guidelines to respond to violations:
+This Code of Conduct applies to:
 
-### 1️⃣ Correction
+- ✅ All Epic Nova GitHub repositories, issues, PRs, and discussions
+- ✅ Discord, forums, and any official community spaces
+- ✅ Official representation (events, social media, team communications)
+- ✅ Any interaction where you represent Epic Nova
 
-- **Impact:** Inappropriate language or unprofessional conduct
-- **Response:** Private warning, explanation, and request to improve
-
----
-
-### 2️⃣ Warning
-
-- **Impact:** Clear violation through a single or repeated action
-- **Response:** Formal warning + restricted interaction for a time
+> 📖 *See [Community Ethic Guideline §1](https://epicnova.net/legal/community-guidelines/long#1-purpose--scope) and [Network Rules §1](https://epicnova.net/legal/network-rules/long#1-definitions--purpose) for complete scope definitions.*
 
 ---
 
-### 3️⃣ Temporary Ban
+## 📢 Report an Issue
 
-- **Impact:** Serious violation, sustained misbehavior
-- **Response:** Temporary removal from all community activities
+See something wrong? **Tell us confidentially:**
+
+📧 **[enforcement@epicnova.net](mailto:enforcement@epicnova.net)**
+
+All reports are handled with discretion. We protect reporter identity and investigate promptly.
+
+> 📖 *Reporting process details: [Community Ethic Guideline §5](https://epicnova.net/legal/community-guidelines/long#5-reporting-confidentiality--support)*
 
 ---
 
-### 4️⃣ Permanent Ban
+## 🧭 Enforcement Ladder
 
-- **Impact**: Ongoing, targeted, or egregious harm to the community
-- **Response:** Permanent removal from public interaction
+| Level | Trigger | Action |
+|-------|---------|--------|
+| **1️⃣ Correction** | Minor issue, first offense | Private warning + guidance |
+| **2️⃣ Warning** | Clear violation | Formal warning + temporary restrictions |
+| **3️⃣ Temp Ban** | Serious or repeated violations | Temporary removal from all spaces |
+| **4️⃣ Permanent Ban** | Severe, targeted, or ongoing harm | Permanent removal |
+
+> 📖 *Full enforcement procedures: [Community Ethic Guideline §6](https://epicnova.net/legal/community-guidelines/long#6-enforcement-ladder--remedies)*
+
+---
+
+## 🔗 Related Documents
+
+| Document | What It Covers |
+|----------|----------------|
+| [Community Ethic Guideline](https://epicnova.net/legal/community-guidelines/long) | Complete conduct standards & enforcement |
+| [Network Rules](https://epicnova.net/legal/network-rules/long) | Platform-wide policies & technical rules |
+| [Terms of Service](https://epicnova.net/legal/terms-of-service/long) | Legal agreement for all services |
+| [Discord Rules](https://epicnova.net/legal/discord-rules/long) | Discord-specific guidelines |
 
 ---
 
 ## 🧾 Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
+Adapted from the [Contributor Covenant v2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/) with Epic Nova additions.
 
-Also inspired by:
-  - [Mozilla CoC Enforcement Ladder](https://github.com/mozilla/diversity)
+🔗 **Contributor Covenant Resources:**
+- [FAQ](https://www.contributor-covenant.org/faq) · [Translations](https://www.contributor-covenant.org/translations)
 
-🔗 **Additional resources**:
-  - [FAQ](https://www.contributor-covenant.org/faq)
-  - [Translations](https://www.contributor-covenant.org/translations)
+---
 
 ## 🙌 Thank You!
 
-Thanks for helping us make the **Gorgeous Core** community awesome for everyone.
-Your voice matters — let’s build something great together. 🌌
+Thanks for helping make **Epic Nova** awesome for everyone.  
+Your contributions matter — let's build something great together! 🌌
+
+---
+
+*Last Updated: February 2026 · Version 1.0*  
+*Questions? Contact [community@epicnova.net](mailto:community@epicnova.net)*
