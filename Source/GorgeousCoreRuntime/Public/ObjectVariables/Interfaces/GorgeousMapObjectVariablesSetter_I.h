@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousMapObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -106,6 +103,16 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
     TMap<uint8, UGorgeousObjectVariable*> SetByteMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<uint8, UGorgeousObjectVariable*>& NewValue);
 
+	/**
+	 * Sets a map of floats to GorgeousObjectVariables.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new map of floats to GorgeousObjectVariables.
+	 * @return The updated map of floats to GorgeousObjectVariables.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
+	TMap<float, UGorgeousObjectVariable*> SetFloatMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<float, UGorgeousObjectVariable*>& NewValue);
+	
     /**
      * Sets a map of doubles to GorgeousObjectVariables.
      *
@@ -113,8 +120,8 @@ public:
      * @param NewValue The new map of doubles to GorgeousObjectVariables.
      * @return The updated map of doubles to GorgeousObjectVariables.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-    TMap<double, UGorgeousObjectVariable*> SetFloatMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Double")
+    TMap<double, UGorgeousObjectVariable*> SetDoubleMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<double, UGorgeousObjectVariable*>& NewValue);
 
     /**
      * Sets a map of 64-bit integers to GorgeousObjectVariables.
@@ -155,24 +162,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
     TMap<FString, UGorgeousObjectVariable*> SetStringMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<FString, UGorgeousObjectVariable*>& NewValue);
-
-    /**
-     * Sets a map of FTransforms to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new map of FTransforms to GorgeousObjectVariables.
-     * @return The updated map of FTransforms to GorgeousObjectVariables.
-     */
-    UFUNCTION(NotBlueprintable, BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
-    TMap<FTransform, UGorgeousObjectVariable*> SetTransformMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<FTransform, UGorgeousObjectVariable*>& NewValue);
-
-    /**
-     * Sets a map of FVectors to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new map of FVectors to GorgeousObjectVariables.
-     * @return The updated map of FVectors to GorgeousObjectVariables.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
-	TMap<FVector, UGorgeousObjectVariable*> SetVectorMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<FVector, UGorgeousObjectVariable*>& NewValue);
 };

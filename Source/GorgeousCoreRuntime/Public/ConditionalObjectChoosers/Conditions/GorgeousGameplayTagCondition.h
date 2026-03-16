@@ -1,23 +1,20 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCondition.h"
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousGameplayTagCondition.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -53,6 +50,8 @@ public:
 	
 	/**
 	 * The conditional mapping, when Key is present in the container then it's Value is returned for the Condition array.
+	 * Only used when the fight mode is not set to RULE, otherwise the custom rule is evaluated to determine the condition index.
+	 * In some rare cases you might want to use the mapping even with a custom rule, therefore we dont add a EditCondition on the mapping.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Gameplay Tag Condition")
 	TMap<FGameplayTagContainerWrapper_S, int32> GameplayTagConditionMapping;
@@ -72,12 +71,22 @@ public:
 	uint8 EvaluateCustomRule();
 	
 	/**
+	 * Finds the condition mapping for the given gameplay tag container based on the specified mapping.
+	 *
+	 * @param Container The gameplay tag container to check against the mapping.
+	 * @param OutValue The value associated with the first matching tag container in the mapping, if found.
+	 * @return true if a matching condition index was found, false otherwise.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion", meta = (CompactNodeTitle = "Find in Condition Mapping"))
+	bool FindConditionMappingForTagContainer(const FGameplayTagContainer& Container, int32& OutValue) const;
+	
+	/**
 	 * Evaluates the gameplay tag condition based on the selected mode.
 	 *
 	 * @return index of the condition.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Gameplay Tag Condtion")
-	virtual uint8 CheckCondition() override;
+	virtual uint8 CheckCondition_Implementation() override;
 
 private:
 	

@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousSingleObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -116,6 +113,16 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Byte")
     uint8 SetByteSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) uint8& NewValue);
 
+	/**
+	 * Sets a float.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @param NewValue The new float.
+	 * @return The updated float.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
+	float SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) float& NewValue);
+	
     /**
      * Sets a double.
      *
@@ -123,8 +130,8 @@ public:
      * @param NewValue The new double.
      * @return The updated double.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
-    double SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) double& NewValue);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Double")
+    double SetDoubleSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) double& NewValue);
 
     /**
      * Sets a 64-bit integer.
@@ -185,24 +192,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Text")
     FText SetTextSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FText& NewValue);
-
-    /**
-     * Sets an FTransform.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new FTransform.
-     * @return The updated FTransform.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Transform")
-    FTransform SetTransformSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FTransform& NewValue);
-
-    /**
-     * Sets an FVector.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @param NewValue The new FVector.
-     * @return The updated FVector.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Vector")
-    FVector SetVectorSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) FVector& NewValue);
 };

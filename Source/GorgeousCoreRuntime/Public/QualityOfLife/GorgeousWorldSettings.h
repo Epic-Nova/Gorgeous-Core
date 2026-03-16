@@ -1,24 +1,24 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
 #include "GameFramework/WorldSettings.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousWorldSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -32,10 +32,24 @@
  */
 UCLASS(Blueprintable, BlueprintType)
 class GORGEOUSCORERUNTIME_API AGorgeousWorldSettings : public AWorldSettings
+, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 	
 public:
+
+	AGorgeousWorldSettings();
+
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous World Settings|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
 	//<============================--- Overrides ---=============================>
 	
@@ -46,30 +60,32 @@ public:
 	 * such as NPC spawn locations, item spawns, and other world-related properties.
 	 */
 	virtual void BeginPlay() override;
-
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes during the editor post-edit phase.
-	 * 
-	 * This function is called when properties are changed in the editor. It can be used to handle any special logic 
-	 * when properties like `AdditionalGorgeousData` are modified during development.
-	 * 
-	 * @param PropertyChangedEvent The event triggered by the property change.
-	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
 	
 	//<-------------------------------------------------------------------------->
 
-	/** 
+	/** Enables networking for world-setting AutoReplication values. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings|Networking")
+	bool bActivateNetworkingCapabilities;
+
+	/**
 	 * Additional settings/configuration data for the current world.
-	 * 
-	 * This property holds additional world-related data such as spawn points, locations, and other configurations 
-	 * for the game world. It is stored as a map, allowing dynamic access to key-value pairs.
-	 * 
-	 * @note The data is editable in the editor and can be modified at runtime to adjust world settings or configurations 
-	 * on the fly.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous World Settings")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData; 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings")
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
+
+	/** Trunk that persists serialized default payloads for this world's object variables. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous World Settings|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
+
+protected:
+
+	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+	
+	UFUNCTION()
+	void OnRep_GorgeousAutoReplicationVariables();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };

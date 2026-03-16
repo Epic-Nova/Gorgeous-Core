@@ -1,20 +1,17 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousMapObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -100,14 +97,23 @@ public:
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Byte")
     TMap<uint8, UGorgeousObjectVariable*> GetByteMapObjectVariable(const FName OptionalVariableName) const;
 
+	/**
+	 * Gets a map of floats to GorgeousObjectVariables.
+	 *
+	 * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
+	 * @return A map of floats to GorgeousObjectVariables.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
+	TMap<float, UGorgeousObjectVariable*> GetFloatMapObjectVariable(const FName OptionalVariableName) const;
+	
     /**
      * Gets a map of doubles to GorgeousObjectVariables.
      *
      * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
      * @return A map of doubles to GorgeousObjectVariables.
      */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Float")
-    TMap<double, UGorgeousObjectVariable*> GetFloatMapObjectVariable(const FName OptionalVariableName) const;
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Double")
+    TMap<double, UGorgeousObjectVariable*> GetDoubleMapObjectVariable(const FName OptionalVariableName) const;
 
     /**
      * Gets a map of 64-bit integers to GorgeousObjectVariables.
@@ -144,22 +150,4 @@ public:
      */
     UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|String")
     TMap<FString, UGorgeousObjectVariable*> GetStringMapObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a map of FTransforms to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A map of FTransforms to GorgeousObjectVariables.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Transform")
-    TMap<FTransform, UGorgeousObjectVariable*> GetTransformMapObjectVariable(const FName OptionalVariableName) const;
-
-    /**
-     * Gets a map of FVectors to GorgeousObjectVariables.
-     *
-     * @param OptionalVariableName The name of an uproperty inside the uobject that this function is being called on.
-     * @return A map of FVectors to GorgeousObjectVariables.
-     */
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Map|Vector")
-    TMap<FVector, UGorgeousObjectVariable*> GetVectorMapObjectVariable(const FName OptionalVariableName) const;
 };

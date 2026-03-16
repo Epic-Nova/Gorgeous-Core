@@ -1,12 +1,12 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "AssetRegistration/GorgeousAssetTypeAction.h"
 
@@ -14,19 +14,19 @@
 // FGorgeousAssetTypeAction Implementation
 //=============================================================================
 
-FGorgeousAssetTypeAction::FGorgeousAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& NewAssetTypeActionInfos)
-{
-	AssetTypeActionInfos = NewAssetTypeActionInfos;
-}
+FGorgeousAssetTypeAction::FGorgeousAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo)
+	: AssetTypeActionInfos(InAssetTypeActionInfo) {}
+
+FGorgeousAssetTypeAction::~FGorgeousAssetTypeAction() {}
 
 FText FGorgeousAssetTypeAction::GetName() const
 {
-	return AssetTypeActionInfos.Name;
+	return AssetTypeActionInfos.DisplayName;
 }
 
 UClass* FGorgeousAssetTypeAction::GetSupportedClass() const
 {
-	return AssetTypeActionInfos.SupportedClass;
+	return AssetTypeActionInfos.SupportedClass.Get();
 }
 
 FColor FGorgeousAssetTypeAction::GetTypeColor() const
@@ -44,14 +44,12 @@ const TArray<FText>& FGorgeousAssetTypeAction::GetSubMenus() const
 	return AssetTypeActionInfos.SubMenus;
 }
 
-const FSlateBrush* FGorgeousAssetTypeAction::GetThumbnailBrush(const FAssetData& InAssetData,
-	const FName InClassName) const
+const FSlateBrush* FGorgeousAssetTypeAction::GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const
 {
-	return FAssetTypeActions_Base::GetThumbnailBrush(InAssetData, InClassName);
+	return AssetTypeActionInfos.ThumbnailBrush;
 }
 
 const FSlateBrush* FGorgeousAssetTypeAction::GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const
 {
-	return FAssetTypeActions_Base::GetIconBrush(InAssetData, InClassName);
+	return AssetTypeActionInfos.IconBrush;
 }
-

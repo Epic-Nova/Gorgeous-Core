@@ -1,17 +1,37 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
+#include "Misc/EngineVersionComparison.h"
 //<-------------------------------------------------------------------------->
+
+/**
+ * Gets the Gorgeous plugin base directory with fallback handling.
+ * 
+ * @return The base directory path of the GorgeousThings plugins folder.
+ */
+static FORCEINLINE FString GetGorgeousPluginBaseDir()
+{
+	if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin("GorgeousCore"))
+	{
+		return FPaths::GetPath(Plugin->GetBaseDir());
+	}
+	
+	// Fallback: Calculate from module location
+	const FString ModulePath = FModuleManager::Get().GetModuleFilename(TEXT("GorgeousCoreRuntimeUtilities"));
+	// Module is in <PluginDir>/Binaries/<Platform>/, so go up to get plugin dir, then one more to get GorgeousThings dir
+	return FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(ModulePath))));
+}
 
 /**
  * Converts an absolute file path to a gorgeous relative file path.
@@ -21,7 +41,7 @@
  */
 static FORCEINLINE FString GorgeousPathToRelativePath(FString FilePath)
 {
-	FString PluginBaseDir = FPaths::GetPath(IPluginManager::Get().FindPlugin("GorgeousCore")->GetBaseDir());
+	FString PluginBaseDir = GetGorgeousPluginBaseDir();
 	
 	FPaths::NormalizeFilename(FilePath);
 	FPaths::NormalizeFilename(PluginBaseDir);
@@ -50,7 +70,7 @@ static FORCEINLINE FString GorgeousPathToRelativePath(FString FilePath)
  */
 static FORCEINLINE FString RelativePathToGorgeousPath(FString RelativePath)
 {
-	FString PluginBaseDir = FPaths::GetPath(IPluginManager::Get().FindPlugin("GorgeousCore")->GetBaseDir());
+	FString PluginBaseDir = GetGorgeousPluginBaseDir();
 	
 	FPaths::NormalizeFilename(PluginBaseDir);
 	

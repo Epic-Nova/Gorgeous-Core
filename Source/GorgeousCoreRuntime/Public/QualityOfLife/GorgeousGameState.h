@@ -1,41 +1,56 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
-#include "GameFramework/GameStateBase.h"
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
+#include "GameFramework/GameState.h"
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
+#include "AutoReplication/GorgeousAutoReplicationMixin.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
+#include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
+//----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousGameState.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * A custom subclass of AGameStateBase used to manage game state-specific logic and settings.
+ * A custom subclass of AGameState used to manage game state-specific logic and settings.
  * 
- * This class extends AGameStateBase to provide additional functionality tailored for the GorgeousCore runtime.
+ * This class extends AGameState to provide additional functionality tailored for the GorgeousCore runtime.
  * It is used to manage game state-specific data and logic, such as match data and other relevant information 
  * during gameplay. The class provides overrides for the `BeginPlay()` and `PostEditChangeProperty()` functions,
  * enabling custom behavior during the start of the game state and when properties are modified in the editor.
  */
 UCLASS(Blueprintable, BlueprintType)
-class GORGEOUSCORERUNTIME_API AGorgeousGameState : public AGameStateBase
+class GORGEOUSCORERUNTIME_API AGorgeousGameState : public AGameState
+	, public IGorgeousAutoReplicationRPCResponder_I
+	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
 	
 public:
+
+	AGorgeousGameState();
+
+	
+	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
+
+	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
+	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
+
+	/** Registers or updates an AutoReplication entry at runtime. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Game State|Networking")
+	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 	
 	//<============================--- Overrides ---=============================>
 	
@@ -46,29 +61,68 @@ public:
 	 * logic for initializing the game state, such as setting up match conditions or managing state variables.
 	 */
 	virtual void BeginPlay() override;
+	virtual void PostInitProperties() override;
+	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
 
-#if WITH_EDITOR
-	/** 
-	 * Handles property changes for the game state during the editor post-edit phase.
-	 * 
-	 * This function is triggered whenever a property of the game state is changed in the editor. 
-	 * The `PostEditChangeProperty` override ensures that changes to properties like `AdditionalGorgeousData` are handled appropriately.
-	 * 
-	 * @param PropertyChangedEvent The event triggered by the property change.
+	/**
+	 * Called on ALL machines (server + clients via replication) when a new
+	 * PlayerState is added to the PlayerArray.  The PS's BeginPlay fires before
+	 * this, so its OV self-registration is already complete by this point.
 	 */
-	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-#endif WITH_EDITOR
+	virtual void AddPlayerState(APlayerState* PlayerState) override;
+
+	/**
+	 * Called on ALL machines when a PlayerState is removed from the PlayerArray
+	 * (player left or disconnected).  The PS's EndPlay handles OV cleanup;
+	 * this override fires the BP event and calls Super.
+	 */
+	virtual void RemovePlayerState(APlayerState* PlayerState) override;
 	
 	//<-------------------------------------------------------------------------->
 
-	/** 
+	/** Enables mixin networking path for this game state. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State|Networking")
+	bool bActivateNetworkingCapabilities;
+
+	/**
 	 * Additional data for the current class.
-	 * 
-	 * This property holds a map of additional data specific to the game state. Examples of data include match data, 
-	 * round information, or any other state-related variables that need to be dynamically accessed during gameplay.
-	 * 
-	 * @note This data is editable in the editor and can be used to store and manage game state settings or other dynamic information.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Instanced, Category = "Gorgeous Game State")
-	TMap<FName, UGorgeousObjectVariable*> AdditionalGorgeousData; 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State")
+	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
+
+	/** Authoritative trunk for serialized default payloads authored on this game state. */
+	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game State|Defaults", meta = (ShowOnlyInnerProperties))
+	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
+
+protected:
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Networking")
+	void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC, bool bWasHandled);
+
+	/**
+	 * Fired on ALL machines when a new PlayerState is added to the PlayerArray.
+	 * Safe to query GetQualityOfLifeReferences(PlayerState) here — the new PS
+	 * will already be in the OV array.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Players")
+	void OnPlayerStateAdded(APlayerState* PlayerState);
+
+	/**
+	 * Fired on ALL machines when a PlayerState is removed from the PlayerArray.
+	 * The PS is still valid at this point but will be destroyed shortly after.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Players")
+	void OnPlayerStateRemoved(APlayerState* PlayerState);
+
+	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
+	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
+
+	FGorgeousAutoReplicationMixin AutoReplicationMixin;
+	
+	UFUNCTION()
+	void OnRep_GorgeousAutoReplicationVariables();
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
+

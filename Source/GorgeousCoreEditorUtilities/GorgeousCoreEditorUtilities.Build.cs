@@ -1,12 +1,12 @@
-// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
-|         that has nothing in common with Epic Games in any capacity.       |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
 using System.IO;
@@ -23,14 +23,18 @@ public class GorgeousCoreEditorUtilities : ModuleRules
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
         PrivatePCHHeaderFile = SharedPCHHeaderFile;
         
+        PrecompileForTargets = PrecompileTargetsType.Any;
+        bUsePrecompiled = false;
+        
         PublicIncludePaths.AddRange(new string[]
         {
             publicIncludePath,
+            Path.Combine(publicIncludePath, "ModuleCore")
         });
-        
-        PrivateIncludePaths.AddRange(new string[]
+
+        PrivateIncludePaths.AddRange(new[]
         {
-            Path.Combine(privateIncludePath, "HeaderFiles"),
+            privateIncludePath
         });
         
         PublicDependencyModuleNames.AddRange(new[]
@@ -38,28 +42,31 @@ public class GorgeousCoreEditorUtilities : ModuleRules
             "Core", 
             "CoreUObject", 
             "Engine", 
+            "Slate", 
+            "SlateCore", 
             "InputCore", 
-            "EditorSubsystem"
+            "EditorSubsystem",
+            "DeveloperToolSettings",
+            "DataValidation",
+            "AssetRegistry",
+            "AssetTools",
         });
         
         PrivateDependencyModuleNames.AddRange(
             new[] 
             {
-                "Slate", 
-                "SlateCore", 
                 "Projects",
-                "UnrealEd", 
                 "EditorStyle",
+                "UnrealEd",
                 "BlueprintGraph",
+                "Kismet",
                 "PropertyEditor", 
+                "EditorFramework",
                 "MessageLog",
                 "UMG", 
-                "Kismet",
-                "HTTP",
-                "Json",
-                "JsonUtilities",
                 "ContentBrowser",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "GameplayTags"
             });
     
         

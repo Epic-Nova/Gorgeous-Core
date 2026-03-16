@@ -1,10 +1,10 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "GT-C-0.8-General",
+	"VersionName": "GT-C-1.0-General",
 	"FriendlyName": "Gorgeous Core",
 	"Description": "Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.",
-	"Category": "Universal",
+	"Category": "Gorgeous Things",
 	"CreatedBy": "Simsalabim Studios",
 	"CreatedByURL": "https://simsalabim.studio",
 	"DocsURL": "https://c.docs.gt.simsalabim.studio",
@@ -13,15 +13,22 @@
 	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
-	"IsBetaVersion": true,
-	"IsExperimentalVersion": false,
-	"Installed": true,
+	"IsBetaVersion": false,
 	"Modules": [
 		{
 			"Name": "GorgeousCoreRuntime",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"BlacklistPlatforms": [
+			"LoadingPhase": "PreDefault",
+			"PlatformDenyList": [
+				"Android",
+				"IOS"
+			]
+		},
+		{
+			"Name": "GorgeousCoreRuntimeUtilities",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"PlatformDenyList": [
 				"Android",
 				"IOS"
 			]
@@ -29,27 +36,36 @@
 		{
 			"Name": "GorgeousCoreEditor",
 			"Type": "Editor",
-			"LoadingPhase": "PostEngineInit"
-		},
-		{
-			"Name": "GorgeousCoreRuntimeUtilities",
-			"Type": "Runtime",
-			"LoadingPhase": "PreDefault",
-			"BlacklistPlatforms": [
-				"Android",
-				"IOS"
-			]
+			"LoadingPhase": "PostDefault"
 		},
 		{
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
-			"LoadingPhase": "PreDefault"
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
 		{
-			"Name": "SQLiteSupport",
+			"Name": "DataValidation",
+			"Enabled": true
+		},
+		{
+			"Name": "ReplicationGraph",
+			"Enabled": true
+		},
+		{
+			"Name": "Iris",
+			"Enabled": true
+		},
+		{
+			"Name": "Gauntlet",
+			"Enabled": true
+		},
+		{
+			"Name": "CommonUI",
 			"Enabled": true
 		}
-	]
+	],
+	"IsExperimentalVersion": false,
+	"Installed": false
 }

@@ -1,17 +1,14 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                   Epic Nova is an independent entity,                     |
 |         that has nothing in common with Epic Games in any capacity.       |
 <==========================================================================*/
-
-//<=============================--- Pragmas ---==============================>
 #pragma once
-//<-------------------------------------------------------------------------->
 
 //<=============================--- Includes ---=============================>
 //<-------------------------=== Engine Includes ===-------------------------->
@@ -24,19 +21,6 @@
 
 /**
  * Base class for all Gorgeous Core asset factories.
- *
- * This abstract factory class extends Unreal Engine's UFactory to provide a consistent,
- * metadata-driven system for creating custom Gorgeous Core assets in the editor.
- * It serves as the foundational layer for specialized asset factories, such as
- * UGorgeousBooleanConditionFactory, enabling standardized object creation workflows
- * and simplifying the process of registering and managing new asset types.
- * 
- * Key features include:
- * - A metadata structure (FGorgeousFactoryInfo_S) to define behavior for subclasses.
- * - An overridden FactoryCreateNew function for dynamic object instantiation.
- *
- * This class is intended to be extended and not used directly.
- * Each subclass should configure the FactoryInfos structure in its constructor.
  *
  * @author Nils Bergemann
  */
@@ -67,15 +51,18 @@ public:
 	/**
 	 * Updates the factory information necessary for this class to execute its overwritten functions properly.
 	 * 
-	 * @param NewFactoryInfos The new factory information
+	 * @param NewFactoryInfo The new factory information
 	 */
-	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfos);
+	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo);
 
+	
+	//<============================--- Variables ---============================>
 private:
 
 	/**
 	 * The factory configuration used to determine the creation behavior of this factory instance.
 	 * This structure must be set by subclasses using SetFactoryInformation to ensure correct behavior.
 	 */
-	FGorgeousFactoryInfo_S FactoryInfos;
+	FGorgeousFactoryInfo_S FactoryInfo;
+	//<------------------------------------------------------------------------->
 };
