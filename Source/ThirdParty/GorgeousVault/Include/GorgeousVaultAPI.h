@@ -1,8 +1,8 @@
-// Copyright (c) 2025-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |              GorgeousVault — C-Linkage Export Table                        |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025-2026 Gorgeous Things by Simsalabim Studios,    |
+|         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |  This header defines the flat C function table exported by the Vault DLL. |

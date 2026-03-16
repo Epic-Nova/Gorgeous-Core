@@ -1,0 +1,3 @@
+[submodule "Source/ThirdParty/GorgeousVault/Source"]
+	path = Source/ThirdParty/GorgeousVault/Source
+	url = https://github.com/Epic-Nova/Gorgeous-Vault.git

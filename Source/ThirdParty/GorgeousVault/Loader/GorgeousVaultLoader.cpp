@@ -1,8 +1,8 @@
-// Copyright (c) 2025-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |              GorgeousVaultLoader — Runtime DLL Loader Implementation       |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025-2026 Gorgeous Things by Simsalabim Studios,    |
+|         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
 |              administrated by Epic Nova. All rights reserved.             |
 <==========================================================================*/
 
@@ -18,6 +18,15 @@
 #include "Helpers/GorgeousPluginHelper.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousVault, Log, All);
+
+//@TODO: Multi version Engine loading support
+// 1. Engine Compability
+// 1.1 Multi Version DLLs: Some engine versions may not change much between them, allowing a single "generic" DLL to support multiple versions. The loader would attempt to load the generic DLL first, and if it fails (e.g., due to missing exports), it would fall back to version-specific DLLs.
+// 1.1.1: The generic DLL would be placed under Prebuilt/<Platform>/ and named like GorgeousVault_Generic.dll. It would be compiled with the oldest supported Engine version's API to maximize compatibility.
+// 1.2 Version-Specific DLLs: For engine versions with significant API changes, separate DLLs would be compiled against each version's specific API. The loader would detect the Engine version at runtime and load the appropriate DLL. This allows the Vault to take advantage of newer APIs in later Engine versions, but requires maintaining multiple versions of the Vault DLL.
+// 1.2.1: These DLLs would be located under Prebuilt/<Platform>/Versioned/ and named like GorgeousVault_5.2.dll, GorgeousVault_5.3.dll, etc. The loader would construct the DLL name based on the detected Engine version and attempt to load it from that subdirectory.
+// 1.3 API Versioning: The Vault DLL could expose an API version export (e.g., GVault_API_Version) that the loader checks after loading. If the API version is incompatible with what the loader expects, it can trigger a fallback to another DLL or disable functionality gracefully.
+// 1.4 Patching: For minor Engine updates that break compatibility, the Vault team could release patched DLLs without changing the API version, allowing users to update the DLL without changing their code. The loader would just need to ensure it always loads the latest compatible DLL.
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Singleton

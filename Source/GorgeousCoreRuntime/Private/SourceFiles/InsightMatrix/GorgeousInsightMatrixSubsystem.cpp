@@ -1488,7 +1488,7 @@ FString UGorgeousInsightMatrixSubsystem::GetInsightMatrixIniPath()
 		PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / TEXT("GorgeousCore") / TEXT("Config");
 	}
 	IFileManager::Get().MakeDirectory(*PluginDir, true);
-	return PluginDir / TEXT("DefaultGorgeousInsightMatrix.ini");
+	return PluginDir / TEXT("BaseInsightMatrix.ini");
 }
 
 void UGorgeousInsightMatrixSubsystem::LoadPanelState()

@@ -1,4 +1,4 @@
-# Copyright (c) 2025-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+# Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 # ============================================================================
 # GorgeousVault — Standalone CMake Build
 # ============================================================================

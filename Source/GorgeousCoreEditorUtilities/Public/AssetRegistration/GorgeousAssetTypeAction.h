@@ -1,8 +1,8 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025 Gorgeous Things by Simsalabim Studios,         |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
@@ -95,6 +95,8 @@ public:
 		
 	//<-------------------------------------------------------------------------->
 
+	
+	//<============================--- Variables ---============================>
 private:
 
 	/**
@@ -102,4 +104,5 @@ private:
 	 * of this asset type. Set during construction and used by override functions.
 	 */
 	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
+	//<------------------------------------------------------------------------->
 };

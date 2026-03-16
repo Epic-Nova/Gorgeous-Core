@@ -1,8 +1,8 @@
-// Copyright (c) 2025-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |              GorgeousVaultLoader — Runtime DLL Loader Singleton            |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2025-2026 Gorgeous Things by Simsalabim Studios,    |
+|         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |  This singleton manages the lifecycle of the GorgeousVault DLL:           |

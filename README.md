@@ -14,16 +14,16 @@
   <p align="center">
     Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.
     <br />
-    <a href="https://c.docs.gt.simsalabim.studio/"><strong>Explore the docs »</strong></a>
     <br />
+    <a href="https://gorgeous.simsalabim.studio/docs"><strong>Explore the docs</strong></a>
     <br />
-    <a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/FAQ.md">FAQ</a>
+    <a href="https://gorgeous.simsalabim.studio/#faq"><strong>FAQ »</strong></a>
     &middot;
-    <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.md">Report Bug</a>
+    <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.yaml"><strong>Report Bug »</strong></a>
     &middot;
-    <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.md">Request Feature</a>
+    <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.yaml"><strong>Request Feature »</strong></a>
     &middot;
-    <a href="https://gt.simsalabim.studio">Plugin Family</a>
+    <a href="https://gorgeous.simsalabim.studio"><strong>Plugin Family</strong></a>
   </p>
 </div>
 
@@ -104,7 +104,7 @@ Examples include:
   - 🧪 **Test scenes**
   - 🔧 **Core systems usage**
 
-*For more documentation and advanced scenarios, check the [Documentation](https://c.docs.gt.simsalabim.studio/).*
+*For more documentation and advanced scenarios, check the [Documentation](https://gorgeous.simsalabim.studio/docs).*
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -135,7 +135,7 @@ If you have ideas to improve Gorgeous Core, feel free to:
   - 🛠 Fork the repository
   - 🧪 Implement your feature or fix
   - 📬 Submit a pull request
-  - 📣 Or open an **[Bug Report](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.md)**, **[Feature Request](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.md)** or **[Question issue](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=question.md)**.
+  - 📣 Or open an **[Bug Report](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=bug_report.yaml)**, **[Feature Request](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=feature_request.yaml)** or **[Question issue](https://github.com/Epic-Nova/Gorgeous-Core/issues/new?template=question.yaml)**.
 
 > [!TIP]
 > 📄 For detailed contribution guidelines, please see [CONTRIBUTING.md](./.github/CONTRIBUTING.md)
@@ -171,15 +171,13 @@ If you have ideas to improve Gorgeous Core, feel free to:
 ## 📬 Contact
 
 ### 🔗 Connect with Us:
-- **Community Server** - [Discord: Gorgeous Things](https://discord.gg/BzqXxBVe5N) - Join our vibrant community!
+- **Community Server** - [Discord: Gorgeous Things][Discord-Invite-URL] - Join our vibrant community!
 - **General Support** - [Epic Nova Support](mailto:support@epicnova.net) - For questions or assistance.
 - **Report Harmful Content** - [Epic Nova Enforcement Team](mailto:enforcement@epicnova.net) - See something harmful? Let us know
 - **Vulnerability Reporting** - [Epic Nova Vulnerability Support](mailto:vulnerabilities@epicnova.net) - If you discover a potential security issue.
 
 ### 👨‍💻 Developer Contact:
-- **Nils Bergemann:**
-
-  - [Discord: @Epgenix][Discord-URL]
+- [**Nils Bergemann:**](https://cto.employee.epicnova.net) Lead Developer
   - [Email][Developer-Mail]
   - [LinkedIn][LinkedIn-URL]
 
@@ -238,9 +236,12 @@ Big thanks to:
 
 [Plugin-Screenshot-URL]: https://example.com
 
+[Discord-Invite-URL]: https://discord.gg/AQuez8fwFG
+
 [Developer-Mail]: mailto:nils.bergemann@employee.epicnova.net
 [LinkedIn-URL]: https://linkedin.com/in/nils-bergemann-6398a5280
 
 [Discord-URL]: https://discord.com/
 [Readme-Template-URL]: https://github.com/othneildrew/Best-README-Template
-[EpicNova-URL]: https://epicnova.net
+[EpicNova-URL]: https://epicnova.net?utm_source=gt_repo&utm_medium=markdown&utm_campaign=gt_readme&utm_content=readme
+
