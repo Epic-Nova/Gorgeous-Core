@@ -79,6 +79,7 @@ public class GorgeousCoreRuntime : ModuleRules
         PublicDefinitions.Add("GORGEOUSTHINGS_WITH_CORE=1");
         PublicDefinitions.Add("CSV_PROFILER=1");
         PrivateDefinitions.Add("CSV_PROFILER=1");
+        PublicDefinitions.Add("GORGEOUSCORE_WITH_PLUS=0"); // Placeholder for the upcoming Gorgeous Plus module, which will provide additional features and optimizations. Set to 1 when Gorgeous Plus is released.
 
         // Gauntlet is only available for non-Editor program builds (e.g. automation test executables)
         // It's an experimental plugin that must be enabled and doesn't ship Editor DLLs
