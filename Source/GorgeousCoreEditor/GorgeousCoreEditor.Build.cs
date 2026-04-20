@@ -62,7 +62,10 @@ public class GorgeousCoreEditor : ModuleRules
                 "SlateCore", 
                 "Projects",
                 "UnrealEd", 
-                "AssetTools"
+                "BlueprintGraph",
+                "AssetTools",
+                "AssetRegistry",
+                "ContentBrowser"
             });
         
         /* Planned for 2.0
