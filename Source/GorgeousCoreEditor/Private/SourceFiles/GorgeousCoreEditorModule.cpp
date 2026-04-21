@@ -12,11 +12,18 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
+#include "DataSchemaMapping/GorgeousDataSchemaMappingAssetMenu.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingAssetTypeActions.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingDetailCustomization.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 //<--------------------------=== Engine Includes ===------------------------->
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
 #include "IMessageLogListing.h"
 #include "MessageLogModule.h"
+#include "PropertyEditorModule.h"
 #include "ToolMenus.h"
 #include "DataRegistry.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -211,11 +218,11 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	//FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
 	
 	
-	/*FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
-	PropertyEditorModule.RegisterCustomPropertyTypeLayout(
-		UGorgeousObjectVariable::StaticClass()->GetFName(),
-		FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariablePropertyTypeCustomization::MakeInstance));
-	PropertyEditorModule.NotifyCustomizationModuleChanged();*/
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	PropertyEditorModule.RegisterCustomClassLayout(
+		UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousDataSchemaMappingDetailCustomization::MakeInstance));
+	PropertyEditorModule.NotifyCustomizationModuleChanged();
 
 	GORGEOUS_REGISTER_STYLE_SET(ModuleStyleSet, "GorgeousCoreEditorStyle", "GorgeousCore", {
 		GORGEOUS_STYLE_SET_BRUSHES(TEXT("ObjectVariable"), TEXT("variable-cube"), TEXT("GorgeousObjectVariableBlueprint"));
@@ -245,6 +252,10 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	const FText Menu_Conditions = NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions");
 	const FText Menu_ObjectVariables = NSLOCTEXT("GorgeousCore", "Menu_ObjectVariables", "Object Variables");
 	const FText Menu_QualityOfLife = NSLOCTEXT("GorgeousCore", "Menu_QualityOfLife", "Quality of Life");
+
+	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(MakeShared<FGorgeousDataSchemaMappingAssetTypeActions>(
+		GorgeousAssetRegistration::GGorgeousThingsCategory,
+		TArray<FText>{CoreMenu}));
 	
 	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO(
 		NSLOCTEXT("GorgeousCore", "ObjectVariable", "Gorgeous Object Variable"),
@@ -348,6 +359,8 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 			Subsystem->RefreshDebugPanel();
 		}
 	});
+
+	FGorgeousDataSchemaMappingAssetMenu::Register();
 	
 	RegisterDebugMenuEntry();
 	
@@ -390,11 +403,14 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	//FEdGraphUtilities::UnregisterVisualPinFactory(RainbowPinFactory);
 	//FEdGraphUtilities::UnregisterVisualPinConnectionFactory(RainbowConnectionFactory);
 
-	/*if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
+	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
-		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(UGorgeousObjectVariable::StaticClass()->GetFName());
-	}*/
+		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName());
+		PropertyEditorModule.NotifyCustomizationModuleChanged();
+	}
+
+	FGorgeousDataSchemaMappingAssetMenu::Unregister();
 	
 	UnregisterDebugMenuEntry();
 	

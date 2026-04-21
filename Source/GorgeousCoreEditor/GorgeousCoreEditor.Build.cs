@@ -64,7 +64,12 @@ public class GorgeousCoreEditor : ModuleRules
                 "Projects",
                 "UnrealEd", 
                 "AssetTools",
-                "DataRegistry", "EditorScriptingUtilities"
+                "DataRegistry", 
+                "EditorScriptingUtilities",
+                "BlueprintGraph",
+                "AssetTools",
+                "AssetRegistry",
+                "ContentBrowser"
             });
 
         

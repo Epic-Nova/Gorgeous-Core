@@ -28,6 +28,18 @@
 }
 
 /**
+ * Macro to register any asset type action through the shared Gorgeous registration tracking.
+ *
+ * @param AssetTypeActionExpr An expression that resolves to TSharedRef<IAssetTypeActions>.
+ */
+#define REGISTER_GORGEOUS_ASSET_TYPE_ACTION(AssetTypeActionExpr) \
+{ \
+	TSharedRef<IAssetTypeActions> AssetTypeAction = AssetTypeActionExpr; \
+	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().RegisterAssetTypeActions(AssetTypeAction); \
+	GorgeousAssetRegistration::GRegisteredAssetTypeActions.Add(AssetTypeAction); \
+}
+
+/**
  * Macro to register a custom asset type in the Unreal Editor, using the provided metadata structure.
  *
  * @param AssetTypeInfo A structure containing metadata about the asset type, such as its display name, supported class, type color, and icon information.
@@ -35,9 +47,7 @@
 #define REGISTER_GORGEOUS_ASSET(AssetTypeInfo) \
 { \
 	const FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = AssetTypeInfo; \
-	TSharedRef<IAssetTypeActions> AssetTypeAction = MakeShared<FGorgeousAssetTypeAction>(AssetTypeActionInfo); \
-	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().RegisterAssetTypeActions(AssetTypeAction); \
-	GorgeousAssetRegistration::GRegisteredAssetTypeActions.Add(AssetTypeAction); \
+	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(MakeShared<FGorgeousAssetTypeAction>(AssetTypeActionInfo)); \
 }
 
 /**
