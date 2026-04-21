@@ -241,5 +241,28 @@ public:
 	static void InitializeAutoReplicationForWorld(class UWorld* World);
 
 #pragma endregion AutoReplication_Networking_Functions
+	
+	
+#pragma region GameFeaturePlugin_Helpers
+
+	/** Returns true if the specified Game Feature Plugin is currently active. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Game Feature Plugins", meta = (WorldContext = "WorldContextObject", AutoCreateRefTerm = "PluginName"))
+	static bool IsGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName);
+	
+	/** 
+	 * Enables or Disables the specified Game Feature Plugin at runtime. The plugin must be installed and available in the project for this to succeed.
+	 * Note that enabling a plugin at runtime may not initialize all of its features immediately, depending on how the plugin is set up. Some features may require additional steps to become fully functional after the plugin is enabled.
+	 *
+	 * @param WorldContextObject The world context object used to find the relevant world for enabling the plugin.
+	 * @param PluginName The name of the Game Feature Plugin to enable. This should match the name defined in the plugin's descriptor file.
+	 * @param bNewActive Whether to enable (true) or disable (false) the specified Game Feature Plugin.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Game Feature Plugins", meta = (WorldContext = "WorldContextObject", AutoCreateRefTerm = "PluginName"))
+	static void SetGameFeaturePluginActive(const UObject* WorldContextObject,  const FName& PluginName, const bool bNewActive);
+	
+	
+	//@TODO: Maybe for future version we will expand this blueprint library. Well see what usecases we can find
+	
+#pragma endregion GameFeaturePlugin_Helpers
 };
 

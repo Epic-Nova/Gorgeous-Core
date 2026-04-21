@@ -14,7 +14,10 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetRegistryModule.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "Editor.h"
+#include "EditorUtilityObject.h"
 #include "AssetRegistry/AssetData.h"
+#include "Editor/Blutility/Classes/EditorUtilityBlueprint.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
@@ -284,4 +287,51 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 			}
 		}
 	}
+	
+	// Pass 4 - asynchronously loads & executes any editor utility blueprints for active guards that specified them.
+	/*for (const FAssetData& AssetData : AllGuardAssets)
+	{
+		const UGorgeousExtensionResourceGuard* Guard =
+			Cast<UGorgeousExtensionResourceGuard>(AssetData.GetAsset());
+		if (!Guard || !Guard->IsContentPresent() || Guard->UtilityBlueprintsToExecute.IsEmpty())
+		{
+			continue;
+		}
+		
+		for (const TSoftClassPtr<UEditorUtilityObject>& SoftUtilityBlueprint : Guard->UtilityBlueprintsToExecute)
+		{
+			if (!SoftUtilityBlueprint.IsValid())
+			{
+				continue;
+			}
+			
+			UEditorUtilityObject* UtilityObject = NewObject<UEditorUtilityObject>(GetTransientPackage(), SoftUtilityBlueprint.Get(), NAME_None, RF_Transient);
+			
+			// Search within this new created class for a variable called EditorWorldContext, if found then set this ptr value to the world editor context
+			
+			for (TFieldIterator<FObjectProperty> PropIt(UtilityObject->GetClass()); PropIt; ++PropIt)	
+			{
+				if (FObjectProperty* ObjectProp = *PropIt; ObjectProp->GetName() == TEXT("EditorWorldContext"))
+				{
+					UWorld* EditorWorld = GEditor->GetEditorWorldContext().World();
+					ObjectProp->SetObjectPropertyValue_InContainer(UtilityObject, EditorWorld);
+					break;
+				}
+			}
+			
+			UtilityObject->Run();
+		}
+	}	*/
+}
+
+TArray<FString> UGorgeousExtensionResourceGuard::GetPluginOptions() const
+{
+	TArray<FString> Options;
+	TArray<TSharedRef<IPlugin>> DiscoveredPlugins = IPluginManager::Get().GetDiscoveredPlugins();
+	for (const TSharedRef<IPlugin>& Plugin : DiscoveredPlugins)
+	{
+		Options.Add(Plugin->GetName());
+	}
+	Options.Sort();
+	return Options;
 }

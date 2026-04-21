@@ -45,6 +45,13 @@ class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuard : public U
 {
 	GENERATED_BODY()
 	
+	//<============================--- Overrides ---=============================>
+	
+	virtual bool IsEditorOnly() const override { return true; }
+	
+	//<-------------------------------------------------------------------------->
+
+	
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 public:
 
@@ -68,14 +75,14 @@ public:
 	 * The validator will check each entry against IPluginManager and report
 	 * any missing plugins with a hyperlink to enable them.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (GetOptions = "GetPluginOptions"))
 	TArray<FName> RequiredPlugins;
 
 	/**
 	 * The name of the plugin whose Content directory owns this system's
 	 * content pack, e.g. "GorgeousCore".
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (GetOptions = "GetPluginOptions"))
 	FName OwningPluginName;
 
 	/**
@@ -102,8 +109,18 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (EditCondition = "bIsContentPackGuard", EditConditionHides))
 	FString ContentSubPath;
+
+	/**
+	 * (Optional) Blueprint assets that are part of this system and should be
+	 * automatically loaded and executed at editor startup if the guard is active.
+	 * Only used for content packs that include editor utility blueprints.
+	 */
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	//TArray<TSoftClassPtr<class UEditorUtilityObject>> UtilityBlueprintsToExecute;
+	
 	//<------------------------------------------------------------------------->
 
+	
 	//<============================--- C++ Only ---=============================>
 
 	/**
@@ -145,5 +162,8 @@ public:
 	 *  are not yet listed in the owning plugin's .uplugin descriptor.
 	 */
 	static void ReconcilePluginDependencies();
+
+	UFUNCTION()
+	TArray<FString> GetPluginOptions() const;
 	//<------------------------------------------------------------------------->
 };

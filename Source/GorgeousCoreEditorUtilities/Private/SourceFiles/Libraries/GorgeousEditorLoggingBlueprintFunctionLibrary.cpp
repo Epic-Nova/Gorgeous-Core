@@ -115,9 +115,17 @@ void UGorgeousEditorLoggingBlueprintFunctionLibrary::RegisterLogHyperlinkAction(
 	GHyperlinkActionBindings.Add(ActionName, { HandlerClass, FunctionName });
 }
 
+void UGorgeousEditorLoggingBlueprintFunctionLibrary::UnregisterLogHyperlinkAction(const FName ActionName)
+{
+	if (!ActionName.IsNone()) 
+		return;
+	
+	GHyperlinkActionBindings.Remove(ActionName);
+}
+
 void UGorgeousEditorLoggingBlueprintFunctionLibrary::LogMessageWithActionHyperlink(const FString Message, const FString LoggingKey,
-	const EGorgeousLoggingImportance Importance, const FName ActionName, const FString ActionPayload,
-	const FString LinkText, UObject* WorldContextObject)
+                                                                                   const EGorgeousLoggingImportance Importance, const FName ActionName, const FString ActionPayload,
+                                                                                   const FString LinkText, UObject* WorldContextObject)
 {
 	FGorgeousLogHyperlink Hyperlink;
 	Hyperlink.LinkText = LinkText.IsEmpty() ? TEXT("Run Action") : LinkText;

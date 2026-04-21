@@ -1,0 +1,59 @@
+Editor: Add asset-validation tooling, system PDAs, validators, resource-guards and UI content
+
+Summary
+- Large feature commit that adds editor-side validation tooling, editors validators for core Gorgeous systems, automatic Asset Manager registration and PDA creation, a small runtime API for auto-replication spawn hooks, a developer settings entry to override PDA mappings, and a bulk of UI/content assets for multiple systems.
+
+What this change does
+- **Asset validation**: Introduces FGorgeousAssetValidationHelper (editor-only) to run data/asset validation programmatically (by class or multiple classes, optionally scoped to a plugin content path). Adds usage documentation to help run validations from the editor.
+- **Editor validators**: Adds targeted validators:
+  - UGorgeousGeneralSystemValidator — discovers plugin /Systems paths, registers those paths with Asset Manager under a new/expanded GorgeousBlueprintSystems scan entry, validates PDAs and system components, creates missing PDAs where appropriate, and exposes helpful editor hyperlinks/actions to fix common issues.
+  - UGorgeousPlaylistSystemValidator & UGorgeousCommonUIFoundationSystemValidator — validators scoped to Playlist and CommonUIFoundation data assets and directories.
+- **Developer settings**: Adds UGorgeousSystemDeveloperSettings (Config=Editor) with `PDAOverrides` (TMap<FName, TSoftObjectPtr<UGeneralSystemConfiguration_PDA>>) so authors can explicitly declare canonical PDAs for systems when needed.
+- **Runtime system API**:
+  - Adds `UGeneralSystem_AC` (base ActorComponent type) to mark system components.
+  - Adds `UGeneralSystemConfiguration_PDA` (PrimaryDataAsset) with deterministic `GetPrimaryAssetId()` derivation, `GetPDAAssetName()` and helper accessors; adds ability to enumerate system PDAs.
+  - Adds `IGorgeousAutoReplicationSpawnHook_I` interface with `OnSpawnedThroughAutoReplication()` to allow objects to run initialization logic on client-side when instantiated via the auto-replication snapshot lifecycle.
+- **Resource guards / Validators and helpers**: Adds editor-side resource guards and validation helpers used by the validators to ensure plugin content is aligned with core expectations.
+- **Content**: Adds/updates a large set of content assets for CommonUIFoundation, General, Playlist, Team and VisualDataGeathering systems (icons in Light/Dark at multiple sizes, styles, widgets, PDAs, DataRegistry assets, blueprints, etc.). This commit includes a large number (~200–300) of asset files necessary for the systems and UI.
+- **Config changes**: The validator can modify Asset Manager settings at runtime to register discovered plugin `/Systems` paths (adds or appends to a GorgeousBlueprintSystems primary asset entry) and triggers in-memory reinitialization so assets are discoverable immediately.
+
+Why
+- Eliminates manual, error-prone setup of system PDAs and Asset Manager scan paths across multiple Gorgeous plugins.
+- Enables consistent project-wide validation for system-related assets early in the authoring flow (editor start / validation pass).
+- Provides a small runtime hook for auto-replication workflows so assets/objects can perform deterministic client initialization after snapshot replication.
+- Improves cross-plugin interoperability and developer ergonomics for shipping new Gorgeous systems.
+
+Upgrade / reviewer notes
+- The editor validator will attempt to update Asset Manager settings to add discovered `/Systems` paths. Review changes to project config and commit the updated config if desired.
+- Missing PDA assets may be automatically created by the validator; review and commit any created PDAs or adjust `UGorgeousSystemDeveloperSettings::PDAOverrides` for explicit mapping.
+- After pulling this change, open the Editor so the validators and asset registration logic can run. Reinitializing the Asset Manager or restarting the Editor may be required in some environments.
+- The new interface `IGorgeousAutoReplicationSpawnHook_I` is a non-breaking extension; but ensure any code that expects replication lifecycle hooks is updated to implement the new interface where appropriate.
+
+Testing / verification steps
+- Launch the Editor and watch for notifications from the Gorgeous validators (they log actions and provide hyperlinks to fix issues).
+- Run the new validation helper (or let it run implicitly) for classes such as `UGeneralSystemConfiguration_PDA` and your DataRegistry assets; verify expected validator results.
+- Inspect Project Settings → Asset Manager to confirm `/Systems` paths for Gorgeous plugins were added (or to revert/adjust).
+- Verify auto-replication: spawn a replicated object that should use the hook and ensure `OnSpawnedThroughAutoReplication` is called on the client as intended.
+- Spot-check a subset of new UI assets (CommonUIFoundation icons/styles/widgets) in the editor UIs that consume them.
+
+Files / areas touched (representative)
+- Source/GorgeousCoreEditorUtilities/Public/Validation/GorgeousAssetValidationHelper.h
+- Source/GorgeousCoreEditorUtilities/Public/ModuleCore/GorgeousSystemDeveloperSettings.h
+- Source/GorgeousCoreEditorUtilities/Private/SourceFiles/ModuleCore/GorgeousSystemDeveloperSettings.cpp
+- Source/GorgeousCoreEditor/Private/SourceFiles/Validators/GorgeousGeneralSystemValidator.cpp
+- Source/GorgeousCoreEditor/Private/HeaderFiles/Validators/Gorgeous*SystemValidator.h
+- Source/GorgeousCoreRuntime/Public/AutoReplication/Interfaces/GorgeousAutoReplicationSpawnHook_I.h
+- Source/GorgeousCoreRuntime/Public/GeneralSystems/GeneralSystemConfiguration_PDA.h
+- Source/GorgeousCoreRuntime/Public/GeneralSystems/GeneralSystem_AC.h
+- Content/Systems/CommonUIFoundation/... (icons, styles, multiple sizes and themes)
+- Content/Systems/{General,Playlist,Team,VisualDataGeathering}/... (PDAs, DataRegistries, blueprints, styles, UIs)
+
+Notes for reviewers
+- Focus review on the validator behavior that updates Asset Manager settings and any code paths that create PDAs automatically—these perform config and content writes which should be deliberate.
+- Validate that the editor-only helpers and validators are gated properly (#if WITH_EDITOR) and do not affect runtime shipping builds.
+- If you prefer the Asset Manager settings update to be manual, we can add a toggle in `UGorgeousSystemDeveloperSettings` to disable auto-registration and leave a migration script instead.
+
+If you want, I can:
+- Produce a shorter/squash-friendly commit subject line.
+- Generate a changelog entry summarizing the visible user-facing changes.
+- Run specific grep/read on additional changed source files and include exact file links and line references in the message.

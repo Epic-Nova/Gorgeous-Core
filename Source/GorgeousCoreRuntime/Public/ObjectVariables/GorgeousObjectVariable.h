@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -149,6 +149,10 @@ public:
 	/** Allows the RepNotify to trigger once when the initial replicated state arrives on a client. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bFireInitialNotify;
+
+	/** If true, object references that resolve to null on the client will be instantiated using the server-provided class and property snapshot. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
+	bool bInitializeNullReferences;
 };
 
 inline FGorgeousReplicatedPropertyConfig::FGorgeousReplicatedPropertyConfig()
@@ -156,6 +160,7 @@ inline FGorgeousReplicatedPropertyConfig::FGorgeousReplicatedPropertyConfig()
 	, RepNotifyFunction(NAME_None)
 	, RepNotifyPolicy(EGorgeousRepNotifyPolicy::OnChanged)
 	, bFireInitialNotify(true)
+	, bInitializeNullReferences(false)
 {
 }
 
@@ -265,13 +270,12 @@ public:
 	 * @param Parent The parent of this object variable. The chain can be followed up to the root object variable.
 	 * @param bShouldPersist Weather this object variable should be persistent across level switches.
 	 * @param DisplayNameOverride An optional display name override for the object variable.
-	 * @param bSupportsNetworking Whether this object variable should support networking features. Enabling this will allow the variable to be replicated and interact with the AutoReplication system, but may introduce additional overhead. This setting cannot be changed after creation, so it should be set according to the intended use case of the variable.
 	 * @return A new variable in object format.
 	 *
 	 * //@TODO: UGorgeousEvent is appearing here as it is also a object variable, we need to filter it out as the construction is handled differently
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
-	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "", const bool bSupportsNetworking = false);
+	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "");
 
 	/**
 	 * Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
@@ -727,7 +731,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
-	/** Whether this variable supports networking features at all. */
+	/** Will allow the variable to be replicated and interact with the AutoReplication system, but may introduce additional overhead */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	bool bSupportsNetworking;
 	
@@ -827,6 +831,7 @@ protected:
 		FName RepNotifyFunction;
 		EGorgeousRepNotifyPolicy RepNotifyPolicy;
 		bool bFireInitialNotify;
+		bool bInitializeNullReferences;
 		bool bDeliveredInitialNotify;
 		bool bShadowInitialized;
 		bool bChangeShadowInitialized;
@@ -923,11 +928,14 @@ private:
 	void TrimRPCResultArray(TArray<FGorgeousAutoReplicationRPCResultDescriptor>& InOutArray);
 	void MarkRPCResultDescriptorsDirty();
 	static UGorgeousObjectVariable* GetOrCreateRPCResultParent();
+
+public:
+	/** Builds a portable binary snapshot of ResultContainer and its VariableRegistry children. Used by both RPC results and the deep-init auto-replication path. */
 	bool BuildRPCResultSnapshot(UGorgeousObjectVariable* ResultContainer, TArray<uint8>& OutSnapshot) const;
 	bool SerializeRPCSnapshotRecursive(UGorgeousObjectVariable* Variable, FArchive& Ar) const;
 	UGorgeousObjectVariable* InstantiateRPCResultFromDescriptor(const FGorgeousAutoReplicationRPCResultDescriptor& Descriptor);
 	UGorgeousObjectVariable* DeserializeRPCSnapshotRecursive(UGorgeousObjectVariable* InParent, FArchive& Ar);
-	
+
 private:
 	
 	UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_REFERENCE_INTERFACE(UGorgeousObjectVariable*, ObjectVariable, Single)

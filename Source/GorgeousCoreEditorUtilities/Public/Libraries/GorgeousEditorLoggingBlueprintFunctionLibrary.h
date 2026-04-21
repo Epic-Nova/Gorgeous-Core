@@ -53,6 +53,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
 	static void RegisterLogHyperlinkAction(const TSubclassOf<UObject> HandlerClass, const FName ActionName, const FName FunctionName);
 	
+	/**
+	 * Unregisters a previously registered hyperlink action, preventing it from being executed when hyperlinks with the same action name are clicked.
+	 *
+	 * @param ActionName The name of the action to unregister.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
+	static void UnregisterLogHyperlinkAction(const FName ActionName);
+	
 	/** 
 	 * Emits a Message Log entry with a clickable hyperlink to an asset. 
 	 * If the asset is missing, a notification is shown.

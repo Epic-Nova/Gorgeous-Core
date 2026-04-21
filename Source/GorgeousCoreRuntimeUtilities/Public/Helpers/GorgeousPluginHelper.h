@@ -63,6 +63,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	GORGEOUS_ATTACH_SINGLETON(UGorgeousPluginHelper);
 	
 	//<============================--- C++ Only ---=============================>
+	
 	/**
 	 * Finds and returns the core gorgeous things module interface.
 	 * 
