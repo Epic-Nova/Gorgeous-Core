@@ -40,13 +40,14 @@ public class GorgeousCoreEditor : ModuleRules
             Path.Combine(privateIncludePath, "ExtensionResourceGuards"),
             Path.Combine(privateIncludePath, "Factories"),
             Path.Combine(privateIncludePath, "K2Nodes"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations") // Public Export Path for the Macros
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
         });
         
         PublicDependencyModuleNames.AddRange(new[]
         {
             "Core", 
-            "PropertyEditor" 
+            "PropertyEditor",
+            "DataValidation"
         });
         
         PrivateDependencyModuleNames.AddRange(
@@ -62,8 +63,10 @@ public class GorgeousCoreEditor : ModuleRules
                 "SlateCore", 
                 "Projects",
                 "UnrealEd", 
-                "AssetTools"
+                "AssetTools",
+                "DataRegistry", "EditorScriptingUtilities"
             });
+
         
         /* Planned for 2.0
             "HTTP",

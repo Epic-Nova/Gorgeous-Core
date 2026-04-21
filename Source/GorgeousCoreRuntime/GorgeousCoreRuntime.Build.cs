@@ -51,6 +51,7 @@ public class GorgeousCoreRuntime : ModuleRules
             "TraceServices",
             "Json",
             "JsonUtilities",
+            "GameFeatures"
         });
 
         // ── GorgeousVault (precompiled third-party DLL) ──────────────────

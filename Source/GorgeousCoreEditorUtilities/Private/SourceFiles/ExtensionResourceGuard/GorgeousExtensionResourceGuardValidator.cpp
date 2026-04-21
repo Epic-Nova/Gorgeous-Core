@@ -37,6 +37,11 @@ UGorgeousExtensionResourceGuardValidator::UGorgeousExtensionResourceGuardValidat
 		FName("HandleEnableRequiredPlugin"));
 }
 
+UGorgeousExtensionResourceGuardValidator::~UGorgeousExtensionResourceGuardValidator()
+{
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.ExtensionGuard.EnablePlugin");
+}
+
 bool UGorgeousExtensionResourceGuardValidator::CanValidateAsset_Implementation(
 	const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {

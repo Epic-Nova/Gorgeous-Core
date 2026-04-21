@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -18,6 +18,15 @@
 #include "IMessageLogListing.h"
 #include "MessageLogModule.h"
 #include "ToolMenus.h"
+#include "DataRegistry.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "Engine/AssetManagerSettings.h"
+#include "EditorValidatorSubsystem.h"
+#include "Containers/Ticker.h"
+#include "UnrealEdMisc.h"
+#include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
+#include "Interfaces/IPluginManager.h"
+#include "Validators/GorgeousGeneralSystemValidator.h"
 //<-------------------------------------------------------------------------->
 
 #if 0
@@ -33,6 +42,8 @@
 namespace
 {
 	FToolMenuOwnerScoped GDebugMenuOwner{TEXT("GorgeousCoreEditorUtilities")};
+	inline bool GBDataRegistryValidationTriggered = false;
+	inline bool GBValidationRan = false;
 
 	void RegisterDebugMenuEntry()
 	{
@@ -87,6 +98,99 @@ namespace
 		}
 
 		ToolMenus->UnregisterOwner(GDebugMenuOwner.GetOwner());
+	}
+	
+	void TriggerDataRegistryValidation()
+	{
+		if (GBDataRegistryValidationTriggered)
+		{
+			return;
+		}
+		GBDataRegistryValidationTriggered = true;
+
+		if (!GEditor)
+		{
+			return;
+		}
+
+		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+		IAssetRegistry& AssetRegistry = ARM.Get();
+		UEditorValidatorSubsystem* ValidatorSubsystem = GEditor->GetEditorSubsystem<UEditorValidatorSubsystem>();
+
+		if (!ValidatorSubsystem)
+		{
+			return;
+		}
+
+		// Find and validate DataRegistry assets
+		TArray<FString> DataRegistryPaths = {
+			TEXT("/GorgeousCore/Systems/Playlist/Data/AdvancedData"),
+			TEXT("/GorgeousCore/Systems/CommonUIFoundation/Data/AdvancedData")
+		};
+
+		TArray<FAssetData> AllDataRegistryAssets;
+
+		for (const FString& Path : DataRegistryPaths)
+		{
+			TArray<FAssetData> AssetDataArray;
+			FARFilter Filter;
+			Filter.ClassPaths.Add(UDataRegistry::StaticClass()->GetClassPathName());
+			Filter.PackagePaths.Add(*Path);
+			Filter.bRecursiveClasses = true;
+			Filter.bRecursivePaths = true;
+
+			AssetRegistry.GetAssets(Filter, AssetDataArray);
+			AllDataRegistryAssets.Append(AssetDataArray);
+		}
+
+		// Validate all found assets
+		if (AllDataRegistryAssets.Num() > 0)
+		{
+			FValidateAssetsSettings Settings;
+			Settings.bSkipExcludedDirectories = false;
+			Settings.bLoadAssetsForValidation = true; // Load assets so validators can inspect them
+
+			FValidateAssetsResults Results;
+			ValidatorSubsystem->ValidateAssetsWithSettings(AllDataRegistryAssets, Settings, Results);
+
+			GT_I_LOG("GorgeousCoreEditor",
+				TEXT("DataRegistry validation complete. %d assets validated."),
+				AllDataRegistryAssets.Num());
+		}
+	}
+	
+	void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry)
+	{
+		if (GBValidationRan)
+		{
+			GT_I_LOG("GorgeousCoreEditor",
+				TEXT("Startup validation already ran — skipping duplicate."));
+			return;
+		}
+		GBValidationRan = true;
+		
+		// Ensure system paths are registered in the Asset Manager
+		if (UGorgeousGeneralSystemValidator* Validator = GetMutableDefault<UGorgeousGeneralSystemValidator>())
+		{
+			Validator->DiscoverAndRegisterGorgeousPluginSystems();
+		}
+
+		// Plugin system discovery is now handled by UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
+		// which is called on FCoreDelegates::OnPostEngineInit
+
+		// Trigger DataRegistry asset validation after a short delay
+		// This ensures all systems are properly initialized
+		FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateLambda([](float)
+			{
+				TriggerDataRegistryValidation();
+				return false; // run once
+			}),
+			0.5f
+		);
+		
+		GT_I_LOG("GorgeousCoreEditor",
+			TEXT("Gorgeous validators are now active and will validate assets on load/save."));
 	}
 }
 
@@ -246,6 +350,26 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	});
 	
 	RegisterDebugMenuEntry();
+	
+	FCoreDelegates::OnPostEngineInit.AddLambda([this]()
+	{
+		if (!GEditor)
+			return;
+
+		// Delay execution to ensure everything is fully initialized
+		FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateLambda([this](float)
+			{
+				FAssetRegistryModule& ARM =
+					FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
+				RunGorgeousCoreStartupValidation(ARM.Get());
+
+				return false; // run once
+			}),
+			2.0f
+		);
+	});
 }
 
 void FGorgeousCoreEditorModule::GorgeousShutdownModule()

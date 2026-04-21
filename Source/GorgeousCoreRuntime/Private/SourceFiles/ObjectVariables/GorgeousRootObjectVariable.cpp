@@ -32,6 +32,31 @@ FSimpleMulticastDelegate UGorgeousRootObjectVariable::OnRootRegistryChanged;
 
 namespace GorgeousRootObjectVariable_Private
 {
+	static bool bAllowRootCreation = true;
+
+	static FString BuildOuterChain(const UObject* Start)
+	{
+		if (!Start)
+		{
+			return TEXT("<null>");
+		}
+
+		FString Chain;
+		const UObject* Current = Start;
+		while (Current)
+		{
+			if (!Chain.IsEmpty())
+			{
+				Chain += TEXT(" -> ");
+			}
+
+			Chain += FString::Printf(TEXT("%s[%s]"), *GetNameSafe(Current), *GetNameSafe(Current->GetClass()));
+			Current = Current->GetOuter();
+		}
+
+		return Chain;
+	}
+
 	static void ForEachRootRegistry(TFunctionRef<void(TMap<FName, TObjectPtr<UGorgeousObjectVariable>>&, UGorgeousRootObjectVariable*)> Callback)
 	{
 			if (UGorgeousRootObjectVariable::NamedRootInstances.Num() == 0)
@@ -145,12 +170,26 @@ UGorgeousRootObjectVariable::UGorgeousRootObjectVariable()
 UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetRootObjectVariable(const FName RootName)
 {
 	const FName ResolvedName = ResolveRootName(RootName);
-	if (IsEngineExitRequested())
+	if (IsEngineExitRequested() || !GorgeousRootObjectVariable_Private::bAllowRootCreation)
 	{
+		if (!GorgeousRootObjectVariable_Private::bAllowRootCreation)
+		{
+			UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("Root creation blocked during teardown for '%s'; returning existing root only."), *ResolvedName.ToString());
+		}
 		return TryGetExistingRoot(ResolvedName);
 	}
 	
 	return GetOrCreateRootInternal(ResolvedName);
+}
+
+void UGorgeousRootObjectVariable::SetRootCreationAllowed(const bool bAllowed)
+{
+	GorgeousRootObjectVariable_Private::bAllowRootCreation = bAllowed;
+}
+
+bool UGorgeousRootObjectVariable::IsRootCreationAllowed()
+{
+	return GorgeousRootObjectVariable_Private::bAllowRootCreation;
 }
 
 UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::TryGetExistingRoot(const FName RootName)
@@ -436,6 +475,14 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 			{
 				if (AsRoot->IsRooted())
 				{
+					UE_LOG(
+						LogGorgeousRootObjectVariable,
+						VeryVerbose,
+						TEXT("RemoveVariableFromRegistry: RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"),
+						*GetNameSafe(AsRoot),
+						*It->Key.ToString(),
+						*GetNameSafe(AsRoot->GetOuter()),
+						*GorgeousRootObjectVariable_Private::BuildOuterChain(AsRoot));
 					AsRoot->RemoveFromRoot();
 				}
 				It.RemoveCurrent();
@@ -462,6 +509,13 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 				{
 					if (VariableToRemove->IsRooted())
 					{
+						UE_LOG(
+							LogGorgeousRootObjectVariable,
+							VeryVerbose,
+							TEXT("RemoveVariableFromRegistry: RemoveFromRoot variable '%s' (Outer='%s', Chain=%s)"),
+							*GetNameSafe(VariableToRemove),
+							*GetNameSafe(VariableToRemove->GetOuter()),
+							*GorgeousRootObjectVariable_Private::BuildOuterChain(VariableToRemove));
 						VariableToRemove->RemoveFromRoot();
 					}
 					It.RemoveCurrent();
@@ -520,6 +574,12 @@ bool UGorgeousRootObjectVariable::IsVariableRegistered(UGorgeousObjectVariable* 
 
 void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 {
+	if (bFullCleanup)
+	{
+		// Latch creation guard for the rest of the teardown sequence.
+		SetRootCreationAllowed(false);
+	}
+
 	const EGorgeousObjectVariableOrphanResolution PreviousResolution = DefaultOrphanResolution;
 	if (bFullCleanup)
 	{
@@ -627,6 +687,14 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 					Root->SetFallbackOwner(nullptr);
 					if (Root->IsRooted())
 					{
+						UE_LOG(
+							LogGorgeousRootObjectVariable,
+							VeryVerbose,
+							TEXT("CleanupRegistry(full): RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"),
+							*GetNameSafe(Root),
+							*RootName.ToString(),
+							*GetNameSafe(Root->GetOuter()),
+							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 						Root->RemoveFromRoot();
 					}
 					// Sever the UObject outer reference back to the PIE GameInstance.
@@ -637,8 +705,22 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 					if (UObject* RootOuter = Root->GetOuter();
 						RootOuter && RootOuter != GetTransientPackage())
 					{
+						UE_LOG(
+							LogGorgeousRootObjectVariable,
+							VeryVerbose,
+							TEXT("CleanupRegistry(full): Renaming root '%s' from outer '%s' to transient package (ChainBefore=%s)"),
+							*GetNameSafe(Root),
+							*GetNameSafe(RootOuter),
+							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 						Root->Rename(nullptr, GetTransientPackage(),
 							REN_DontCreateRedirectors | REN_ForceNoResetLoaders);
+						UE_LOG(
+							LogGorgeousRootObjectVariable,
+							VeryVerbose,
+							TEXT("CleanupRegistry(full): Root '%s' renamed to outer '%s' (ChainAfter=%s)"),
+							*GetNameSafe(Root),
+							*GetNameSafe(Root->GetOuter()),
+							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 					}
 				}
 				NamedRootInstances.Remove(RootName);
@@ -791,8 +873,12 @@ FName UGorgeousRootObjectVariable::ResolveRootName(const FName RequestedRootName
 
 UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetOrCreateRootInternal(const FName RootName)
 {
-	if (IsEngineExitRequested())
+	if (IsEngineExitRequested() || !GorgeousRootObjectVariable_Private::bAllowRootCreation)
 	{
+		if (!GorgeousRootObjectVariable_Private::bAllowRootCreation)
+		{
+			UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("GetOrCreateRootInternal blocked for '%s' during teardown; returning existing root only."), *RootName.ToString());
+		}
 		return TryGetExistingRoot(RootName);
 	}
 
