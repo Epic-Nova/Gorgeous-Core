@@ -450,6 +450,7 @@ void FGorgeousAutoReplicationMixin::RefreshCachedValues()
 
 bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, FGuid* OutRequestGuid)
 {
+	GT_I_LOG("GT.AutoReplication.Mixin.RPC.Requested", TEXT("RPC requested for key %s with type %d and target kind %d."), *Key.ToString(), static_cast<int32>(Type), static_cast<int32>(TargetKind));
 	EnsureBound();
 
 	if (!bNetworkingEnabled)

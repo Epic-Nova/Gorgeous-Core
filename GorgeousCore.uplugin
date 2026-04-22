@@ -50,6 +50,14 @@
 			"Enabled": true
 		},
 		{
+			"Name": "GameFeatures",
+			"Enabled": true
+		},
+		{
+			"Name": "DataRegistry",
+			"Enabled": true
+		},
+		{
 			"Name": "ReplicationGraph",
 			"Enabled": true
 		},

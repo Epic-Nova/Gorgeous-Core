@@ -22,6 +22,7 @@
 #include "Engine/World.h"
 #include "Engine/GameEngine.h"
 #include "Templates/UnrealTemplate.h"
+#include "UObject/UObjectIterator.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -29,6 +30,99 @@
 //=============================================================================
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousGameInstance, Log, All);
+
+namespace GorgeousGameInstance_Private
+{
+	static FString BuildOuterChain(const UObject* Start)
+	{
+		if (!Start)
+		{
+			return TEXT("<null>");
+		}
+
+		FString Chain;
+		const UObject* Current = Start;
+		while (Current)
+		{
+			if (!Chain.IsEmpty())
+			{
+				Chain += TEXT(" -> ");
+			}
+
+			Chain += FString::Printf(TEXT("%s[%s]"), *GetNameSafe(Current), *GetNameSafe(Current->GetClass()));
+			Current = Current->GetOuter();
+		}
+
+		return Chain;
+	}
+
+	static bool IsInOuterChain(const UObject* Candidate, const UObject* TargetOuter)
+	{
+		const UObject* Current = Candidate;
+		while (Current)
+		{
+			if (Current == TargetOuter)
+			{
+				return true;
+			}
+			Current = Current->GetOuter();
+		}
+
+		return false;
+	}
+
+	static void LogNamedRootInstances(const UGorgeousGameInstance* GameInstance)
+	{
+		UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Inspecting NamedRootInstances (%d entries) before purge:"), UGorgeousRootObjectVariable::NamedRootInstances.Num());
+
+		for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+		{
+			const UGorgeousRootObjectVariable* Root = Pair.Value.Get();
+			UE_LOG(
+				LogGorgeousGameInstance,
+				VeryVerbose,
+				TEXT("  RootKey='%s' Root='%s' Class='%s' Rooted=%s Outer='%s' InGIChain=%s OuterChain=%s"),
+				*Pair.Key.ToString(),
+				*GetNameSafe(Root),
+				*GetNameSafe(Root ? Root->GetClass() : nullptr),
+				(Root && Root->IsRooted()) ? TEXT("true") : TEXT("false"),
+				*GetNameSafe(Root ? Root->GetOuter() : nullptr),
+				(Root && IsInOuterChain(Root, GameInstance)) ? TEXT("true") : TEXT("false"),
+				*BuildOuterChain(Root));
+		}
+	}
+
+	static int32 DumpRootedObjectsInGameInstanceOuterChain(const UGorgeousGameInstance* GameInstance)
+	{
+		int32 RootedInChainCount = 0;
+		for (TObjectIterator<UObject> It; It; ++It)
+		{
+			UObject* Object = *It;
+			if (!Object || !Object->IsRooted())
+			{
+				continue;
+			}
+
+			if (!IsInOuterChain(Object, GameInstance))
+			{
+				continue;
+			}
+
+			++RootedInChainCount;
+			UE_LOG(
+				LogGorgeousGameInstance,
+				VeryVerbose,
+				TEXT("Rooted object in GameInstance outer chain: Obj='%s' Class='%s' Flags=0x%08x Outer='%s' OuterChain=%s"),
+				*GetNameSafe(Object),
+				*GetNameSafe(Object->GetClass()),
+				static_cast<uint32>(Object->GetFlags()),
+				*GetNameSafe(Object->GetOuter()),
+				*BuildOuterChain(Object));
+		}
+
+		return RootedInChainCount;
+	}
+}
 
 UGorgeousGameInstance::UGorgeousGameInstance()
 {
@@ -41,6 +135,8 @@ UGorgeousGameInstance::UGorgeousGameInstance()
 
 void UGorgeousGameInstance::Init()
 {
+	UGorgeousRootObjectVariable::SetRootCreationAllowed(true);
+
 	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
 
 	if (!UGorgeousRootObjectVariable::GetRootObjectVariable())
@@ -73,6 +169,74 @@ void UGorgeousGameInstance::Init()
 
 void UGorgeousGameInstance::Shutdown()
 {
+	UGorgeousRootObjectVariable::SetRootCreationAllowed(false);
+
+	GorgeousGameInstance_Private::LogNamedRootInstances(this);
+
+	const int32 RootedBeforePurge = GorgeousGameInstance_Private::DumpRootedObjectsInGameInstanceOuterChain(this);
+	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Found %d rooted object(s) in GameInstance outer chain before purge."), RootedBeforePurge);
+
+	int32 PurgedWorldOwnedEntries = 0;
+	const TArray<UGorgeousObjectVariable*> HierarchySnapshot = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+	for (UGorgeousObjectVariable* Variable : HierarchySnapshot)
+	{
+		if (!IsValid(Variable))
+		{
+			continue;
+		}
+
+		UObject* VariableOuter = Variable->GetOuter();
+		bool bOwnedByThisGameInstance = VariableOuter == this;
+
+		if (!bOwnedByThisGameInstance)
+		{
+			if (UWorld* OwningWorld = Variable->GetVariableWorld())
+			{
+				bOwnedByThisGameInstance = OwningWorld->GetGameInstance() == this;
+			}
+		}
+
+		if (!bOwnedByThisGameInstance)
+		{
+			continue;
+		}
+
+		UE_LOG(
+			LogGorgeousGameInstance,
+			Verbose,
+			TEXT("Purging world-owned OV during Shutdown: '%s' Outer='%s' Rooted=%s Chain=%s"),
+			*GetNameSafe(Variable),
+			*GetNameSafe(VariableOuter),
+			Variable->IsRooted() ? TEXT("true") : TEXT("false"),
+			*GorgeousGameInstance_Private::BuildOuterChain(Variable));
+
+		UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Variable);
+		++PurgedWorldOwnedEntries;
+	}
+
+	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Purged %d world-owned object-variable registry entries during Shutdown."), PurgedWorldOwnedEntries);
+
+	for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+	{
+		if (UGorgeousRootObjectVariable* RootInstance = Pair.Value.Get())
+		{
+			if (RootInstance->IsRooted() && RootInstance->GetOuter() == this)
+			{
+				UE_LOG(
+					LogGorgeousGameInstance,
+					VeryVerbose,
+					TEXT("Unrooting rooted root OV outered to this GI during Shutdown: RootKey='%s' Root='%s' Chain=%s"),
+					*Pair.Key.ToString(),
+					*GetNameSafe(RootInstance),
+					*GorgeousGameInstance_Private::BuildOuterChain(RootInstance));
+				RootInstance->RemoveFromRoot();
+			}
+		}
+	}
+
+	const int32 RootedAfterPurge = GorgeousGameInstance_Private::DumpRootedObjectsInGameInstanceOuterChain(this);
+	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Found %d rooted object(s) in GameInstance outer chain after purge/unroot pass."), RootedAfterPurge);
+
 	if (RootRegistryChangedHandle.IsValid())
 	{
 		UGorgeousRootObjectVariable::OnRootRegistryChanged.Remove(RootRegistryChangedHandle);
@@ -140,7 +304,18 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 
 			if (RootInstance->GetOuter() == GetTransientPackage())
 			{
-				RootInstance->Rename(nullptr, this);
+				if (RootInstance->IsRooted())
+				{
+					UE_LOG(
+						LogGorgeousGameInstance,
+						VeryVerbose,
+						TEXT("Skipping Rename for rooted root OV '%s' to avoid entering GameInstance outer chain during teardown."),
+						*GetNameSafe(RootInstance));
+				}
+				else
+				{
+					RootInstance->Rename(nullptr, this);
+				}
 			}
 		}
 	}
