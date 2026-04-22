@@ -19,6 +19,7 @@
 #include "QualityOfLife/GorgeousLocalPlayerRegistry_GIS.h"
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
+#include "GameFeaturesSubsystem.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
@@ -575,5 +576,32 @@ void UGorgeousCoreRuntimeGlobals::InitializeAutoReplicationForWorld(UWorld* Worl
 	// Touch the coordinator to ensure desired backends (Iris/ReplicationGraph) spin up.
 	FGorgeousAutoReplicationCoordinator::Get(World);
 }
+
+bool UGorgeousCoreRuntimeGlobals::IsGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName)
+{
+	if (!WorldContextObject)
+	{
+		GT_W_LOG("GT.RuntimeGlobals.GameFeaturePlugin.NoContext", TEXT("Cannot enable game feature plugin %s because WorldContextObject is null."), *PluginName.ToString());
+		return false;
+	}
+	
+	return UGameFeaturesSubsystem::Get().IsGameFeaturePluginActive(PluginName.ToString());
+}
+
+void UGorgeousCoreRuntimeGlobals::SetGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName, const bool bNewActive)
+{
+	if ((bNewActive && IsGameFeaturePluginActive(WorldContextObject, PluginName)) || (!bNewActive && !IsGameFeaturePluginActive(WorldContextObject, PluginName)))
+		return;
+	
+	if (bNewActive)
+	{
+		UGameFeaturesSubsystem::Get().LoadAndActivateGameFeaturePlugin(PluginName.ToString(), FGameFeaturePluginLoadComplete());
+	}
+	else
+	{
+		UGameFeaturesSubsystem::Get().DeactivateGameFeaturePlugin(PluginName.ToString());
+	}
+}
+
 
 #pragma endregion AutoReplication_Networking_Functions

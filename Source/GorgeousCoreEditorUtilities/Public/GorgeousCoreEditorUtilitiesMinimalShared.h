@@ -36,4 +36,5 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "StyleRegistration/GorgeousStyleRegistrationHelpers.h"
 
 // Validation Includes
+#include "Validation/GorgeousAssetValidationHelper.h"
 #include "Validation/GorgeousValidationHelpers.h"

@@ -34,7 +34,7 @@ public class GorgeousCoreEditorUtilities : ModuleRules
 
         PrivateIncludePaths.AddRange(new[]
         {
-            privateIncludePath
+            Path.Combine(privateIncludePath, "HeaderFiles")
         });
         
         PublicDependencyModuleNames.AddRange(new[]
@@ -66,7 +66,8 @@ public class GorgeousCoreEditorUtilities : ModuleRules
                 "UMG", 
                 "ContentBrowser",
                 "DeveloperSettings",
-                "GameplayTags"
+                "GameplayTags", 
+                "Blutility"
             });
     
         

@@ -174,6 +174,12 @@ public:
    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    static void PromoteRootRegistryOwner(FName RootName, UObject* CachedOwner);
 
+   /** Enables/disables creation of new root instances (used to block late teardown re-entry). */
+   static void SetRootCreationAllowed(bool bAllowed);
+
+   /** Returns whether new root instances are currently allowed to be created. */
+   static bool IsRootCreationAllowed();
+
 	/** Resolves an explicit root name against the developer settings to produce a canonical entry key. */
 	static FName ResolveRootName(FName RequestedRootName);
 
