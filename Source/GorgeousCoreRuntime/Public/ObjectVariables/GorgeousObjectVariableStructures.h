@@ -191,6 +191,6 @@ struct GORGEOUSCORERUNTIME_API FObjectVariableMultiMapValue
 	GENERATED_BODY()
 
 	// Value array for the multi-map entry, allowing for multiple values to be associated with a single key.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Gorgeous Object Variables")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (ShowOnlyInnerProperties))
 	TArray<UGorgeousObjectVariable*> Values;
 };

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -684,6 +684,24 @@ TArray<FName> UGorgeousPluginHelper::GetGorgeousPluginDependencies(const FName& 
 	}
 	
 	return UniqueDependencies.Array();
+}
+
+TArray<IGorgeousThingsModuleInterface*> UGorgeousPluginHelper::GetAllRegisteredModules() const
+{
+	TArray<IGorgeousThingsModuleInterface*> Result;
+	Result.Reserve(RegisteredCoreModules.Num() + RegisteredModules.Num());
+
+	for (const auto& Pair : RegisteredCoreModules)
+	{
+		Result.Add(Pair.Key);
+	}
+
+	for (const auto& Pair : RegisteredModules)
+	{
+		Result.Add(Pair.Key);
+	}
+
+	return Result;
 }
 
 bool UGorgeousPluginHelper::HasCircularDeferredDependency(const FName& PluginA, const FName& PluginB) const

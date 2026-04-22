@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -165,6 +165,15 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return Array of dependency plugin names.
 	 */
 	TArray<FName> GetGorgeousPluginDependencies(const FName& PluginName) const;
+
+	/**
+	 * Returns every registered module interface across both core and non-core registries.
+	 * Used by the Gorgeous Library to discover IGorgeousLibraryParticipant instances
+	 * without a direct compile-time dependency on editor-only types.
+	 *
+	 * @return Flat array of all registered module interface pointers.
+	 */
+	TArray<IGorgeousThingsModuleInterface*> GetAllRegisteredModules() const;
 
 private:
 	
