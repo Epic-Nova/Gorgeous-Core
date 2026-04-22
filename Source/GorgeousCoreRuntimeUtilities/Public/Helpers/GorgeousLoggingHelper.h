@@ -49,6 +49,12 @@ struct FGorgeousToastParams
 	
 	// Whether the notification auto-dismisses (true) or requires user interaction (false).
 	bool bFireAndForget = true;
+
+	// Optional hyperlink text
+	FText HyperlinkText;
+
+	// Optional hyperlink callback
+	FSimpleDelegate HyperlinkDelegate;
 };
 
 //<============================--- Variables ---============================>
@@ -97,6 +103,12 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
             Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
             break;
     }
+	
+	if (!Params.HyperlinkText.IsEmpty() && Params.HyperlinkDelegate.IsBound())
+	{
+		Info.Hyperlink = Params.HyperlinkDelegate;
+		Info.HyperlinkText = Params.HyperlinkText;
+	}
 	
 	NotificationManager.AddNotification(Info);
 #endif

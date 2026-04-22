@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -25,6 +25,8 @@
 #include "MessageLogModule.h"
 #include "PropertyEditorModule.h"
 #include "ToolMenus.h"
+#include "LibraryWizard/SGorgeousLibraryView.h"
+#include "Widgets/Docking/SDockTab.h"
 //<-------------------------------------------------------------------------->
 
 #if 0
@@ -40,6 +42,47 @@
 namespace
 {
 	FToolMenuOwnerScoped GDebugMenuOwner{TEXT("GorgeousCoreEditorUtilities")};
+	static const FName GorgeousLibraryTabName("GorgeousLibrary");
+
+	void RegisterLibraryMenuEntry()
+	{
+		if (!UToolMenus::IsToolMenuUIEnabled())
+		{
+			return;
+		}
+
+		FTabSpawnerEntry& Spawner = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GorgeousLibraryTabName, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
+		{
+			return SNew(SDockTab)
+				.TabRole(ETabRole::NomadTab)
+				[
+					SNew(SGorgeousLibraryView)
+				];
+		}))
+		.SetDisplayName(NSLOCTEXT("GorgeousCore", "LibraryTabTitle", "Gorgeous Library"))
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Package"))
+		.SetMenuType(ETabSpawnerMenuType::Hidden);
+
+		UToolMenus* ToolMenus = UToolMenus::Get();
+		UToolMenu* WindowMenu = ToolMenus->ExtendMenu("LevelEditor.MainMenu.Window");
+		if (!WindowMenu)
+		{
+			return;
+		}
+
+		FToolMenuSection& Section = WindowMenu->FindOrAddSection("GetContent");
+		
+		Section.AddMenuEntry(
+			"OpenGorgeousLibrary",
+			NSLOCTEXT("GorgeousCore", "OpenLibrary", "Gorgeous Library"),
+			NSLOCTEXT("GorgeousCore", "OpenLibraryTooltip", "Open the Gorgeous Library to manage templates and assets."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Package"),
+			FUIAction(FExecuteAction::CreateLambda([]()
+			{
+				FGlobalTabmanager::Get()->TryInvokeTab(GorgeousLibraryTabName);
+			}))
+		);
+	}
 
 	void RegisterDebugMenuEntry()
 	{
@@ -258,6 +301,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 
 	FGorgeousDataSchemaMappingAssetMenu::Register();
 	
+	RegisterLibraryMenuEntry();
 	RegisterDebugMenuEntry();
 }
 
@@ -288,6 +332,8 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 
 	FGorgeousDataSchemaMappingAssetMenu::Unregister();
 	
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GorgeousLibraryTabName);
+
 	UnregisterDebugMenuEntry();
 	
 	UNREGISTER_GORGEOUS_ASSETS;

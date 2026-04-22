@@ -20,6 +20,7 @@
 //<===========--- Forward Declarations ---===========>
 class FSlateStyleSet;
 class IGorgeousInsightMatrixProvider;
+class IGorgeousLibraryParticipant;
 //<-------------------------------------------------->
 
 /**
@@ -136,6 +137,14 @@ public:
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const;
+
+	/**
+	 * Returns the Gorgeous Library participant for this module, if any.
+	 * This is optional. The Gorgeous Library will silently skip modules that return nullptr here.
+	 *
+	 * @return Pointer to the library participant, or nullptr if this module does not participate.
+	 */
+	IGorgeousLibraryParticipant* GetLibraryParticipant() const { return LibraryParticipant; }
 	
 protected:
 
@@ -151,5 +160,11 @@ protected:
 	
 	// Optional Insight Matrix provider for runtime modules.
 	IGorgeousInsightMatrixProvider* InsightProvider = nullptr;
+
+	/**
+	 * Optional Gorgeous Library participant.
+	 * Set this in GorgeousStartupModule() to register with the Gorgeous Library.
+	 */
+	IGorgeousLibraryParticipant* LibraryParticipant = nullptr;
 	//<------------------------------------------------------------------------->
 };
