@@ -31,8 +31,8 @@
 #include "Factories/Factory.h"
 #include "UObject/SavePackage.h"
 #include "Engine/DataAsset.h"
-#include "Developer/DesktopPlatform/Public/IDesktopPlatform.h"
-#include "Developer/DesktopPlatform/Public/DesktopPlatformModule.h"
+#include "ContentBrowserModule.h"
+#include "IContentBrowserSingleton.h"
 //<----- Module Includes ----->
 #include "LibraryWizard/GorgeousSystemTemplate_DA.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
@@ -263,7 +263,7 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 				.AutoWidth()
 				.Padding(4.0f, 0.0f, 0.0f, 0.0f)
 				[
-					SNew(SButton)
+					SAssignNew(BrowseFolderButton, SButton)
 					.ButtonStyle(FAppStyle::Get(), "SimpleButton")
 					.ToolTipText(NSLOCTEXT("GorgeousCore", "WizardBrowseTooltip", "Browse for folder..."))
 					.OnClicked(this, &SGorgeousSetupWizard::OnBrowseFolderClicked)
@@ -475,36 +475,42 @@ FReply SGorgeousSetupWizard::OnCancelClicked()
 
 FReply SGorgeousSetupWizard::OnBrowseFolderClicked()
 {
-	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
-	if (DesktopPlatform)
-	{
-		const FString CurrentPath = SavePathTextBox.IsValid() ? SavePathTextBox->GetText().ToString() : TEXT("");
-		FString SelectedDirectory;
-		
-		const bool bOpened = DesktopPlatform->OpenDirectoryDialog(
-			FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr),
-			NSLOCTEXT("GorgeousCore", "ChooseSaveDir", "Choose Save Directory").ToString(),
-			CurrentPath,
-			SelectedDirectory
-		);
+	FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
+	FPathPickerConfig PickerConfig;
 
-		if (bOpened && SavePathTextBox.IsValid())
-		{
-			// Convert absolute path to game relative if possible
-			FString RelativePath;
-			if (FPaths::MakePathRelativeTo(SelectedDirectory, *FPaths::ProjectContentDir()))
-			{
-				RelativePath = TEXT("/Game/") + SelectedDirectory;
-			}
-			else
-			{
-				RelativePath = SelectedDirectory;
-			}
-			
-			SavePathTextBox->SetText(FText::FromString(RelativePath));
-		}
+	PickerConfig.DefaultPath = SavePathTextBox.IsValid() ? SavePathTextBox->GetText().ToString() : TEXT("/Game");
+	PickerConfig.bAllowContextMenu = false;
+	PickerConfig.bFocusSearchBoxWhenOpened = true;
+	PickerConfig.OnPathSelected = FOnPathSelected::CreateSP(this, &SGorgeousSetupWizard::HandleSavePathPicked);
+
+	const TSharedRef<SWidget> PickerWidget = SNew(SBox)
+		.WidthOverride(420.0f)
+		.HeightOverride(480.0f)
+		[
+			ContentBrowserModule.Get().CreatePathPicker(PickerConfig)
+		];
+
+	if (BrowseFolderButton.IsValid())
+	{
+		FSlateApplication::Get().PushMenu(
+			BrowseFolderButton.ToSharedRef(),
+			FWidgetPath(),
+			PickerWidget,
+			FSlateApplication::Get().GetCursorPos(),
+			FPopupTransitionEffect(FPopupTransitionEffect::ContextMenu));
 	}
+
 	return FReply::Handled();
+}
+
+void SGorgeousSetupWizard::HandleSavePathPicked(const FString& PickedPath)
+{
+	if (SavePathTextBox.IsValid())
+	{
+		SavePathTextBox->SetText(FText::FromString(PickedPath));
+	}
+
+	FSlateApplication::Get().DismissAllMenus();
 }
 
 //-----------------------------------------------------------------------------

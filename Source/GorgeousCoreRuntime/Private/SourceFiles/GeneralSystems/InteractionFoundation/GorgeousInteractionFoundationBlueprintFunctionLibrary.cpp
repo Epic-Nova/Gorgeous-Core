@@ -1,0 +1,387 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|        that has nothing in common with Epic Games in any capacity.        |
+<==========================================================================*/
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundationBlueprintFunctionLibrary.h"
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "GorgeousCoreRuntimeGlobals.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
+//<-------------------------------------------------------------------------->
+
+namespace GorgeousInteractionFoundation
+{
+    static AActor* ResolveInteractingActor(const UObject* ContextObject)
+    {
+        if (!ContextObject)
+        {
+            return nullptr;
+        }
+
+        if (AActor* Actor = Cast<AActor>(const_cast<UObject*>(ContextObject)))
+        {
+            return Actor;
+        }
+
+        if (APlayerController* PlayerController = Cast<APlayerController>(const_cast<UObject*>(ContextObject)))
+        {
+            return PlayerController;
+        }
+
+        const TArray<UObject*> QoLReferences = UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReferences(ContextObject, AGorgeousPlayerController::StaticClass());
+        for (UObject* Object : QoLReferences)
+        {
+            if (APlayerController* PlayerController = Cast<APlayerController>(Object))
+            {
+                return PlayerController;
+            }
+        }
+
+        return nullptr;
+    }
+
+    static bool IsValidInteractionTarget(const AActor* TargetActor)
+    {
+        return TargetActor != nullptr && TargetActor->GetClass()->ImplementsInterface(UInteractionFoundation_I::StaticClass());
+    }
+
+    static bool DoesTargetSupportTag(const AActor* TargetActor, const FGameplayTag& InteractionTag)
+    {
+        if (!IsValidInteractionTarget(TargetActor) || !InteractionTag.IsValid())
+        {
+            return false;
+        }
+
+        const FGameplayTagContainer InteractionTags = IInteractionFoundation_I::Execute_RequestInteractionTags(TargetActor);
+        return InteractionTags.HasTag(InteractionTag);
+    }
+
+    static bool PerformSphereTrace(const UObject* WorldContextObject, const FGorgeousInteractionSphereTraceParameters& TraceParameters, FHitResult& OutHitResult)
+    {
+        if (!WorldContextObject)
+        {
+            return false;
+        }
+
+        UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return false;
+        }
+
+        FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(GorgeousInteractionSphereTrace), TraceParameters.bTraceComplex);
+        QueryParams.bReturnPhysicalMaterial = false;
+        QueryParams.AddIgnoredActors(TraceParameters.ActorsToIgnore);
+
+        if (TraceParameters.bIgnoreSelf)
+        {
+            if (const AActor* SelfActor = Cast<AActor>(WorldContextObject))
+            {
+                QueryParams.AddIgnoredActor(SelfActor);
+            }
+        }
+
+        const FCollisionShape TraceShape = FCollisionShape::MakeSphere(TraceParameters.Radius);
+        return World->SweepSingleByChannel(OutHitResult, TraceParameters.Start, TraceParameters.End, FQuat::Identity, TraceParameters.TraceChannel, TraceShape, QueryParams);
+    }
+
+    static FLinearColor ResolveTraceColor(const UObject* WorldContextObject, const FHitResult& HitResult, const FGameplayTag InteractionTag, const FGorgeousDebugAssistVisualParameters& VisualParameters)
+    {
+        if (!HitResult.bBlockingHit || !HitResult.GetActor())
+        {
+            return FLinearColor::White;
+        }
+
+        AActor* TargetActor = HitResult.GetActor();
+        if (!GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+        {
+            return VisualParameters.SweptSphereMissColor;
+        }
+
+        AActor* InteractingActor = ResolveInteractingActor(WorldContextObject);
+        if (!InteractingActor)
+        {
+            return FLinearColor::White;
+        }
+
+        const bool bCanInteract = IInteractionFoundation_I::Execute_CanInteract(TargetActor, InteractingActor);
+        return bCanInteract ? VisualParameters.SweptSphereHitColor : VisualParameters.SweptSphereMissColor;
+    }
+
+    static void DrawDebugActorBounds(const UObject* WorldContextObject, const AActor* TargetActor, float Duration)
+    {
+        if (!WorldContextObject || !TargetActor || Duration <= 0.0f)
+        {
+            return;
+        }
+
+        UWorld* World = WorldContextObject->GetWorld();
+        if (!World)
+        {
+            return;
+        }
+
+        FVector BoundsOrigin;
+        FVector BoundsExtent;
+        TargetActor->GetActorBounds(true, BoundsOrigin, BoundsExtent, true);
+
+        if (BoundsExtent.IsNearlyZero())
+        {
+            return;
+        }
+
+        const FVector InflatedExtent = BoundsExtent * 1.04f + FVector(2.0f);
+        UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistBox(WorldContextObject, BoundsOrigin, InflatedExtent, FLinearColor(0, 0.58f, 1.0f), true, true, Duration, false, 2.0f, FColor(0, 148, 255, 96));
+    }
+
+    static EGorgeousDebugAssistPointState ResolvePointState(const AActor* TargetActor, const FVector& Location)
+    {
+        if (!TargetActor)
+        {
+            return EGorgeousDebugAssistPointState::OutOfBounds;
+        }
+
+        FVector Origin;
+        FVector BoxExtent;
+        TargetActor->GetActorBounds(true, Origin, BoxExtent, true);
+
+        if (BoxExtent.IsNearlyZero())
+        {
+            return EGorgeousDebugAssistPointState::OutOfBounds;
+        }
+
+        const FBox ActorBox = FBox(Origin - BoxExtent, Origin + BoxExtent).ExpandBy(2.0f);
+ 
+        if (ActorBox.IsInsideOrOn(Location))
+        {
+            // Point is inside or on the surface. 
+            // For hit visualizations, we favor InBounds (Green) for clarity on interactables.
+            const FVector DistToMin = (Location - (Origin - BoxExtent)).GetAbs();
+            const FVector DistToMax = (Location - (Origin + BoxExtent)).GetAbs();
+            const float SurfaceThreshold = 0.1f; // Much tighter threshold for 'On' state
+
+            if (DistToMin.X < SurfaceThreshold || DistToMin.Y < SurfaceThreshold || DistToMin.Z < SurfaceThreshold ||
+                DistToMax.X < SurfaceThreshold || DistToMax.Y < SurfaceThreshold || DistToMax.Z < SurfaceThreshold)
+            {
+                // Only use Yellow if it's truly "glued" to the outer shell
+                return EGorgeousDebugAssistPointState::OnBounds;
+            }
+
+            return EGorgeousDebugAssistPointState::InBounds;
+        }
+
+        return EGorgeousDebugAssistPointState::OutOfBounds;
+    }
+}
+
+//=============================================================================
+// UGorgeousInteractionFoundationBlueprintFunctionLibrary Implementation
+//=============================================================================
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags)
+{
+    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    {
+        return false;
+    }
+
+    OutInteractionTags = IInteractionFoundation_I::Execute_RequestInteractionTags(TargetActor);
+    return true;
+}
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryCanInteract(AActor* TargetActor, AActor* InteractingActor, bool& bCanInteract)
+{
+    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    {
+        return false;
+    }
+
+    bCanInteract = IInteractionFoundation_I::Execute_CanInteract(TargetActor, InteractingActor);
+    return true;
+}
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, FInstancedStruct& OutFocusData)
+{
+    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    {
+        return false;
+    }
+
+    OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor);
+    return true;
+}
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryInteract(AActor* TargetActor, AActor* InteractingActor)
+{
+    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    {
+        return false;
+    }
+
+    IInteractionFoundation_I::Execute_Interact(TargetActor, InteractingActor);
+    return true;
+}
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceInteract(const UObject* WorldContextObject,
+    const FGorgeousInteractionSphereTraceParameters& TraceParameters,
+    const FGameplayTag InteractionTag,
+    FHitResult& OutHitResult)
+{
+    const FGorgeousDebugAssistVisualParameters& DebugVisualParameters = TraceParameters.DebugVisualParameters;
+
+    const bool bHit = GorgeousInteractionFoundation::PerformSphereTrace(WorldContextObject, TraceParameters, OutHitResult);
+    const FLinearColor TraceColor = GorgeousInteractionFoundation::ResolveTraceColor(WorldContextObject, OutHitResult, InteractionTag, DebugVisualParameters);
+    if (DebugVisualParameters.bEnabled)
+    {
+        const FVector EndPoint = bHit ? OutHitResult.Location : TraceParameters.End;
+        UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTrace(WorldContextObject, TraceParameters.Start, EndPoint, TraceParameters.Radius, TraceColor, DebugVisualParameters);
+
+    }
+
+    if (!bHit)
+    {
+        return false;
+    }
+
+    if (DebugVisualParameters.bEnabled)
+    {
+        const bool bFollowTrace = DebugVisualParameters.HitSphere.bFollowTrace || DebugVisualParameters.HitBox.bFollowTrace || DebugVisualParameters.HitPoint.bFollowTrace;
+
+        const float BoundsDuration = bFollowTrace ? 0.0f : 0.75f;
+
+        FGorgeousDebugAssistVisualParameters SyncedParams = DebugVisualParameters;
+        SyncedParams.TracePathColor = TraceColor;
+        UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(WorldContextObject, TraceParameters.Start, TraceParameters.End, OutHitResult, SyncedParams);
+
+        if (DebugVisualParameters.VFX.bEnableGroundingRing)
+        {
+            if (AActor* HitActor = OutHitResult.GetActor())
+            {
+                FVector Origin = HitActor->GetActorLocation();
+                FHitResult GroundHit;
+                FCollisionQueryParams Params;
+                Params.AddIgnoredActor(HitActor);
+                
+                if (WorldContextObject->GetWorld()->LineTraceSingleByChannel(GroundHit, Origin, Origin + FVector(0, 0, -1000.0f), ECC_Visibility, Params))
+                {
+                    // Draw a short arrow pointing down to the ground
+                    const FVector ArrowEnd = GroundHit.ImpactPoint;
+                    const FVector ArrowStart = ArrowEnd + FVector(0, 0, 40.0f);
+                    UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistArrow(WorldContextObject, ArrowStart, ArrowEnd, 15.0f, TraceColor, BoundsDuration, DebugVisualParameters.bPersistent, 3.0f);
+                }
+            }
+        }
+    }
+
+    AActor* TargetActor = OutHitResult.GetActor();
+    if (!TargetActor || !GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    {
+        return false;
+    }
+
+    AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject);
+    if (!InteractingActor)
+    {
+        return false;
+    }
+
+    bool bCanInteract = false;
+    if (!TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
+    {
+        return false;
+    }
+
+    return TryInteract(TargetActor, InteractingActor);
+}
+
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus(const UObject* WorldContextObject,
+    const FGorgeousInteractionSphereTraceParameters& TraceParameters,
+    const FGameplayTag InteractionTag,
+    FInstancedStruct& OutFocusData,
+    FHitResult& OutHitResult)
+{
+    const FGorgeousDebugAssistVisualParameters& DebugVisualParameters = TraceParameters.DebugVisualParameters;
+
+    const bool bHit = GorgeousInteractionFoundation::PerformSphereTrace(WorldContextObject, TraceParameters, OutHitResult);
+    const FLinearColor TraceColor = GorgeousInteractionFoundation::ResolveTraceColor(WorldContextObject, OutHitResult, InteractionTag, DebugVisualParameters);
+    if (DebugVisualParameters.bEnabled)
+    {
+        const FVector EndPoint = bHit ? OutHitResult.Location : TraceParameters.End;
+        UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTrace(WorldContextObject, TraceParameters.Start, EndPoint, TraceParameters.Radius, TraceColor, DebugVisualParameters);
+
+    }
+
+    if (!bHit)
+    {
+        return false;
+    }
+
+    if (DebugVisualParameters.bEnabled)
+    {
+        const bool bFollowTrace = DebugVisualParameters.HitSphere.bFollowTrace || DebugVisualParameters.HitBox.bFollowTrace || DebugVisualParameters.HitPoint.bFollowTrace;
+
+        const float BoundsDuration = bFollowTrace ? 0.0f : 0.75f;
+
+        FGorgeousDebugAssistVisualParameters SyncedParams = DebugVisualParameters;
+        SyncedParams.TracePathColor = TraceColor;
+        UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(WorldContextObject, TraceParameters.Start, TraceParameters.End, OutHitResult, SyncedParams);
+
+
+        if (DebugVisualParameters.VFX.bEnableGroundingRing)
+        {
+            if (AActor* HitActor = OutHitResult.GetActor())
+            {
+                FVector Origin = HitActor->GetActorLocation();
+                FHitResult GroundHit;
+                FCollisionQueryParams Params;
+                Params.AddIgnoredActor(HitActor);
+                
+                if (WorldContextObject->GetWorld()->LineTraceSingleByChannel(GroundHit, Origin, Origin + FVector(0, 0, -1000.0f), ECC_Visibility, Params))
+                {
+                    const FVector ArrowEnd = GroundHit.ImpactPoint;
+                    const FVector ArrowStart = ArrowEnd + FVector(0, 0, 40.0f);
+                    UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistArrow(WorldContextObject, ArrowStart, ArrowEnd, 15.0f, TraceColor, BoundsDuration, DebugVisualParameters.bPersistent, 3.0f);
+                }
+            }
+        }
+
+        if (DebugVisualParameters.StatePoints.bDraw)
+        {
+            const EGorgeousDebugAssistPointState StartState = GorgeousInteractionFoundation::ResolvePointState(OutHitResult.GetActor(), TraceParameters.Start);
+            const EGorgeousDebugAssistPointState ImpactState = GorgeousInteractionFoundation::ResolvePointState(OutHitResult.GetActor(), OutHitResult.ImpactPoint);
+
+            FGorgeousDebugAssistVisualParameters StateVisualParameters = DebugVisualParameters;
+            StateVisualParameters.Duration = BoundsDuration;
+            StateVisualParameters.bPersistent = BoundsDuration < 0.0f;
+
+            UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPointWithState(WorldContextObject, TraceParameters.Start, StartState, StateVisualParameters);
+            UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPointWithState(WorldContextObject, OutHitResult.ImpactPoint, ImpactState, StateVisualParameters);
+        }
+    }
+
+    AActor* TargetActor = OutHitResult.GetActor();
+    if (!TargetActor || !GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    {
+        return false;
+    }
+
+    AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject);
+    if (!InteractingActor)
+    {
+        return false;
+    }
+
+    if (bool bCanInteract = false; !TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
+    {
+        return false;
+    }
+
+    return TryFocus(TargetActor, InteractingActor, OutFocusData);
+}
