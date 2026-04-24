@@ -26,6 +26,7 @@
  * Struct containing all customizable options for toast notifications.
  * 
  * @author Nils Bergemann
+ * @todo Hyperlink texts should be able to be set to a disabled state after clicking on them / after a condition is satisfied
  */
 struct FGorgeousToastParams
 {

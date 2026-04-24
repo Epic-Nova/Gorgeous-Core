@@ -79,6 +79,16 @@ public:
 	TArray<FName> RequiredPlugins;
 
 	/**
+	 * Blueprint extension packs (referenced by system identifier) that must be
+	 * present on disk for this guard to function.
+	 * If the referenced pack cannot be found, the validator will toast a user
+	 * message instructing the user to download it from the Gorgeous plugin
+	 * website resource section.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	TArray<FName> RequiredBlueprintPacks;
+
+	/**
 	 * The name of the plugin whose Content directory owns this system's
 	 * content pack, e.g. "GorgeousCore".
 	 */
