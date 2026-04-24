@@ -61,6 +61,7 @@ private:
 	FReply OnBackClicked();
 	FReply OnCancelClicked();
 	FReply OnBrowseFolderClicked();
+	void HandleSavePathPicked(const FString& PickedPath);
 	//<-------------------------->
 
 	//<=====--- Validation ---=====>
@@ -89,6 +90,7 @@ private:
 	/** User-editable asset name (e.g. "MyInventoryConfig"). */
 	TSharedPtr<SEditableTextBox> AssetNameTextBox;
 
+	TSharedPtr<SButton> BrowseFolderButton;
 	TSharedPtr<SButton> FinishButton;
 	TSharedPtr<SButton> NextButton;
 	TSharedPtr<SButton> BackButton;

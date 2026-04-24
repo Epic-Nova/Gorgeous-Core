@@ -1,2 +1,4 @@
 Intermediate
 Binaries
+*.bak
+BaseInsightMatrix.ini
