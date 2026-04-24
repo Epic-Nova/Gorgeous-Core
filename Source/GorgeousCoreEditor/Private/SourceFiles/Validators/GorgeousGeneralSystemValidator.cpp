@@ -533,6 +533,7 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	if (TotalAsyncAssets > 0)
 	{
 		// Show notification in bottom right
+		//@TODO: only validate systems every 10 startups or so & fix the lag
 		FNotificationInfo Info(NSLOCTEXT("GT.GeneralSystemValidator", "AsyncScanProgress", "Verifying Gorgeous Systems..."));
 		Info.bFireAndForget = false;
 		Info.FadeOutDuration = 2.0f;

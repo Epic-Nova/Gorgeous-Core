@@ -19,6 +19,8 @@
 // UGorgeousCoreCmdletHandler Implementation
 //=============================================================================
 
+//@TODO: Hook up the documentaiton under "Help"
+
 void UGorgeousCoreCmdletHandler::PostInitProperties()
 {
 	Super::PostInitProperties();

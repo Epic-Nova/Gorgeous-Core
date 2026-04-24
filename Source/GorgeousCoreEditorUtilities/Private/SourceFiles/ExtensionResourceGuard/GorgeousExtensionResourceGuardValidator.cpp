@@ -16,6 +16,7 @@
 #define GT_DURATION 15.0f
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
+#include "Helpers/GorgeousLoggingHelper.h"
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
 #include "Validation/GorgeousValidationHelpers.h"
 //<--------------------------=== Engine Includes ===------------------------->
@@ -112,6 +113,75 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 						PluginName.ToString(), Guard->SystemDisplayName.ToString());
 				}
 			}
+		}
+	}
+
+
+	// Check required blueprint extension packs.
+	if (!Guard->RequiredBlueprintPacks.IsEmpty())
+	{
+		TArray<FAssetData> AllGuardAssets;
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get()
+			.GetAssetsByClass(UGorgeousExtensionResourceGuard::StaticClass()->GetClassPathName(),
+				AllGuardAssets,
+				/*bSearchSubClasses=*/ true);
+
+		TArray<FName> MissingPacks;
+		for (const FName& PackIdentifier : Guard->RequiredBlueprintPacks)
+		{
+			if (PackIdentifier.IsNone())
+			{
+				if (GorgeousValidation::ReportWarningOrError(this, Guard,
+					TEXT("RequiredBlueprintPacks contains an empty entry.")))
+				{
+					bHasErrors = true;
+				}
+				continue;
+			}
+
+			bool bPackFound = false;
+			for (const FAssetData& OtherAsset : AllGuardAssets)
+			{
+				if (const UGorgeousExtensionResourceGuard* OtherGuard =
+					Cast<UGorgeousExtensionResourceGuard>(OtherAsset.GetAsset()))
+				{
+					if (OtherGuard->SystemIdentifier == PackIdentifier && OtherGuard->IsContentPresent())
+					{
+						bPackFound = true;
+						break;
+					}
+				}
+			}
+
+			if (!bPackFound)
+			{
+				MissingPacks.AddUnique(PackIdentifier);
+			}
+		}
+
+		if (MissingPacks.Num() > 0)
+		{
+			const FString PackList = FString::JoinBy(MissingPacks, TEXT(", "), [](const FName& Name) { return Name.ToString(); });
+			const FText ErrorMessage = FText::Format(
+				NSLOCTEXT("GorgeousExtensionResourceGuard", "MissingBlueprintPacks",
+					"Blueprint extension pack(s) '{0}' are required by system '{1}' but were not found. Download them from the Resources section of the Gorgeous plugin website."),
+				FText::FromString(PackList), Guard->SystemDisplayName);
+
+			AssetFails(Guard, ErrorMessage);
+			bHasErrors = true;
+
+			GT_E_LOG_FULL_EX(
+				"GT.ExtensionResourceGuard.MissingBlueprintPacks",
+				TEXT("Missing required blueprint extension pack(s) '%s' for system '%s'."),
+				3.0f,
+				true,
+				true,
+				true,
+				true,
+				nullptr,
+				nullptr,
+				*PackList,
+				*Guard->SystemDisplayName.ToString());
 		}
 	}
 

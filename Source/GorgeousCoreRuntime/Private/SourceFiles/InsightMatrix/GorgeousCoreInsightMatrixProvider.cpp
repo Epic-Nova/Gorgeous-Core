@@ -512,6 +512,10 @@ void FGorgeousCoreInsightMatrixProvider::GatherStats(TArray<FGorgeousInsightStat
 				EGorgeousInsightStatValueType::Number, static_cast<double>(ControllerCount));
 		}
 	}
+
+	// TODO [Insight Matrix]: Feature 4 - Smart Debug HUD Overlay integration.
+	// This marker notes the future integration of screen-space debug information 
+	// from the Gorgeous Debug Assist system into the Insight Matrix overview.
 }
 
 void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const
