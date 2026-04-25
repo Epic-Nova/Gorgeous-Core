@@ -21,6 +21,7 @@
 class FSlateStyleSet;
 class IGorgeousInsightMatrixProvider;
 class IGorgeousLibraryParticipant;
+class FDataValidationContext;
 //<-------------------------------------------------->
 
 /**
@@ -145,6 +146,15 @@ public:
 	 * @return Pointer to the library participant, or nullptr if this module does not participate.
 	 */
 	IGorgeousLibraryParticipant* GetLibraryParticipant() const { return LibraryParticipant; }
+	
+#if WITH_EDITOR
+	/**
+	 * Called during the Gorgeous Systems validation pass to allow this module to perform custom validation.
+	 * 
+	 * @param InContext The validation context to record errors and warnings into.
+	 */
+	virtual void ValidateGorgeousModule(FDataValidationContext& InContext) {}
+#endif
 	
 protected:
 

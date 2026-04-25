@@ -39,7 +39,9 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 "CoreUObject", 
                 "Engine",
                 "GameplayTags",
-                "Projects"
+                "Projects",
+                "Json",
+                "JsonUtilities"
             });
 
         PublicDefinitions.Add("CSV_PROFILER=1");

@@ -42,7 +42,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInteractionSphereTraceParameters
         DebugVisualParameters.HitSphere.bDraw = false;
         
         DebugVisualParameters.HitBounds.bDraw = true;
-        DebugVisualParameters.HitBounds.bDrawFilled = true;
+        DebugVisualParameters.HitBounds.bDrawFilled = false;
+        DebugVisualParameters.HitBounds.Inflation = 1.5f;
         DebugVisualParameters.HitBounds.bPulse = true;
     }
 

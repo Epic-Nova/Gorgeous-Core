@@ -72,6 +72,10 @@ public:
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const override { return true; }
+	
+#if WITH_EDITOR
+	virtual void ValidateGorgeousModule(FDataValidationContext& InContext) override;
+#endif
 	//<------------------------------------------------------------------------->
 
 	
