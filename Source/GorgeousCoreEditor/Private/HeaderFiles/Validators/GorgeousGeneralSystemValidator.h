@@ -55,10 +55,18 @@ public:
 	
 	//<============================--- C++ Only ---=============================>
 	
+	UFUNCTION()
+	void HandleRegisterDataRegistryEntry(const FString& Payload);
+
+	UFUNCTION()
+	bool HandleCanRegisterDataRegistryEntry(const FString& Payload);
+
 	void DiscoverAndRegisterGorgeousPluginSystems();
 	void ScanAndRecreateMissingPDAs();
 	
-	TArray<FString> GetGorgeousSystemDirectories() const;
+	static void QueueAssetsForAsyncValidation(const TArray<FAssetData>& Assets);
+	static void RequestSystemValidationScan();
+	static TArray<FString> GetGorgeousSystemDirectories();
 	
 	bool IsSystemAssetManagerRegistered() const;
 	bool IsSystemComponent(const FString Name, const uint8 CheckMode = 0) const;
@@ -98,6 +106,7 @@ public:
 
 	// Set true after we successfully discovered/registered plugin system paths once.
 	static bool bPluginSystemsDiscovered;
+	static bool bSystemValidationScanStarted;
 
 	// Ticker callback used to wait for other plugins to register
 	bool TickUpdateSystemPaths(float DeltaTime);

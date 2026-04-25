@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -167,6 +167,40 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 */
 	TArray<FName> GetGorgeousPluginDependencies(const FName& PluginName) const;
 
+	/**
+	 * Returns every registered module interface across both core and non-core registries.
+	 * Used by the Gorgeous Library to discover IGorgeousLibraryParticipant instances
+	 * without a direct compile-time dependency on editor-only types.
+	 *
+	 * @return Flat array of all registered module interface pointers.
+	 */
+	TArray<IGorgeousThingsModuleInterface*> GetAllRegisteredModules() const;
+	
+	/**
+	 * Gets the current system validation count from persistent data.
+	 */
+	int32 GetSystemValidationCount() const;
+	
+	/**
+	 * Increments the system validation count and saves persistent data.
+	 */
+	void IncrementSystemValidationCount();
+	
+	/**
+	 * Sets the current system validation count.
+	 */
+	void SetSystemValidationCount(int32 NewCount);
+	
+	/**
+	 * Gets the interval (in startups) at which system validation should run.
+	 */
+	int32 GetSystemValidationInterval() const;
+	
+	/**
+	 * Sets the interval at which system validation should run.
+	 */
+	void SetSystemValidationInterval(int32 NewInterval);
+
 private:
 	
 	/**
@@ -213,19 +247,19 @@ private:
 	static FString GetCircularDependencyPairKey(const FName& PluginA, const FName& PluginB);
 	
 	/**
-	 * Loads the list of previously notified circular dependency pairs from disk.
+	 * Gets the file path for storing persistent Gorgeous metadata.
 	 */
-	void LoadNotifiedCircularDependencyPairs();
+	static FString GetGorgeousPersistentDataFilePath();
 	
 	/**
-	 * Saves the list of notified circular dependency pairs to disk.
+	 * Loads the persistent data from disk.
 	 */
-	void SaveNotifiedCircularDependencyPairs();
+	void LoadPersistentData();
 	
 	/**
-	 * Gets the file path for storing notified circular dependency pairs.
+	 * Saves the persistent data to disk.
 	 */
-	static FString GetCircularDependencyNotificationFilePath();
+	void SavePersistentData();
 	//<------------------------------------------------------------------------->
 
 	
@@ -288,7 +322,10 @@ private:
 	// Track circular dependency pairs that have shown toast notifications (loaded from/saved to disk)
 	TSet<FString> NotifiedCircularDependencyPairs;
 	
-	// Flag to track if we've loaded the notified pairs from disk
-	bool bLoadedNotifiedPairs = false;
+	// Flag to track if we've loaded the persistent data from disk
+	bool bLoadedPersistentData = false;
+	
+	// Cached persistent data object
+	TSharedPtr<class FJsonObject> PersistentDataObject;
 	//<------------------------------------------------------------------------->
 };

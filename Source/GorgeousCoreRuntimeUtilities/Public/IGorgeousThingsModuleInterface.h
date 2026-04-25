@@ -20,6 +20,8 @@
 //<===========--- Forward Declarations ---===========>
 class FSlateStyleSet;
 class IGorgeousInsightMatrixProvider;
+class IGorgeousLibraryParticipant;
+class FDataValidationContext;
 //<-------------------------------------------------->
 
 /**
@@ -136,6 +138,23 @@ public:
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const;
+
+	/**
+	 * Returns the Gorgeous Library participant for this module, if any.
+	 * This is optional. The Gorgeous Library will silently skip modules that return nullptr here.
+	 *
+	 * @return Pointer to the library participant, or nullptr if this module does not participate.
+	 */
+	IGorgeousLibraryParticipant* GetLibraryParticipant() const { return LibraryParticipant; }
+	
+#if WITH_EDITOR
+	/**
+	 * Called during the Gorgeous Systems validation pass to allow this module to perform custom validation.
+	 * 
+	 * @param InContext The validation context to record errors and warnings into.
+	 */
+	virtual void ValidateGorgeousModule(FDataValidationContext& InContext) {}
+#endif
 	
 protected:
 
@@ -151,5 +170,11 @@ protected:
 	
 	// Optional Insight Matrix provider for runtime modules.
 	IGorgeousInsightMatrixProvider* InsightProvider = nullptr;
+
+	/**
+	 * Optional Gorgeous Library participant.
+	 * Set this in GorgeousStartupModule() to register with the Gorgeous Library.
+	 */
+	IGorgeousLibraryParticipant* LibraryParticipant = nullptr;
 	//<------------------------------------------------------------------------->
 };

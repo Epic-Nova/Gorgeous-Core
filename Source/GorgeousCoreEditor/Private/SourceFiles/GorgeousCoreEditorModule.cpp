@@ -25,6 +25,8 @@
 #include "MessageLogModule.h"
 #include "PropertyEditorModule.h"
 #include "ToolMenus.h"
+#include "LibraryWizard/SGorgeousLibraryView.h"
+#include "Widgets/Docking/SDockTab.h"
 #include "DataRegistry.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/AssetManagerSettings.h"
@@ -34,6 +36,7 @@
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "Interfaces/IPluginManager.h"
 #include "Validators/GorgeousGeneralSystemValidator.h"
+#include "Validators/GorgeousCommonUIFoundationSystemValidator.h"
 //<-------------------------------------------------------------------------->
 
 #if 0
@@ -49,6 +52,47 @@
 namespace
 {
 	FToolMenuOwnerScoped GDebugMenuOwner{TEXT("GorgeousCoreEditorUtilities")};
+	static const FName GorgeousLibraryTabName("GorgeousLibrary");
+
+	void RegisterLibraryMenuEntry()
+	{
+		if (!UToolMenus::IsToolMenuUIEnabled())
+		{
+			return;
+		}
+
+		FTabSpawnerEntry& Spawner = FGlobalTabmanager::Get()->RegisterNomadTabSpawner(GorgeousLibraryTabName, FOnSpawnTab::CreateLambda([](const FSpawnTabArgs& Args)
+		{
+			return SNew(SDockTab)
+				.TabRole(ETabRole::NomadTab)
+				[
+					SNew(SGorgeousLibraryView)
+				];
+		}))
+		.SetDisplayName(NSLOCTEXT("GorgeousCore", "LibraryTabTitle", "Gorgeous Library"))
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Package"))
+		.SetMenuType(ETabSpawnerMenuType::Hidden);
+
+		UToolMenus* ToolMenus = UToolMenus::Get();
+		UToolMenu* WindowMenu = ToolMenus->ExtendMenu("LevelEditor.MainMenu.Window");
+		if (!WindowMenu)
+		{
+			return;
+		}
+
+		FToolMenuSection& Section = WindowMenu->FindOrAddSection("GetContent");
+		
+		Section.AddMenuEntry(
+			"OpenGorgeousLibrary",
+			NSLOCTEXT("GorgeousCore", "OpenLibrary", "Gorgeous Library"),
+			NSLOCTEXT("GorgeousCore", "OpenLibraryTooltip", "Open the Gorgeous Library to manage templates and assets."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Package"),
+			FUIAction(FExecuteAction::CreateLambda([]()
+			{
+				FGlobalTabmanager::Get()->TryInvokeTab(GorgeousLibraryTabName);
+			}))
+		);
+	}
 	inline bool GBDataRegistryValidationTriggered = false;
 	inline bool GBValidationRan = false;
 
@@ -107,65 +151,6 @@ namespace
 		ToolMenus->UnregisterOwner(GDebugMenuOwner.GetOwner());
 	}
 	
-	void TriggerDataRegistryValidation()
-	{
-		if (GBDataRegistryValidationTriggered)
-		{
-			return;
-		}
-		GBDataRegistryValidationTriggered = true;
-
-		if (!GEditor)
-		{
-			return;
-		}
-
-		FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-		IAssetRegistry& AssetRegistry = ARM.Get();
-		UEditorValidatorSubsystem* ValidatorSubsystem = GEditor->GetEditorSubsystem<UEditorValidatorSubsystem>();
-
-		if (!ValidatorSubsystem)
-		{
-			return;
-		}
-
-		// Find and validate DataRegistry assets
-		TArray<FString> DataRegistryPaths = {
-			TEXT("/GorgeousCore/Systems/Playlist/Data/AdvancedData"),
-			TEXT("/GorgeousCore/Systems/CommonUIFoundation/Data/AdvancedData")
-		};
-
-		TArray<FAssetData> AllDataRegistryAssets;
-
-		for (const FString& Path : DataRegistryPaths)
-		{
-			TArray<FAssetData> AssetDataArray;
-			FARFilter Filter;
-			Filter.ClassPaths.Add(UDataRegistry::StaticClass()->GetClassPathName());
-			Filter.PackagePaths.Add(*Path);
-			Filter.bRecursiveClasses = true;
-			Filter.bRecursivePaths = true;
-
-			AssetRegistry.GetAssets(Filter, AssetDataArray);
-			AllDataRegistryAssets.Append(AssetDataArray);
-		}
-
-		// Validate all found assets
-		if (AllDataRegistryAssets.Num() > 0)
-		{
-			FValidateAssetsSettings Settings;
-			Settings.bSkipExcludedDirectories = false;
-			Settings.bLoadAssetsForValidation = true; // Load assets so validators can inspect them
-
-			FValidateAssetsResults Results;
-			ValidatorSubsystem->ValidateAssetsWithSettings(AllDataRegistryAssets, Settings, Results);
-
-			GT_I_LOG("GorgeousCoreEditor",
-				TEXT("DataRegistry validation complete. %d assets validated."),
-				AllDataRegistryAssets.Num());
-		}
-	}
-	
 	void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry)
 	{
 		if (GBValidationRan)
@@ -182,24 +167,49 @@ namespace
 			Validator->DiscoverAndRegisterGorgeousPluginSystems();
 		}
 
-		// Plugin system discovery is now handled by UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
-		// which is called on FCoreDelegates::OnPostEngineInit
-
-		// Trigger DataRegistry asset validation after a short delay
-		// This ensures all systems are properly initialized
-		FTSTicker::GetCoreTicker().AddTicker(
-			FTickerDelegate::CreateLambda([](float)
-			{
-				TriggerDataRegistryValidation();
-				return false; // run once
-			}),
-			0.5f
-		);
+		// Trigger the centralized system validation pass
+		UGorgeousGeneralSystemValidator::RequestSystemValidationScan();
 		
 		GT_I_LOG("GorgeousCoreEditor",
 			TEXT("Gorgeous validators are now active and will validate assets on load/save."));
 	}
 }
+
+#if WITH_EDITOR
+void FGorgeousCoreEditorModule::ValidateGorgeousModule(FDataValidationContext& InContext)
+{
+		// 1. Viewport Client Check
+		UGorgeousCommonUIFoundationSystemValidator::ValidateViewportClient();
+
+		// 2. Data Registry Discovery and Validation
+		TArray<FString> ScannedDirs = UGorgeousGeneralSystemValidator::GetGorgeousSystemDirectories();
+		if (ScannedDirs.Num() > 0)
+		{
+			FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+			IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+			for (const FString& Dir : ScannedDirs)
+			{
+				FARFilter Filter;
+				Filter.ClassPaths.Add(UDataRegistry::StaticClass()->GetClassPathName());
+				Filter.PackagePaths.Add(FName(*Dir));
+				Filter.bRecursivePaths = true;
+
+				TArray<FAssetData> FoundAssets;
+				AssetRegistry.GetAssets(Filter, FoundAssets);
+
+				if (FoundAssets.Num() > 0)
+				{
+					UGorgeousGeneralSystemValidator::QueueAssetsForAsyncValidation(FoundAssets);
+					
+					GT_I_LOG("GorgeousCoreEditor",
+						TEXT("DataRegistry validation queued for %s. %d assets added."),
+						*Dir, FoundAssets.Num());
+				}
+			}
+		}
+	}
+#endif
 
 //=============================================================================
 // FGorgeousCoreEditorModule Implementation
@@ -362,6 +372,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 
 	FGorgeousDataSchemaMappingAssetMenu::Register();
 	
+	RegisterLibraryMenuEntry();
 	RegisterDebugMenuEntry();
 	
 	FCoreDelegates::OnPostEngineInit.AddLambda([this]()
@@ -412,6 +423,8 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 
 	FGorgeousDataSchemaMappingAssetMenu::Unregister();
 	
+	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GorgeousLibraryTabName);
+
 	UnregisterDebugMenuEntry();
 	
 	UNREGISTER_GORGEOUS_ASSETS;

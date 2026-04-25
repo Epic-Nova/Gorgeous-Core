@@ -42,7 +42,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
 	//@TODO: Maybe add the case of when SimpleDisplay is added to a property, where its parent property has AdvancedDisplay that the Property with SimpleDisplay gets its simple display form. => At this point it would just be a flex
-	
+	/* @TODO: fix the crash issue
 	TArray<TSharedRef<IPropertyHandle>> AdvancedHandles;
 	
 	auto AddToGroup = [&](const TSharedRef<IPropertyHandle>& Handle)
@@ -135,7 +135,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 				FunctionalStructureInstance->AllocateDefaultValues(FunctionalStructureInstance->OwnerObject);
 			}
 		}
-	}
+	}*/
 }
 
 void FGorgeousFunctionalStructurePropertyTypeCustomization::OnPreChildPropertyChanged(TSharedRef<IPropertyHandle> PropertyHandle) const

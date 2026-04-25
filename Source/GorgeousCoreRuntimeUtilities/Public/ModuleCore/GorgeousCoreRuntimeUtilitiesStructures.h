@@ -45,6 +45,14 @@ struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogHyperlink
 	UPROPERTY()
 	FString ActionPayload;
 
+	// If true, the action hyperlink can only be executed once.
+	UPROPERTY()
+	bool bSingleUse = true;
+
+	// Optional action name to check for availability/condition of this hyperlink.
+	UPROPERTY()
+	FName ConditionName;
+
 	/** 
 	 * Checks if the hyperlink is valid.
 	 * A hyperlink is considered valid if it has non-empty link text and either a valid target asset or a non-empty action name.

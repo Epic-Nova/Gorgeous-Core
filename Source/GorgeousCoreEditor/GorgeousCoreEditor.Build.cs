@@ -30,6 +30,7 @@ public class GorgeousCoreEditor : ModuleRules
         {
             publicIncludePath,
             Path.Combine(publicIncludePath, "FunctionalStructures"),
+            Path.Combine(publicIncludePath, "LibraryWizard"),
             Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
         });
         
@@ -69,7 +70,12 @@ public class GorgeousCoreEditor : ModuleRules
                 "BlueprintGraph",
                 "AssetTools",
                 "AssetRegistry",
-                "ContentBrowser"
+                "ContentBrowser",
+                "EditorWidgets",
+                "AssetDefinition",
+                "ToolWidgets",
+                "Settings",
+                "CommonUI"
             });
 
         
