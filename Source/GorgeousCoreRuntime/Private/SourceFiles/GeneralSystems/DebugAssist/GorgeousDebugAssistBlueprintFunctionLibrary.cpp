@@ -37,6 +37,7 @@ struct FGhostBox
     bool bAnimateFade;
     bool bPulse;
     float PulseSpeed;
+    float Inflation;
 };
 
 static TAutoConsoleVariable<int32> CVarDebugAssist(
@@ -51,7 +52,7 @@ static TMap<TWeakObjectPtr<const AActor>, TArray<FGhostBox>> GlobalGhostRegistry
  
 static void TickAndRenderGhosts(const UObject* WorldContextObject)
 {
-    if (!WorldContextObject) return;
+    if (!WorldContextObject || CVarDebugAssist.GetValueOnGameThread() == 0) return;
     UWorld* World = WorldContextObject->GetWorld();
     if (!World) return;
 
@@ -60,6 +61,14 @@ static void TickAndRenderGhosts(const UObject* WorldContextObject)
     for (auto It = GlobalGhostRegistryMap.CreateIterator(); It; ++It)
     {
         TArray<FGhostBox>& GhostRegistry = It.Value();
+        
+        // Remove ghosts for invalid actors immediately
+        if (!It.Key().IsValid())
+        {
+            GhostRegistry.Empty();
+            It.RemoveCurrent();
+            continue;
+        }
 
         // Cleanup expired ghosts
         for (int32 i = GhostRegistry.Num() - 1; i >= 0; --i)
@@ -79,51 +88,73 @@ static void TickAndRenderGhosts(const UObject* WorldContextObject)
             continue;
         }
 
+        // Determine if the WHOLE actor has focus this frame
+        bool bActorHasFocus = false;
+        for (const auto& Ghost : GhostRegistry)
+        {
+            if (Ghost.LastActiveFrame >= (GFrameCounter - 1))
+            {
+                bActorHasFocus = true;
+                break;
+            }
+        }
+
         // Draw remaining ghosts with animation
         for (auto& Ghost : GhostRegistry)
         {
-            // Focus is active if the ghost was refreshed this frame or the very last one
-            const bool bHasFocus = Ghost.LastActiveFrame >= (GFrameCounter - 1);
-            
-            float Alpha = 1.0f;
-            float PulseAlpha = 1.0f;
+            if (!Ghost.bDraw && !Ghost.bDrawFilled) continue;
 
+            // Focus is active if the actor itself is being hit
+            const bool bHasFocus = bActorHasFocus;
+            
+            // OPTIMIZATION: If we have focus, and this isn't the LATEST ghost, skip drawing it 
+            // to prevent the "second box" overlapping flickering the user mentioned.
+            if (bHasFocus && &Ghost != &GhostRegistry.Last())
+            {
+                continue;
+            }
+
+            float Alpha = 1.0f;
             if (!bHasFocus)
             {
                 // Evaporation phase
                 Alpha = Ghost.bAnimateFade ? FMath::Clamp((float)((Ghost.Expiration - Time) / Ghost.FadeTime), 0.0f, 1.0f) : 1.0f;
-                PulseAlpha = 0.0f; // Stop pulsing
             }
             else
             {
                 // Active focus phase
-                Ghost.Expiration = Time + Ghost.FadeTime; // Keep pushing expiration
+                Ghost.Expiration = Time + Ghost.FadeTime; 
             }
 
+            // 1. Calculate Base Size
             FVector CurrentExtent = Ghost.BaseExtent;
             
-            // 1. Calculate Pulse
+            // 2. Apply Evaporation Scale (Shrink toward mesh center)
+            if (Ghost.bAnimateFade && !bHasFocus)
+            {
+                CurrentExtent *= Alpha;
+            }
+
+            // 3. Apply Pulse (on top of scaled extent)
             if (Ghost.bPulse)
             {
                 float PulseValue = 0.0f;
                 if (bHasFocus)
                 {
                     PulseValue = (FMath::Sin(Time * Ghost.PulseSpeed) + 1.0f) * 0.5f;
-                    Ghost.LastPulseOffset = PulseValue; // Record for loss
+                    Ghost.LastPulseOffset = PulseValue; 
                 }
                 else
                 {
-                    PulseValue = Ghost.LastPulseOffset; // Stay at last pulsed size
+                    PulseValue = Ghost.LastPulseOffset * Alpha; // Pulse also evaporates
                 }
                 
-                CurrentExtent += FVector(PulseValue * 5.0f); // 5 units pulse
+                CurrentExtent += FVector(PulseValue * Ghost.Inflation);
             }
 
-            // 2. Apply Evaporation Scale
-            if (Ghost.bAnimateFade && !bHasFocus)
-            {
-                CurrentExtent *= Alpha;
-            }
+            // 4. Apply Inflation LAST (Fixed buffer, does not scale)
+            // This ensures the box always stays outside the mesh even when tiny
+            CurrentExtent += FVector(Ghost.Inflation);
 
             FLinearColor FadeColor = Ghost.Color;
             FadeColor.A *= Alpha;
@@ -483,7 +514,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
             FVector Origin;
             FVector BaseExtent;
             Actor->GetActorBounds(false, Origin, BaseExtent);
-            BaseExtent += FVector(VisualParameters.HitBounds.Inflation);
+            // We no longer add inflation here, we add it in the render loop so it stays fixed
             
             // 2. Add or UPDATE ghost (prevents stacking flicker)
             const float UpdateThreshold = 2.0f; 
@@ -493,7 +524,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
             if (GhostRegistry.Num() > 0)
             {
                 FGhostBox& LastGhost = GhostRegistry.Last();
-                float DistSq = FVector::DistSquared(LastGhost.Origin, Origin);
+                const float DistSq = FVector::DistSquared(LastGhost.Origin, Origin);
                 
                 if (DistSq < (UpdateThreshold * UpdateThreshold))
                 {
@@ -504,6 +535,9 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
                 }
                 else if (DistSq < (TrailThreshold * TrailThreshold))
                 {
+                    // Within trail range but moved enough to be "newish" - 
+                    // Refresh focus but keep original position to prevent flickering 
+                    // until we actually hit the trail threshold.
                     LastGhost.LastActiveFrame = GFrameCounter;
                     bUpdated = true;
                 }
@@ -528,6 +562,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
                 NewGhost.bAnimateFade = VisualParameters.HitBounds.bAnimateFade;
                 NewGhost.bPulse = VisualParameters.HitBounds.bPulse;
                 NewGhost.PulseSpeed = VisualParameters.HitBounds.PulseSpeed;
+                NewGhost.Inflation = VisualParameters.HitBounds.Inflation;
 
                 GhostRegistry.Add(NewGhost);
                 if (GhostRegistry.Num() > 32) GhostRegistry.RemoveAt(0);
@@ -812,4 +847,8 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistArrow(const UO
         DrawDebugLine(World, Back - Right, Back - Forward, DrawColor, bPersistent, Duration, 0, Thickness);
         DrawDebugLine(World, Back - Forward, Back + Right, DrawColor, bPersistent, Duration, 0, Thickness);
     }
+}
+void UGorgeousDebugAssistBlueprintFunctionLibrary::ClearDebugAssistGhosts()
+{
+    GlobalGhostRegistryMap.Empty();
 }

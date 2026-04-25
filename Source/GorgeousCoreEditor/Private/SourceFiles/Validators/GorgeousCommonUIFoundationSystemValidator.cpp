@@ -20,6 +20,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/Blueprint.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "ENgine/GameViewportClient.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
 
@@ -33,11 +34,23 @@ UGorgeousCommonUIFoundationSystemValidator::UGorgeousCommonUIFoundationSystemVal
 		StaticClass(),
 		FName("GT.Systems.CommonUIFoundation.Validator.RegisterDirectory"),
 		FName("HandleRegisterDirectoryHyperlink"));
+
+	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
+		StaticClass(),
+		FName("GT.Systems.CommonUIFoundation.Validator.FixViewportClient"),
+		FName("HandleFixViewportClientHyperlink"));
+
+	UGT_EditorLogging_FL::RegisterLogHyperlinkCondition(
+		StaticClass(),
+		FName("GT.Systems.CommonUIFoundation.Validator.CanFixViewportClient"),
+		FName("HandleCanFixViewportClientHyperlink"));
 }
 
 UGorgeousCommonUIFoundationSystemValidator::~UGorgeousCommonUIFoundationSystemValidator()
 {
 	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.Systems.CommonUIFoundation.Validator.RegisterDirectory");
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.Systems.CommonUIFoundation.Validator.FixViewportClient");
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkCondition("GT.Systems.CommonUIFoundation.Validator.CanFixViewportClient");
 }
 
 bool UGorgeousCommonUIFoundationSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData,
@@ -45,90 +58,77 @@ bool UGorgeousCommonUIFoundationSystemValidator::CanValidateAsset_Implementation
 {
 	if (InAssetData.PackageName.ToString().Contains(TEXT("InputData")) && InObject->IsA<UBlueprint>())
 	{
-		bIndirectValidationFlag = true;
 		return true;
 	}
 	
-	return InObject->GetClass()->IsChildOf(UDataRegistry::StaticClass())
-		&& InAssetData.PackagePath.ToString().Contains(TEXT("Systems/CommonUIFoundation/Data/AdvancedData"));
+	return InAssetData.PackageName.ToString().Contains(TEXT("InputData")) && InObject->IsA<UBlueprint>();
 }
 
 EDataValidationResult UGorgeousCommonUIFoundationSystemValidator::ValidateLoadedAsset_Implementation(
 	const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
+	ValidateViewportClient();
+
 	const UDataRegistrySettings* DataRegistrySettings = GetMutableDefault<UDataRegistrySettings>();
 	
-	if (bIndirectValidationFlag)
-	{
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-		IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
-		TArray<FAssetData> AssetData;
-		
-		AssetRegistry.SearchAllAssets(true);
-		FARFilter Filter;
-		Filter.PackagePaths.Add("/GorgeousCore/Systems/CommonUIFoundation/Data/AdvancedData");
-		Filter.bRecursivePaths = true;
-		Filter.bRecursiveClasses = true;
-		
-		const UClass* Class = UDataRegistry::StaticClass();
-		Filter.ClassPaths.Add(Class->GetClassPathName());
-		
-		AssetRegistry.GetAssets(Filter, AssetData);
-		
-		TArray<FAssetData> DataRegistryAssets;
-		for (const FAssetData& Asset : AssetData)
-		{
-			bool bIsDataRegistryAsset = false;
-			for (const auto& [Path] : DataRegistrySettings->DirectoriesToScan)
-			{
-				if (Asset.PackagePath.ToString() == Path)
-				{
-					bIsDataRegistryAsset = true;
-					break;
-				}
-			}
-			
-			if (!bIsDataRegistryAsset)
-			{
-				DataRegistryAssets.Add(Asset);
-			}
-		}
-		
-		for (const FAssetData& LoadedAsset : DataRegistryAssets)
-		{
-			if (LoadedAsset.GetClass()->IsChildOf(UDataRegistry::StaticClass()))
-			{
-				UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-				FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings. Please add this path to the DirectoriesToScan array to ensure proper functionality."), *LoadedAsset.AssetName.ToString(), *LoadedAsset.PackagePath.ToString()),
-				"GT.Systems.CommonUIFoundation.DataRegistry_Entry",
-				Logging_Warning,
-				FName("GT.Systems.CommonUIFoundation.Validator.RegisterDirectory"),
-				LoadedAsset.PackagePath.ToString(),
-				"Add Path");
-				
-				return EDataValidationResult::Invalid;
-			}
-		}
-		return EDataValidationResult::Valid;
-	}
-	
+	// Ensure the asset is in a registered directory
+	bool bIsRegisteredDir = false;
 	for (const auto& [Path] : DataRegistrySettings->DirectoriesToScan)
 	{
-		if (Path == InAssetData.PackagePath.ToString())
+		if (InAssetData.PackagePath.ToString() == Path)
 		{
-			return EDataValidationResult::Valid;
+			bIsRegisteredDir = true;
+			break;
 		}
 	}
-		
-	UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-		FString::Printf(TEXT("The DataRegistry asset is located in %s, but this path is not registered in the DataRegistry settings. Please add this path to the DirectoriesToScan array to ensure proper functionality."), *InAssetData.PackagePath.ToString()),
-		"GT.Systems.CommonUIFoundation.DataRegistry_Entry",
-		Logging_Warning,
-		FName("GT.Systems.CommonUIFoundation.Validator.RegisterDirectory"),
-		InAssetData.PackagePath.ToString(),
-		"Add Path");
+	
+	if (!bIsRegisteredDir)
+	{
+		UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
+			FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings. This may prevent proper loading."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString()),
+			"GT.Systems.CommonUIFoundation.DataRegistry_Entry",
+			Logging_Warning,
+			FName("GT.Systems.CommonUIFoundation.Validator.RegisterDirectory"),
+			InAssetData.PackagePath.ToString(),
+			"Add Path");
 			
-	return EDataValidationResult::Invalid;
+		return EDataValidationResult::Invalid;
+	}
+	
+	return EDataValidationResult::Valid;
+}
+
+void UGorgeousCommonUIFoundationSystemValidator::ValidateViewportClient()
+{
+	// Check Game Viewport Client
+	const UEngine* Engine = GetDefault<UEngine>();
+	const FSoftClassPath CommonUIViewportClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
+	
+	bool bIsValidViewportClient = (Engine->GameViewportClientClassName == CommonUIViewportClassPath);
+	if (!bIsValidViewportClient)
+	{
+		// Check for subclass
+		if (UClass* CurrentClass = Engine->GameViewportClientClassName.TryLoadClass<UGameViewportClient>())
+		{
+			if (UClass* TargetBaseClass = CommonUIViewportClassPath.TryLoadClass<UGameViewportClient>())
+			{
+				bIsValidViewportClient = CurrentClass->IsChildOf(TargetBaseClass);
+			}
+		}
+	}
+
+	if (!bIsValidViewportClient)
+	{
+		UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
+			TEXT("The Game Viewport Client is not set to CommonGameViewportClient (or a subclass). This is required for proper UI foundation functionality."),
+			"GT.Systems.CommonUIFoundation.ViewportClient",
+			Logging_Warning,
+			FName("GT.Systems.CommonUIFoundation.Validator.FixViewportClient"),
+			TEXT(""),
+			TEXT("Fix Viewport Client"),
+			true,
+			FName("GT.Systems.CommonUIFoundation.Validator.CanFixViewportClient"));
+	}
 }
 
 void UGorgeousCommonUIFoundationSystemValidator::HandleRegisterDirectoryHyperlink(const FString& Payload)
@@ -164,4 +164,47 @@ void UGorgeousCommonUIFoundationSystemValidator::HandleRegisterDirectoryHyperlin
 	{
 		FUnrealEdMisc::Get().RestartEditor(false);
 	}
+}
+
+void UGorgeousCommonUIFoundationSystemValidator::HandleFixViewportClientHyperlink(const FString& Payload)
+{
+	UEngine* Engine = GetMutableDefault<UEngine>();
+	Engine->Modify();
+	Engine->GameViewportClientClassName = FSoftClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
+	
+	// Save to DefaultEngine.ini
+	Engine->TryUpdateDefaultConfigFile();
+	Engine->SaveConfig(CPF_Config, *Engine->GetDefaultConfigFilename());
+
+	const EAppReturnType::Type Result = FMessageDialog::Open(
+		EAppMsgType::YesNo,
+		FText::FromString(TEXT("Game Viewport Client set to CommonGameViewportClient. Please restart the editor for changes to take effect. \n\nRestart now?"))
+	);
+
+	if (Result == EAppReturnType::Yes)
+	{
+		FUnrealEdMisc::Get().RestartEditor(false);
+	}
+}
+
+bool UGorgeousCommonUIFoundationSystemValidator::HandleCanFixViewportClientHyperlink(const FString& Payload)
+{
+	const UEngine* Engine = GetDefault<UEngine>();
+	const FSoftClassPath CommonUIViewportClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
+	
+	if (Engine->GameViewportClientClassName == CommonUIViewportClassPath)
+	{
+		return false;
+	}
+	
+	// Check for subclass
+	if (UClass* CurrentClass = Engine->GameViewportClientClassName.TryLoadClass<UGameViewportClient>())
+	{
+		if (UClass* TargetBaseClass = CommonUIViewportClassPath.TryLoadClass<UGameViewportClient>())
+		{
+			return !CurrentClass->IsChildOf(TargetBaseClass);
+		}
+	}
+	
+	return true;
 }

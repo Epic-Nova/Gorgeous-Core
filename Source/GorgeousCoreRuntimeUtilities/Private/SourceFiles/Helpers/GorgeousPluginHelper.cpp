@@ -9,6 +9,12 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -685,7 +691,6 @@ TArray<FName> UGorgeousPluginHelper::GetGorgeousPluginDependencies(const FName& 
 	
 	return UniqueDependencies.Array();
 }
-
 TArray<IGorgeousThingsModuleInterface*> UGorgeousPluginHelper::GetAllRegisteredModules() const
 {
 	TArray<IGorgeousThingsModuleInterface*> Result;
@@ -702,6 +707,102 @@ TArray<IGorgeousThingsModuleInterface*> UGorgeousPluginHelper::GetAllRegisteredM
 	}
 
 	return Result;
+}
+
+int32 UGorgeousPluginHelper::GetSystemValidationCount() const
+{
+	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
+	
+	if (PersistentDataObject.IsValid())
+	{
+		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+		if (SystemValidation.IsValid())
+		{
+			return SystemValidation->GetIntegerField(TEXT("ValidationCount"));
+		}
+	}
+	
+	return 0;
+}
+
+void UGorgeousPluginHelper::IncrementSystemValidationCount()
+{
+	LoadPersistentData();
+	
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+	
+	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+	if (!SystemValidation.IsValid())
+	{
+		SystemValidation = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
+	}
+	
+	const int32 CurrentCount = SystemValidation->GetIntegerField(TEXT("ValidationCount"));
+	SystemValidation->SetNumberField(TEXT("ValidationCount"), CurrentCount + 1);
+	
+	SavePersistentData();
+}
+
+void UGorgeousPluginHelper::SetSystemValidationCount(int32 NewCount)
+{
+	LoadPersistentData();
+	
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+	
+	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+	if (!SystemValidation.IsValid())
+	{
+		SystemValidation = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
+	}
+	
+	SystemValidation->SetNumberField(TEXT("ValidationCount"), NewCount);
+	
+	SavePersistentData();
+}
+
+int32 UGorgeousPluginHelper::GetSystemValidationInterval() const
+{
+	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
+	
+	if (PersistentDataObject.IsValid())
+	{
+		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+		if (SystemValidation.IsValid() && SystemValidation->HasField(TEXT("ValidationInterval")))
+		{
+			return SystemValidation->GetIntegerField(TEXT("ValidationInterval"));
+		}
+	}
+	
+	return 10; // Default
+}
+
+void UGorgeousPluginHelper::SetSystemValidationInterval(int32 NewInterval)
+{
+	LoadPersistentData();
+	
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+	
+	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+	if (!SystemValidation.IsValid())
+	{
+		SystemValidation = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
+	}
+	
+	SystemValidation->SetNumberField(TEXT("ValidationInterval"), NewInterval);
+	
+	SavePersistentData();
 }
 
 bool UGorgeousPluginHelper::HasCircularDeferredDependency(const FName& PluginA, const FName& PluginB) const
@@ -809,64 +910,91 @@ FString UGorgeousPluginHelper::GetCircularDependencyPairKey(const FName& PluginA
 	return FString::Printf(TEXT("%s|%s"), *NameB, *NameA);
 }
 
-FString UGorgeousPluginHelper::GetCircularDependencyNotificationFilePath()
+FString UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath()
 {
-	return FPaths::ProjectSavedDir() / TEXT("GorgeousThings") / TEXT("CircularDependencyNotifications.txt");
+	return FPaths::ProjectSavedDir() / TEXT("GorgeousThings") / TEXT("GorgeousPersistentData.json");
 }
 
-void UGorgeousPluginHelper::LoadNotifiedCircularDependencyPairs()
+void UGorgeousPluginHelper::LoadPersistentData()
 {
-	if (bLoadedNotifiedPairs)
+	if (bLoadedPersistentData)
 	{
 		return;
 	}
 	
-	bLoadedNotifiedPairs = true;
+	bLoadedPersistentData = true;
 	
-	const FString FilePath = GetCircularDependencyNotificationFilePath();
+	const FString FilePath = GetGorgeousPersistentDataFilePath();
 	
 	if (!FPaths::FileExists(FilePath))
 	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+		
+		// Default SystemValidation values
+		TSharedPtr<FJsonObject> SystemValidation = MakeShared<FJsonObject>();
+		SystemValidation->SetNumberField(TEXT("ValidationCount"), 0);
+		SystemValidation->SetNumberField(TEXT("ValidationInterval"), 10);
+		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
+		
+		// Default empty circular dependencies
+		PersistentDataObject->SetArrayField(TEXT("CircularDependencyNotifications"), TArray<TSharedPtr<FJsonValue>>());
+		
+		SavePersistentData();
 		return;
 	}
 
-	if (FString FileContents; FFileHelper::LoadFileToString(FileContents, *FilePath))
+	FString FileContents;
+	if (FFileHelper::LoadFileToString(FileContents, *FilePath))
 	{
-		TArray<FString> Lines;
-		FileContents.ParseIntoArrayLines(Lines);
-		
-		for (const FString& Line : Lines)
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FileContents);
+		if (FJsonSerializer::Deserialize(Reader, PersistentDataObject) && PersistentDataObject.IsValid())
 		{
-			if (!Line.IsEmpty())
+			// Load circular dependencies from JSON
+			const TArray<TSharedPtr<FJsonValue>>* PairsArray;
+			if (PersistentDataObject->TryGetArrayField(TEXT("CircularDependencyNotifications"), PairsArray))
 			{
-				NotifiedCircularDependencyPairs.Add(Line);
+				for (const TSharedPtr<FJsonValue>& Value : *PairsArray)
+				{
+					NotifiedCircularDependencyPairs.Add(Value->AsString());
+				}
 			}
+			
+			GT_I_LOG("GT.Core.PluginHelper", TEXT("Loaded persistent Gorgeous data from disk (%d circular dependency records)"), NotifiedCircularDependencyPairs.Num());
 		}
-		
-		GT_I_LOG("GT.Core.PluginHelper", TEXT("Loaded %d previously notified circular dependency pairs from disk"), NotifiedCircularDependencyPairs.Num());
 	}
 }
 
-void UGorgeousPluginHelper::SaveNotifiedCircularDependencyPairs()
+void UGorgeousPluginHelper::SavePersistentData()
 {
-	const FString FilePath = GetCircularDependencyNotificationFilePath();
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
 	
+	// Ensure circular dependencies are synced
+	TArray<TSharedPtr<FJsonValue>> PairsArray;
+	for (const FString& PairKey : NotifiedCircularDependencyPairs)
+	{
+		PairsArray.Add(MakeShared<FJsonValueString>(PairKey));
+	}
+	PersistentDataObject->SetArrayField(TEXT("CircularDependencyNotifications"), PairsArray);
+
+	const FString FilePath = GetGorgeousPersistentDataFilePath();
 	const FString Directory = FPaths::GetPath(FilePath);
 	IFileManager::Get().MakeDirectory(*Directory, true);
 	
-	FString FileContents;
-	for (const FString& PairKey : NotifiedCircularDependencyPairs)
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	if (FJsonSerializer::Serialize(PersistentDataObject.ToSharedRef(), Writer))
 	{
-		FileContents += PairKey + LINE_TERMINATOR;
-	}
-	
-	if (FFileHelper::SaveStringToFile(FileContents, *FilePath))
-	{
-		GT_I_LOG("GT.Core.PluginHelper", TEXT("Saved %d circular dependency notification records to disk"), NotifiedCircularDependencyPairs.Num());
-	}
-	else
-	{
-		GT_W_LOG("GT.Core.PluginHelper", TEXT("Failed to save circular dependency notification records to: %s"), *FilePath);
+		if (FFileHelper::SaveStringToFile(OutputString, *FilePath))
+		{
+			GT_I_LOG("GT.Core.PluginHelper", TEXT("Saved persistent Gorgeous data to disk"));
+		}
+		else
+		{
+			GT_W_LOG("GT.Core.PluginHelper", TEXT("Failed to save persistent Gorgeous data to: %s"), *FilePath);
+		}
 	}
 }
 
@@ -885,7 +1013,7 @@ void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& Plugin
 	}
 	
 	// Load previously notified pairs from disk (lazy load)
-	LoadNotifiedCircularDependencyPairs();
+	LoadPersistentData();
 	
 	// Only show toast notification if this pair hasn't been notified before
 	if (!NotifiedCircularDependencyPairs.Contains(PairKey))
@@ -893,7 +1021,7 @@ void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& Plugin
 		NotifiedCircularDependencyPairs.Add(PairKey);
 		
 		// Save to disk so we don't show again
-		SaveNotifiedCircularDependencyPairs();
+		SavePersistentData();
 		
 		// Show toast notification
 		GorgeousLogging::ShowToastNotification(

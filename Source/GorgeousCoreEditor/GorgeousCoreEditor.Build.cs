@@ -74,7 +74,8 @@ public class GorgeousCoreEditor : ModuleRules
                 "EditorWidgets",
                 "AssetDefinition",
                 "ToolWidgets",
-                "Settings"
+                "Settings",
+                "CommonUI"
             });
 
         

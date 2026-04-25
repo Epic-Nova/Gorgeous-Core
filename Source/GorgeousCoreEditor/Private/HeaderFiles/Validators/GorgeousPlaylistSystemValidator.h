@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2025 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |              Gorgeous Events - Events functionality provider              |
 | ------------------------------------------------------------------------- |
@@ -52,7 +52,5 @@ public:
 	//<============================--- Variables ---============================>
 private: 
 	
-	// Flag indirectly if we are indirectly validating a Data Registry.
-	mutable bool bIndirectValidationFlag;
 	//<------------------------------------------------------------------------->
 };

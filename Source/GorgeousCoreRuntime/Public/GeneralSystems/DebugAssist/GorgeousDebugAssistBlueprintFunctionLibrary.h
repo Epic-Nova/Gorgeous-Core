@@ -152,4 +152,8 @@ public:
     /** Draws a gorgeous downward pointing arrow to mark grounding or locations. */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistArrow(const UObject* WorldContextObject, const FVector& Start, const FVector& End, float Size, const FLinearColor& Color, float Duration = 1.0f, bool bPersistent = false, float Thickness = 2.0f);
+
+    /** Clears all currently registered debug ghosts (hit bounds). Useful for resetting state on BeginPlay. */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist")
+    static void ClearDebugAssistGhosts();
 };
