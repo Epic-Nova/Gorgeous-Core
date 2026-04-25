@@ -895,6 +895,11 @@ int32 FGorgeousAutoReplicationMixin::GetReplicatedEntryCount() const
 
 void FGorgeousAutoReplicationMixin::InitializeTransporter()
 {
+	if (GIsEditor && !GIsPlayInEditorWorld)
+	{
+		return;
+	}
+
 	UObject* OwnerObject = Owner.Get();
 	if (!OwnerObject)
 	{

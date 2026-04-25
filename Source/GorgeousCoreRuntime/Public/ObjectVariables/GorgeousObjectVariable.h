@@ -712,7 +712,7 @@ public:
 	/**
 	 * The unique identifier of the object variable.
 	 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
+	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	FGuid UniqueIdentifier;
 
 	/**
@@ -722,7 +722,7 @@ public:
 	 * flat TArray gives every child a stable, named slot so external code can look it up by
 	 * a meaningful key rather than a fragile index.
 	 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
+	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	TMap<FName, TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
 
 	/**
@@ -792,13 +792,13 @@ protected:
 	/**
 	 * The parent of the object variable.
 	 */
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "Gorgeous Object Variable")
 	UGorgeousObjectVariable* Parent;
 
 #if WITH_EDITORONLY_DATA
 	
 	/**
-	 * Configuration values that provides the editor with information how to handle and display various object variables.
+	 * Configuration values that provides the Blueprint VM with information how to handle and display various object variables.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true), AdvancedDisplay)
 	FObjectVariablePinConfiguration_S PinConfiguration;

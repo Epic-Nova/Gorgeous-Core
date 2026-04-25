@@ -40,6 +40,8 @@ public:
 	
 	// Override of ValidateLoadedAsset to perform the actual validation logic on data registry assets.
 	virtual EDataValidationResult ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context) override;
+	
+	static void ValidateViewportClient();
 	//<------------------------------------------------------------------------->
 	
 	//<=======================--- Blueprint Functions ---=======================>
@@ -47,13 +49,19 @@ public:
 	/// Hyperlink action handler — registers the correct directory in the DataRegistry settings.
 	UFUNCTION()
 	void HandleRegisterDirectoryHyperlink(const FString& Payload);
+
+	/// Hyperlink action handler — fixes the Game Viewport Client class in project settings.
+	UFUNCTION()
+	void HandleFixViewportClientHyperlink(const FString& Payload);
+
+	/// Hyperlink condition handler — checks if the Game Viewport Client can be fixed.
+	UFUNCTION()
+	bool HandleCanFixViewportClientHyperlink(const FString& Payload);
 	
 	//<------------------------------------------------------------------------->
 	
 	//<============================--- Variables ---============================>
 private: 
 	
-	// Flag indirectly if we are indirectly validating a Data Registry.
-	mutable bool bIndirectValidationFlag;
 	//<------------------------------------------------------------------------->
 };

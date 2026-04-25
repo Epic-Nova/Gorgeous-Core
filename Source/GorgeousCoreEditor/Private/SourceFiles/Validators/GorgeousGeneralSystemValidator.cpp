@@ -23,6 +23,7 @@
 #include "AssetToolsModule.h"
 #include "FileHelpers.h"
 #include "EditorAssetLibrary.h"
+#include "IGorgeousThingsModuleInterface.h"
 #include "UnrealEdMisc.h"
 #include "Engine/AssetManager.h"
 #include "Engine/AssetManagerSettings.h"
@@ -30,18 +31,22 @@
 #include "Interfaces/IPluginManager.h"
 #include "Misc/DataValidation.h"
 #include "Async/Async.h"
+#include "EditorValidatorSubsystem.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
+#include "DataRegistry.h"
+#include "DataRegistrySettings.h"
 //<-------------------------------------------------------------------------->
 
-//@todo: as this behaviour is relatively complex, we plan this to be a standalone toolit that can perform various validation and fixing tasks related to gorgeous systems. For now, we will keep it as a general validator to ensure the core system setup is always correct, but we may want to split it up later on if it grows too much or has distinct areas of responsibility.
-//@todo: handle edge case handling outside GorgeousCore
+
+//@TODO: Data Registry hyperlink actions does not show up
 
 TSet<FName> UGorgeousGeneralSystemValidator::ProcessedAssets = TSet<FName>();
 
 TSet<FString> UGorgeousGeneralSystemValidator::CreatedSystems = TSet<FString>();
 
 bool UGorgeousGeneralSystemValidator::bPluginSystemsDiscovered = false;
+bool UGorgeousGeneralSystemValidator::bSystemValidationScanStarted = false;
 FTSTicker::FDelegateHandle UGorgeousGeneralSystemValidator::AsyncValidationTickerHandle;
 TArray<FAssetData> UGorgeousGeneralSystemValidator::AsyncValidationQueue;
 TSharedPtr<SNotificationItem> UGorgeousGeneralSystemValidator::AsyncProgressNotification;
@@ -60,6 +65,16 @@ UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 		StaticClass(),
 		FName("GT.GeneralSystemValidator.RegisterAsset"),
 		FName("HandleRegisterAssetRegistryEntry"));
+
+	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
+		StaticClass(),
+		FName("GT.GeneralSystemValidator.RegisterDataRegistry"),
+		FName("HandleRegisterDataRegistryEntry"));
+
+	UGT_EditorLogging_FL::RegisterLogHyperlinkCondition(
+		StaticClass(),
+		FName("GT.GeneralSystemValidator.RegisterDataRegistryCondition"),
+		FName("HandleCanRegisterDataRegistryEntry"));
 
 	const FAssetRegistryModule& ARM =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -86,14 +101,6 @@ UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 				FTickerDelegate::CreateUObject(this, &UGorgeousGeneralSystemValidator::TickUpdateSystemPaths),
 				2.0f);
 		}
-
-		GEditor->GetTimerManager()->SetTimer(
-			ScanTimerHandle,
-			this,
-			&UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs,
-			1.0f,
-			false
-		);
 	});
 }
 
@@ -136,22 +143,20 @@ void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 
 	bool bSettingsModified = false;
 
-	// Use IPluginManager to find all Gorgeous plugins (broad detection)
-	IPluginManager& PluginManager = IPluginManager::Get();
-	TArray<TSharedRef<IPlugin>> AllPlugins = PluginManager.GetDiscoveredPlugins();
+	// Use PluginHelper to find all registered Gorgeous plugins
+	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
+	TSet<FName> KnownPlugins = PluginHelper->GetKnownGorgeousPlugins();
 
-	for (const TSharedRef<IPlugin>& Plugin : AllPlugins)
+	for (const FName& PluginName : KnownPlugins)
 	{
-		const FString PluginName = Plugin->GetName();
-		
-		// Check if this is a Gorgeous plugin
-		if (!PluginName.StartsWith(TEXT("Gorgeous")) && !PluginName.Contains(TEXT("Gorgeous")))
+		TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
+		if (!Plugin.IsValid())
 		{
 			continue;
 		}
 
 		// Convert plugin name to content path format
-		const FString PluginContentPath = FString::Printf(TEXT("/%s"), *PluginName);
+		const FString PluginContentPath = FString::Printf(TEXT("/%s"), *PluginName.ToString());
 		const FString SystemsPath = PluginContentPath / TEXT("Systems");
 
 		if (RegisteredSearchPaths.Contains(SystemsPath))
@@ -159,17 +164,12 @@ void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 			continue;
 		}
 
-		// Check if the directory exists in the Asset Registry / scan results
-		// We use a broad filter to include even unknown assets in that path
-		TArray<FAssetData> SystemAssets;
-		FARFilter Filter;
-		Filter.PackagePaths.Add(*SystemsPath);
-		Filter.bRecursivePaths = true;
-		AssetRegistry.GetAssets(Filter, SystemAssets);
-
-		// If discovery is successful, we register the path
-		// We register even if 0 assets are currently found to ensure future-proofing
-		// especially since AssetRegistry might be still scanning.
+		// Fast disk-based check instead of Asset Registry query
+		const FString SystemsDiskPath = Plugin->GetContentDir() / TEXT("Systems");
+		if (!IFileManager::Get().DirectoryExists(*SystemsDiskPath))
+		{
+			continue;
+		}
 		
 		// Find or create the GorgeousBlueprintSystems entry
 		int32 TypeIndex = INDEX_NONE;
@@ -188,20 +188,20 @@ void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 			FPrimaryAssetTypeInfo NewInfo;
 			NewInfo.PrimaryAssetType = SystemType;
 			NewInfo.SetAssetBaseClass(UGeneralSystemConfiguration_PDA::StaticClass());
-			NewInfo.bHasBlueprintClasses = false; // Primary Data Assets are not blueprint classes
+			NewInfo.bHasBlueprintClasses = false;
 
 			FDirectoryPath DirPath;
 			DirPath.Path = SystemsPath;
 			NewInfo.GetDirectories().Add(DirPath);
 
-			AssetManagerSettings->Modify();
+			if (!bSettingsModified) AssetManagerSettings->Modify();
 			AssetManagerSettings->PrimaryAssetTypesToScan.Add(NewInfo);
 			RegisteredSearchPaths.Add(SystemsPath);
 			bSettingsModified = true;
 
 			GT_I_LOG("GT.GeneralSystemValidator",
 				TEXT("✓ Created GorgeousBlueprintSystems entry with path for plugin '%s': %s"),
-				*PluginName,
+				*PluginName.ToString(),
 				*SystemsPath);
 		}
 		else
@@ -213,13 +213,13 @@ void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 			DirPath.Path = SystemsPath;
 			TypeInfo.GetDirectories().Add(DirPath);
 
-			AssetManagerSettings->Modify();
+			if (!bSettingsModified) AssetManagerSettings->Modify();
 			RegisteredSearchPaths.Add(SystemsPath);
 			bSettingsModified = true;
 
 			GT_I_LOG("GT.GeneralSystemValidator",
 				TEXT("✓ Added path to GorgeousBlueprintSystems for plugin '%s': %s"),
-				*PluginName,
+				*PluginName.ToString(),
 				*SystemsPath);
 		}
 	}
@@ -247,7 +247,7 @@ void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 	else
 	{
 		GT_I_LOG("GT.GeneralSystemValidator",
-			TEXT("No new system paths to register. Found %d plugins."), AllPlugins.Num());
+			TEXT("No new system paths to register. Found %d registered plugins."), KnownPlugins.Num());
 	}
 }
 
@@ -258,45 +258,23 @@ bool UGorgeousGeneralSystemValidator::CanValidateAsset_Implementation(const FAss
 		return false;
 	}
 
-	// Only validate assets within directories registered for Gorgeous systems
-	const FString PackagePath = InAssetData.PackageName.ToString();
-	const TArray<FString> ScannedDirs = GetGorgeousSystemDirectories();
-	
-	bool bIsWithinScannedDir = false;
-	for (const FString& Dir : ScannedDirs)
+	// 1. Support Data Registry validation for all Gorgeous systems
+	if (InObject->GetClass()->IsChildOf(UDataRegistry::StaticClass()))
 	{
-		// Ensure directory path has a trailing slash for accurate prefix matching
-		FString ScaledDir = Dir;
-		if (!ScaledDir.EndsWith(TEXT("/")))
+		TArray<FString> ScannedDirs = GetGorgeousSystemDirectories();
+		for (const FString& Dir : ScannedDirs)
 		{
-			ScaledDir += TEXT("/");
-		}
-
-		if (PackagePath.StartsWith(ScaledDir))
-		{
-			bIsWithinScannedDir = true;
-			break;
+			if (InAssetData.PackagePath.ToString().StartsWith(Dir))
+			{
+				return true;
+			}
 		}
 	}
 
-	if (!bIsWithinScannedDir)
-	{
-		return false;
-	}
-	
+	// 2. Support General System PDA validation
 	if (InObject->IsA<UGeneralSystemConfiguration_PDA>())
 	{
 		return true;
-	}
-
-	// validate relevant system components (so we can detect missing PDA) - runtime objects
-	if (InObject->GetClass()->IsChildOf(UGeneralSystem_AC::StaticClass()))
-	{
-		if (const FString Name = InObject->GetName(); 
-			IsSystemComponent(Name, 0)) // check all system component types
-		{
-			return true;
-		}
 	}
 
 	return false;
@@ -304,37 +282,68 @@ bool UGorgeousGeneralSystemValidator::CanValidateAsset_Implementation(const FAss
 
 EDataValidationResult UGorgeousGeneralSystemValidator::ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
-	// If this is a PDA asset, validate it (and ensure AssetManager registration)
+	// 1. Data Registry Validation
+	if (UDataRegistry* DataRegistry = Cast<UDataRegistry>(InAsset))
+	{
+		const UDataRegistrySettings* DataRegistrySettings = GetMutableDefault<UDataRegistrySettings>();
+		
+		bool bIsRegisteredDir = false;
+		for (const auto& [Path] : DataRegistrySettings->DirectoriesToScan)
+		{
+			if (InAssetData.PackagePath.ToString() == Path)
+			{
+				bIsRegisteredDir = true;
+				break;
+			}
+		}
+		
+		if (!bIsRegisteredDir)
+		{
+			UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
+				FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString()),
+				FString::Printf(TEXT("GT.GeneralSystemValidator.DataRegistry_Unregistered_%s"), *InAssetData.AssetName.ToString()),
+				Logging_Warning,
+				FName("GT.GeneralSystemValidator.RegisterDataRegistry"),
+				InAssetData.PackagePath.ToString(),
+				"Add Path",
+				true,
+				FName("GT.GeneralSystemValidator.RegisterDataRegistryCondition"));
+				
+			return EDataValidationResult::Invalid;
+		}
+		
+		return EDataValidationResult::Valid;
+	}
+
+	// 2. PDA Validation
 	if (UGeneralSystemConfiguration_PDA* PDA = Cast<UGeneralSystemConfiguration_PDA>(InAsset))
 	{
 		ValidatePDA(PDA, Context);
 
 		if (IsSystemAssetManagerRegistered())
 		{
-			return EDataValidationResult::Valid;
+			const UAssetManager& AssetManager = UAssetManager::Get();
+
+			if (const FPrimaryAssetId ExistingId = AssetManager.GetPrimaryAssetIdForObject(PDA); 
+				!ExistingId.IsValid())
+			{
+				UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
+					FString::Printf(
+						TEXT("System '%s' is not registered in Asset Manager."),
+						*PDA->GetPathName()
+					),
+					"GT.Systems.GeneralSystem.AssetRegistryEntry",
+					Logging_Error,
+					FName("GT.GeneralSystemValidator.RegisterAsset"),
+					PDA->GetPathName(),
+					"Fix Asset Manager Config"
+				);
+
+				return EDataValidationResult::Invalid;
+			}
 		}
-
-		const UAssetManager& AssetManager = UAssetManager::Get();
-
-		if (const FPrimaryAssetId ExistingId = AssetManager.GetPrimaryAssetIdForObject(PDA); 
-			!ExistingId.IsValid())
-		{
-			UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-				FString::Printf(
-					TEXT("System '%s' is not registered in Asset Manager."),
-					*PDA->GetPathName()
-				),
-				"GT.Systems.GeneralSystem.AssetRegistryEntry",
-				Logging_Error,
-				FName("GT.GeneralSystemValidator.RegisterAsset"),
-				PDA->GetPathName(),
-				"Fix Asset Manager Config"
-			);
-
-			return EDataValidationResult::Invalid;
-		}
-
-		return EDataValidationResult::Valid;
+		
+		return Context.GetNumErrors() > 0 ? EDataValidationResult::Invalid : EDataValidationResult::Valid;
 	}
 
 	// If this is a system component (blueprint), ensure its PDA exists and validate it.
@@ -456,6 +465,67 @@ void UGorgeousGeneralSystemValidator::HandleRegisterAssetRegistryEntry(const FSt
 	);
 }
 
+void UGorgeousGeneralSystemValidator::HandleRegisterDataRegistryEntry(const FString& Payload)
+{
+	if (Payload.IsEmpty())
+	{
+		return;
+	}
+
+	UDataRegistrySettings* Settings = GetMutableDefault<UDataRegistrySettings>();
+	if (!Settings)
+	{
+		return;
+	}
+
+	bool bAlreadyExists = false;
+	for (const auto& Entry : Settings->DirectoriesToScan)
+	{
+		if (Entry.Path == Payload)
+		{
+			bAlreadyExists = true;
+			break;
+		}
+	}
+
+	if (!bAlreadyExists)
+	{
+		FDirectoryPath NewPath;
+		NewPath.Path = Payload;
+		Settings->DirectoriesToScan.Add(NewPath);
+		Settings->SaveConfig(CPF_Config, *Settings->GetDefaultConfigFilename());
+
+		FMessageDialog::Open(
+			EAppMsgType::Ok,
+			FText::Format(NSLOCTEXT("GT.GeneralSystemValidator", "DataRegistryPathAdded", "Added '{0}' to Data Registry scan directories."), FText::FromString(Payload))
+		);
+	}
+}
+
+bool UGorgeousGeneralSystemValidator::HandleCanRegisterDataRegistryEntry(const FString& Payload)
+{
+	if (Payload.IsEmpty())
+	{
+		return false;
+	}
+
+	const UDataRegistrySettings* Settings = GetDefault<UDataRegistrySettings>();
+	if (!Settings)
+	{
+		return false;
+	}
+
+	for (const auto& Entry : Settings->DirectoriesToScan)
+	{
+		if (Entry.Path == Payload)
+		{
+			return false; // Already registered
+		}
+	}
+
+	return true;
+}
+
 
 // Ticker callback: wait until other gorgeous plugins register, then run discovery/registration.
 bool UGorgeousGeneralSystemValidator::TickUpdateSystemPaths(float)
@@ -482,6 +552,54 @@ bool UGorgeousGeneralSystemValidator::TickUpdateSystemPaths(float)
 	return false; // stop ticker
 }
 
+void UGorgeousGeneralSystemValidator::RequestSystemValidationScan()
+{
+	if (bSystemValidationScanStarted)
+	{
+		return;
+	}
+	bSystemValidationScanStarted = true;
+
+	// Delay the scan to ensure the editor is fully booted and stable
+	FTSTicker::GetCoreTicker().AddTicker(
+		FTickerDelegate::CreateLambda([](float)
+		{
+			if (UGorgeousGeneralSystemValidator* Validator = GetMutableDefault<UGorgeousGeneralSystemValidator>())
+			{
+				Validator->ScanAndRecreateMissingPDAs();
+			}
+			return false; // run once
+		}),
+		5.0f
+	);
+}
+
+TArray<FString> UGorgeousGeneralSystemValidator::GetGorgeousSystemDirectories()
+{
+	TArray<FString> Results;
+	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
+	if (!PluginHelper)
+	{
+		Results.Add(TEXT("/GorgeousCore/Systems"));
+		return Results;
+	}
+
+	TSet<FName> KnownPlugins = PluginHelper->GetKnownGorgeousPlugins();
+	if (KnownPlugins.Num() == 0)
+	{
+		Results.Add(TEXT("/GorgeousCore/Systems"));
+	}
+	else
+	{
+		for (const FName& Plugin : KnownPlugins)
+		{
+			Results.Add(FString::Printf(TEXT("/%s/Systems"), *Plugin.ToString()));
+		}
+	}
+
+	return Results;
+}
+
 void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 {
 	// Prevent multiple concurrent scans
@@ -493,17 +611,35 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	// Ensure discovery has run first so we have the directory list
 	DiscoverAndRegisterGorgeousPluginSystems();
 
+	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
+	if (!PluginHelper) return;
+
+	const int32 CurrentCount = PluginHelper->GetSystemValidationCount();
+	const int32 Interval = PluginHelper->GetSystemValidationInterval();
+
+	if (CurrentCount < Interval - 1)
+	{
+		PluginHelper->IncrementSystemValidationCount();
+		GT_I_LOG("GT.GeneralSystemValidator", TEXT("Skipping system validation (attempt %d/%d)"), CurrentCount + 1, Interval);
+		return;
+	}
+
+	// Reset count as we are performing validation now
+	PluginHelper->SetSystemValidationCount(0);
+
 	TArray<FString> ScannedDirs = GetGorgeousSystemDirectories();
 	if (ScannedDirs.Num() == 0)
 	{
 		return;
 	}
 
+	// Perform asset gathering on the Game Thread (Asset Registry is not thread-safe for in-memory enumeration)
 	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	TArray<FAssetData> FoundAssets;
 	
 	FARFilter Filter;
 	Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
+	Filter.ClassPaths.Add(UDataRegistry::StaticClass()->GetClassPathName());
 	for (const FString& Dir : ScannedDirs)
 	{
 		Filter.PackagePaths.Add(FName(*Dir));
@@ -511,42 +647,109 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	Filter.bRecursivePaths = true;
 	Filter.bRecursiveClasses = true;
 
-	// Must be on Game Thread
 	ARM.Get().GetAssets(Filter, FoundAssets);
 
-	// Immediately filter to actual Gorgeous Systems to get an accurate count
-	AsyncValidationQueue.Empty();
+	TArray<FAssetData> FilteredAssets;
 	for (const FAssetData& Asset : FoundAssets)
 	{
-		// Only queue if it's potentially a system component
-		// We can't do IsChildOf here easily without loading, but we can check naming 
-		// or tags if they exist. For now, let's keep it simple but accurate.
-		const FString Name = Asset.AssetName.ToString();
-		if (IsSystemComponent(Name, 0))
+		// 1. Support Data Registries
+		if (Asset.AssetClassPath == UDataRegistry::StaticClass()->GetClassPathName())
 		{
-			AsyncValidationQueue.Add(Asset);
+			FilteredAssets.Add(Asset);
+			continue;
+		}
+
+		// 2. Support System Components (Managers, etc.)
+		const FString Name = Asset.AssetName.ToString();
+		if (Name.Contains(TEXT("Manager")) || 
+			Name.Contains(TEXT("Interactor")) ||
+			Name.Contains(TEXT("Handler")) ||
+			Name.Contains(TEXT("Handling")))
+		{
+			FilteredAssets.Add(Asset);
 		}
 	}
 
-	TotalAsyncAssets = AsyncValidationQueue.Num();
+	QueueAssetsForAsyncValidation(FilteredAssets);
 
-	if (TotalAsyncAssets > 0)
+	// Call custom validation hooks on all registered modules (Game Thread)
+	FDataValidationContext ModuleContext;
+	for (IGorgeousThingsModuleInterface* Module : PluginHelper->GetAllRegisteredModules())
 	{
-		// Show notification in bottom right
-		FNotificationInfo Info(NSLOCTEXT("GT.GeneralSystemValidator", "AsyncScanProgress", "Verifying Gorgeous Systems..."));
-		Info.bFireAndForget = false;
-		Info.FadeOutDuration = 2.0f;
-		Info.ExpireDuration = 2.0f;
-		
-		AsyncProgressNotification = FSlateNotificationManager::Get().AddNotification(Info);
-		if (AsyncProgressNotification.IsValid())
+		if (Module)
 		{
+			Module->ValidateGorgeousModule(ModuleContext);
+		}
+	}
+}
+
+bool UGorgeousGeneralSystemValidator::IsSystemAssetManagerRegistered() const
+{
+	const UAssetManagerSettings* Settings = GetDefault<UAssetManagerSettings>();
+	if (!Settings)
+	{
+		return false;
+	}
+
+	const FName SystemType = TEXT("GorgeousBlueprintSystems");
+	for (const FPrimaryAssetTypeInfo& Info : Settings->PrimaryAssetTypesToScan)
+	{
+		if (Info.PrimaryAssetType == SystemType)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+void UGorgeousGeneralSystemValidator::QueueAssetsForAsyncValidation(const TArray<FAssetData>& Assets)
+{
+	if (Assets.Num() == 0)
+	{
+		return;
+	}
+
+	// Add unique assets to the queue
+	for (const FAssetData& Asset : Assets)
+	{
+		// We don't mark as processed here yet, only when we actually process it in the ticker
+		AsyncValidationQueue.Add(Asset);
+	}
+	{
+		// Update total count for progress tracking
+		TotalAsyncAssets = FMath::Max(TotalAsyncAssets, AsyncValidationQueue.Num());
+
+		if (!AsyncValidationTickerHandle.IsValid())
+		{
+			// Show notification in bottom right with progress indicator
+			FNotificationInfo Info(NSLOCTEXT("GT.GeneralSystemValidator", "AsyncScanProgress", "Verifying Gorgeous Systems..."));
+			Info.bFireAndForget = false;
+			Info.FadeInDuration = 0.5f;
+			Info.FadeOutDuration = 2.0f;
+			Info.ExpireDuration = 0.0f;
+			
+			AsyncProgressNotification = FSlateNotificationManager::Get().AddNotification(Info);
+			if (AsyncProgressNotification.IsValid())
+			{
+				AsyncProgressNotification->SetCompletionState(SNotificationItem::CS_Pending);
+			}
+
+			AsyncValidationTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+				FTickerDelegate::CreateLambda([](float DeltaTime) 
+				{ 
+					if (UGorgeousGeneralSystemValidator* Validator = GetMutableDefault<UGorgeousGeneralSystemValidator>())
+					{
+						return Validator->TickAsyncValidation(DeltaTime);
+					}
+					return false;
+				})
+			);
+		}
+		else if (AsyncProgressNotification.IsValid())
+		{
+			// If already running, ensure notification is still pending (not success/fail yet)
 			AsyncProgressNotification->SetCompletionState(SNotificationItem::CS_Pending);
 		}
-
-		AsyncValidationTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
-			FTickerDelegate::CreateLambda([this](float DeltaTime) { return TickAsyncValidation(DeltaTime); })
-		);
 	}
 }
 
@@ -564,36 +767,39 @@ bool UGorgeousGeneralSystemValidator::TickAsyncValidation(float)
 	}
 
 	// Process batch of assets per frame to avoid stalling UI
-	constexpr int32 BatchSize = 5;
+	constexpr int32 BatchSize = 1; // Minimal batch size during startup
 	int32 ProcessedCount = 0;
+
+	// Guard against heavy processing during async loading or when editor is not ready
+	if (IsAsyncLoading())
+	{
+		return true; // wait for next frame
+	}
 
 	while (AsyncValidationQueue.Num() > 0 && ProcessedCount < BatchSize)
 	{
-		const FAssetData& Asset = AsyncValidationQueue.Pop();
-		ProcessedCount++;
-
-		UObject* Obj = Asset.GetAsset();
-		if (!Obj)
-			continue;
-
-		UBlueprint* BP = Cast<UBlueprint>(Obj);
-		if (!BP || !BP->GeneratedClass)
-			continue;
-
-		UClass* Class = BP->GeneratedClass;
-		if (!Class->IsChildOf(UGeneralSystem_AC::StaticClass()))
-			continue;
-
-		const FString Name = Class->GetName();
-		const bool bIsManager = IsSystemComponent(Name, 1);
-		const bool bIsInteractor = IsSystemComponent(Name, 2);
-
-		if (!bIsManager && !bIsInteractor)
-			continue;
-
-		if (!FindExistingPDA(Class))
+		const FAssetData Asset = AsyncValidationQueue.Pop();
+		
+		if (ProcessedAssets.Contains(Asset.PackageName))
 		{
-			CreatePDA(Class);
+			continue;
+		}
+		
+		ProcessedCount++;
+		ProcessedAssets.Add(Asset.PackageName);
+
+		// Use Validator Subsystem to validate the asset correctly without hardcoding logic
+		if (UEditorValidatorSubsystem* ValidatorSubsystem = GEditor->GetEditorSubsystem<UEditorValidatorSubsystem>())
+		{
+			TArray<FAssetData> AssetsToValidate;
+			AssetsToValidate.Add(Asset);
+			
+			FValidateAssetsSettings Settings;
+			Settings.bSkipExcludedDirectories = true;
+			Settings.bLoadAssetsForValidation = true;
+
+			FValidateAssetsResults Results;
+			ValidatorSubsystem->ValidateAssetsWithSettings(AssetsToValidate, Settings, Results);
 		}
 	}
 
@@ -601,50 +807,16 @@ bool UGorgeousGeneralSystemValidator::TickAsyncValidation(float)
 	if (AsyncProgressNotification.IsValid() && TotalAsyncAssets > 0)
 	{
 		const float Progress = 1.0f - ((float)AsyncValidationQueue.Num() / (float)TotalAsyncAssets);
-		// Notification items usually don't have built-in progress bars if not customized,
-		// but we can update the text periodically or just keep it pending until done.
+		const int32 Percentage = FMath::RoundToInt(Progress * 100.0f);
+		
 		FFormatNamedArguments Args;
 		Args.Add("Current", FText::AsNumber(TotalAsyncAssets - AsyncValidationQueue.Num()));
 		Args.Add("Total", FText::AsNumber(TotalAsyncAssets));
-		AsyncProgressNotification->SetText(FText::Format(NSLOCTEXT("GT.GeneralSystemValidator", "AsyncScanProgressCount", "Verifying Gorgeous Systems ({Current}/{Total})..."), Args));
+		Args.Add("Percent", FText::AsNumber(Percentage));
+		AsyncProgressNotification->SetText(FText::Format(NSLOCTEXT("GT.GeneralSystemValidator", "AsyncScanProgressCount", "Verifying Gorgeous Systems ({Percent}%) - {Current}/{Total}"), Args));
 	}
 
 	return true; // keep ticking
-}
-
-bool UGorgeousGeneralSystemValidator::IsSystemAssetManagerRegistered() const
-{
-	const TArray<FString> ScannedDirs = GetGorgeousSystemDirectories();
-	return ScannedDirs.Num() > 0;
-}
-
-TArray<FString> UGorgeousGeneralSystemValidator::GetGorgeousSystemDirectories() const
-{
-	TArray<FString> Results;
-	const FPrimaryAssetType Type(TEXT("GorgeousBlueprintSystems"));
-	
-	const UAssetManagerSettings* Settings = GetDefault<UAssetManagerSettings>();
-	if (!Settings)
-		return Results;
-
-	for (const FPrimaryAssetTypeInfo& Info : Settings->PrimaryAssetTypesToScan)
-	{
-		if (Info.PrimaryAssetType == Type.GetName())
-		{
-			for (const FDirectoryPath& Dir : Info.GetDirectories())
-			{
-				Results.AddUnique(Dir.Path);
-			}
-		}
-	}
-
-	// Fallback to GorgeousCore if everything else is missing
-	if (Results.Num() == 0)
-	{
-		Results.Add(TEXT("/GorgeousCore/Systems"));
-	}
-
-	return Results;
 }
 
 bool UGorgeousGeneralSystemValidator::IsSystemComponent(const FString Name, const uint8 CheckMode) const
@@ -1234,4 +1406,5 @@ UGeneralSystemConfiguration_PDA* UGorgeousGeneralSystemValidator::FindExistingPD
 
 	// Not found
 	return nullptr;
+
 }
