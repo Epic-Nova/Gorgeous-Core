@@ -72,9 +72,11 @@ private:
 	/** Refreshes the details view and buttons based on the current page index. */
 	void UpdateWizardState();
 
+	/** Returns true if we can proceed to the next page / finish, calling PreCreate on the payload. */
+	bool CanProceedToNextPage(FString& OutFailureReason) const;
+
 	/** Returns true if we are currently on the last page of the wizard. */
 	bool IsLastPage() const;
-	//<-------------------------->
 
 	//<=====--- UI Components ---=====>
 

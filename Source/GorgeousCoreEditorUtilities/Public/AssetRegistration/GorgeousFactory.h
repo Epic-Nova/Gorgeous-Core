@@ -23,6 +23,8 @@
  * Base class for all Gorgeous Core asset factories.
  *
  * @author Nils Bergemann
+ * 
+ * @todo: Make factory creation chained with function calls
  */
 UCLASS()
 class GORGEOUSCOREEDITORUTILITIES_API UGorgeousFactory : public UFactory
@@ -55,6 +57,12 @@ public:
 	 */
 	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo);
 
+	/**
+	 * Weather this Factory should participate in the Content Browser context menu. 
+	 *
+	 * @return True if the handled asset should show up in the create context menu, false otherwise.
+	 */
+	virtual bool ShouldShowInNewMenu() const override;
 	
 	//<============================--- Variables ---============================>
 private:

@@ -9,6 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "Validators/GorgeousCommonUIFoundationSystemValidator.h"
+#include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -56,17 +57,17 @@ UGorgeousCommonUIFoundationSystemValidator::~UGorgeousCommonUIFoundationSystemVa
 bool UGorgeousCommonUIFoundationSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData,
 	UObject* InObject, FDataValidationContext& InContext) const
 {
-	if (InAssetData.PackageName.ToString().Contains(TEXT("InputData")) && InObject->IsA<UBlueprint>())
-	{
-		return true;
-	}
-	
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	return InAssetData.PackageName.ToString().Contains(TEXT("InputData")) && InObject->IsA<UBlueprint>();
+#else
+	return false;
+#endif
 }
 
 EDataValidationResult UGorgeousCommonUIFoundationSystemValidator::ValidateLoadedAsset_Implementation(
 	const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	ValidateViewportClient();
 
 	const UDataRegistrySettings* DataRegistrySettings = GetMutableDefault<UDataRegistrySettings>();
@@ -94,12 +95,14 @@ EDataValidationResult UGorgeousCommonUIFoundationSystemValidator::ValidateLoaded
 			
 		return EDataValidationResult::Invalid;
 	}
+#endif
 	
 	return EDataValidationResult::Valid;
 }
 
 void UGorgeousCommonUIFoundationSystemValidator::ValidateViewportClient()
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	// Check Game Viewport Client
 	const UEngine* Engine = GetDefault<UEngine>();
 	const FSoftClassPath CommonUIViewportClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
@@ -129,10 +132,12 @@ void UGorgeousCommonUIFoundationSystemValidator::ValidateViewportClient()
 			true,
 			FName("GT.Systems.CommonUIFoundation.Validator.CanFixViewportClient"));
 	}
+#endif
 }
 
 void UGorgeousCommonUIFoundationSystemValidator::HandleRegisterDirectoryHyperlink(const FString& Payload)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	UDataRegistrySettings* Settings = GetMutableDefault<UDataRegistrySettings>();
 
 	Settings->Modify();
@@ -164,10 +169,12 @@ void UGorgeousCommonUIFoundationSystemValidator::HandleRegisterDirectoryHyperlin
 	{
 		FUnrealEdMisc::Get().RestartEditor(false);
 	}
+#endif
 }
 
 void UGorgeousCommonUIFoundationSystemValidator::HandleFixViewportClientHyperlink(const FString& Payload)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	UEngine* Engine = GetMutableDefault<UEngine>();
 	Engine->Modify();
 	Engine->GameViewportClientClassName = FSoftClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
@@ -185,10 +192,12 @@ void UGorgeousCommonUIFoundationSystemValidator::HandleFixViewportClientHyperlin
 	{
 		FUnrealEdMisc::Get().RestartEditor(false);
 	}
+#endif
 }
 
 bool UGorgeousCommonUIFoundationSystemValidator::HandleCanFixViewportClientHyperlink(const FString& Payload)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(COMMONUIFOUNDATION)
 	const UEngine* Engine = GetDefault<UEngine>();
 	const FSoftClassPath CommonUIViewportClassPath(TEXT("/Script/CommonUI.CommonGameViewportClient"));
 	
@@ -207,4 +216,7 @@ bool UGorgeousCommonUIFoundationSystemValidator::HandleCanFixViewportClientHyper
 	}
 	
 	return true;
+#else
+	return false;
+#endif
 }

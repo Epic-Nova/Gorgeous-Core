@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetTypeActions/AssetTypeActions_Blueprint.h"
+#include "AssetTypeActions/AssetTypeActions_DataAsset.h"
+#include "Toolkits/IToolkitHost.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousAssetRegistrationStructures.h"
 //<-------------------------------------------------------------------------->
@@ -92,6 +94,11 @@ public:
 	 * @return Pointer to an FSlateBrush representing the icon.
 	 */
 	virtual const FSlateBrush* GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+
+	/**
+	 * Opens the asset editor, optionally using a custom editor handler.
+	 */
+	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor) override;
 		
 	//<-------------------------------------------------------------------------->
 
@@ -105,4 +112,48 @@ private:
 	 */
 	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
 	//<------------------------------------------------------------------------->
+};
+
+/**
+ * Asset type action class for Gorgeous data assets.
+ */
+class GORGEOUSCOREEDITORUTILITIES_API FGorgeousDataAssetTypeAction final : public FAssetTypeActions_DataAsset
+{
+public:
+	explicit FGorgeousDataAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo);
+	virtual ~FGorgeousDataAssetTypeAction() override;
+
+	virtual FText GetName() const override;
+	virtual UClass* GetSupportedClass() const override;
+	virtual FColor GetTypeColor() const override;
+	virtual uint32 GetCategories() override;
+	virtual const TArray<FText>& GetSubMenus() const override;
+	virtual const FSlateBrush* GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	virtual const FSlateBrush* GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor) override;
+
+private:
+	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
+};
+
+/**
+ * Generic asset type action class for non-blueprint, non-data asset types.
+ */
+class GORGEOUSCOREEDITORUTILITIES_API FGorgeousGenericAssetTypeAction final : public FAssetTypeActions_Base
+{
+public:
+	explicit FGorgeousGenericAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo);
+	virtual ~FGorgeousGenericAssetTypeAction() override;
+
+	virtual FText GetName() const override;
+	virtual UClass* GetSupportedClass() const override;
+	virtual FColor GetTypeColor() const override;
+	virtual uint32 GetCategories() override;
+	virtual const TArray<FText>& GetSubMenus() const override;
+	virtual const FSlateBrush* GetThumbnailBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	virtual const FSlateBrush* GetIconBrush(const FAssetData& InAssetData, const FName InClassName) const override;
+	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor) override;
+
+private:
+	FGorgeousAssetTypeActionInfo_S AssetTypeActionInfos;
 };

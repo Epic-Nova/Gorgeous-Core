@@ -47,7 +47,7 @@
 #define REGISTER_GORGEOUS_ASSET(AssetTypeInfo) \
 { \
 	const FGorgeousAssetTypeActionInfo_S AssetTypeActionInfo = AssetTypeInfo; \
-	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(MakeShared<FGorgeousAssetTypeAction>(AssetTypeActionInfo)); \
+	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(GorgeousAssetRegistration::MakeAssetTypeAction(AssetTypeActionInfo)); \
 }
 
 /**
@@ -74,6 +74,18 @@
  */
 #define GORGEOUS_MAKE_INFO_WITH_BRUSHES(DisplayName, SupportedClass, TypeColor, IconBrush, ThumbnailBrush, ...) \
 	GorgeousAssetRegistration::MakeInfoWithBrushes(GorgeousAssetRegistration::GGorgeousThingsCategory, DisplayName, SupportedClass, TypeColor, { __VA_ARGS__ }, IconBrush, ThumbnailBrush)
+
+/**
+ * Macro to create metadata for a custom asset type with a custom editor opener.
+ */
+#define GORGEOUS_MAKE_INFO_WITH_EDITOR(DisplayName, SupportedClass, TypeColor, IconKey, OpenEditor, ...) \
+	GorgeousAssetRegistration::MakeInfoWithEditor(GorgeousAssetRegistration::GGorgeousThingsCategory, GorgeousStyleRegistration::GGorgeousStyleSet, DisplayName, SupportedClass, TypeColor, { __VA_ARGS__ }, IconKey, OpenEditor)
+
+/**
+ * Macro to create metadata for a custom asset type with direct brushes and a custom editor opener.
+ */
+#define GORGEOUS_MAKE_INFO_WITH_BRUSHES_AND_EDITOR(DisplayName, SupportedClass, TypeColor, IconBrush, ThumbnailBrush, OpenEditor, ...) \
+	GorgeousAssetRegistration::MakeInfoWithBrushesAndEditor(GorgeousAssetRegistration::GGorgeousThingsCategory, DisplayName, SupportedClass, TypeColor, { __VA_ARGS__ }, IconBrush, ThumbnailBrush, OpenEditor)
 
 /**
  * Macro to unregister a previously registered custom asset type from the Unreal Editor.

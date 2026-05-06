@@ -25,11 +25,12 @@ static FORCEINLINE bool IsGorgeousDirectoryPresent(const FString& DirectoryPath)
  * Creates a gorgeous directory under the specified relative file path.
  * 
  * @param DirectoryPath The directory that should be created. 
+ * @param bRecursive     Whether to create parent directories if they don't exist.
  * @return True if the directory was created, false otherwise.
  */
-static FORCEINLINE bool MakeGorgeousDirectory(const FString& DirectoryPath)
+static FORCEINLINE bool MakeGorgeousDirectory(const FString& DirectoryPath, bool bRecursive = true)
 {
-	return IFileManager::Get().MakeDirectory(*RelativePathToGorgeousPath(DirectoryPath));
+	return IFileManager::Get().MakeDirectory(*RelativePathToGorgeousPath(DirectoryPath), bRecursive);
 }
 
 /**

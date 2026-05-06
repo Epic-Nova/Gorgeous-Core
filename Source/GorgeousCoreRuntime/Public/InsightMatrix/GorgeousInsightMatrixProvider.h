@@ -17,10 +17,13 @@
  * Runtime provider interface for the unified debug panel.
  * Each plugin should implement a single provider instance and register it.
  */
-class GORGEOUSCORERUNTIME_API IGorgeousInsightMatrixProvider : IModularFeature
+class GORGEOUSCORERUNTIME_API IGorgeousInsightMatrixProvider : public IModularFeature
 {
 public:
 	virtual ~IGorgeousInsightMatrixProvider() = default;
+
+	/** Returns the feature name used for modular feature registration. */
+	static FName GetFeatureName() { return FName(TEXT("GorgeousInsightMatrixProvider")); }
 
 	/** Stable provider key (typically plugin name). */
 	virtual FName GetProviderName() const = 0;

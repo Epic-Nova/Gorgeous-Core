@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "GameFramework/PlayerController.h"
+#include "GameplayTagContainer.h"
+#include "StructUtils/InstancedStruct.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
@@ -130,6 +132,9 @@ public:
 	/** Trunk that stores serialized default payloads for this controller's authored object variables. */
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player Controller|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
+
+	UFUNCTION(Client, Reliable)
+	void Client_ReceiveSignal(FGameplayTag Tag, const FInstancedStruct& Payload);
 
 protected:
 
