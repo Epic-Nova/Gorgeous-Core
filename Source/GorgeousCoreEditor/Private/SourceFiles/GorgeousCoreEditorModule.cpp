@@ -37,6 +37,13 @@
 #include "Interfaces/IPluginManager.h"
 #include "Validators/GorgeousGeneralSystemValidator.h"
 #include "Validators/GorgeousCommonUIFoundationSystemValidator.h"
+// Common UI Foundation assets
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIState_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIOverlayConfig_DA.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GorgeousCoreBlueprintTypes.h"
 //<-------------------------------------------------------------------------->
 
 #if 0
@@ -262,6 +269,8 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	const FText Menu_Conditions = NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions");
 	const FText Menu_ObjectVariables = NSLOCTEXT("GorgeousCore", "Menu_ObjectVariables", "Object Variables");
 	const FText Menu_QualityOfLife = NSLOCTEXT("GorgeousCore", "Menu_QualityOfLife", "Quality of Life");
+	const FText Menu_GeneralSystems = NSLOCTEXT("GorgeousCore", "Menu_GeneralSystems", "General Systems");
+	const FText Menu_CommonUI = NSLOCTEXT("GorgeousCore", "Menu_CommonUI", "Common UI");
 
 	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(MakeShared<FGorgeousDataSchemaMappingAssetTypeActions>(
 		GorgeousAssetRegistration::GGorgeousThingsCategory,
@@ -336,6 +345,39 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		ModuleStyleSet->GetBrush(TEXT("ClassIcon.GorgeousWorldSettingsBlueprint")),
 		ModuleStyleSet->GetBrush(TEXT("ClassThumbnail.GorgeousWorldSettingsBlueprint")),
 		CoreMenu, Menu_QualityOfLife));
+
+	// --- Common UI Foundation assets ---
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "UITheme", "Gorgeous UI Theme"),
+		UGorgeousUITheme_DA::StaticClass(),
+		FColor(140,40,200),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "UIMessageConfig", "Gorgeous UI Message Config"),
+		UGorgeousUIMessageConfig_DA::StaticClass(),
+		FColor(255,140,40),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "CommonUIState", "Gorgeous Common UI State"),
+		UCommonUIState_DA::StaticClass(),
+		FColor(60,140,220),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "CommonUIOverlayConfig", "Gorgeous Common UI Overlay Config"),
+		UCommonUIOverlayConfig_DA::StaticClass(),
+		FColor(90,200,140),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
 
 	BeginPIEHandle = FEditorDelegates::BeginPIE.AddLambda([](bool bIsSimulating)
 	{

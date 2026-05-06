@@ -15,6 +15,8 @@
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
 #include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
@@ -144,6 +146,10 @@ void AGorgeousPlayerController::Automation_HandleRPC_WithReturnOV(UInteger_SOV* 
 #endif
 }
 
-
-
-
+void AGorgeousPlayerController::Client_ReceiveSignalBridgeSignal_Implementation(FGameplayTag Tag, const FInstancedStruct& Payload)
+{
+	if (USignalBridgeStorage_OV* Storage = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(this))
+	{
+		Storage->FireLocalSignal(Tag, Payload);
+	}
+}

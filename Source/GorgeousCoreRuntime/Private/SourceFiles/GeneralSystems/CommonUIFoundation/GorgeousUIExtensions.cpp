@@ -1,0 +1,86 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIExtensions.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "CommonInputSubsystem.h"
+#include "CommonActivatableWidget.h"
+#include "Engine/LocalPlayer.h"
+#include "GameFramework/PlayerController.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+
+FSlateBrush UGorgeousUIExtensions::GetGorgeousActionIcon(UObject* WorldContextObject, FGameplayTag ActionTag)
+{
+	if (!WorldContextObject) return FSlateBrush();
+
+	// Get the local player and query the LocalPlayer subsystem (UGorgeousUIFoundationSubsystem derives from ULocalPlayerSubsystem)
+	ULocalPlayer* LocalPlayer = nullptr;
+	if (UWorld* World = WorldContextObject->GetWorld())
+	{
+		LocalPlayer = World->GetFirstLocalPlayerFromController();
+	}
+	if (!LocalPlayer) return FSlateBrush();
+
+	UGorgeousUIFoundationSubsystem* Subsystem = LocalPlayer->GetSubsystem<UGorgeousUIFoundationSubsystem>();
+	if (!Subsystem) return FSlateBrush();
+
+	UGorgeousUITheme_DA* CurrentTheme = Subsystem->GetCurrentTheme();
+	if (!CurrentTheme) return FSlateBrush();
+
+	// Use hardware-aware platform detection
+	const FName PlatformName = Subsystem->GetCurrentPlatformName();
+	return CurrentTheme->GetActionIcon(ActionTag, PlatformName);
+}
+
+UCommonActivatableWidget* UGorgeousUIExtensions::PushGorgeousWidget(UObject* WorldContextObject, FGameplayTag LayerTag, TSubclassOf<UCommonActivatableWidget> WidgetClass, ULocalPlayer* LocalPlayer)
+{
+	if (!WorldContextObject || !WidgetClass) return nullptr;
+
+	if (!LocalPlayer)
+	{
+		LocalPlayer = WorldContextObject->GetWorld()->GetFirstLocalPlayerFromController();
+	}
+
+	if (UGorgeousPrimaryGameLayout* Layout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(LocalPlayer))
+	{
+		return Layout->PushWidgetToLayerStack(LayerTag, WidgetClass);
+	}
+
+	return nullptr;
+}
+
+void UGorgeousUIExtensions::PushGorgeousWidgetAsync(UObject* WorldContextObject, FGameplayTag LayerTag, TSoftClassPtr<UCommonActivatableWidget> WidgetClass, bool bSuspendInput, ULocalPlayer* LocalPlayer)
+{
+	if (!WorldContextObject || WidgetClass.IsNull()) return;
+
+	if (!LocalPlayer)
+	{
+		LocalPlayer = WorldContextObject->GetWorld()->GetFirstLocalPlayerFromController();
+	}
+
+	if (UGorgeousPrimaryGameLayout* Layout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(LocalPlayer))
+	{
+		Layout->PushWidgetToLayerStackAsync(LayerTag, bSuspendInput, WidgetClass);
+	}
+}
+
+FName UGorgeousUIExtensions::SuspendGorgeousInput(APlayerController* PlayerController, FName Reason)
+{
+	if (!PlayerController) return NAME_None;
+
+	// In a AAA system, we would push a suspension token to a stack.
+	// For now, we'll use a unique name.
+	FName Token = FName(*FString::Printf(TEXT("%s_%f"), *Reason.ToString(), FPlatformTime::Seconds()));
+	
+	PlayerController->SetIgnoreMoveInput(true);
+	PlayerController->SetIgnoreLookInput(true);
+	
+	return Token;
+}
+
+void UGorgeousUIExtensions::ResumeGorgeousInput(APlayerController* PlayerController, FName Token)
+{
+	if (!PlayerController || Token.IsNone()) return;
+
+	PlayerController->SetIgnoreMoveInput(false);
+	PlayerController->SetIgnoreLookInput(false);
+}
