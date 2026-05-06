@@ -39,7 +39,7 @@ public class GorgeousCoreRuntime : ModuleRules
             Path.Combine(ModuleDirectory, "..", "GorgeousCoreRuntimeUtilities", "Public"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore", "OnlineSubsystemUtils" });
+        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore", "OnlineSubsystemUtils", "StructUtils" });
 
         PrivateDependencyModuleNames.AddRange(new[]
         {

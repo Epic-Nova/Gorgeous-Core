@@ -12,6 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
+#include "SCheckBoxList.h"
 #include "Input/Reply.h"
 #include "Types/SlateEnums.h"
 #include "UObject/Object.h"
