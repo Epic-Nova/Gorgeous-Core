@@ -3630,6 +3630,12 @@ bool UGorgeousObjectVariable::IsExecutingOnReplicationOwner() const
 	return false;
 }
 
+bool UGorgeousObjectVariable::HasAuthority() const
+{
+	UWorld* World = GetWorld();
+	return World && World->GetNetMode() != NM_Client;
+}
+
 void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 {
 	const bool bRootForcesNetworking = DoesRootEnforceNetworking();

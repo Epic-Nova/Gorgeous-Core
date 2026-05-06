@@ -38,7 +38,6 @@ public class GorgeousCoreEditor : ModuleRules
         {
             Path.Combine(privateIncludePath),
             Path.Combine(privateIncludePath, "CodeGenerators"),
-            Path.Combine(privateIncludePath, "ExtensionResourceGuards"),
             Path.Combine(privateIncludePath, "Factories"),
             Path.Combine(privateIncludePath, "K2Nodes"),
             Path.Combine(privateIncludePath, "PropertyTypeCustomizations")

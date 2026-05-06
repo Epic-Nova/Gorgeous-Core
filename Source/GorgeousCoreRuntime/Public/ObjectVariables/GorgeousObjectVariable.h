@@ -440,6 +440,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	bool IsExecutingOnReplicationOwner() const;
 
+	/** Returns true when this instance is running on the authority (server). */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
+	bool HasAuthority() const;
+
 	/** Executes a previously queued AutoReplication RPC that targets this object variable instance. */
 	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
 

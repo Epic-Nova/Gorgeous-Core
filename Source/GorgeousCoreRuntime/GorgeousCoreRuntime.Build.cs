@@ -39,7 +39,7 @@ public class GorgeousCoreRuntime : ModuleRules
             Path.Combine(ModuleDirectory, "..", "GorgeousCoreRuntimeUtilities", "Public"),
         });
         
-        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore", "OnlineSubsystemUtils" });
+        PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "GameplayTags", "Projects", "ReplicationGraph" , "UMG", "Slate", "SlateCore", "InputCore", "OnlineSubsystemUtils", "StructUtils", "CommonUI", "CommonInput", "EnhancedInput" });
 
         PrivateDependencyModuleNames.AddRange(new[]
         {
@@ -114,7 +114,9 @@ public class GorgeousCoreRuntime : ModuleRules
             PublicDefinitions.Add("GORGEOUSCORE_WITH_IRIS=0");
             PublicDefinitions.Add("GORGEOUSCORE_WITH_REPLICATION_GRAPH=1");
         }
-        
+
+        PublicDefinitions.Add("GORGEOUSCORE_WITH_COG=0");
+
         //throw new System.NotImplementedException("Gorgeous Core Runtime module is not finished yet and lacks important features. Please be patient until the full release of v0.9");
     }
 }
