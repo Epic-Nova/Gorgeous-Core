@@ -2,8 +2,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StructUtils/InstancedStruct.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "GorgeousUIInstancedValueUtils.generated.h"
 
 /**

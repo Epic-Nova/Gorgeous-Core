@@ -5,7 +5,8 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "GameplayTagContainer.h"
 #include "SignalBridgeListenerStructures.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "SignalBridgeStructures.h"
 #include "SignalBridgeStorage_OV.generated.h"
 

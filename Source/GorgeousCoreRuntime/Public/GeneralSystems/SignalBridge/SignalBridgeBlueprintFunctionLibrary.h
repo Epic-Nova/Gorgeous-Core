@@ -4,7 +4,8 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "SignalBridgeStructures.h"
 #include "SignalBridgeBlueprintFunctionLibrary.generated.h"
 

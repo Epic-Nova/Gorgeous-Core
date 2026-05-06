@@ -3,7 +3,8 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "SignalBridgeStructures.generated.h"
 

@@ -4,7 +4,8 @@
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 
 void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 {
