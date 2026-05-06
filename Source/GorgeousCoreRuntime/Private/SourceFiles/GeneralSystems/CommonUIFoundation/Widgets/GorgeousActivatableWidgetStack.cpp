@@ -6,17 +6,32 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "StructUtils/InstancedStruct.h"
 
-void UGorgeousActivatableWidgetStack::NativeConstruct()
+void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 {
+	Super::OnWidgetRebuilt();
+
+	if (IsDesignTime())
+	{
+		return;
+	}
+
 	if (LayerTag.IsValid())
 	{
-		if (UGorgeousPrimaryGameLayout* RootLayout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this))
+		UGorgeousPrimaryGameLayout* RootLayout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+		
+		// If the global lookup fails (common during construction race), check our hierarchy
+		if (!RootLayout)
+		{
+			RootLayout = GetTypedOuter<UGorgeousPrimaryGameLayout>();
+		}
+
+		if (RootLayout)
 		{
 			RootLayout->RegisterLayer(LayerTag, this);
 		}
 
 		// Also notify via Signal Bridge for dynamic UI registration
-		FGameplayTag RegisterTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Layer.Register"));
+		FGameplayTag RegisterTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.RegisterLayer"));
 		FGorgeousRegisterLayerPayload Payload;
 		Payload.LayerTag = LayerTag;
 		Payload.LayerWidget = this;

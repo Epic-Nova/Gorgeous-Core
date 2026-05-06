@@ -15,5 +15,5 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonNumericTextProcessor : public UGorg
 
 public:
 	UGorgeousCommonNumericTextProcessor();
-	virtual void OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload) override;
+	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload) override;
 };

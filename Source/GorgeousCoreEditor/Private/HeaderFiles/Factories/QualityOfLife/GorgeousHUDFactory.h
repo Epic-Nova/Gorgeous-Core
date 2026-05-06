@@ -14,18 +14,19 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GorgeousGameStateFactory.generated.h"
+#include "GorgeousHUDFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * Factory class responsible for creating instances of AGorgeousGameState.
+ * Factory class responsible for creating instances of AGorgeousHUD.
  * The configuration is encapsulated using FGorgeousFactoryInfo_S, which is passed to the base class.
  *
  * @author Nils Bergemann
  */
 UCLASS()
-class UGorgeousGameStateFactory : public UGorgeousFactory
+class UGorgeousHUDFactory : public UGorgeousFactory
 {
 	GENERATED_BODY()
 	
@@ -35,9 +36,9 @@ public:
 	 * Default constructor that sets up the factory with metadata describing its target class
 	 * and behavior within the Unreal Editor asset system.
 	 */
-	UGorgeousGameStateFactory()
+	UGorgeousHUDFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(AGorgeousGameState::StaticClass(), true, false, true, false,
-			UGorgeousGameStateBlueprint::StaticClass()));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(AGorgeousHUD::StaticClass(), true, false, true, false,
+			UGorgeousHUDBlueprint::StaticClass()));
 	}
 };

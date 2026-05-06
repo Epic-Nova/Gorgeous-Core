@@ -1,12 +1,14 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #pragma once
 
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/Interfaces/GorgeousUIWidget_I.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Widget.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
 
 class UGorgeousUITheme_DA;
+class UGorgeousUIFoundationSubsystem;
 
 /**
  * Macros to reduce boilerplate in Gorgeous UI Foundation widgets.
@@ -17,105 +19,95 @@ class UGorgeousUITheme_DA;
  * Implements GetBindingTag, GetAsWidget, and OnThemeApplied (as a BlueprintNativeEvent).
  */
 #define UE_UI_WIDGET_INTERFACE_BOILERPLATE() \
+protected: \
+	float StartOpacity = 1.0f; \
+	float TargetOpacity = 1.0f; \
+	float ElapsedOpacityTime = 0.0f; \
+	FGorgeousUIInterpConfig_S OpacityInterpConfig; \
+	bool bIsInterpOpacity = false; \
+	\
+	float ElapsedThemeTime = 0.0f; \
+	FGorgeousUIInterpConfig_S ThemeInterpConfig; \
+	TMap<FName, FLinearColor> StartThemeColors; \
+	TMap<FName, FLinearColor> TargetThemeColors; \
+	TMap<FName, FLinearColor> CurrentThemeColors; \
+	bool bIsInterpTheme = false; \
 public: \
-	/* Return the binding tag stored on the object. */ \
+	virtual UObject* GetAsWidget() override { return (UObject*)this; } \
+	virtual float GetWidgetOpacity() const override { if (const UWidget* __W = (const UWidget*)this) return __W->GetRenderOpacity(); return 1.0f; } \
+	virtual void SetWidgetOpacity(float InOpacity) override { if (UWidget* __W = (UWidget*)this) __W->SetRenderOpacity(InOpacity); } \
+	virtual float GetTargetOpacity() const override { return TargetOpacity; } \
+	virtual float GetStartOpacity() const override { return StartOpacity; } \
+	virtual FGorgeousUIInterpConfig_S GetOpacityInterpConfig() const override { return OpacityInterpConfig; } \
+	virtual float GetElapsedOpacityTime() const override { return ElapsedOpacityTime; } \
+	virtual void SetElapsedOpacityTime(float InTime) override { ElapsedOpacityTime = InTime; } \
+	virtual bool IsInterpOpacity() const override { return bIsInterpOpacity; } \
+	virtual void SetIsInterpOpacity(bool bInInterp) override { bIsInterpOpacity = bInInterp; } \
+	virtual float GetElapsedThemeTime() const override { return ElapsedThemeTime; } \
+	virtual void SetElapsedThemeTime(float InTime) override { ElapsedThemeTime = InTime; } \
+	virtual bool IsInterpTheme() const override { return bIsInterpTheme; } \
+	virtual void SetIsInterpTheme(bool bInInterp) override { bIsInterpTheme = bInInterp; } \
+	virtual FGorgeousUIInterpConfig_S GetThemeInterpConfig() const override { return ThemeInterpConfig; } \
+	virtual TMap<FName, FLinearColor>& GetStartThemeColors() override { return StartThemeColors; } \
+	virtual TMap<FName, FLinearColor>& GetTargetThemeColors() override { return TargetThemeColors; } \
+	virtual TMap<FName, FLinearColor>& GetCurrentThemeColors() override { return CurrentThemeColors; } \
 	virtual FGameplayTag GetBindingTag() const override { return BindingTag; } \
-	/* Helper to get a UUserWidget pointer when applicable; returns nullptr otherwise. */ \
-	virtual UObject* GetAsWidget() override { return Cast<UObject>(this); } \
-	/* Interface hook called when a theme is applied; concrete classes should implement this. */ \
+	virtual void NotifyReadyForStateSwap() override; \
 	virtual void OnThemeApplied(const UGorgeousUITheme_DA* Theme) override; \
-	/* C++ implementation hook that concrete classes may provide. */ \
-	virtual void OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme); \
-	/* Optional Blueprint hook for theme application. */ \
-	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied")) \
-	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme); \
-	/* C++ hook for BlueprintNativeEvent default implementation (declare so CPP defs compile). */ \
-	virtual void OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme); \
+	virtual void ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme); \
+	virtual void TickInterpolation_Implementation(float DeltaTime) override; \
+	\
+	/* Applies a state-specific configuration (visibility, opacity, animation) to this widget. */ \
+	virtual void ApplyOverlayConfig(const FGorgeousUIStateConfig& Config) override; \
 public:
 
-/** Implement registration logic. To be used in NativeConstruct. */
-#define UE_UI_REGISTER_WIDGET() \
-	if (UWorld* World = GetWorld()) \
+/** Registration logic for standard UWidgets (Borders, Boxes). Use in SynchronizeProperties. */
+#define UE_UI_REGISTER_WIDGET_RAW() \
+	if (UWorld* __World = GetWorld()) \
 	{ \
-		if (APlayerController* PC = World->GetFirstPlayerController()) \
+		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
 		{ \
-			if (ULocalPlayer* LP = PC->GetLocalPlayer()) \
+			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
 			{ \
-				if (UGorgeousUIFoundationSubsystem* UISubsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
+				if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
 				{ \
-					UISubsystem->RegisterWidget(this); \
+					__Subsystem->RegisterWidget(this); \
 				} \
 			} \
 		} \
 	}
 
-/** Implement unregistration logic. To be used in NativeDestruct. */
+/** Registration logic for UUserWidgets. Use in NativeConstruct. */
+#define UE_UI_REGISTER_WIDGET_USER() \
+	UE_UI_REGISTER_WIDGET_RAW() \
+	StartOpacity = TargetOpacity = GetRenderOpacity();
+
+/** Unregistration logic. Use in NativeDestruct or OnWidgetRebuilt(false). */
 #define UE_UI_UNREGISTER_WIDGET() \
-	if (UWorld* World = GetWorld()) \
+	if (UWorld* __World = GetWorld()) \
 	{ \
-		if (APlayerController* PC = World->GetFirstPlayerController()) \
+		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
 		{ \
-			if (ULocalPlayer* LP = PC->GetLocalPlayer()) \
+			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
 			{ \
-				if (UGorgeousUIFoundationSubsystem* UISubsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
+				if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
 				{ \
-					UISubsystem->UnregisterWidget(this); \
+					__Subsystem->UnregisterWidget(this); \
 				} \
 			} \
 		} \
 	}
 
-/** Implementation of theme color interpolation. To be used in NativeTick. */
-#define UE_UI_TICK_THEME_INTERP() \
-	if (bIsInterpTheme) \
+/** Helper to resolve the UGorgeousUIFoundationSubsystem from any UObject context. */
+#define UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(OutVar) \
+	UGorgeousUIFoundationSubsystem* OutVar = nullptr; \
+	if (UWorld* __World = GetWorld()) \
 	{ \
-		bool bAnyChanged = false; \
-		for (auto& Pair : TargetThemeColors) \
+		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
 		{ \
-			FLinearColor& Current = CurrentThemeColors.FindOrAdd(Pair.Key, Pair.Value); \
-			if (!Current.Equals(Pair.Value)) \
+			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
 			{ \
-				Current = FMath::CInterpTo(Current, Pair.Value, InDeltaTime, ThemeInterpSpeed); \
-				bAnyChanged = true; \
-				FInstancedStruct ColorPayload = FInstancedStruct::Make(Current); \
-				UGorgeousUIProcessor::ApplyPropertyToTarget(this, Pair.Key, ColorPayload); \
+				OutVar = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>(); \
 			} \
 		} \
-		if (!bAnyChanged) \
-		{ \
-			bIsInterpTheme = false; \
-		} \
-	}
-
-	/** No-op define for legacy .cpp files that invoke lifecycle definition macros. */
-	#define UE_UI_DEFINE_WIDGET_LIFECYCLE(Class)
-
-	/** Declare lifecycle hooks that many widget .cpp files implement. Place this inside the UCLASS declaration when a .cpp defines these methods. */
-	#define UE_UI_DECLARE_WIDGET_LIFECYCLE() \
-	public: \
-		virtual void NativeConstruct(); \
-		virtual void NativeDestruct(); \
-		virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime); \
-		virtual void OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme);
-
-	/** Helper to resolve the UGorgeousUIFoundationSubsystem from any UObject context. */
-	#define UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(OutVar) \
-		UGorgeousUIFoundationSubsystem* OutVar = nullptr; \
-		if (UWorld* __World = GetWorld()) \
-		{ \
-			if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-			{ \
-				if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-				{ \
-					OutVar = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>(); \
-				} \
-			} \
-		}
-
-/** Implementation of the OnThemeApplied interface method. */
-#define UE_UI_IMPLEMENT_THEME_BRIDGE(Class) \
-	void Class::OnThemeApplied(const UGorgeousUITheme_DA* Theme) \
-	{ \
-		OnThemeApplied_Implementation(Theme); \
-		OnThemeApplied_BP_Implementation(Theme); \
 	}

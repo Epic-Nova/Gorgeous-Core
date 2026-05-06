@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -89,7 +89,7 @@ protected:
 	/**
 	 * The outer object that holds this structure. Can be used for Instanced UPROPERTY's.
 	 */
-	UPROPERTY(VisibleAnywhere, Category = "Functional Structure", meta = (DisplayPriority = 99))
+	UPROPERTY(Transient)
 	UObject* OwnerObject;
 
 #endif WITH_EDITORONLY_DATA

@@ -1,24 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidgetSwitcher.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-void UGorgeousCommonWidgetSwitcher::NativeConstruct()
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonWidgetSwitcher)
+
+void UGorgeousCommonWidgetSwitcher::SynchronizeProperties()
 {
-	UE_UI_REGISTER_WIDGET()
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonWidgetSwitcher::NativeDestruct()
+void UGorgeousCommonWidgetSwitcher::OnWidgetRebuilt()
 {
-	UE_UI_UNREGISTER_WIDGET()
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonWidgetSwitcher)
-
-void UGorgeousCommonWidgetSwitcher::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonWidgetSwitcher::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	OnThemeApplied_BP_Implementation(Theme);
-}
-
-void UGorgeousCommonWidgetSwitcher::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// no-op
 }

@@ -1,86 +1,44 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonTabList.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
+
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonTabList)
 
 void UGorgeousCommonTabList::NativeConstruct()
 {
-	UE_UI_REGISTER_WIDGET()
+	Super::NativeConstruct();
+	UE_UI_REGISTER_WIDGET_USER()
 
-	// Register for tab selection signals
 	if (BindingTag.IsValid())
 	{
 		FSignalBridgeEventDelegate Delegate;
 		Delegate.BindDynamic(this, &UGorgeousCommonTabList::OnTabSelectSignalReceived);
-
-		FGorgeousSignalBridgeAccessRules_S Rules;
-		AGorgeousPlayerController* Controller = nullptr;
-		if (UWorld* __World = GetWorld())
-		{
-			if (APlayerController* PC = __World->GetFirstPlayerController())
-			{
-				Controller = Cast<AGorgeousPlayerController>(PC);
-			}
-		}
-		USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), BindingTag, Rules, Controller);
-		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Controller, Delegate);
+		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Cast<AGorgeousPlayerController>(GetOwningPlayer()), Delegate);
 	}
 }
 
 void UGorgeousCommonTabList::NativeDestruct()
 {
-	if (BindingTag.IsValid())
-	{
-		AGorgeousPlayerController* Controller = nullptr;
-		if (UWorld* __World = GetWorld())
-		{
-			if (APlayerController* PC = __World->GetFirstPlayerController())
-			{
-				Controller = Cast<AGorgeousPlayerController>(PC);
-			}
-		}
-		USignalBridgeBlueprintFunctionLibrary::Clear(GetWorld(), BindingTag, Controller);
-	}
-
 	UE_UI_UNREGISTER_WIDGET()
+	Super::NativeDestruct();
 }
 
-void UGorgeousCommonTabList::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UGorgeousCommonTabList::OnTabSelectSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
-	UE_UI_TICK_THEME_INTERP()
-}
-
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonTabList)
-
-void UGorgeousCommonTabList::OnTabSelectSignalReceived(const FInstancedStruct& Payload)
-{
-	// Handle TabID (FName)
-	FName NameOut;
-	if (GorgeousUIInstanced::TryGetName(Payload, NameOut))
+	if (const FGorgeousInt32Payload_S* IntPayload = Payload.GetPtr<FGorgeousInt32Payload_S>())
 	{
-		SelectTabByID(NameOut);
-		return;
+		SelectTabByID(GetTabIdAtIndex(IntPayload->Value));
 	}
-
-	// Handle TabIndex (int) - not supported in this build; log and ignore.
-	int32 IndexOut = 0;
-	if (GorgeousUIInstanced::TryGetInt(Payload, IndexOut))
+	else if (const FGorgeousFNamePayload_S* NamePayload = Payload.GetPtr<FGorgeousFNamePayload_S>())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GorgeousCommonTabList: TabIndex payload received but index->ID resolution is not supported."));
-		return;
+		SelectTabByID(NamePayload->Value);
 	}
 }
 
-void UGorgeousCommonTabList::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonTabList::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	// Tab lists often need specific themed styling for their internal buttons.
-	// We can broadcast theme changes to all registered internal children here if needed,
-	// but standard CommonUI tab buttons usually register themselves anyway.
-}
-
-void UGorgeousCommonTabList::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// Default no-op. Blueprint can override to react to theme changes.
 }

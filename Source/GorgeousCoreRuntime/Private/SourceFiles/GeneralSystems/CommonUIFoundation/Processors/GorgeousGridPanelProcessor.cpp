@@ -9,7 +9,7 @@ UGorgeousGridPanelProcessor::UGorgeousGridPanelProcessor()
 	TargetWidgetClass = UGorgeousCommonGridPanel::StaticClass();
 }
 
-void UGorgeousGridPanelProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousGridPanelProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonGridPanel* GridPanel = Cast<UGorgeousCommonGridPanel>(Widget);
 	if (!GridPanel) return;

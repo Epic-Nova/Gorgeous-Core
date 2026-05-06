@@ -1,16 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonOverlay.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonOverlay)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonOverlay)
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonOverlay)
-
-void UGorgeousCommonOverlay::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonOverlay::SynchronizeProperties()
 {
-	OnThemeApplied_BP_Implementation(Theme);
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonOverlay::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonOverlay::OnWidgetRebuilt()
 {
-	// no-op default
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonOverlay::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }

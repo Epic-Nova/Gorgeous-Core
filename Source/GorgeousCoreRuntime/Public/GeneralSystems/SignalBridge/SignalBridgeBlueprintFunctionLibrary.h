@@ -45,10 +45,22 @@ public:
 	static bool Listen(UObject* WorldContextObject, FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
 
 	/**
+	 * Listens to a signal for a specific actor.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge", meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "Listen Signal To Actor"))
+	static bool ListenToActor(UObject* WorldContextObject, FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
+
+	/**
 	 * Dispatches a signal with the given tag and payload.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge", meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "Dispatch Signal"))
 	static void Dispatch(UObject* WorldContextObject, FGameplayTag Tag, const FInstancedStruct& Payload);
+
+	/**
+	 * Dispatches a signal locally only. No networking occurs.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge", meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "Dispatch Signal Local"))
+	static void DispatchLocal(UObject* WorldContextObject, FGameplayTag Tag, const FInstancedStruct& Payload);
 
 	/**
 	 * Clears local listeners for a specific tag.

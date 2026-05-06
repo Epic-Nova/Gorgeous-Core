@@ -9,7 +9,7 @@ UGorgeousTextProcessor::UGorgeousTextProcessor()
 	TargetWidgetClass = UGorgeousCommonTextBlock::StaticClass();
 }
 
-void UGorgeousTextProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousTextProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonTextBlock* TextBlock = Cast<UGorgeousCommonTextBlock>(Widget);
 	if (!TextBlock) return;

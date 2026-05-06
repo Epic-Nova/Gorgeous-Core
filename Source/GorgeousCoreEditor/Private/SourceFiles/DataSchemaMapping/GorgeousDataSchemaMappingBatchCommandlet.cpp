@@ -9,6 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "DataSchemaMapping/GorgeousDataSchemaMappingBatchCommandlet.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -35,8 +36,8 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 	FString SchemaPath;
 	if (!FParse::Value(*Params, TEXT("Schema="), SchemaPath) || SchemaPath.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("Missing required -Schema argument."));
-		UE_LOG(LogTemp, Display, TEXT("Usage: %s"), *HelpUsage);
+		GT_E_LOG("GT.Core.Commandlet", TEXT("Missing required -Schema argument."));
+		GT_I_LOG("GT.Core.Commandlet", TEXT("Usage: %s"), *HelpUsage);
 		return 1;
 	}
 
@@ -45,7 +46,7 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 	UGorgeousDataSchemaMapping_DA* SchemaMap = LoadObject<UGorgeousDataSchemaMapping_DA>(nullptr, *SchemaPath);
 	if (!SchemaMap)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Failed to load schema map at '%s'."), *SchemaPath);
+		GT_E_LOG("GT.Core.Commandlet", TEXT("Failed to load schema map at '%s'."), *SchemaPath);
 		return 2;
 	}
 
@@ -63,7 +64,7 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 			const FSoftObjectPath SoftObjectPath(SourcePath);
 			if (!SoftObjectPath.IsValid())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Ignoring invalid source object path '%s'."), *SourcePath);
+				GT_W_LOG("GT.Core.Commandlet", TEXT("Ignoring invalid source object path '%s'."), *SourcePath);
 				continue;
 			}
 
@@ -83,7 +84,7 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 
 			if (!AssetData.IsValid())
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to resolve source object path '%s'."), *SourcePath);
+				GT_W_LOG("GT.Core.Commandlet", TEXT("Failed to resolve source object path '%s'."), *SourcePath);
 				continue;
 			}
 
@@ -121,13 +122,12 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 
 	if (SelectedAssets.IsEmpty())
 	{
-		UE_LOG(LogTemp, Error, TEXT("No source assets were resolved. Provide -Sources and/or -SourceFolder."));
+		GT_E_LOG("GT.Core.Commandlet", TEXT("No source assets were resolved. Provide -Sources and/or -SourceFolder."));
 		return 3;
 	}
 
-	UE_LOG(
-		LogTemp,
-		Display,
+	GT_I_LOG(
+		"GT.Core.Commandlet",
 		TEXT("Running Data Schema Mapping batch (%s). Schema='%s'. SourceCount=%d"),
 		bDryRun ? TEXT("DryRun") : TEXT("Execute"),
 		*SchemaMap->GetPathName(),

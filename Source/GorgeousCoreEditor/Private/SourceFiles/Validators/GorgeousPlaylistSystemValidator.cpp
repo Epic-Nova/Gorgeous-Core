@@ -9,6 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "Validators/GorgeousPlaylistSystemValidator.h"
+#include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -42,16 +43,16 @@ UGorgeousPlaylistSystemValidator::~UGorgeousPlaylistSystemValidator()
 
 bool UGorgeousPlaylistSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {
-	if (InAssetData.PackageName.ToString().Contains(TEXT("PlaylistObject")) && InObject->IsA<UBlueprint>())
-	{
-		return true;
-	}
-	
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
 	return InAssetData.PackageName.ToString().Contains(TEXT("PlaylistObject")) && InObject->IsA<UBlueprint>();
+#else
+	return false;
+#endif
 }
 
 EDataValidationResult UGorgeousPlaylistSystemValidator::ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
 	const UDataRegistrySettings* DataRegistrySettings = GetMutableDefault<UDataRegistrySettings>();
 	
 	// Ensure the asset is in a registered directory
@@ -77,12 +78,14 @@ EDataValidationResult UGorgeousPlaylistSystemValidator::ValidateLoadedAsset_Impl
 			
 		return EDataValidationResult::Invalid;
 	}
+#endif
 	
 	return EDataValidationResult::Valid;
 }
 
 void UGorgeousPlaylistSystemValidator::HandleRegisterDirectoryHyperlink(const FString& Payload)
 {
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
 	UDataRegistrySettings* Settings = GetMutableDefault<UDataRegistrySettings>();
 
 	Settings->Modify();
@@ -114,4 +117,5 @@ void UGorgeousPlaylistSystemValidator::HandleRegisterDirectoryHyperlink(const FS
 	{
 		FUnrealEdMisc::Get().RestartEditor(false);
 	}
+#endif
 }

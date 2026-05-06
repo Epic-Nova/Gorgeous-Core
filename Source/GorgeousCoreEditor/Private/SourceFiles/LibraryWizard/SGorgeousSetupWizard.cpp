@@ -35,10 +35,12 @@
 #include "IContentBrowserSingleton.h"
 //<----- Module Includes ----->
 #include "LibraryWizard/GorgeousSystemTemplate_DA.h"
+#include "LibraryWizard/GorgeousSetupWizardPayload.h"
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "UObject/UnrealType.h"
 #include "Widgets/Layout/SSpacer.h"
+#include "Misc/MessageDialog.h"
 //<-------------------------->
 
 //=============================================================================
@@ -161,6 +163,12 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsArgs);
 
+	// Listen for property changes to trigger real-time validation
+	DetailsView->OnFinishedChangingProperties().AddLambda([this](const FPropertyChangedEvent& Event)
+	{
+		UpdateWizardState();
+	});
+
 	// Defer SetObject until AFTER Slate finishes constructing this widget.
 	// Calling SetObject synchronously during Construct() triggers FGuidStructCustomization
 	// which builds tooltips via SDocumentationToolTip, invalidating parent widgets mid-construction
@@ -196,12 +204,60 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 		// ── Header: template description
 		+ SVerticalBox::Slot()
 		.AutoHeight()
+		.Padding(16.0f, 0.0f, 16.0f, 4.0f)
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this]() {
+				return SourceTemplate ? SourceTemplate->TemplateDescription : FText::GetEmpty();
+			})
+			.AutoWrapText(true)
+			.ColorAndOpacity(FSlateColor::UseSubduedForeground())
+		]
+
+		// ── Header: Payload Title (e.g., "Grid & Identity")
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(16.0f, 10.0f, 16.0f, 2.0f)
+		[
+			SNew(STextBlock)
+			.Text_Lambda([this]() {
+				if (PayloadInstances.IsValidIndex(CurrentPageIndex))
+				{
+					if (UGorgeousSetupWizardPayload* Payload = Cast<UGorgeousSetupWizardPayload>(PayloadInstances[CurrentPageIndex]))
+					{
+						if (!Payload->PayloadTitle.IsEmpty())
+						{
+							return FText::Format(NSLOCTEXT("GorgeousCore", "WizardPageTitleFormat", "Step {0}: {1}"), 
+								FText::AsNumber(CurrentPageIndex + 1), 
+								FText::FromString(Payload->PayloadTitle));
+						}
+					}
+				}
+				return FText::Format(NSLOCTEXT("GorgeousCore", "WizardPageDefault", "Step {0}"), FText::AsNumber(CurrentPageIndex + 1));
+			})
+			.Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+			.Justification(ETextJustify::Center)
+		]
+
+		// ── Header: Payload Description
+		+ SVerticalBox::Slot()
+		.AutoHeight()
 		.Padding(16.0f, 0.0f, 16.0f, 10.0f)
 		[
 			SNew(STextBlock)
-			.Text(SourceTemplate ? SourceTemplate->TemplateDescription : FText::GetEmpty())
+			.Text_Lambda([this]() {
+				if (PayloadInstances.IsValidIndex(CurrentPageIndex))
+				{
+					if (UGorgeousSetupWizardPayload* Payload = Cast<UGorgeousSetupWizardPayload>(PayloadInstances[CurrentPageIndex]))
+					{
+						return FText::FromString(Payload->PayloadDescription);
+					}
+				}
+				return FText::GetEmpty();
+			})
 			.AutoWrapText(true)
-			.ColorAndOpacity(FSlateColor::UseSubduedForeground())
+			.Justification(ETextJustify::Center)
+			.ColorAndOpacity(FSlateColor::UseForeground())
 		]
 
 		+ SVerticalBox::Slot()
@@ -332,6 +388,15 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 				.Text(NSLOCTEXT("GorgeousCore", "WizardNext", "Next"))
 				.OnClicked(this, &SGorgeousSetupWizard::OnNextClicked)
 				.Visibility(SourceTemplate && SourceTemplate->ConfigurationPayloadClasses.Num() > 1 ? EVisibility::Visible : EVisibility::Collapsed)
+				.IsEnabled_Lambda([this]() { 
+					FString Reason; 
+					return CanProceedToNextPage(Reason); 
+				})
+				.ToolTipText_Lambda([this]() { 
+					FString Reason; 
+					CanProceedToNextPage(Reason); 
+					return FText::FromString(Reason); 
+				})
 			]
 
 			+ SHorizontalBox::Slot()
@@ -342,6 +407,15 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 				.Text(NSLOCTEXT("GorgeousCore", "WizardFinish", "Finish"))
 				.OnClicked(this, &SGorgeousSetupWizard::OnFinishClicked)
 				.Visibility(SourceTemplate && SourceTemplate->ConfigurationPayloadClasses.Num() <= 1 ? EVisibility::Visible : EVisibility::Collapsed)
+				.IsEnabled_Lambda([this]() { 
+					FString Reason; 
+					return CanProceedToNextPage(Reason); 
+				})
+				.ToolTipText_Lambda([this]() { 
+					FString Reason; 
+					CanProceedToNextPage(Reason); 
+					return FText::FromString(Reason); 
+				})
 			]
 
 			+ SHorizontalBox::Slot()
@@ -403,25 +477,67 @@ FReply SGorgeousSetupWizard::OnFinishClicked()
 		return FReply::Handled();
 	}
 
-	// Copy wizard payload properties into the newly created asset
+	// 1. Copy wizard payload properties into the newly created asset (Auto-Mapping)
 	for (UObject* PayloadInstance : PayloadInstances)
 	{
-		if (IsValid(PayloadInstance) && PayloadInstance->GetClass() != AssetClass->GetClass())
+		if (IsValid(PayloadInstance))
 		{
-			// Use UEngine property copy to transfer matching properties
-			for (TFieldIterator<FProperty> PropIt(PayloadInstance->GetClass()); PropIt; ++PropIt)
+			// Check if this is a specialized payload and if we should run auto-mapping
+			bool bRunAutoMapping = true;
+			if (UGorgeousSetupWizardPayload* Payload = Cast<UGorgeousSetupWizardPayload>(PayloadInstance))
 			{
-				FProperty* Prop = *PropIt;
-				if (FProperty* DestProp = CreatedAsset->GetClass()->FindPropertyByName(Prop->GetFName()))
+				// If the user has overridden PostCreate, we skip auto-mapping and assume 
+				// they want full manual control over the generation logic.
+				static FName PostCreateName = FName(TEXT("PostCreate"));
+				UFunction* PostCreateFunc = Payload->GetClass()->FindFunctionByName(PostCreateName);
+				
+				// If the function's outer is NOT the base class, it means it's been overridden 
+				// in a Blueprint or a derived C++ class.
+				if (PostCreateFunc && PostCreateFunc->GetOuter() != UGorgeousSetupWizardPayload::StaticClass())
 				{
-					Prop->CopyCompleteValue_InContainer(CreatedAsset, PayloadInstance);
+					bRunAutoMapping = false;
+				}
+			}
+
+			if (bRunAutoMapping)
+			{
+				for (TFieldIterator<FProperty> PropIt(PayloadInstance->GetClass()); PropIt; ++PropIt)
+				{
+					FProperty* Prop = *PropIt;
+					if (FProperty* DestProp = CreatedAsset->GetClass()->FindPropertyByName(Prop->GetFName()))
+					{
+						if (DestProp->SameType(Prop))
+						{
+							void* SourcePtr = Prop->ContainerPtrToValuePtr<void>(PayloadInstance);
+							void* DestPtr = DestProp->ContainerPtrToValuePtr<void>(CreatedAsset);
+							DestProp->CopyCompleteValue(DestPtr, SourcePtr);
+						}
+					}
 				}
 			}
 		}
 	}
 
-	// Let the template run its generation logic (populate defaults, assign actions, etc.)
-	const bool bSuccess = SourceTemplate->ExecuteTemplateGeneration(CreatedAsset);
+	// 2. Call PostCreate on all payloads
+	for (UObject* PayloadInstance : PayloadInstances)
+	{
+		if (UGorgeousSetupWizardPayload* Payload = Cast<UGorgeousSetupWizardPayload>(PayloadInstance))
+		{
+			FString FailureReason;
+			if (!Payload->PostCreate(CreatedAsset, FailureReason))
+			{
+				// Show the error popup as requested
+				FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(FailureReason), 
+					NSLOCTEXT("GorgeousCore", "WizardPostCreateError", "Generation Failed"));
+				
+				// We keep the wizard open
+				return FReply::Handled();
+			}
+		}
+	}
+
+	// 3. Let the template run its generation logic
+	const bool bSuccess = SourceTemplate->ExecuteTemplateGeneration(CreatedAsset, PayloadInstances);
 
 	if (bSuccess)
 	{
@@ -590,6 +706,18 @@ void SGorgeousSetupWizard::UpdateWizardState()
 	{
 		FinishButton->SetVisibility(IsLastPage() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
+}
+
+bool SGorgeousSetupWizard::CanProceedToNextPage(FString& OutFailureReason) const
+{
+	if (PayloadInstances.IsValidIndex(CurrentPageIndex))
+	{
+		if (UGorgeousSetupWizardPayload* Payload = Cast<UGorgeousSetupWizardPayload>(PayloadInstances[CurrentPageIndex]))
+		{
+			return Payload->PreCreate(OutFailureReason);
+		}
+	}
+	return true;
 }
 
 bool SGorgeousSetupWizard::IsLastPage() const

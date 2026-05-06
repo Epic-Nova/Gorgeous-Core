@@ -1,16 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonNumericTextBlock.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonNumericTextBlock)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonNumericTextBlock)
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonNumericTextBlock)
-
-void UGorgeousCommonNumericTextBlock::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonNumericTextBlock::SynchronizeProperties()
 {
-	OnThemeApplied_BP_Implementation(Theme);
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonNumericTextBlock::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonNumericTextBlock::OnWidgetRebuilt()
 {
-	// no-op default
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonNumericTextBlock::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }

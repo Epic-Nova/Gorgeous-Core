@@ -112,6 +112,18 @@ class AGorgeousGameState;
 		Super::BeginPlay(); \
 	}
 
+/** Extended version of BeginPlay for PlayerController that allows injecting extra code at the end of the function. */
+#define UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(Class, ExtraCode) \
+	void Class::BeginPlay() \
+	{ \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA_WITH_RELAY \
+		Super::BeginPlay(); \
+		{ \
+			ExtraCode \
+		} \
+	}
+
 /**
  * Defines EndPlay to remove the owner from the shared SelfReference OV the moment the actor
  * is destroyed on any machine.  Used by both AGorgeousPlayerController and AGorgeousPlayerState.

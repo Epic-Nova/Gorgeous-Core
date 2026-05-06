@@ -1,37 +1,26 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonProgressBar.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonProgressBar)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonProgressBar)
 
-void UGorgeousCommonProgressBar::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonProgressBar::SynchronizeProperties()
 {
-	// No base implementation on UProgressBar
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
 
-	FName TargetKey = "";
-	if (TargetThemeColors.Contains("ProgressColor")) TargetKey = "ProgressColor";
-	else if (TargetThemeColors.Contains("AccentColor")) TargetKey = "AccentColor";
+void UGorgeousCommonProgressBar::OnWidgetRebuilt()
+{
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
 
-	if (TargetKey != "")
+void UGorgeousCommonProgressBar::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
+	if (Theme)
 	{
-		FLinearColor DisplayColor = CurrentThemeColors.Contains(TargetKey) ? CurrentThemeColors[TargetKey] : TargetThemeColors[TargetKey];
-		SetFillColorAndOpacity(DisplayColor);
+		WidgetStyle = Theme->GetProgressBarStyle("DefaultProgressBar");
 	}
 }
-
-void UGorgeousCommonProgressBar::NativeConstruct()
-{
-	UE_UI_REGISTER_WIDGET()
-}
-
-void UGorgeousCommonProgressBar::NativeDestruct()
-{
-	UE_UI_UNREGISTER_WIDGET()
-}
-
-void UGorgeousCommonProgressBar::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-    // Default: no-op. Override in Blueprints to react to theme changes.
-}
-
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonProgressBar)

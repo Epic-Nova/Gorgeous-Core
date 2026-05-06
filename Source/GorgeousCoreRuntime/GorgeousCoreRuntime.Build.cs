@@ -82,6 +82,33 @@ public class GorgeousCoreRuntime : ModuleRules
         PrivateDefinitions.Add("CSV_PROFILER=1");
         PublicDefinitions.Add("GORGEOUSCORE_WITH_PLUS=0"); // Placeholder for the upcoming Gorgeous Plus module, which will provide additional features and optimizations. Set to 1 when Gorgeous Plus is released.
 
+        // Dynamic Gorgeous General System definitions (C++)
+        var GeneralSystemsPath = Path.Combine(ModuleDirectory, "Public", "GeneralSystems");
+        if (Directory.Exists(GeneralSystemsPath))
+        {
+            foreach (var SystemPath in Directory.GetDirectories(GeneralSystemsPath))
+            {
+                var SystemName = Path.GetFileName(SystemPath).ToUpper();
+                PublicDefinitions.Add($"GORGEOUS_SYSTEM_INSTALLED_{SystemName}=1");
+            }
+        }
+
+        // Dynamic Gorgeous Blueprint System definitions (Content/Systems)
+        var BlueprintSystemsPath = Path.Combine(ModuleDirectory, "..", "..", "Content", "Systems");
+        if (Directory.Exists(BlueprintSystemsPath))
+        {
+            foreach (var SystemPath in Directory.GetDirectories(BlueprintSystemsPath))
+            {
+                var SystemName = Path.GetFileName(SystemPath).ToUpper();
+                var MacroName = $"GORGEOUS_SYSTEM_INSTALLED_{SystemName}=1";
+
+                if (!PublicDefinitions.Contains(MacroName))
+                {
+                    PublicDefinitions.Add(MacroName);
+                }
+            }
+        }
+
         // Gauntlet is only available for non-Editor program builds (e.g. automation test executables)
         // It's an experimental plugin that must be enabled and doesn't ship Editor DLLs
         bool bWithGauntlet = Target.Type == TargetType.Program && !Target.bBuildEditor;

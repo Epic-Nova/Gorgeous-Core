@@ -2,35 +2,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonAnimatedSwitcher.h"
+#include "CommonWidgetCarousel.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GorgeousCommonCarousel.generated.h"
 
 /**
- * A "Gorgeous" version of the Animated Switcher that acts as a carousel.
- * Supports signal-driven child injection and remote-controlled navigation.
+ * AAA Carousel with Gorgeous Foundation support.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousCommonCarousel : public UCommonAnimatedSwitcher, public IGorgeousUIWidget_I
+class GORGEOUSCORERUNTIME_API UGorgeousCommonCarousel : public UCommonWidgetCarousel, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this carousel for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
-	/** Switches to the next child in the carousel. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void Next();
-
-	/** Switches to the previous child in the carousel. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void Previous();
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
 
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

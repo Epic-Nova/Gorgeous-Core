@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -14,6 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/GorgeousPluginHelper.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Features/IModularFeatures.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -53,12 +54,23 @@ void IGorgeousThingsModuleInterface::StartupModule()
 				*GetBelongingPluginName().ToString()
 			);
 		}
+
+		if (InsightProvider)
+		{
+			IModularFeatures::Get().RegisterModularFeature(FName(TEXT("GorgeousInsightMatrixProvider")), InsightProvider);
+		}
 	}
 }
 
 void IGorgeousThingsModuleInterface::ShutdownModule()
 {
 	IModuleInterface::ShutdownModule();
+	
+	if (InsightProvider)
+	{
+		IModularFeatures::Get().UnregisterModularFeature(FName(TEXT("GorgeousInsightMatrixProvider")), InsightProvider);
+	}
+
 	GorgeousShutdownModule();
 	UGorgeousPluginHelper::GetSingleton()->UnregisterModule(this);
 }

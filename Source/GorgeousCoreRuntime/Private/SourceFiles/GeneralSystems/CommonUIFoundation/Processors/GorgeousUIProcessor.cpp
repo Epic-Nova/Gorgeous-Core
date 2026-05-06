@@ -2,7 +2,7 @@
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "Blueprint/UserWidget.h"
 
-void UGorgeousUIProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousUIProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	if (!Widget) return;
 

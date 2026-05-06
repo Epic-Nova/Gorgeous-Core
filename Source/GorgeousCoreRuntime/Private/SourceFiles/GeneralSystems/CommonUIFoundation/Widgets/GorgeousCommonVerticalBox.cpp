@@ -1,16 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonVerticalBox.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonVerticalBox)
- 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonVerticalBox)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonVerticalBox)
 
-void UGorgeousCommonVerticalBox::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonVerticalBox::SynchronizeProperties()
 {
-	OnThemeApplied_BP_Implementation(Theme);
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonVerticalBox::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonVerticalBox::OnWidgetRebuilt()
 {
-	// no-op default
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonVerticalBox::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }

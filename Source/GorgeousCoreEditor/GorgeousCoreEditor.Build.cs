@@ -40,7 +40,7 @@ public class GorgeousCoreEditor : ModuleRules
             Path.Combine(privateIncludePath, "CodeGenerators"),
             Path.Combine(privateIncludePath, "Factories"),
             Path.Combine(privateIncludePath, "K2Nodes"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations")
+            Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
         });
         
         PublicDependencyModuleNames.AddRange(new[]

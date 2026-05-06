@@ -17,15 +17,18 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonRotator : public UCommonRotator, pu
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this rotator for signal-driven updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	/** Signal-driven index selection. */
 	UFUNCTION()
-	void OnRotatorSignalReceived(const FInstancedStruct& Payload);
+	void OnRotatorSignalReceived(FGameplayTag SignalTag, const struct FInstancedStruct& Payload);
 };

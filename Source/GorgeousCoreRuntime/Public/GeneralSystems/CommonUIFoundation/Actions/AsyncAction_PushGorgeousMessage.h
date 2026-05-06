@@ -2,7 +2,7 @@
 #pragma once
 
 #include "Kismet/BlueprintAsyncActionBase.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIMessageStructures.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "AsyncAction_PushGorgeousMessage.generated.h"
 
@@ -46,7 +46,7 @@ public:
 
 private:
 	UFUNCTION()
-	void HandleMessageResult(const FInstancedStruct& Payload);
+	void HandleMessageResult(FGameplayTag SignalTag, const struct FInstancedStruct& Payload);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UObject> WorldContextObject;

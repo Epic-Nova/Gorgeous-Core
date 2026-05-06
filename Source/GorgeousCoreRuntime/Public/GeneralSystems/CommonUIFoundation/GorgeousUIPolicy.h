@@ -19,11 +19,11 @@ class APlayerController;
  *
  * --- SETUP ---
  * 1. Create a Blueprint subclass of your UGorgeousPrimaryGameLayout.
- * 2. Set DefaultLayoutClass in DefaultGame.ini:
- *      [/Script/GorgeousCoreRuntime.GorgeousUIPolicy]
- *      DefaultLayoutClass=/Game/UI/WBP_PrimaryLayout.WBP_PrimaryLayout_C
+ * 2. Set DefaultLayoutClass in Project Settings -> Gorgeous UI Foundation.
  * 3. Done. The system handles the rest automatically.
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLayoutCreatedDelegate, ULocalPlayer*, LocalPlayer, UGorgeousPrimaryGameLayout*, Layout);
+
 UCLASS(config = Game, DefaultConfig)
 class GORGEOUSCORERUNTIME_API UGorgeousUIPolicy : public UGameInstanceSubsystem
 {
@@ -32,6 +32,9 @@ class GORGEOUSCORERUNTIME_API UGorgeousUIPolicy : public UGameInstanceSubsystem
 	UGorgeousUIPolicy(const FObjectInitializer& ObjectInitializer);
 	
 public:
+	/** Fired when a primary game layout is created and added to the viewport for a player. */
+	UPROPERTY(BlueprintAssignable, Category = "Gorgeous UI|Policy")
+	FOnLayoutCreatedDelegate OnLayoutCreatedDelegate;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
@@ -50,13 +53,6 @@ public:
 	/** Returns the root layout for the primary (first) player. O(1). */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI|Policy", meta = (WorldContext = "WorldContextObject"))
 	static UGorgeousPrimaryGameLayout* GetPrimaryPlayerLayout(const UObject* WorldContextObject);
-
-	/**
-	 * Blueprint class to create for each local player.
-	 * Configure via DefaultGame.ini or in Project Settings.
-	 */
-	UPROPERTY(config, EditAnywhere, NoClear, Category = "Gorgeous UI")
-	TSoftClassPtr<UGorgeousPrimaryGameLayout> DefaultLayoutClass;
 
 protected:
 	/** Override to run custom logic after a layout is created for a player. */

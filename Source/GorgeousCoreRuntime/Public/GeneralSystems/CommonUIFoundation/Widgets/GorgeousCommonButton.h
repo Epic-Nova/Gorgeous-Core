@@ -16,15 +16,12 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonButton : public UCommonButtonBase, 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this button for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
-	/** Interp speed for theme color transitions. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Juicy")
-	float ThemeInterpSpeed = 5.0f;
-
-	/** Called when a new theme is applied. Implement in Blueprint for custom styling. */
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
 
 	/** Sound tag for Hover event. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI|Audio")
@@ -35,8 +32,8 @@ public:
 	FGameplayTag ClickSoundTag;
 
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeOnHovered() override;
 	virtual void NativeOnUnhovered() override;
 	virtual void NativeOnClicked() override;

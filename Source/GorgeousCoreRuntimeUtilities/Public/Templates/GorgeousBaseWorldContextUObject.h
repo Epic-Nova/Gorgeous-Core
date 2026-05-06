@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -50,6 +50,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
 	void SetFallbackOwner(UObject* NewFallbackOwner) const { FallbackOwner = MakeWeakObjectPtr(NewFallbackOwner); }
+
+	/**
+	 * Gets the cached owner of this object.
+	 * 
+	 * @return The cached owner object.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
+	UObject* GetFallbackOwner() const { return FallbackOwner.Get(); }
 
 protected:
 	

@@ -8,7 +8,7 @@ UGorgeousCommonBorderProcessor::UGorgeousCommonBorderProcessor()
 	TargetWidgetClass = UGorgeousCommonBorder::StaticClass();
 }
 
-void UGorgeousCommonBorderProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousCommonBorderProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonBorder* Border = Cast<UGorgeousCommonBorder>(Widget);
 	if (!Border) return;

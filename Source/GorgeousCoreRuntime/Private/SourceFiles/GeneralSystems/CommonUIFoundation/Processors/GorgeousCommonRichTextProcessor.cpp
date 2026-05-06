@@ -9,7 +9,7 @@ UGorgeousCommonRichTextProcessor::UGorgeousCommonRichTextProcessor()
 	TargetWidgetClass = UGorgeousCommonRichTextBlock::StaticClass();
 }
 
-void UGorgeousCommonRichTextProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousCommonRichTextProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonRichTextBlock* TextBlock = Cast<UGorgeousCommonRichTextBlock>(Widget);
 	if (!TextBlock) return;

@@ -10,7 +10,7 @@ UGorgeousProgressBarProcessor::UGorgeousProgressBarProcessor()
 	TargetWidgetClass = UGorgeousCommonProgressBar::StaticClass();
 }
 
-void UGorgeousProgressBarProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousProgressBarProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonProgressBar* ProgressBar = Cast<UGorgeousCommonProgressBar>(Widget);
 	if (!ProgressBar) return;

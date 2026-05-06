@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -17,3 +17,10 @@
  * @note Not used atm, planned to be introduced with upcoming new major version
  */
 #define GORGEOUS_PLUGIN_INSTALLED(PluginName) (GORGEOUSTHINGS_WITH_##PluginName)
+
+/**
+ * Checks if the specified Gorgeous General System is installed within the Core module.
+ * 
+ * @param SystemName The name of the system (e.g. InteractionFoundation) to check.
+ */
+#define GORGEOUS_GENERAL_SYSTEM_INSTALLED(SystemName) (GORGEOUS_SYSTEM_INSTALLED_##SystemName)

@@ -100,9 +100,9 @@ private:
 	UPROPERTY()
 	FSignalBridgeEventDelegate LayoutSignalDelegate;
 	UFUNCTION()
-	void OnPushWidgetSignalReceived(const FInstancedStruct& Payload);
+	void OnPushWidgetSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload);
 
 	/** Handles the signal to register a layer stack. */
 	UFUNCTION()
-	void OnRegisterLayerSignalReceived(const FInstancedStruct& Payload);
+	void OnRegisterLayerSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload);
 };

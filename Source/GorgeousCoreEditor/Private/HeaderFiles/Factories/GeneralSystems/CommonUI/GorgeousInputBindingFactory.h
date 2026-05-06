@@ -14,19 +14,19 @@
 //<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
-#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GorgeousUIThemeFactory.generated.h"
+#include "GorgeousInputBindingFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * Factory class responsible for creating instances of UGorgeousUITheme_DA.
+ * Factory class responsible for creating instances of UGorgeousInputBinding_DA.
  * The configuration is encapsulated using FGorgeousFactoryInfo_S, which is passed to the base class.
  *
  * @author Nils Bergemann
  */
 UCLASS()
-class UGorgeousUIThemeFactory : public UGorgeousFactory
+class UGorgeousInputBindingFactory : public UGorgeousFactory
 {
 	GENERATED_BODY()
 	
@@ -36,9 +36,9 @@ public:
 	 * Default constructor that sets up the factory with metadata describing its target class
 	 * and behavior within the Unreal Editor asset system.
 	 */
-	UGorgeousUIThemeFactory()
+	UGorgeousInputBindingFactory()
 	{
-		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousUITheme_DA::StaticClass(), true, false, true, false,
-			UGorgeousUIThemeBlueprint::StaticClass()));
+		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousInputBinding_DA::StaticClass(), true, false, true, false,
+			nullptr, nullptr, true));
 	}
 };

@@ -117,6 +117,47 @@ private:
 	SGorgeousLibraryView::FOnFilterTagToggled OnFilterToggled;
 };
 
+/**
+ * A helper widget that manages the lifetime of dynamic asset icons.
+ * This prevents crashes caused by local TSharedPtr<FSlateBrush> going out of scope.
+ */
+class SGorgeousAssetIcon : public SCompoundWidget
+{
+public:
+	SLATE_BEGIN_ARGS(SGorgeousAssetIcon)
+		: _IconSize(FVector2D(48.0f, 48.0f))
+	{}
+		SLATE_ARGUMENT(TSharedPtr<FAssetData>, Asset)
+		SLATE_ARGUMENT(TSharedPtr<IGorgeousLibraryParticipant>, Participant)
+		SLATE_ARGUMENT(FVector2D, IconSize)
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs)
+	{
+		TSharedPtr<FAssetData> Asset = InArgs._Asset;
+		TSharedPtr<IGorgeousLibraryParticipant> Participant = InArgs._Participant;
+		const FVector2D IconSize = InArgs._IconSize;
+
+		if (Participant.IsValid() && Asset.IsValid())
+		{
+			IconBrush = Participant->GetAssetIcon(*Asset);
+		}
+
+		const FSlateBrush* FinalBrush = IconBrush.IsValid() ? IconBrush.Get() : FAppStyle::GetBrush("ContentBrowser.DefaultAssetIcon");
+
+		ChildSlot
+		[
+			SNew(SImage)
+			.Image(FinalBrush)
+			.DesiredSizeOverride(IconSize)
+		];
+	}
+
+private:
+	TSharedPtr<FSlateBrush> IconBrush;
+};
+
+
 //=============================================================================
 // SGorgeousLibraryView Implementation
 //=============================================================================
@@ -562,14 +603,6 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetTile(
 	TSharedPtr<FAssetData> InAsset,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
-	TSharedPtr<FSlateBrush> CustomIcon;
-	if (SelectedParticipant.IsValid() && InAsset.IsValid())
-	{
-		CustomIcon = SelectedParticipant->GetAssetIcon(*InAsset);
-	}
-
-	const FSlateBrush* IconBrush = CustomIcon.IsValid() ? CustomIcon.Get() : FAppStyle::GetBrush("ContentBrowser.DefaultAssetIcon");
-
 	return SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
 		.Padding(6.0f)
 		[
@@ -580,19 +613,20 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetTile(
 			.Padding(8.0f)
 			[
 				SNew(SVerticalBox)
-
 				// Asset icon
 				+ SVerticalBox::Slot()
 				.FillHeight(1.0f)
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
-					SNew(SImage)
-					.Image(IconBrush)
-					.DesiredSizeOverride(FVector2D(48.0f, 48.0f))
+					SNew(SGorgeousAssetIcon)
+					.Asset(InAsset)
+					.Participant(SelectedParticipant)
+					.IconSize(FVector2D(48.0f, 48.0f))
 				]
 
 				// Asset name
+
 				+ SVerticalBox::Slot()
 				.AutoHeight()
 				.HAlign(HAlign_Center)
@@ -612,15 +646,11 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetRow(
 	TSharedPtr<FAssetData> InAsset,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
-	TSharedPtr<FSlateBrush> CustomIcon;
 	FText Description;
 	if (SelectedParticipant.IsValid() && InAsset.IsValid())
 	{
-		CustomIcon = SelectedParticipant->GetAssetIcon(*InAsset);
 		Description = SelectedParticipant->GetAssetDescription(*InAsset);
 	}
-
-	const FSlateBrush* IconBrush = CustomIcon.IsValid() ? CustomIcon.Get() : FAppStyle::GetBrush("ContentBrowser.DefaultAssetIcon");
 
 	return SNew(STableRow<TSharedPtr<FAssetData>>, OwnerTable)
 		.Padding(FMargin(16.0f, 4.0f))
@@ -631,10 +661,12 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetRow(
 			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				SNew(SImage)
-				.Image(IconBrush)
-				.DesiredSizeOverride(FVector2D(24.0f, 24.0f))
+				SNew(SGorgeousAssetIcon)
+				.Asset(InAsset)
+				.Participant(SelectedParticipant)
+				.IconSize(FVector2D(24.0f, 24.0f))
 			]
+
 
 			+ SHorizontalBox::Slot()
 			.FillWidth(1.0f)

@@ -36,5 +36,5 @@ public:
 	FGameplayTag LayerTag;
 
 protected:
-	virtual void NativeConstruct();
+	virtual void OnWidgetRebuilt() override;
 };

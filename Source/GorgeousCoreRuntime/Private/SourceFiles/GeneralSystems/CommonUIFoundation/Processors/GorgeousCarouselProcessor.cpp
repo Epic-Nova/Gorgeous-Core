@@ -2,13 +2,14 @@
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousCarouselProcessor.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonCarousel.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 UGorgeousCarouselProcessor::UGorgeousCarouselProcessor()
 {
 	TargetWidgetClass = UGorgeousCommonCarousel::StaticClass();
 }
 
-void UGorgeousCarouselProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousCarouselProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonCarousel* Carousel = Cast<UGorgeousCommonCarousel>(Widget);
 	if (!Carousel) return;
@@ -17,13 +18,13 @@ void UGorgeousCarouselProcessor::OnSignalReceived(UObject* Widget, const FInstan
 	if (!UpdatePayload) return;
 
 	// 1. Navigation Logic
-	if (UpdatePayload->Updates.Contains("Next"))
+	if (SignalTag == TAG_Gorgeous_UI_Signal_Carousel_Next)
 	{
-		Carousel->Next();
+		Carousel->NextPage();
 	}
-	else if (UpdatePayload->Updates.Contains("Previous"))
+	else if (SignalTag == TAG_Gorgeous_UI_Signal_Carousel_Prev)
 	{
-		Carousel->Previous();
+		Carousel->PreviousPage();
 	}
 
 	// 2. Child Injection Logic
@@ -47,5 +48,5 @@ void UGorgeousCarouselProcessor::OnSignalReceived(UObject* Widget, const FInstan
 	}
 
 	// 3. Fallback to base reflection (for properties like ActiveIndex)
-	Super::OnSignalReceived(Widget, Payload);
+	Super::OnSignalReceived(Widget, SignalTag, Payload);
 }

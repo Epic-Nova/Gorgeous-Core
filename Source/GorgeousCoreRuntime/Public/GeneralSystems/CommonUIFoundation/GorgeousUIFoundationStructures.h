@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Styling/SlateBrush.h"
+#include "Fonts/SlateFontInfo.h"
 #include "StructUtils/InstancedStruct.h"
 #include "GorgeousUIFoundationStructures.generated.h"
 
@@ -141,6 +142,19 @@ struct FGorgeousPlatformIconGroup_S
 	TMap<FName, FSlateBrush> PlatformIcons;
 };
 
+/** Typography style defining font and color. */
+USTRUCT(BlueprintType)
+struct FGorgeousUITypography_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Typography")
+	FSlateFontInfo Font;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Typography")
+	FLinearColor Color = FLinearColor::White;
+};
+
 /** Payload for registering a UI layer stack. */
 USTRUCT(BlueprintType)
 struct FGorgeousRegisterLayerPayload : public FGorgeousUIBaseUpdatePayload
@@ -166,4 +180,94 @@ struct FGorgeousInputMappingConfig_S
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
 	int32 Priority = 0;
+};
+
+/** Metadata for a Gorgeous input binding. */
+USTRUCT(BlueprintType)
+struct FGorgeousInputBindingInfo_S
+{
+	GENERATED_BODY()
+
+	/** The Enhanced Input Action to bind to. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	TObjectPtr<class UInputAction> Action;
+
+	/** If true, this action will be displayed in the HUD's action bar. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	bool bShouldDisplayInActionBar = true;
+
+	/** Friendly name for the action. If empty, uses the tag name. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	FText DisplayName;
+};
+
+/** Data for a single entry in the HUD action bar. */
+USTRUCT(BlueprintType)
+struct FGorgeousActionBarEntry_S
+{
+	GENERATED_BODY()
+
+	/** The resolved icon brush for the action. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action Bar")
+	FSlateBrush Icon;
+
+	/** The display name of the action. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action Bar")
+	FText ActionName;
+};
+
+class UGorgeousUIMessageConfig_DA;
+
+/**
+ * Data passed when requesting a new Gorgeous Message/Dialog.
+ */
+USTRUCT(BlueprintType)
+struct FGorgeousUIMessageRequest
+{
+	GENERATED_BODY()
+
+	/** Unique ID for this specific message instance to track the result. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FGuid RequestID;
+
+	/** The title text for the dialog. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FText Title;
+
+	/** The main body/message text. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FText Message;
+
+	/** The configuration asset defining the look and feel. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	TObjectPtr<const UGorgeousUIMessageConfig_DA> Config;
+
+	/** Optional custom data to pass to the message widget. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	TMap<FName, FString> Metadata;
+
+	FGorgeousUIMessageRequest()
+		: RequestID(FGuid::NewGuid()), Config(nullptr)
+	{}
+};
+
+/**
+ * Data passed back when a message is resolved (button clicked).
+ */
+USTRUCT(BlueprintType)
+struct FGorgeousUIMessageResult
+{
+	GENERATED_BODY()
+
+	/** The ID of the request this result belongs to. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FGuid RequestID;
+
+	/** The tag of the button that was clicked (e.g., "Confirm", "Cancel", "Repair"). */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FName ResultTag;
+
+	FGorgeousUIMessageResult()
+		: ResultTag(NAME_None)
+	{}
 };

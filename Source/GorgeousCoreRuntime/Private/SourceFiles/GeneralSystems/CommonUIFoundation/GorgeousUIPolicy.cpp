@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIPolicy.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSettings.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/AssetManager.h"
@@ -13,7 +14,6 @@
 
 UGorgeousUIPolicy::UGorgeousUIPolicy(const FObjectInitializer& ObjectInitializer)
 {
-	DefaultLayoutClass = UGorgeousPrimaryGameLayout::StaticClass();
 }
 
 void UGorgeousUIPolicy::Initialize(FSubsystemCollectionBase& Collection)
@@ -95,14 +95,15 @@ UGorgeousPrimaryGameLayout* UGorgeousUIPolicy::GetRootLayoutForController(const 
 
 void UGorgeousUIPolicy::CreateLayoutForPlayer(ULocalPlayer* LocalPlayer)
 {
-	if (!LocalPlayer || DefaultLayoutClass.IsNull()) return;
+	const UGorgeousUIFoundationSettings* Settings = GetDefault<UGorgeousUIFoundationSettings>();
+	if (!LocalPlayer || !Settings || Settings->DefaultLayoutClass.IsNull()) return;
 	if (Layouts.Contains(LocalPlayer)) return; // Already created
 
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-	Streamable.RequestAsyncLoad(DefaultLayoutClass.ToSoftObjectPath(),
-		FStreamableDelegate::CreateWeakLambda(this, [this, LocalPlayer]()
+	Streamable.RequestAsyncLoad(Settings->DefaultLayoutClass.ToSoftObjectPath(),
+		FStreamableDelegate::CreateWeakLambda(this, [this, LocalPlayer, Settings]()
 		{
-			UClass* LoadedClass = DefaultLayoutClass.Get();
+			UClass* LoadedClass = Settings->DefaultLayoutClass.Get();
 			if (!LoadedClass || !IsValid(LocalPlayer)) return;
 			if (Layouts.Contains(LocalPlayer)) return; // Race guard
 
@@ -114,6 +115,7 @@ void UGorgeousUIPolicy::CreateLayoutForPlayer(ULocalPlayer* LocalPlayer)
 				Layouts.Add(LocalPlayer, Layout);
 				Layout->AddToViewport(0);
 				OnLayoutCreated(LocalPlayer, Layout);
+				OnLayoutCreatedDelegate.Broadcast(LocalPlayer, Layout);
 			}
 		}));
 }

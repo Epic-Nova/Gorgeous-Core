@@ -7,6 +7,19 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
+
+AGorgeousHUD* UGorgeousUIExtensions::GetGorgeousHUD(const UObject* WorldContextObject)
+{
+	if (UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			return Cast<AGorgeousHUD>(PC->GetHUD());
+		}
+	}
+	return nullptr;
+}
 
 FSlateBrush UGorgeousUIExtensions::GetGorgeousActionIcon(UObject* WorldContextObject, FGameplayTag ActionTag)
 {
@@ -83,4 +96,23 @@ void UGorgeousUIExtensions::ResumeGorgeousInput(APlayerController* PlayerControl
 
 	PlayerController->SetIgnoreMoveInput(false);
 	PlayerController->SetIgnoreLookInput(false);
+}
+
+float UGorgeousUIExtensions::CalculateEasedAlpha(float InAlpha, EGorgeousUIInterpType_E InterpType)
+{
+	InAlpha = FMath::Clamp(InAlpha, 0.0f, 1.0f);
+
+	switch (InterpType)
+	{
+	case EGorgeousUIInterpType_E::Linear:
+		return InAlpha;
+	case EGorgeousUIInterpType_E::EaseIn:
+		return InAlpha * InAlpha * InAlpha; // Cubic
+	case EGorgeousUIInterpType_E::EaseOut:
+		return 1.0f - FMath::Pow(1.0f - InAlpha, 3.0f); // Cubic
+	case EGorgeousUIInterpType_E::EaseInOut:
+		return InAlpha < 0.5f ? 4.0f * InAlpha * InAlpha * InAlpha : 1.0f - FMath::Pow(-2.0f * InAlpha + 2.0f, 3.0f) / 2.0f;
+	}
+
+	return InAlpha;
 }

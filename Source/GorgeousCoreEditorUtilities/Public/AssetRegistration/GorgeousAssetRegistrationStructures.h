@@ -15,8 +15,23 @@
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/Blueprint.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
+#include "Templates/Function.h"
+//--------------=== Third Party & Miscellaneous Includes ===----------------->
 #include "GorgeousAssetRegistrationStructures.generated.h"
 //<-------------------------------------------------------------------------->
+
+class IToolkitHost;
+
+/**
+ * Defines which asset type action implementation should be used.
+ */
+enum class EGorgeousAssetActionType : uint8
+{
+	Auto,
+	Blueprint,
+	DataAsset,
+	Generic
+};
 
 /**
  * Metadata describing how a custom asset should appear and behave in the editor.
@@ -31,6 +46,8 @@ struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeActionInfo_S
 	TArray<FText> SubMenus;
 	const FSlateBrush* ThumbnailBrush = nullptr;
 	const FSlateBrush* IconBrush = nullptr;
+	EGorgeousAssetActionType ActionType = EGorgeousAssetActionType::Auto;
+	TFunction<void(const TArray<UObject*>&, TSharedPtr<IToolkitHost>)> OpenAssetEditor;
 };
 
 /**
@@ -47,27 +64,31 @@ struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousFactoryInfo_S
 	// Default constructor with safe initialization.
 	FGorgeousFactoryInfo_S()
 		: SupportedClass(nullptr)
-		, BlueprintClass(UBlueprint::StaticClass())
-		, BlueprintGeneratedClass(UBlueprintGeneratedClass::StaticClass())
-		, bEditAfterNew(false)
-		, bEditorImport(false)
-		, bCreateNew(false)
-		, bText(false)
-	{}
+		  , BlueprintClass(UBlueprint::StaticClass())
+		  , BlueprintGeneratedClass(UBlueprintGeneratedClass::StaticClass())
+		  , bEditAfterNew(false)
+		  , bEditorImport(false)
+		  , bCreateNew(false)
+		  , bText(false)
+		  , bDataOnly(false)
+	{
+	}
 
 	// Parameterized constructor for custom behavior setup.
 	FGorgeousFactoryInfo_S(const TSubclassOf<UObject>& NewSupportedClass, const bool NewEditAfterNew, const bool NewEditorImport,
 	                       const bool NewCreateNew, const bool NewText,
 	                       const TSubclassOf<UBlueprint>& NewBlueprintClass = UBlueprint::StaticClass(),
-	                       const TSubclassOf<UBlueprintGeneratedClass>& NewBlueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass())
+	                       const TSubclassOf<UBlueprintGeneratedClass>& NewBlueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass(), const bool bNewDataOnly = false)
 		: SupportedClass(NewSupportedClass)
-		, BlueprintClass(NewBlueprintClass)
-		, BlueprintGeneratedClass(NewBlueprintGeneratedClass)
-		, bEditAfterNew(NewEditAfterNew)
-		, bEditorImport(NewEditorImport)
-		, bCreateNew(NewCreateNew)
-		, bText(NewText)
-	{}
+		  , BlueprintClass(NewBlueprintClass)
+		  , BlueprintGeneratedClass(NewBlueprintGeneratedClass)
+		  , bEditAfterNew(NewEditAfterNew)
+		  , bEditorImport(NewEditorImport)
+		  , bCreateNew(NewCreateNew)
+		  , bText(NewText)
+		  , bDataOnly(bNewDataOnly)
+	{
+	}
 
 	// The class manufactured by this factory.
 	TSubclassOf<UObject> SupportedClass;
@@ -89,6 +110,9 @@ struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousFactoryInfo_S
 
 	// True if the factory supports importing from text.
 	bool bText;
+	
+	// Trie if the factory should use NewObject instead of CreateBlueprint.
+	bool bDataOnly;
 };
 
 /**
@@ -104,6 +128,7 @@ FORCEINLINE uint32 GetTypeHash(const FGorgeousFactoryInfo_S& Info)
 	Hash = HashCombine(Hash, GetTypeHash(Info.bEditorImport));
 	Hash = HashCombine(Hash, GetTypeHash(Info.bCreateNew));
 	Hash = HashCombine(Hash, GetTypeHash(Info.bText));
+	Hash = HashCombine(Hash, GetTypeHash(Info.bDataOnly));
 	return Hash;
 }
 
@@ -118,5 +143,6 @@ FORCEINLINE bool operator==(const FGorgeousFactoryInfo_S& A, const FGorgeousFact
 		&& A.bEditAfterNew == B.bEditAfterNew
 		&& A.bEditorImport == B.bEditorImport
 		&& A.bCreateNew == B.bCreateNew
-		&& A.bText == B.bText;
+		&& A.bText == B.bText
+		&& A.bDataOnly == B.bDataOnly;
 }

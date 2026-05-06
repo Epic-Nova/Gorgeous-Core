@@ -9,8 +9,47 @@
 
 class AGorgeousPlayerController;
 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FSignalBridgeEventDelegate, const FInstancedStruct&, Payload);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSignalBridgeEventMulticastDelegate, const FInstancedStruct&, Payload);
+DECLARE_DYNAMIC_DELEGATE_TwoParams(FSignalBridgeEventDelegate, FGameplayTag, SignalTag, const FInstancedStruct&, Payload);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSignalBridgeEventMulticastDelegate, FGameplayTag, SignalTag, const FInstancedStruct&, Payload);
+
+/** Simple int32 payload for Signal Bridge. */
+USTRUCT(BlueprintType)
+struct FGorgeousInt32Payload_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Bridge")
+	int32 Value = 0;
+
+	FGorgeousInt32Payload_S() {}
+	FGorgeousInt32Payload_S(int32 InValue) : Value(InValue) {}
+};
+
+/** Simple float payload for Signal Bridge. */
+USTRUCT(BlueprintType)
+struct FGorgeousFloatPayload_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Bridge")
+	float Value = 0.0f;
+
+	FGorgeousFloatPayload_S() {}
+	FGorgeousFloatPayload_S(float InValue) : Value(InValue) {}
+};
+
+/** Simple FName payload for Signal Bridge. */
+USTRUCT(BlueprintType)
+struct FGorgeousFNamePayload_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Bridge")
+	FName Value = NAME_None;
+
+	FGorgeousFNamePayload_S() {}
+	FGorgeousFNamePayload_S(FName InValue) : Value(InValue) {}
+};
 
 /**
  * Rules for controlling access to a specific Signal Bridge tag.

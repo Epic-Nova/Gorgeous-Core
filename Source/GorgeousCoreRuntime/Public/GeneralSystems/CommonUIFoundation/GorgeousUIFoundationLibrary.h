@@ -6,14 +6,14 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GorgeousUIFoundationStructures.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
-#include "CommonUIFoundationLibrary.generated.h"
+#include "GorgeousUIFoundationLibrary.generated.h"
 
 class UGorgeousPrimaryGameLayout;
 /**
  * Blueprint Function Library for the Gorgeous UI Foundation system.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UCommonUIFoundationLibrary : public UBlueprintFunctionLibrary
+class GORGEOUSCORERUNTIME_API UGorgeousUIFoundationLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 

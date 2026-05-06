@@ -52,7 +52,7 @@ void UAsyncAction_PushGorgeousMessage::Activate()
 	USignalBridgeBlueprintFunctionLibrary::Dispatch(WorldContextObject, PushTag, FInstancedStruct::Make(Request));
 }
 
-void UAsyncAction_PushGorgeousMessage::HandleMessageResult(const FInstancedStruct& Payload)
+void UAsyncAction_PushGorgeousMessage::HandleMessageResult(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	// Clean up listeners
 	FGameplayTag ResultTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Result"));

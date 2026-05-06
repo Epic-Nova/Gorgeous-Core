@@ -2,29 +2,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataAsset.h"
+#include "GeneralSystems/GorgeousPrimaryDataAsset.h"
 #include "GorgeousUIMessageConfig_DA.generated.h"
 
 class UCommonActivatableWidget;
-class UCommonUIState_DA;
+class UGorgeousUIState_DA;
 class UGorgeousUITheme_DA;
 
 /**
  * Configuration for a Gorgeous Message/Dialog template.
  */
 UCLASS(BlueprintType)
-class GORGEOUSCORERUNTIME_API UGorgeousUIMessageConfig_DA : public UDataAsset
+class GORGEOUSCORERUNTIME_API UGorgeousUIMessageConfig_DA : public UGorgeousPrimaryDataAsset
 {
 	GENERATED_BODY()
 
 public:
+	/** UGorgeousPrimaryDataAsset Interface */
+	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Message"); }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterface/Messages") }; }
+
 	/** The widget class to spawn for this message. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
 	TSoftClassPtr<UCommonActivatableWidget> MessageWidgetClass;
 
-	/** The UI state to switch to while this message is active (e.g. Pause, SlowMo). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
-	TObjectPtr<UCommonUIState_DA> MessageState;
+	/** The UI state to switch to when this message is active. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State")
+	TObjectPtr<UGorgeousUIState_DA> State;
 
 	/** The theme/skin to apply to the message dialog. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")

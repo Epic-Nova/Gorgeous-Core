@@ -17,11 +17,13 @@
 #include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatCheatManagerExtension.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/CheatManager.h"
 //<-------------------------------------------------------------------------->
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousPlayerController, Log, All);
@@ -39,7 +41,12 @@ AGorgeousPlayerController::AGorgeousPlayerController()
 
 UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousPlayerController)
 
-UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY(AGorgeousPlayerController)
+UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
+	if (CheatManager)
+	{
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatCheatManagerExtension>(CheatManager));
+	}
+)
 
 UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)
 
@@ -146,7 +153,7 @@ void AGorgeousPlayerController::Automation_HandleRPC_WithReturnOV(UInteger_SOV* 
 #endif
 }
 
-void AGorgeousPlayerController::Client_ReceiveSignalBridgeSignal_Implementation(FGameplayTag Tag, const FInstancedStruct& Payload)
+void AGorgeousPlayerController::Client_ReceiveSignal_Implementation(FGameplayTag Tag, const FInstancedStruct& Payload)
 {
 	if (USignalBridgeStorage_OV* Storage = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(this))
 	{

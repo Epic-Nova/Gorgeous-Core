@@ -135,14 +135,14 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScenarioContext
 	FGorgeousInsightScenarioContext(const FGorgeousInsightMatrixRequest& InRequest,
 		const FString& InParameterString,
 		int32 InVariantIndex,
-		FAutomationTestBase& InTest,
+		class FAutomationTestBase* InTest,
 		const struct FGorgeousInsightScenarioDescriptor& InDescriptor,
 		UObject* InWorldContextObject = nullptr);
 
 	const FGorgeousInsightMatrixRequest& Request;
 	const FString ParameterString;
 	const int32 VariantIndex;
-	FAutomationTestBase& Test;
+	class FAutomationTestBase* Test;
 	const struct FGorgeousInsightScenarioDescriptor& Descriptor;
 	UObject* WorldContextObject = nullptr;
 

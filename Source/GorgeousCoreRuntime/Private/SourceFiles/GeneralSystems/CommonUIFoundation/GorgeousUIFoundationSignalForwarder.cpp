@@ -2,7 +2,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSignalForwarder.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 
-void UGorgeousSignalBridgeTagForwarder::OnBridgePayload(const FInstancedStruct& Payload)
+void UGorgeousSignalBridgeTagForwarder::OnBridgePayload(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
     if (OwningSubsystem)
     {

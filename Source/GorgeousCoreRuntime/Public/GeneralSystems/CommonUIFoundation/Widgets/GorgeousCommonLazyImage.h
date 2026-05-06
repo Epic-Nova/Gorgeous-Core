@@ -3,12 +3,12 @@
 
 #include "CoreMinimal.h"
 #include "CommonLazyImage.h"
-#include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GorgeousCommonLazyImage.generated.h"
 
 /**
- * Overridden CommonLazyImage with Signal Bridge support.
+ * AAA Lazy Image with Gorgeous Foundation support.
+ * Automatically themes its icon based on the assigned Action Tag.
  */
 UCLASS()
 class GORGEOUSCORERUNTIME_API UGorgeousCommonLazyImage : public UCommonLazyImage, public IGorgeousUIWidget_I
@@ -18,19 +18,21 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonLazyImage : public UCommonLazyImage
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this image for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
-	/** Optional Action Tag for this image (e.g. UI.Action.Confirm). Used for dynamic icon swapping. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
+	/** Action tag used for automatic icon selection. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag ActionTag;
 
-	/** Updates the image's brush based on the current theme and input method. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void UpdateActionIcon();
-
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
+
+	/** Updates the brush from the current theme and action tag. */
+	void UpdateActionIcon();
 };
