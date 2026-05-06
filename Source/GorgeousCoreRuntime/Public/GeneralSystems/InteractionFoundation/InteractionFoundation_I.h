@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -57,7 +57,8 @@ public:
 	 * Executes the interaction with the implementing object. This function should contain the actual logic of what happens when an interaction is performed with this object.
 	 * 
 	 * @param InteractingActor The actor that is performing the interaction. This can be used to determine the context of the interaction and to apply effects or changes to the interacting actor if necessary.
+	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
 	 */	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
-	void Interact(AActor* InteractingActor);
+	void Interact(AActor* InteractingActor, const FHitResult& HitResult);
 };

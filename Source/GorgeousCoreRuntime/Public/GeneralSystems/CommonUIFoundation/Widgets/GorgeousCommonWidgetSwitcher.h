@@ -18,11 +18,14 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonWidgetSwitcher : public UCommonAnim
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this switcher for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

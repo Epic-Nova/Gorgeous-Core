@@ -201,6 +201,16 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 */
 	void SetSystemValidationInterval(int32 NewInterval);
 
+	/**
+	 * Gets the list of systems that were recorded as installed in the previous session.
+	 */
+	TArray<FString> GetRecordedInstalledSystems() const;
+
+	/**
+	 * Records the current list of installed systems to persistent data.
+	 */
+	void RecordInstalledSystems(const TArray<FString>& Systems);
+
 private:
 	
 	/**

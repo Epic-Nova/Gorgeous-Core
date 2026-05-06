@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -33,6 +33,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Helpers/GorgeousLanguageHelper.h"
 #include "Helpers/GorgeousLicenseHelper.h"
 #include "Helpers/GorgeousLoggingHelper.h"
+#include "Helpers/GorgeousPathHelper.h"
 #include "Helpers/GorgeousPluginHelper.h"
 
 //Macro Helper Includes
@@ -41,6 +42,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousPlatformHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "Helpers/Macros/GorgeousGameplayTagHelperMacros.h"
 
 //Library Includes
 #include "Libraries/GorgeousAudioBlueprintFunctionLibrary.h"

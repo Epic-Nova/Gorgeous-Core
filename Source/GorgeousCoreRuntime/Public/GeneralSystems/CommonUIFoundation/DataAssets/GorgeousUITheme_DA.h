@@ -3,7 +3,9 @@
 
 #include "CoreMinimal.h"
 #include "StructUtils/InstancedStruct.h"
+#include "Styling/SlateTypes.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
+#include "GeneralSystems/GorgeousPrimaryDataAsset.h"
 #include "GorgeousUITheme_DA.generated.h"
 
 /**
@@ -11,11 +13,14 @@
  * Uses Instanced Structs to allow overriding any property (Colors, Fonts, Sizes, etc.).
  */
 UCLASS(BlueprintType)
-class GORGEOUSCORERUNTIME_API UGorgeousUITheme_DA : public UDataAsset
+class GORGEOUSCORERUNTIME_API UGorgeousUITheme_DA : public UGorgeousPrimaryDataAsset
 {
 	GENERATED_BODY()
 
 public:
+	/** UGorgeousPrimaryDataAsset Interface */
+	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Theme"); }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterface/Themes") }; }
 	/** Returns the list of valid platform names for icon mapping. */
 	UFUNCTION()
 	static TArray<FString> GetPlatformOptions()
@@ -123,5 +128,33 @@ public:
 			return SoundPtr->Get();
 		}
 		return nullptr;
+	}
+
+	/** Helper to get typography settings by tag. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
+	FGorgeousUITypography_S GetTypography(FGameplayTag Tag) const
+	{
+		if (const FInstancedStruct* Value = StyleProperties.Find(Tag.GetTagName()))
+		{
+			if (const FGorgeousUITypography_S* TypographyPtr = Value->GetPtr<FGorgeousUITypography_S>())
+			{
+				return *TypographyPtr;
+			}
+		}
+		return FGorgeousUITypography_S();
+	}
+
+	/** Helper to get a Progress Bar style. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
+	FProgressBarStyle GetProgressBarStyle(FName PropertyName) const
+	{
+		if (const FInstancedStruct* Value = StyleProperties.Find(PropertyName))
+		{
+			if (const FProgressBarStyle* StylePtr = Value->GetPtr<FProgressBarStyle>())
+			{
+				return *StylePtr;
+			}
+		}
+		return FProgressBarStyle();
 	}
 };

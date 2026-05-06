@@ -25,7 +25,7 @@ class GORGEOUSCORERUNTIME_API UGorgeousProgressBarProcessor : public UGorgeousUI
 
 public:
 	UGorgeousProgressBarProcessor();
-	virtual void OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload) override;
+	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload) override;
 
 	virtual void BeginDestroy() override;
 

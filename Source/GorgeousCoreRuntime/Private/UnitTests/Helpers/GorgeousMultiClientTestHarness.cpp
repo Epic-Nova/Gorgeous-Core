@@ -112,7 +112,7 @@ FGorgeousMultiClientEndpointResult FGorgeousMultiClientTestOrchestrator::RunScen
 			DummyRequest,
 			FString(),
 			0,
-			OptionalTest ? *OptionalTest : *static_cast<FAutomationTestBase*>(nullptr),
+			OptionalTest,
 			Desc,
 			World);
 

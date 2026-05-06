@@ -4,13 +4,12 @@
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
 #include "GameplayTagContainer.h"
-#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIState_DA.h"
 #include "GeneralSystems/CommonUIFoundation/Interfaces/GorgeousUIWidget_I.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GorgeousCommonWidget.generated.h"
 
 class UGorgeousUIProcessor;
-class UCommonUIState_DA;
+class UGorgeousUIState_DA;
 
 /**
  * Base widget for the Gorgeous UI system.
@@ -24,13 +23,14 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonWidget : public UCommonUserWidget, 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
 	/** Play an animation on this widget by name. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Animation")
 	void PlayAnimationByName(const FName& AnimName);
-	/** 
-	 * Tag used to identify this widget for Signal Bridge updates.
-	 * If empty, this widget will not receive dynamic updates via processors.
-	 */
+
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
@@ -47,27 +47,16 @@ public:
 	 * Played automatically when the system switches states.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
-	TMap<UCommonUIState_DA*, FName> StateAnimations;
+	TMap<UGorgeousUIState_DA*, FName> StateAnimations;
 
-	/** Called when the UI state is switched. */
+	/** Called when the global UI state changes. */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI")
-	void OnStateSwitched(UCommonUIState_DA* NewState);
+	void OnUIStateChanged(UGorgeousUIState_DA* NewState);
+
+	// IGorgeousUIWidget_I interface
+	// End of IGorgeousUIWidget_I interface
 
 protected:
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
-	/** Map of colors currently being interpolated. */
-	TMap<FName, FLinearColor> CurrentThemeColors;
-	TMap<FName, FLinearColor> TargetThemeColors;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Juicy")
-	float ThemeInterpSpeed = 5.0f;
-
-	/** Whether we are currently interpolating theme colors. */
-	bool bIsInterpTheme = false;
-
-
-
 	virtual void NativeConstruct();
 	virtual void NativeDestruct();
 };

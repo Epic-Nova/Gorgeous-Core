@@ -18,28 +18,21 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonTabList : public UCommonTabListWidg
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this tab list for signal-driven updates (e.g. switching tabs via ID). */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime);
-
-	/** Theme interpolation state + maps used by UE_UI_TICK_THEME_INTERP */
-	TMap<FName, FLinearColor> CurrentThemeColors;
-	TMap<FName, FLinearColor> TargetThemeColors;
-
-	/** Interp speed and flag */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Juicy")
-	float ThemeInterpSpeed = 5.0f;
-	bool bIsInterpTheme = false;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	/**
 	 * Signal-driven tab selection handler.
 	 * Payload should contain "TabIndex" (int) or "TabID" (FName).
 	 */
 	UFUNCTION()
-	void OnTabSelectSignalReceived(const FInstancedStruct& Payload);
+	void OnTabSelectSignalReceived(FGameplayTag SignalTag, const struct FInstancedStruct& Payload);
 };

@@ -15,7 +15,7 @@
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
 //--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "GorgeousUIThemeFactory.generated.h"
+#include "GorgeousObjectVariableFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
@@ -25,7 +25,7 @@
  * @author Nils Bergemann
  */
 UCLASS()
-class UGorgeousUIThemeFactory : public UGorgeousFactory
+class UGorgeousObjectVariableFactory : public UGorgeousFactory
 {
 	GENERATED_BODY()
 	
@@ -35,7 +35,7 @@ public:
 	 * Default constructor that sets up the factory with metadata describing its target class
 	 * and behavior within the Unreal Editor asset system.
 	 */
-	UGorgeousUIThemeFactory()
+	UGorgeousObjectVariableFactory()
 	{
 		SetFactoryInformation(FGorgeousFactoryInfo_S(UGorgeousObjectVariable::StaticClass(), true, false, true, false,
 			UGorgeousObjectVariableBlueprint::StaticClass()));

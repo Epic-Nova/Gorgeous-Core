@@ -1,37 +1,29 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonTextBlock.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "Styling/SlateColor.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonTextBlock)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonTextBlock)
 
-void UGorgeousCommonTextBlock::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonTextBlock::SynchronizeProperties()
 {
-	// Base handles universal reflection (Fonts, Sizes, etc.) — no super implementation for UCommonTextBlock
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
 
-	// We only handle the special "interpolated" colors here
-	for (auto& Pair : TargetThemeColors)
+void UGorgeousCommonTextBlock::OnWidgetRebuilt()
+{
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonTextBlock::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
+	if (Theme && TypographyTag.IsValid())
 	{
-		if (Pair.Key == "TextColor" || Pair.Key == "PrimaryColor")
-		{
-			FLinearColor DisplayColor = CurrentThemeColors.Contains(Pair.Key) ? CurrentThemeColors[Pair.Key] : Pair.Value;
-			SetColorAndOpacity(FSlateColor(DisplayColor));
-		}
+		FGorgeousUITypography_S TypeInfo = Theme->GetTypography(TypographyTag);
+		SetFont(TypeInfo.Font);
+		SetColorAndOpacity(FSlateColor(TypeInfo.Color));
 	}
 }
-
-void UGorgeousCommonTextBlock::NativeConstruct()
-{
-	UE_UI_REGISTER_WIDGET()
-}
-
-void UGorgeousCommonTextBlock::NativeDestruct()
-{
-	UE_UI_UNREGISTER_WIDGET()
-}
-
-void UGorgeousCommonTextBlock::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-    // Default: no-op. Override in Blueprints to react to theme changes.
-}
-
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonTextBlock)

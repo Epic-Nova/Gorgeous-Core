@@ -69,11 +69,28 @@ bool USignalBridgeBlueprintFunctionLibrary::Listen(UObject* WorldContextObject, 
 	return false;
 }
 
+bool USignalBridgeBlueprintFunctionLibrary::ListenToActor(UObject* WorldContextObject, FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
+{
+	if (USignalBridgeStorage_OV* Storage = GetSignalBridgeStorage(WorldContextObject))
+	{
+		return Storage->ListenToActor(Tag, TargetActor, Controller, Delegate);
+	}
+	return false;
+}
+
 void USignalBridgeBlueprintFunctionLibrary::Dispatch(UObject* WorldContextObject, FGameplayTag Tag, const FInstancedStruct& Payload)
 {
 	if (USignalBridgeStorage_OV* Storage = GetSignalBridgeStorage(WorldContextObject))
 	{
 		Storage->Dispatch(Tag, Payload);
+	}
+}
+
+void USignalBridgeBlueprintFunctionLibrary::DispatchLocal(UObject* WorldContextObject, FGameplayTag Tag, const FInstancedStruct& Payload)
+{
+	if (USignalBridgeStorage_OV* Storage = GetSignalBridgeStorage(WorldContextObject))
+	{
+		Storage->FireLocalSignal(Tag, Payload);
 	}
 }
 

@@ -12,5 +12,5 @@
 #include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
 
 #if defined(CSV_PROFILER) && CSV_PROFILER
-CSV_DEFINE_CATEGORY(Gorgeous, true);
+CSV_DEFINE_CATEGORY_MODULE(GORGEOUSCORERUNTIMEUTILITIES_API, Gorgeous, true);
 #endif

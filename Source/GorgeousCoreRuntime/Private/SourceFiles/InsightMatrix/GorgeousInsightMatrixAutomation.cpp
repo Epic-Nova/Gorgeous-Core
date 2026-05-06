@@ -317,7 +317,7 @@ bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)
 	{
 		for (const int32 Variant : Variants)
 		{
-			FGorgeousInsightScenarioContext Context(Request, Parameters, Variant, *this, Descriptor);
+			FGorgeousInsightScenarioContext Context(Request, Parameters, Variant, this, Descriptor);
 			const FString ScenarioLabel = Context.BuildScenarioLabel();
 			AddInfo(FString::Printf(TEXT("[InsightMatrix] >>> %s"), *ScenarioLabel));
 

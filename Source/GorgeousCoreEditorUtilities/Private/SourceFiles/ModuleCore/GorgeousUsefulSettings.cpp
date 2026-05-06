@@ -9,6 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 #include "GorgeousUsefulSettings.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
@@ -45,7 +46,7 @@ bool UGorgeousUsefulSettings::WriteIniSettingDirect(const FString& IniFilePath, 
 		FileContents = FString::Printf(TEXT("[%s]\n%s=%s\n"), *Section, *Key, *Value);
 		if (!FFileHelper::SaveStringToFile(FileContents, *IniFilePath))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("WriteIniSettingDirect: Failed to create ini file %s"), *IniFilePath);
+			GT_W_LOG("GT.Editor.Settings", TEXT("WriteIniSettingDirect: Failed to create ini file %s"), *IniFilePath);
 			return false;
 		}
 	}
@@ -106,7 +107,7 @@ bool UGorgeousUsefulSettings::WriteIniSettingDirect(const FString& IniFilePath, 
 		
 		if (!FFileHelper::SaveStringToFile(FileContents, *IniFilePath))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("WriteIniSettingDirect: Failed to save ini file %s"), *IniFilePath);
+			GT_W_LOG("GT.Editor.Settings", TEXT("WriteIniSettingDirect: Failed to save ini file %s"), *IniFilePath);
 			return false;
 		}
 	}
@@ -118,7 +119,7 @@ bool UGorgeousUsefulSettings::WriteIniSettingDirect(const FString& IniFilePath, 
 		GConfig->LoadFile(IniFilePath);
 	}
 	
-	UE_LOG(LogTemp, Log, TEXT("WriteIniSettingDirect: Wrote [%s] %s=%s to %s"), *Section, *Key, *Value, *IniFilePath);
+	GT_I_LOG("GT.Editor.Settings", TEXT("WriteIniSettingDirect: Wrote [%s] %s=%s to %s"), *Section, *Key, *Value, *IniFilePath);
 	return true;
 }
 

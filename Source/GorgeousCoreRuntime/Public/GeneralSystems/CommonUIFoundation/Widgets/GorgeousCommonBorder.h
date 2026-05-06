@@ -18,24 +18,18 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonBorder : public UBorder, public IGo
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this border for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
 
 	/** Interp speed for theme color transitions. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Juicy")
 	float ThemeInterpSpeed = 5.0f;
 
-	/** Map of colors currently being interpolated. */
-	TMap<FName, FLinearColor> CurrentThemeColors;
-	TMap<FName, FLinearColor> TargetThemeColors;
-	/** Whether we are currently interpolating theme colors. */
-	bool bIsInterpTheme = false;
-
-	/** Called when a new theme is applied. Implement in Blueprint for custom styling. */
-
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime);
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

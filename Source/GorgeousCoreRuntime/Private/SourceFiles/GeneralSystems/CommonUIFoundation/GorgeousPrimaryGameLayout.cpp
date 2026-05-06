@@ -3,7 +3,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIPolicy.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIExtensions.h"
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIMessageStructures.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
@@ -105,13 +105,15 @@ void UGorgeousPrimaryGameLayout::OnIsDormantChanged_Implementation()
 	SetVisibility(bIsDormant ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 }
 
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+
 UCommonActivatableWidget* UGorgeousPrimaryGameLayout::PushWidgetToLayerStack(FGameplayTag LayerName, UClass* ActivatableWidgetClass)
 {
 	if (UCommonActivatableWidgetContainerBase* Layer = GetLayerWidget(LayerName))
 	{
 		return Layer->AddWidget(ActivatableWidgetClass);
 	}
-	UE_LOG(LogTemp, Warning, TEXT("GorgeousPrimaryGameLayout: Layer '%s' not registered. Did you call RegisterLayer?"), *LayerName.ToString());
+	GT_W_LOG("GT.UI.Layout", TEXT("GorgeousPrimaryGameLayout: Layer '%s' not registered. Did you call RegisterLayer?"), *LayerName.ToString());
 	return nullptr;
 }
 
@@ -210,7 +212,7 @@ void UGorgeousPrimaryGameLayout::OnWidgetStackTransitioning(UCommonActivatableWi
 	}
 }
 
-void UGorgeousPrimaryGameLayout::OnPushWidgetSignalReceived(const FInstancedStruct& Payload)
+void UGorgeousPrimaryGameLayout::OnPushWidgetSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousUIMessageRequest* Request = Payload.GetPtr<FGorgeousUIMessageRequest>();
 	if (!Request || !Request->Config) return;
@@ -218,7 +220,7 @@ void UGorgeousPrimaryGameLayout::OnPushWidgetSignalReceived(const FInstancedStru
 	PushWidgetToLayerStackAsync(Request->Config->LayerTag, true, Request->Config->MessageWidgetClass);
 }
 
-void UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived(const FInstancedStruct& Payload)
+void UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousRegisterLayerPayload* RegisterData = Payload.GetPtr<FGorgeousRegisterLayerPayload>();
 	if (!RegisterData || !RegisterData->LayerTag.IsValid()) return;

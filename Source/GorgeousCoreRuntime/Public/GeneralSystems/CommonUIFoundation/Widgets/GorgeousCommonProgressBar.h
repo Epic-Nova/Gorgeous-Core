@@ -17,16 +17,15 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonProgressBar : public UProgressBar, 
 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
-	/** Tag used to identify this progress bar for Signal Bridge updates. */
+
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
-	/** Map of colors currently being interpolated. */
-	TMap<FName, FLinearColor> CurrentThemeColors;
-	TMap<FName, FLinearColor> TargetThemeColors;
-	/** Whether we are currently interpolating theme colors. */
-	bool bIsInterpTheme = false;
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

@@ -15,5 +15,5 @@ class GORGEOUSCORERUNTIME_API UGorgeousCarouselProcessor : public UGorgeousUIPro
 
 public:
 	UGorgeousCarouselProcessor();
-	virtual void OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload) override;
+	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload) override;
 };

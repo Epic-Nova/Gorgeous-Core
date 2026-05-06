@@ -1,16 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonHorizontalBox.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonHorizontalBox)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonHorizontalBox)
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonHorizontalBox)
-
-void UGorgeousCommonHorizontalBox::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonHorizontalBox::SynchronizeProperties()
 {
-	OnThemeApplied_BP_Implementation(Theme);
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonHorizontalBox::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonHorizontalBox::OnWidgetRebuilt()
 {
-	// no-op default
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonHorizontalBox::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }

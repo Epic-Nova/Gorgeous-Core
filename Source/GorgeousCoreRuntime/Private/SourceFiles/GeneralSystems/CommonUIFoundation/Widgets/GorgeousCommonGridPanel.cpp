@@ -1,16 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonGridPanel.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonGridPanel)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonGridPanel)
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonGridPanel)
-
-void UGorgeousCommonGridPanel::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonGridPanel::SynchronizeProperties()
 {
-	OnThemeApplied_BP_Implementation(Theme);
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonGridPanel::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonGridPanel::OnWidgetRebuilt()
 {
-	// no-op default
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
+}
+
+void UGorgeousCommonGridPanel::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }

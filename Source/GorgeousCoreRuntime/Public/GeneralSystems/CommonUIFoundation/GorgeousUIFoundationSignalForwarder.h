@@ -21,5 +21,5 @@ public:
 	TObjectPtr<UGorgeousUIFoundationSubsystem> OwningSubsystem;
 
 	UFUNCTION()
-	void OnBridgePayload(const FInstancedStruct& Payload);
+	void OnBridgePayload(FGameplayTag SignalTag, const struct FInstancedStruct& Payload);
 };

@@ -327,7 +327,7 @@ void FGorgeousInsightMatrixRequest::ParseNameList(const FString& Token, TSet<FNa
 FGorgeousInsightScenarioContext::FGorgeousInsightScenarioContext(const FGorgeousInsightMatrixRequest& InRequest,
 	const FString& InParameterString,
 	const int32 InVariantIndex,
-	FAutomationTestBase& InTest,
+	FAutomationTestBase* InTest,
 	const FGorgeousInsightScenarioDescriptor& InDescriptor,
 	UObject* InWorldContextObject)
 	: Request(InRequest)
@@ -347,17 +347,17 @@ FString FGorgeousInsightScenarioContext::BuildScenarioLabel() const
 
 void FGorgeousInsightScenarioContext::AddInfo(const FString& Message) const
 {
-	Test.AddInfo(Message);
+	if (Test) Test->AddInfo(Message);
 }
 
 void FGorgeousInsightScenarioContext::AddWarning(const FString& Message) const
 {
-	Test.AddWarning(Message);
+	if (Test) Test->AddWarning(Message);
 }
 
 void FGorgeousInsightScenarioContext::AddError(const FString& Message) const
 {
-	Test.AddError(Message);
+	if (Test) Test->AddError(Message);
 }
 
 //=============================================================================
@@ -535,7 +535,7 @@ TArray<FGorgeousInsightScenarioRunResult> FGorgeousInsightTestMatrix::ExecuteMat
 	{
 		for (const int32 Variant : Variants)
 		{
-			FGorgeousInsightScenarioContext Context(Request, ParameterString, Variant, Test, Descriptor, WorldContextObject);
+			FGorgeousInsightScenarioContext Context(Request, ParameterString, Variant, &Test, Descriptor, WorldContextObject);
 			FGorgeousInsightScenarioRunResult Entry;
 			Entry.Descriptor = Descriptor;
 			Entry.VariantIndex = Variant;

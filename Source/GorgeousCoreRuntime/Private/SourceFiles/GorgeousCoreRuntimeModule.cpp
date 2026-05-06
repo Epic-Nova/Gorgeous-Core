@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -33,10 +33,18 @@
 // FGorgeousCoreRuntimeModule Implementation
 //=============================================================================
 
+#include "Helpers/GorgeousRecompilationHelper.h"
+
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
+	// Check for system changes that might require a full recompilation/re-install
+	if (UGorgeousRecompilationHelper::CheckRecompilationRequirement())
+	{
+		UGorgeousRecompilationHelper::TriggerGorgeousRecompilation();
+	}
+
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
-	const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+	/*const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 	
 	// During module loading, the plugin may not yet be fully registered in the Plugin Manager.
 	// If FindPlugin fails, we calculate the path relative to this module's location.
@@ -51,34 +59,16 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 		// The module DLL is in <PluginDir>/Binaries/<Platform>/, so go up 3 levels
 		const FString ModulePath = FModuleManager::Get().GetModuleFilename(TEXT("GorgeousCoreRuntime"));
 		PluginBaseDir = FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(ModulePath)));
-		UE_LOG(LogGorgeousThings, Warning, TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
+		GT_W_LOG("GT.Core.Lifecycle", TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
 	}
 
-	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));
+	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));*/
+	
+	GT_REGISTER_TAG_SOURCE("GorgeousCore")
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
 	
 	InsightProvider = new FGorgeousCoreInsightMatrixProvider();
-
-	// Try immediate registration first; if subsystem not ready, defer to post-engine init
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		Subsystem->RegisterProvider(InsightProvider);
-	}
-	else
-	{
-		// Defer registration until engine subsystems are initialized
-		FCoreDelegates::OnPostEngineInit.AddLambda([this]()
-		{
-			if (UGorgeousInsightMatrixSubsystem* Sub = UGorgeousInsightMatrixSubsystem::Get())
-			{
-				if (InsightProvider)
-				{
-					Sub->RegisterProvider(InsightProvider);
-				}
-			}
-		});
-	}
 
 #if WITH_DEV_AUTOMATION_TESTS
 	// Ensure scenarios defined inside this module register with the Insight Matrix once all statics are loaded.
@@ -88,15 +78,9 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 
 void FGorgeousCoreRuntimeModule::GorgeousShutdownModule()
 {
-	UE_LOG(LogTemp, Warning, TEXT("FGorgeousCoreRuntimeModule has shut down!"));
+	GT_W_LOG("GT.Core.Lifecycle", TEXT("FGorgeousCoreRuntimeModule has shut down!"));
 
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		if (InsightProvider)
-		{
-			Subsystem->UnregisterProvider(InsightProvider);
-		}
-	}
+	delete InsightProvider;
 	InsightProvider = nullptr;
 
 #if WITH_DEV_AUTOMATION_TESTS

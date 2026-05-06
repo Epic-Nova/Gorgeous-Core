@@ -13,6 +13,11 @@
 #include "CoreMinimal.h"
 //--- Module Includes ------->
 #include "LibraryWizard/GorgeousLibraryTypes.h"
+#include "LibraryWizard/GorgeousSystemTemplate_DA.h"
+#include "Styling/SlateBrush.h"
+#include "Brushes/SlateImageBrush.h"
+#include "Engine/Texture2D.h"
+
 //<-------------------------->
 
 /*
@@ -93,7 +98,18 @@ public:
 	 * Returns a custom icon for the given asset.
 	 * If nullptr is returned, a default asset icon is used.
 	 */
-	virtual TSharedPtr<struct FSlateBrush> GetAssetIcon(const FAssetData& Asset) { return nullptr; }
+	virtual TSharedPtr<struct FSlateBrush> GetAssetIcon(const FAssetData& Asset)
+	{
+		if (UGorgeousSystemTemplate_DA* Template = Cast<UGorgeousSystemTemplate_DA>(Asset.GetAsset()))
+		{
+			if (Template->TemplateIcon)
+			{
+				const FVector2D IconSize(64.0f, 64.0f);
+				return MakeShareable(new FSlateImageBrush(Template->TemplateIcon.Get(), IconSize));
+			}
+		}
+		return nullptr;
+	}
 
 	/**
 	 * Returns a human-readable description for the given asset (used in List view).

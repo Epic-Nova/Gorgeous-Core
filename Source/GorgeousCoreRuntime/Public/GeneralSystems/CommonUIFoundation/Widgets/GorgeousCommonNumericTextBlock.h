@@ -18,7 +18,14 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonNumericTextBlock : public UCommonNu
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 
-	/** Tag used to identify this text block for Signal Bridge updates. */
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
+
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
+protected:
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

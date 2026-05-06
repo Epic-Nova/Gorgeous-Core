@@ -15,5 +15,5 @@ class GORGEOUSCORERUNTIME_API UGorgeousTextProcessor : public UGorgeousUIProcess
 
 public:
 	UGorgeousTextProcessor();
-	virtual void OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload) override;
+	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload) override;
 };

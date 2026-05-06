@@ -134,7 +134,7 @@ public:
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
 	UFUNCTION(Client, Reliable)
-	void Client_ReceiveSignalBridgeSignal(FGameplayTag Tag, const FInstancedStruct& Payload);
+	void Client_ReceiveSignal(FGameplayTag Tag, const FInstancedStruct& Payload);
 
 protected:
 

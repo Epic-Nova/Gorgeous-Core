@@ -17,6 +17,7 @@
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "Slate/GorgeousInsightDebugPanel.h"
 #include "Widgets/SWindow.h"
+#include "Features/IModularFeatures.h"
 #include "GorgeousInsightMatrixSubsystem.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightProviderChanged, IGorgeousInsightMatrixProvider*);
@@ -36,6 +37,9 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	void OnModularFeatureRegistered(const FName& FeatureName, IModularFeature* Feature);
+	void OnModularFeatureUnregistered(const FName& FeatureName, IModularFeature* Feature);
 
 	struct FGorgeousInsightQueuedTestResult
 	{

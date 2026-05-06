@@ -4,11 +4,11 @@
 #include "CoreMinimal.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "GameplayTagContainer.h"
+#include "SignalBridgeListenerStructures.h"
 #include "StructUtils/InstancedStruct.h"
 #include "SignalBridgeStructures.h"
 #include "SignalBridgeStorage_OV.generated.h"
 
-class USignalBridgeListener_O;
 class AGorgeousPlayerController;
 
 /**
@@ -37,6 +37,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge")
 	bool Listen(FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
+
+	/**
+	 * Listens to a signal for a specific actor.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge")
+	bool ListenToActor(FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
 
 	/**
 	 * Dispatches a signal with the given tag and payload.
@@ -77,6 +83,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_RegisterListener(FGameplayTag Tag, AGorgeousPlayerController* Controller);
 
+	/** Server RPC to register a remote listener for a specific actor. */
+	UFUNCTION(Server, Reliable)
+	void Server_RegisterActorListener(FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller);
+
 	/** Server RPC to unregister a remote listener. */
 	UFUNCTION(Server, Reliable)
 	void Server_UnregisterListener(FGameplayTag Tag, AGorgeousPlayerController* Controller);
@@ -94,11 +104,11 @@ protected:
 
 	/** Authority-only dictionary of listener tracking objects. */
 	UPROPERTY(Transient)
-	TMap<FGameplayTag, TObjectPtr<USignalBridgeListener_O>> DictionaryAssociations;
+	TMap<FGameplayTag, FGorgeousSignalBridgeListener_S> DictionaryAssociations;
 
 private:
 	/** Helper to find or create a listener registry for a tag (Authority only). */
-	USignalBridgeListener_O* GetOrCreateListenerRegistry(FGameplayTag Tag);
+	FGorgeousSignalBridgeListener_S& GetOrCreateListenerRegistry(FGameplayTag Tag);
 
 	/** Helper to evaluate access for a specific controller and tag. */
 	bool EvaluateTagAccess(AGorgeousPlayerController* Controller, FGameplayTag Tag) const;

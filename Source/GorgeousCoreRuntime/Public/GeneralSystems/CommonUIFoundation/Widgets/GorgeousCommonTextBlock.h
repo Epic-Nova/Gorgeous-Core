@@ -2,32 +2,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonTextBlock.h"
+#include "Components/TextBlock.h"
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GorgeousCommonTextBlock.generated.h"
 
 /**
- * Overridden CommonTextBlock with Signal Bridge support.
+ * Overridden TextBlock with Signal Bridge support.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UCommonTextBlock, public IGorgeousUIWidget_I
+class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UTextBlock, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
-	/** Tag used to identify this text block for Signal Bridge updates. */
+
+	/** Binding Tag for Signal Bridge routing. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
+	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
+
+	/** Typography tag for automatic styling from the theme. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
+	FGameplayTag TypographyTag;
+
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
-	
-	/** Map of colors currently being interpolated. */
-	TMap<FName, FLinearColor> CurrentThemeColors;
-	TMap<FName, FLinearColor> TargetThemeColors;
-	/** Whether we are currently interpolating theme colors. */
-	bool bIsInterpTheme = false;
+	virtual void SynchronizeProperties() override;
+	virtual void OnWidgetRebuilt() override;
 };

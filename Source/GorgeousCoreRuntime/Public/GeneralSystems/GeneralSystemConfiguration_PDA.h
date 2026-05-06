@@ -6,17 +6,21 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "GeneralSystem_AC.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+#include "GeneralSystems/GorgeousPrimaryDataAsset.h"
 #include "GeneralSystemConfiguration_PDA.generated.h"
-//<-------------------------------------------------------------------------->
+
+class UGeneralSystem_AC;
 
 UCLASS(BlueprintType)
-class GORGEOUSCORERUNTIME_API UGeneralSystemConfiguration_PDA : public UPrimaryDataAsset
+class GORGEOUSCORERUNTIME_API UGeneralSystemConfiguration_PDA : public UGorgeousPrimaryDataAsset
 {
     GENERATED_BODY()
     
 public:
+    /** UGorgeousPrimaryDataAsset Interface */
+    virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("GorgeousBlueprintSystems"); }
+    virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("Systems") }; }
+
     virtual FPrimaryAssetId GetPrimaryAssetId() const override
     {
         FString SystemName = GetPathName();

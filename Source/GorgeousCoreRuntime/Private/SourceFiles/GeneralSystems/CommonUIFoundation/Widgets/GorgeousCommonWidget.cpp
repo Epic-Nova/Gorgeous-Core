@@ -1,17 +1,22 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget.h"
-#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIState_DA.h"
+
+#include "Animation/WidgetAnimation.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonWidget)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonWidget)
 
 void UGorgeousCommonWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	UE_UI_REGISTER_WIDGET()
+	UE_UI_REGISTER_WIDGET_USER()
 }
 
 void UGorgeousCommonWidget::NativeDestruct()
@@ -20,64 +25,28 @@ void UGorgeousCommonWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-void UGorgeousCommonWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UGorgeousCommonWidget::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	if (bIsInterpTheme)
+	if (Theme)
 	{
-		bool bStillInterp = false;
-		for (auto& Pair : TargetThemeColors)
-		{
-			FLinearColor& Current = CurrentThemeColors.FindOrAdd(Pair.Key);
-			const FLinearColor& Target = Pair.Value;
+		// 1. Update Action Icons based on current platform/theme
+		UpdateActionIcon();
 
-			if (!Current.Equals(Target, 0.001f))
+		// 2. Setup Theme Color Interpolation Targets
+		for (auto& Pair : Theme->StyleProperties)
+		{
+			if (const FLinearColor* ColorPtr = Pair.Value.GetPtr<FLinearColor>())
 			{
-				Current = FMath::CInterpTo(Current, Target, InDeltaTime, ThemeInterpSpeed);
-				bStillInterp = true;
+				StartThemeColors.Add(Pair.Key, CurrentThemeColors.FindOrAdd(Pair.Key, *ColorPtr));
+				TargetThemeColors.Add(Pair.Key, *ColorPtr);
+				ElapsedThemeTime = 0.0f;
+				bIsInterpTheme = true;
 			}
 			else
 			{
-				Current = Target; // Snap to avoid infinite near-zero interp
+				// Reflective Magic: Automatically apply non-color properties (Fonts, Sizes, etc.)
+				UGorgeousUIProcessor::ApplyPropertyToTarget(this, Pair.Key, Pair.Value);
 			}
-
-			// Apply the interpolated color directly to the widget via reflection
-			FInstancedStruct ColorPayload = FInstancedStruct::Make(Current);
-			UGorgeousUIProcessor::ApplyPropertyToTarget(this, Pair.Key, ColorPayload);
-		}
-
-		if (!bStillInterp)
-		{
-			bIsInterpTheme = false;
-			// Tick control removed; rely on widget tick configuration
-		}
-	}
-}
-
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
-#include "Animation/WidgetAnimation.h"
-
-void UGorgeousCommonWidget::OnThemeApplied(const UGorgeousUITheme_DA* Theme)
-{
-	if (!Theme) return;
-
-	// 1. Update Action Icons based on current platform/theme
-	UpdateActionIcon();
-
-	// 2. Capture and Interpolate Theme Colors
-	for (auto& Pair : Theme->StyleProperties)
-	{
-		if (const FLinearColor* ColorPtr = Pair.Value.GetPtr<FLinearColor>())
-		{
-			TargetThemeColors.Add(Pair.Key, *ColorPtr);
-			bIsInterpTheme = true;
-			// Tick control removed; rely on widget tick configuration
-		}
-		else
-		{
-			// 2. Reflective Magic: Automatically apply non-color properties (Fonts, Sizes, etc.)
-			UGorgeousUIProcessor::ApplyPropertyToTarget(this, Pair.Key, Pair.Value);
 		}
 	}
 }
@@ -97,39 +66,19 @@ void UGorgeousCommonWidget::UpdateActionIcon()
 			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
 			{
 				FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
-				// Try the property first; if that fails try the setter — never both.
-				if (!UGorgeousUIProcessor::ApplyPropertyToTarget(this, "Brush", Payload))
-				{
-					UGorgeousUIProcessor::ApplyPropertyToTarget(this, "Brush", Payload); // SetBrush via prefix rule
-				}
+				UGorgeousUIProcessor::ApplyPropertyToTarget(this, "Brush", Payload);
 			}
 		}
 	}
 }
 
-void UGorgeousCommonWidget::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	if (Theme)
-	{
-		OnThemeApplied(Theme);
-	}
-}
-
-void UGorgeousCommonWidget::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// Default Blueprint hook: no-op
-}
-
-void UGorgeousCommonWidget::OnStateSwitched_Implementation(UCommonUIState_DA* NewState)
+void UGorgeousCommonWidget::OnUIStateChanged_Implementation(UGorgeousUIState_DA* NewState)
 {
 	if (!NewState) return;
 
-	if (FName* AnimName = StateAnimations.Find(NewState))
+	if (const FName* AnimName = StateAnimations.Find(NewState))
 	{
-		if (!AnimName->IsNone())
-			{
-				PlayAnimationByName(*AnimName);
-			}
+		PlayAnimationByName(*AnimName);
 	}
 }
 
@@ -137,14 +86,16 @@ void UGorgeousCommonWidget::PlayAnimationByName(const FName& AnimName)
 {
 	if (AnimName.IsNone()) return;
 
-	// Try to resolve a UWidgetAnimation property on this widget by name
-	UWidgetAnimation* Found = FindObject<UWidgetAnimation>(GetClass(), *AnimName.ToString());
-	if (Found)
+	UWidgetAnimation* Found = nullptr;
+	if (FProperty* Property = GetClass()->FindPropertyByName(AnimName))
 	{
-		PlayAnimation(Found);
+		if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+		{
+			Found = Cast<UWidgetAnimation>(ObjectProperty->GetObjectPropertyValue_InContainer(this));
+		}
 	}
-	else
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("PlayAnimationByName: animation '%s' not found on %s"), *AnimName.ToString(), *GetName());
-	}
+
+	if (!Found) Found = FindObject<UWidgetAnimation>(GetClass(), *AnimName.ToString());
+
+	if (Found) PlayAnimation(Found);
 }

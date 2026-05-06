@@ -9,7 +9,7 @@ UGorgeousButtonProcessor::UGorgeousButtonProcessor()
 	TargetWidgetClass = UGorgeousCommonButton::StaticClass();
 }
 
-void UGorgeousButtonProcessor::OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload)
+void UGorgeousButtonProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	UGorgeousCommonButton* Button = Cast<UGorgeousCommonButton>(Widget);
 	if (!Button) return;

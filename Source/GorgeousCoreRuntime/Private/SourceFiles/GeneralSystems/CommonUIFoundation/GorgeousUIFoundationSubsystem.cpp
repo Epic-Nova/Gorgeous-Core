@@ -1,27 +1,50 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
-#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIState_DA.h"
-#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
+#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget.h"
+#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Engine/World.h"
 #include "CommonActivatableWidget.h"
+#include "Blueprint/UserWidget.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSignalForwarder.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
+#include "EnhancedInputComponent.h"
 
 #include "CommonInputSubsystem.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonTextBlock.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonProgressBar.h"
-#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonButton.h"
-#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonLazyImage.h"
-#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonCarousel.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousTextProcessor.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousProgressBarProcessor.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousButtonProcessor.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousPanelProcessor.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousCarouselProcessor.h"
+#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
+
+void UGorgeousUIFoundationSubsystem::Tick(float DeltaTime)
+{
+	// Process Juicy interpolation for all registered widgets
+	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
+	{
+		if (UObject* WidgetObject = It->GetObject())
+		{
+			IGorgeousUIWidget_I::Execute_TickInterpolation(WidgetObject, DeltaTime);
+		}
+		else
+		{
+			It.RemoveCurrent();
+		}
+	}
+}
+
+TStatId UGorgeousUIFoundationSubsystem::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UGorgeousUIFoundationSubsystem, STATGROUP_Tickables);
+}
 
 void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -63,38 +86,54 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
 		{
 			// Focus Routing
-			const FGameplayTag FocusRequestTag = FGameplayTag::RequestGameplayTag(FName("UI.Focus.Request"));
+			const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
 			FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
 			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
 			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
 
 			// Input Action Routing
-			const FGameplayTag InputActionTag = FGameplayTag::RequestGameplayTag(FName("UI.Input.Action"));
+			const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
 			InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
 			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
 			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
 
 			// Message Routing
-			const FGameplayTag MessagePushTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Push"));
-			const FGameplayTag MessageResultTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Result"));
+			const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
+			const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
 			MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
 			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
 			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
 			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
+
+			GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer."));
 		}
 	}
 }
 
-#include "GeneralSystems/CommonUIFoundation/GorgeousUIMessageStructures.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
-#include "GeneralSystems/CommonUIFoundation/DataAssets/CommonUIState_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 
 void UGorgeousUIFoundationSubsystem::SetCurrentTheme(UGorgeousUITheme_DA* NewTheme)
 {
 	if (CurrentTheme == NewTheme) return;
 	CurrentTheme = NewTheme;
+
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Theme '%s'"), NewTheme ? *NewTheme->GetName() : TEXT("None"));
+
 	BroadcastThemeApplied(CurrentTheme);
+
+	// Trigger HUD refresh so the Action Bar picks up new themed icons
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (APlayerController* PC = LP->GetPlayerController(GetWorld()))
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
 }
 
 void UGorgeousUIFoundationSubsystem::BroadcastThemeApplied(UGorgeousUITheme_DA* Theme)
@@ -113,7 +152,7 @@ void UGorgeousUIFoundationSubsystem::BroadcastThemeApplied(UGorgeousUITheme_DA* 
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::BroadcastStateSwitch(UCommonUIState_DA* NewState)
+void UGorgeousUIFoundationSubsystem::BroadcastStateSwitch(UGorgeousUIState_DA* NewState)
 {
 	SwitchUIState(NewState);
 }
@@ -126,6 +165,71 @@ void UGorgeousUIFoundationSubsystem::OnInputMethodChanged(ECommonInputType NewIn
 	if (CurrentTheme)
 	{
 		BroadcastThemeApplied(CurrentTheme);
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings)
+{
+	if (ActiveInputBindings == NewBindings) return;
+	ActiveInputBindings = NewBindings;
+
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Input Bindings '%s'"), NewBindings ? *NewBindings->GetName() : TEXT("None"));
+
+	SetupInputBridgeOnHUD();
+
+	// Trigger HUD refresh
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (APlayerController* PC = LP->GetPlayerController(GetWorld()))
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
+{
+	ULocalPlayer* LP = GetLocalPlayer();
+	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
+	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
+
+	if (!HUD || !ActiveInputBindings) return;
+
+	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
+	if (!EIC) return;
+
+	// Note: In a production environment, we'd want to manage these bindings more carefully 
+	// (e.g. removing old ones). For this prototype, we'll assume the HUD manages its own component.
+	for (const auto& Pair : ActiveInputBindings->Bindings)
+	{
+		if (UInputAction* Action = Pair.Value.Action)
+		{
+			EIC->BindAction(Action, ETriggerEvent::Triggered, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputActionValue& Value, UInputAction* Action)
+{
+	if (!ActiveInputBindings || !Action) return;
+
+	ULocalPlayer* LP = GetLocalPlayer();
+	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
+	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
+
+	if (!HUD) return;
+
+	// Find the tag for this action
+	for (const auto& Pair : ActiveInputBindings->Bindings)
+	{
+		if (Pair.Value.Action == Action)
+		{
+			HUD->DispatchGorgeousInput(Pair.Key, Value);
+			break;
+		}
 	}
 }
 
@@ -167,16 +271,16 @@ FName UGorgeousUIFoundationSubsystem::GetCurrentPlatformName() const
 #endif
 }
 
-void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(const FInstancedStruct& Payload)
+void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousUIMessageRequest* Request = Payload.GetPtr<FGorgeousUIMessageRequest>();
 	if (!Request || !Request->Config) return;
 
 	// 1. WOW FACTOR: Environmental Shift
 	// If the message has a state (e.g. Pause), apply it now
-	if (Request->Config->MessageState)
+	if (Request->Config->State)
 	{
-		BroadcastStateSwitch(Request->Config->MessageState);
+		BroadcastStateSwitch(Request->Config->State);
 	}
 
 	// 2. THEME OVERRIDE
@@ -195,7 +299,7 @@ void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(const FInstancedSt
 
 #include "CommonButtonBase.h"
 
-void UGorgeousUIFoundationSubsystem::OnInputActionReceived(const FInstancedStruct& Payload)
+void UGorgeousUIFoundationSubsystem::OnInputActionReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousInputActionPayload* ActionPayload = Payload.GetPtr<FGorgeousInputActionPayload>();
 	if (!ActionPayload || !ActionPayload->ActionTag.IsValid()) return;
@@ -277,7 +381,7 @@ void UGorgeousUIFoundationSubsystem::OnInputActionReceived(const FInstancedStruc
 	UGorgeousUIProcessor::ApplyPropertyToTarget(TargetWidget, *FString::Printf(TEXT("On%s"), *ActionName), FInstancedStruct());
 }
 
-void UGorgeousUIFoundationSubsystem::OnFocusRequestReceived(const FInstancedStruct& Payload)
+void UGorgeousUIFoundationSubsystem::OnFocusRequestReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousFocusRequestPayload* FocusPayload = Payload.GetPtr<FGorgeousFocusRequestPayload>();
 	if (!FocusPayload || !FocusPayload->TargetTag.IsValid()) return;
@@ -319,16 +423,77 @@ void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const
 				UObject* Obj = Entry.GetObject();
 				if (UGorgeousUIProcessor* SharedProcessor = GetSharedProcessorForWidget(Obj))
 				{
-					SharedProcessor->OnSignalReceived(Obj, Payload);
+					SharedProcessor->OnSignalReceived(Obj, Tag, Payload);
 				}
 			}
 		}
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::SwitchUIState(UCommonUIState_DA* NewState)
+void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState, bool bImmediate)
 {
-	if (CurrentState == NewState) return;
+	if (!NewState || CurrentState == NewState) return;
+
+	if (bImmediate)
+	{
+		PendingState = NewState;
+		ExecuteStateSwap();
+		return;
+	}
+
+	// 1. Start Transition Phase
+	PendingState = NewState;
+	TransitioningWidgets.Empty();
+
+	// Gather all currently active widgets that want to participate in the transition
+	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
+	{
+		if (UObject* WidgetObj = It->GetObject())
+		{
+			// We only wait for widgets that are actually visible/active on screen
+			if (UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
+			{
+				if (UserWidget->IsVisible())
+				{
+					TransitioningWidgets.Add(WidgetObj);
+				}
+			}
+		}
+	}
+
+	if (TransitioningWidgets.Num() > 0)
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Starting State Transition to '%s'. Waiting for %d widgets..."), *NewState->GetName(), TransitioningWidgets.Num());
+		OnTransitionStarted.Broadcast(NewState);
+		// The system now waits for NotifyWidgetTransitionComplete calls from these widgets.
+		// A fallback timer could be added here to prevent infinite hangs.
+	}
+	else
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Switching State to '%s' (Immediate)."), *NewState->GetName());
+		ExecuteStateSwap();
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::NotifyWidgetTransitionComplete(UObject* Widget)
+{
+	if (!PendingState || !Widget) return;
+
+	TransitioningWidgets.Remove(Widget);
+
+	if (TransitioningWidgets.Num() == 0)
+	{
+		ExecuteStateSwap();
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
+{
+	if (!PendingState) return;
+
+	UGorgeousUIState_DA* NewState = PendingState;
+	PendingState = nullptr;
+	TransitioningWidgets.Empty();
 
 	ULocalPlayer* LP = GetLocalPlayer();
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP ? LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
@@ -367,14 +532,44 @@ void UGorgeousUIFoundationSubsystem::SwitchUIState(UCommonUIState_DA* NewState)
 			SetCurrentTheme(CurrentState->Theme);
 		}
 
-		// 4. Notify all registered widgets of the state change
+		// 4. Apply Input Bindings
+		if (CurrentState->InputBindings)
+		{
+			SetActiveInputBindings(CurrentState->InputBindings);
+		}
+
+		// 5. Notify all registered widgets of the state change
 		for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
 		{
 			if (IGorgeousUIWidget_I* WidgetInterface = It->GetInterface())
 			{
-				if (UGorgeousCommonWidget* CommonWidget = Cast<UGorgeousCommonWidget>(It->GetObject()))
+				UObject* RawObj = It->GetObject();
+				if (RawObj)
 				{
-					CommonWidget->OnStateSwitched(CurrentState);
+					// Trigger state change notification
+					if (RawObj->IsA(UGorgeousCommonWidget::StaticClass()))
+					{
+						UGorgeousCommonWidget* CommonWidget = static_cast<UGorgeousCommonWidget*>(RawObj);
+						CommonWidget->OnUIStateChanged(CurrentState);
+					}
+					else if (RawObj->IsA(UGorgeousActivatableWidget::StaticClass()))
+					{
+						UGorgeousActivatableWidget* Activatable = static_cast<UGorgeousActivatableWidget*>(RawObj);
+						Activatable->OnUIStateChanged(CurrentState);
+					}
+
+					// Apply Overlay Configuration if defined for this widget's tag
+					if (CurrentState->OverlayConfig)
+					{
+						const FGameplayTag BindingTag = WidgetInterface->GetBindingTag();
+						if (BindingTag.IsValid())
+						{
+							if (const FGorgeousUIStateConfig* Config = CurrentState->OverlayConfig->WidgetConfigs.Find(BindingTag))
+							{
+								WidgetInterface->ApplyOverlayConfig(*Config);
+							}
+						}
+					}
 				}
 			}
 			else
@@ -383,7 +578,9 @@ void UGorgeousUIFoundationSubsystem::SwitchUIState(UCommonUIState_DA* NewState)
 			}
 		}
 
-		BroadcastStateSwitch(CurrentState);
+		OnTransitionFinished.Broadcast(CurrentState);
+
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: State Transition to '%s' Complete."), *CurrentState->GetName());
 	}
 }
 
@@ -393,6 +590,8 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 
 	UObject* WidgetObj = Widget->GetAsWidget();
 	RegisteredWidgets.AddUnique(TScriptInterface<IGorgeousUIWidget_I>(WidgetObj));
+
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered Widget '%s' (Binding Tag: %s)"), *WidgetObj->GetName(), *Widget->GetBindingTag().ToString());
 
 	// 1. Initial Aesthetic Application
 	if (CurrentTheme)

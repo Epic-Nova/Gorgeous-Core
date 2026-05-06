@@ -3,6 +3,7 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
 #include "GorgeousUIExtensions.generated.h"
 
 class UCommonActivatableWidget;
@@ -18,6 +19,11 @@ class GORGEOUSCORERUNTIME_API UGorgeousUIExtensions : public UBlueprintFunctionL
 {
 	GENERATED_BODY()
 
+public:
+	/** Returns the Gorgeous HUD for the primary player. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI|Extensions", meta = (WorldContext = "WorldContextObject"))
+	static class AGorgeousHUD* GetGorgeousHUD(const UObject* WorldContextObject);
+	
 public:
 	/** 
 	 * Returns the correct icon brush for an input action, automatically filtered by:
@@ -52,4 +58,8 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Gorgeous UI|Extensions")
 	static void ResumeGorgeousInput(APlayerController* PlayerController, FName Token);
+
+	/** Calculates an eased alpha based on the interpolation type. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI|Math")
+	static float CalculateEasedAlpha(float InAlpha, EGorgeousUIInterpType_E InterpType);
 };

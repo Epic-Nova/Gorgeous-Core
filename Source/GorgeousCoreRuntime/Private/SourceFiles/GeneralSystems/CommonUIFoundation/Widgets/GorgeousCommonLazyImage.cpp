@@ -1,63 +1,47 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonLazyImage.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
-#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 
-void UGorgeousCommonLazyImage::NativeConstruct()
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonLazyImage)
+
+void UGorgeousCommonLazyImage::SynchronizeProperties()
 {
-	// 1. Register with the Subsystem for Signal updates
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
-	{
-		Subsystem->RegisterWidget(this);
-
-		// 2. Initial Theme Application
-		if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
-		{
-			OnThemeApplied_Implementation(Theme);
-		}
-	}
+	Super::SynchronizeProperties();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonLazyImage::NativeDestruct()
+void UGorgeousCommonLazyImage::OnWidgetRebuilt()
 {
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
-	{
-		Subsystem->UnregisterWidget(this);
-	}
-
+	Super::OnWidgetRebuilt();
+	UE_UI_REGISTER_WIDGET_RAW()
 }
 
-void UGorgeousCommonLazyImage::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
+void UGorgeousCommonLazyImage::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
 	UpdateActionIcon();
 }
-
-void UGorgeousCommonLazyImage::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// Blueprint hook for additional theme application logic if needed.
-}
-
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonLazyImage)
 
 void UGorgeousCommonLazyImage::UpdateActionIcon()
 {
 	if (!ActionTag.IsValid()) return;
 
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
+	if (UWorld* World = GetWorld())
 	{
-		if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
-			const FName PlatformName = Subsystem->GetCurrentPlatformName();
-			FSlateBrush IconBrush = Theme->GetActionIcon(ActionTag, PlatformName);
-			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
+			if (ULocalPlayer* LP = PC->GetLocalPlayer())
 			{
-				// Even though it's a LazyImage, we apply the themed icon as a standard brush
-				FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
-				UGorgeousUIProcessor::ApplyPropertyToTarget(this, "Brush", Payload);
+				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
+				{
+					if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+					{
+						const FName PlatformName = Subsystem->GetCurrentPlatformName();
+						FSlateBrush IconBrush = Theme->GetActionIcon(ActionTag, PlatformName);
+						SetBrush(IconBrush);
+					}
+				}
 			}
 		}
 	}

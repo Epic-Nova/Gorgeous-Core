@@ -38,7 +38,7 @@ public:
 	 * Called when a signal arrives for a widget managed by this processor.
 	 * The Widget context is always passed in — DO NOT cache it.
 	 */
-	virtual void OnSignalReceived(UObject* Widget, const FInstancedStruct& Payload);
+	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload);
 
 	/**
 	 * Universally applies a value to a target object using reflection.

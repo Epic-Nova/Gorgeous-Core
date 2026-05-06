@@ -82,27 +82,26 @@ public:
      * 
      * @param TargetActor The actor to interact with.
      * @param InteractingActor The actor that is trying to interact with the target actor. This can be used by the target actor to determine the context of the interaction and to apply effects or changes to the interacting actor if necessary.
+     * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
      * 
      * @return True if the interaction was successfully executed, false otherwise.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
-    static bool TryInteract(AActor* TargetActor, AActor* InteractingActor);
+    static bool TryInteract(AActor* TargetActor, AActor* InteractingActor, const FHitResult& HitResult);
 
     /** 
      * Tries to perform a sphere trace interaction based on the provided trace parameters and interaction tag. Returns false if the trace did not hit any valid interactable target or if the interaction failed for any reason.
      * 
      * @param WorldContextObject The world context object for locating the world in which to perform the trace.
-     * @param TraceParameters The parameters defining the sphere trace, such as start and end locations, radius, and collision channel.
+     * @param HitResult The hit result of a previous trace or focus that defined the interaction target.
      * @param InteractionTag The gameplay tag representing the type of interaction to perform. This can be used by the hit actor to determine if it supports this type of interaction and how to handle it.
-     * @param OutHitResult The output parameter that will contain the hit result of the trace if the function returns true.
      * 
-     * @return True if a valid interactable target was hit and the interaction was successfully executed, false otherwise.
+     * @return True if the hit result contains a valid interactable target and the interaction was successfully executed, false otherwise.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation", meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "Try Interact (Sphere Trace)"))
     static bool TrySphereTraceInteract(const UObject* WorldContextObject,
-        const FGorgeousInteractionSphereTraceParameters& TraceParameters,
-        FGameplayTag InteractionTag,
-        FHitResult& OutHitResult);
+        const FHitResult& HitResult,
+        FGameplayTag InteractionTag);
 
     /** 
      * Tries to perform a sphere trace focus based on the provided trace parameters and interaction tag. Returns false if the trace did not hit any valid interactable target or if the focus request failed for any reason.

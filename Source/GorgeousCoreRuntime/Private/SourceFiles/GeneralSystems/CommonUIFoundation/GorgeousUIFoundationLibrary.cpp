@@ -1,22 +1,22 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
-#include "GeneralSystems/CommonUIFoundation/CommonUIFoundationLibrary.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationLibrary.h"
 #include "StructUtils/InstancedStruct.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
 #include "CommonActivatableWidget.h"
 
-UGorgeousPrimaryGameLayout* UCommonUIFoundationLibrary::GetGorgeousPrimaryLayout(const UObject* WorldContextObject)
+UGorgeousPrimaryGameLayout* UGorgeousUIFoundationLibrary::GetGorgeousPrimaryLayout(const UObject* WorldContextObject)
 {
 	return UGorgeousPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(WorldContextObject);
 }
 
-UGorgeousPrimaryGameLayout* UCommonUIFoundationLibrary::GetGorgeousPrimaryLayoutFromController(APlayerController* PlayerController)
+UGorgeousPrimaryGameLayout* UGorgeousUIFoundationLibrary::GetGorgeousPrimaryLayoutFromController(APlayerController* PlayerController)
 {
 	return UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(PlayerController);
 }
 
-void UCommonUIFoundationLibrary::FindAndRemoveWidgetFromLayer(UCommonActivatableWidget* ActivatableWidget)
+void UGorgeousUIFoundationLibrary::FindAndRemoveWidgetFromLayer(UCommonActivatableWidget* ActivatableWidget)
 {
 	if (ActivatableWidget)
 	{
@@ -27,7 +27,7 @@ void UCommonUIFoundationLibrary::FindAndRemoveWidgetFromLayer(UCommonActivatable
 	}
 }
 
-UCommonActivatableWidgetContainerBase* UCommonUIFoundationLibrary::GetLayerWidget(const UObject* WorldContextObject, FGameplayTag LayerTag)
+UCommonActivatableWidgetContainerBase* UGorgeousUIFoundationLibrary::GetLayerWidget(const UObject* WorldContextObject, FGameplayTag LayerTag)
 {
 	if (UGorgeousPrimaryGameLayout* Layout = GetGorgeousPrimaryLayout(WorldContextObject))
 	{
@@ -36,12 +36,12 @@ UCommonActivatableWidgetContainerBase* UCommonUIFoundationLibrary::GetLayerWidge
 	return nullptr;
 }
 
-FGorgeousUIUpdatePayload UCommonUIFoundationLibrary::MakeGorgeousUIUpdatePayload()
+FGorgeousUIUpdatePayload UGorgeousUIFoundationLibrary::MakeGorgeousUIUpdatePayload()
 {
 	return FGorgeousUIUpdatePayload();
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddTextToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FText Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddTextToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FText Value)
 {
 	FGorgeousInstancedText Wrapper;
 	Wrapper.Value = Value;
@@ -50,7 +50,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddTextToUIUpdate(FGorgeou
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddColorToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FLinearColor Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddColorToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FLinearColor Value)
 {
 	FInstancedStruct InstancedValue;
 	InstancedValue.InitializeAs<FLinearColor>(Value);
@@ -58,7 +58,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddColorToUIUpdate(FGorgeo
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddFloatToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, float Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddFloatToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, float Value)
 {
 	FGorgeousInstancedFloat Wrapper;
 	Wrapper.Value = Value;
@@ -67,7 +67,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddFloatToUIUpdate(FGorgeo
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddIntToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, int32 Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddIntToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, int32 Value)
 {
 	FGorgeousInstancedInt Wrapper;
 	Wrapper.Value = Value;
@@ -76,7 +76,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddIntToUIUpdate(FGorgeous
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddObjectToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, UObject* Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddObjectToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, UObject* Value)
 {
 	FGorgeousInstancedObject Wrapper;
 	Wrapper.Value = Value;
@@ -85,7 +85,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddObjectToUIUpdate(FGorge
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddBoolToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, bool Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddBoolToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, bool Value)
 {
 	FGorgeousInstancedBool Wrapper;
 	Wrapper.Value = Value;
@@ -94,7 +94,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddBoolToUIUpdate(FGorgeou
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddPaddingToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FMargin Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddPaddingToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FMargin Value)
 {
 	FInstancedStruct InstancedValue;
 	InstancedValue.InitializeAs<FMargin>(Value);
@@ -102,7 +102,7 @@ FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddPaddingToUIUpdate(FGorg
 	return Payload;
 }
 
-FGorgeousUIUpdatePayload& UCommonUIFoundationLibrary::AddGridToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FGorgeousGridUpdatePayload Value)
+FGorgeousUIUpdatePayload& UGorgeousUIFoundationLibrary::AddGridToUIUpdate(FGorgeousUIUpdatePayload& Payload, FName PropertyName, FGorgeousGridUpdatePayload Value)
 {
 	FInstancedStruct InstancedValue;
 	InstancedValue.InitializeAs<FGorgeousGridUpdatePayload>(Value);

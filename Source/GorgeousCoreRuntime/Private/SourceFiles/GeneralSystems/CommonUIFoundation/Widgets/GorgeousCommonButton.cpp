@@ -1,27 +1,26 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonButton.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 #include "Kismet/GameplayStatics.h"
 
-UE_UI_DEFINE_WIDGET_LIFECYCLE(UGorgeousCommonButton)
+UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonButton)
 
 void UGorgeousCommonButton::NativeConstruct()
 {
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
-	{
-		Subsystem->RegisterWidget(this);
-	}
+	Super::NativeConstruct();
+	UE_UI_REGISTER_WIDGET_USER()
 }
 
 void UGorgeousCommonButton::NativeDestruct()
 {
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
-	{
-		Subsystem->UnregisterWidget(this);
-	}
+	UE_UI_UNREGISTER_WIDGET()
+	Super::NativeDestruct();
+}
+
+void UGorgeousCommonButton::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
+{
 }
 
 void UGorgeousCommonButton::NativeOnHovered()
@@ -58,14 +57,4 @@ void UGorgeousCommonButton::PlayThemedSound(FGameplayTag SoundTag)
 	}
 }
 
-void UGorgeousCommonButton::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// Blueprint hook for additional theme application logic if needed.
-}
 
-UE_UI_IMPLEMENT_THEME_BRIDGE(UGorgeousCommonButton)
-
-void UGorgeousCommonButton::OnThemeApplied_Implementation(const UGorgeousUITheme_DA* Theme)
-{
-	// Default C++ implementation: no-op. Blueprint implementations handled in BP_Implementation.
-}
