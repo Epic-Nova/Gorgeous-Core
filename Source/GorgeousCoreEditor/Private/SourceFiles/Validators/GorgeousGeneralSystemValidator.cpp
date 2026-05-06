@@ -36,6 +36,7 @@
 #include "Widgets/Notifications/SNotificationList.h"
 #include "DataRegistry.h"
 #include "DataRegistrySettings.h"
+#include "GeneralSystems/GeneralSystem_AC.h"
 //<-------------------------------------------------------------------------->
 
 

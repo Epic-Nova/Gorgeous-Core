@@ -89,7 +89,7 @@ enum class EGorgeousObjectVariableReplicationMode : uint8
 {
 	EFullAutoReplication UMETA(DisplayName = "Full Auto Replication", ToolTip = "Full Auto Replication mode."),
 	EHybrid UMETA(DisplayName = "Hybrid (Auto + Legacy)", ToolTip = "Hybrid mode that leverages both Auto Replication and legacy replication."),
-	EManual UMETA(DisplayName = "Manual (Legacy Only)", ToolTip = "Manual mode that only uses legacy replication.")
+	EManual UMETA(BlueprintHidden, DisplayName = "Manual (Legacy Only)", ToolTip = "Manual mode that only uses legacy replication.")
 };
 
 /** Specifies which endpoint should handle a queued AutoReplication action. */

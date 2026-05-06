@@ -21,6 +21,11 @@
 
 UObject* UGorgeousFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
+	if (FactoryInfo.bDataOnly)
+	{
+		return NewObject<UObject>(InParent, FactoryInfo.SupportedClass ? FactoryInfo.SupportedClass.Get() : UObject::StaticClass(), InName, Flags | RF_Transactional);
+	}
+	
 	return FKismetEditorUtilities::CreateBlueprint(
 		FactoryInfo.SupportedClass,
 		InParent,
@@ -35,9 +40,21 @@ UObject* UGorgeousFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, 
 void UGorgeousFactory::SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo)
 {
 	FactoryInfo = NewFactoryInfo;
-	SupportedClass = NewFactoryInfo.BlueprintClass ? NewFactoryInfo.BlueprintClass.Get() : UBlueprint::StaticClass();
+	if (NewFactoryInfo.bDataOnly)
+	{
+		SupportedClass = NewFactoryInfo.SupportedClass.Get();
+	}
+	else
+	{
+		SupportedClass = NewFactoryInfo.BlueprintClass ? NewFactoryInfo.BlueprintClass.Get() : UBlueprint::StaticClass();
+	}
 	bEditAfterNew = NewFactoryInfo.bEditAfterNew;
 	bEditorImport = NewFactoryInfo.bEditorImport;
 	bCreateNew = NewFactoryInfo.bCreateNew;
 	bText = NewFactoryInfo.bText;
+}
+
+bool UGorgeousFactory::ShouldShowInNewMenu() const
+{
+	return FactoryInfo.bCreateNew;
 }

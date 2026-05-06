@@ -88,3 +88,9 @@ class GORGEOUSCORERUNTIME_API UGorgeousWorldSettingsBlueprint : public UBlueprin
 {
 	GENERATED_BODY()
 };
+
+UCLASS()
+class GORGEOUSCORERUNTIME_API UGorgeousHUDBlueprint : public UBlueprint
+{
+	GENERATED_BODY()
+};

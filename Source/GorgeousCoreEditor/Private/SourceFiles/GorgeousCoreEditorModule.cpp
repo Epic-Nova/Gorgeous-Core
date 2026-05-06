@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "DataSchemaMapping/GorgeousDataSchemaMappingAssetMenu.h"
-#include "DataSchemaMapping/GorgeousDataSchemaMappingAssetTypeActions.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingEditorToolkit.h"
 #include "DataSchemaMapping/GorgeousDataSchemaMappingDetailCustomization.h"
 #include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
 #include "GorgeousCoreMinimalShared.h"
@@ -36,6 +36,16 @@
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "Interfaces/IPluginManager.h"
 #include "Validators/GorgeousGeneralSystemValidator.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
+#include "DetailExtensions/GorgeousDetailExtension.h"
+#include "DetailExtensions/GorgeousTestDetailExtension.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GorgeousCoreBlueprintTypes.h"
+#include "DetailCustomizations/GorgeousGlobalDetailCustomization.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 #include "Validators/GorgeousCommonUIFoundationSystemValidator.h"
 //<-------------------------------------------------------------------------->
 
@@ -227,11 +237,19 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	//RainbowConnectionFactory = MakeShareable(new FGorgeousRainbowConnectionFactory());
 	//FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
 	
-	
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomClassLayout(
 		UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName(),
 		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousDataSchemaMappingDetailCustomization::MakeInstance));
+
+	// Register Global Detail Customization for all Objects
+	PropertyEditorModule.RegisterCustomClassLayout(
+		UObject::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousGlobalDetailCustomization::MakeInstance));
+
+	// Register Default Extensions
+	FGorgeousGlobalDetailCustomization::RegisterExtension(NewObject<UGorgeousTestDetailExtension>());
+
 	PropertyEditorModule.NotifyCustomizationModuleChanged();
 
 	GORGEOUS_REGISTER_STYLE_SET(ModuleStyleSet, "GorgeousCoreEditorStyle", "GorgeousCore", {
@@ -262,10 +280,28 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	const FText Menu_Conditions = NSLOCTEXT("GorgeousCore", "Menu_Conditions", "Conditions");
 	const FText Menu_ObjectVariables = NSLOCTEXT("GorgeousCore", "Menu_ObjectVariables", "Object Variables");
 	const FText Menu_QualityOfLife = NSLOCTEXT("GorgeousCore", "Menu_QualityOfLife", "Quality of Life");
+	const FText Menu_GeneralSystems = NSLOCTEXT("GorgeousCore", "Menu_GeneralSystems", "General Systems");
+	const FText Menu_CommonUI = NSLOCTEXT("GorgeousCore", "Menu_CommonUI", "Common UI");
 
-	REGISTER_GORGEOUS_ASSET_TYPE_ACTION(MakeShared<FGorgeousDataSchemaMappingAssetTypeActions>(
-		GorgeousAssetRegistration::GGorgeousThingsCategory,
-		TArray<FText>{CoreMenu}));
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES_AND_EDITOR(
+		NSLOCTEXT("GorgeousCore", "DataSchemaMapping", "Gorgeous Data Schema Mapping"),
+		UGorgeousDataSchemaMapping_DA::StaticClass(),
+		FColor(214, 134, 52),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataTable")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataTable")),
+		[](const TArray<UObject*>& InObjects, TSharedPtr<IToolkitHost> EditWithinLevelEditor)
+		{
+			const EToolkitMode::Type ToolkitMode = EditWithinLevelEditor.IsValid() ? EToolkitMode::WorldCentric : EToolkitMode::Standalone;
+			for (UObject* Object : InObjects)
+			{
+				if (UGorgeousDataSchemaMapping_DA* SchemaMap = Cast<UGorgeousDataSchemaMapping_DA>(Object))
+				{
+					const TSharedRef<FGorgeousDataSchemaMappingEditorToolkit> NewEditor = MakeShared<FGorgeousDataSchemaMappingEditorToolkit>();
+					NewEditor->Initialize(ToolkitMode, EditWithinLevelEditor, SchemaMap);
+				}
+			}
+		},
+		CoreMenu));
 	
 	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO(
 		NSLOCTEXT("GorgeousCore", "ObjectVariable", "Gorgeous Object Variable"),
@@ -336,6 +372,55 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		ModuleStyleSet->GetBrush(TEXT("ClassIcon.GorgeousWorldSettingsBlueprint")),
 		ModuleStyleSet->GetBrush(TEXT("ClassThumbnail.GorgeousWorldSettingsBlueprint")),
 		CoreMenu, Menu_QualityOfLife));
+	
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "HUD", "Gorgeous HUD"),
+		UGorgeousHUDBlueprint::StaticClass(),
+		FColor::Blue,
+		ModuleStyleSet->GetBrush(TEXT("ClassIcon.HUD")),
+		ModuleStyleSet->GetBrush(TEXT("ClassThumbnail.HUD")),
+		CoreMenu, Menu_QualityOfLife));
+
+	// --- Common UI Foundation assets ---
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "UITheme", "Gorgeous UI Theme"),
+		UGorgeousUITheme_DA::StaticClass(),
+		FColor(140,40,200),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "UIMessageConfig", "Gorgeous UI Message Config"),
+		UGorgeousUIMessageConfig_DA::StaticClass(),
+		FColor(255,140,40),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "CommonUIState", "Gorgeous Common UI State"),
+		UGorgeousUIState_DA::StaticClass(),
+		FColor(60,140,220),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "CommonUIOverlayConfig", "Gorgeous Common UI Overlay Config"),
+		UGorgeousUIOverlayConfig_DA::StaticClass(),
+		FColor(90,200,140),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
+
+	REGISTER_GORGEOUS_ASSET(GORGEOUS_MAKE_INFO_WITH_BRUSHES(
+		NSLOCTEXT("GorgeousCore", "InputBinding", "Gorgeous Input Binding"),
+		UGorgeousInputBinding_DA::StaticClass(),
+		FColor(200, 40, 90),
+		FAppStyle::Get().GetBrush(TEXT("ClassIcon.DataAsset")),
+		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
+		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
 
 	BeginPIEHandle = FEditorDelegates::BeginPIE.AddLambda([](bool bIsSimulating)
 	{
@@ -418,6 +503,7 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName());
+		PropertyEditorModule.UnregisterCustomClassLayout(UObject::StaticClass()->GetFName());
 		PropertyEditorModule.NotifyCustomizationModuleChanged();
 	}
 

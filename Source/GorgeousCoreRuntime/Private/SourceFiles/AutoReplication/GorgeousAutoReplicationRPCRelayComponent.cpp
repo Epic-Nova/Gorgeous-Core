@@ -14,6 +14,7 @@
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "Engine/NetConnection.h"
@@ -421,6 +422,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 			CorrectionContext.bIsOwnerConnection = true;
 			if (SenderController)
 			{
+				CorrectionContext.TargetController = Cast<AGorgeousPlayerController>(SenderController);
 				if (UNetConnection* Conn = SenderController->GetNetConnection())
 				{
 					CorrectionContext.PackageMap = Conn->PackageMap;

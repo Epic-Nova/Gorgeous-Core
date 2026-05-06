@@ -14,7 +14,12 @@
 #include "Engine/DataAsset.h"
 //--- Miscellaneous Includes -->
 #include "GorgeousSystemTemplate_DA.generated.h"
+
+class UTexture2D;
+
 //<-------------------------->
+
+class UGorgeousSetupWizardPayload;
 
 /**
  * Base data asset for any Editor System Setup Template.
@@ -60,9 +65,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Template|Meta", meta = (MultiLine = "true"))
 	FText TemplateDescription;
 
-	/** Path to a slate brush or texture to use as an icon in the library tile. */
+	/** Texture to use as an icon in the library tile. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Template|Meta")
-	FName TemplateIcon;
+	TObjectPtr<UTexture2D> TemplateIcon;
 
 	/**
 	 * The UPrimaryDataAsset-derived class that the Setup Wizard will physically
@@ -77,14 +82,14 @@ public:
 	TSubclassOf<UPrimaryDataAsset> AssetClassToCreate;
 
 	/**
-	 * Optional UObject classes whose UPROPERTIES are rendered as wizard pages via
-	 * IDetailsView. If empty, the wizard reuses the AssetClassToCreate instance
-	 * directly as the editable form.
-	 *
-	 * Each class in the array represents one "page" in the Setup Wizard.
+	 * Specialized Payload classes whose UPROPERTIES are rendered as wizard pages.
+	 * 
+	 * [AUTO-MAPPING]: If a payload property name and type match a property in the 
+	 * generated Config asset, the Wizard will automatically copy the value 
+	 * UNLESS PostCreate() is overridden in the payload class.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Template|Generation")
-	TArray<TSubclassOf<UObject>> ConfigurationPayloadClasses;
+	TArray<TSubclassOf<UGorgeousSetupWizardPayload>> ConfigurationPayloadClasses;
 	//<-------------------------->
 
 	//<=====--- BlueprintNativeEvent ---=====>
@@ -94,10 +99,11 @@ public:
 	 * Override to populate the newly created asset with template-specific defaults.
 	 *
 	 * @param GeneratedAsset  The newly created and saved UPrimaryDataAsset instance.
+	 * @param PayloadData     The instantiated payload objects containing user configuration.
 	 * @return True if generation was successful and the wizard can close.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Setup Wizard")
-	bool ExecuteTemplateGeneration(UObject* GeneratedAsset) const;
-	virtual bool ExecuteTemplateGeneration_Implementation(UObject* GeneratedAsset) const { return false; }
+	bool ExecuteTemplateGeneration(UObject* GeneratedAsset, const TArray<UObject*>& PayloadData) const;
+	virtual bool ExecuteTemplateGeneration_Implementation(UObject* GeneratedAsset, const TArray<UObject*>& PayloadData) const { return false; }
 	//<-------------------------->
 };

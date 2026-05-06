@@ -1367,6 +1367,12 @@ void UGorgeousObjectVariable::SetDisplayName(const FString& InDisplayName)
 
 void UGorgeousObjectVariable::NotifyDisplayNameChanged()
 {
+	MarkPropertyDirty(GET_MEMBER_NAME_CHECKED(UGorgeousObjectVariable, DisplayName));
+}
+
+
+void UGorgeousObjectVariable::MarkPropertyDirty(const FName PropertyName)
+{
 	if (!SupportsAutoReplicationFeatures() || !bReplicates)
 	{
 		return;
@@ -1376,6 +1382,8 @@ void UGorgeousObjectVariable::NotifyDisplayNameChanged()
 	{
 		if (World->GetNetMode() == NM_Client)
 		{
+			// Client-to-Server property pushing is handled by the coordinator's C2S path
+			// which typically uses a different mechanism, but for local tracking this is fine.
 			return;
 		}
 
@@ -1794,7 +1802,7 @@ bool UGorgeousObjectVariable::BuildAutoReplicationPropertyPayload(const FGorgeou
 
 		if (Declaration.Mode == EGorgeousReplicationMode::ECustomPayload)
 		{
-			if (!const_cast<UGorgeousObjectVariable*>(this)->BuildCustomAutoReplicationPayload(Declaration.PropertyName, SerializedValue.Payload, ConditionContext.bIsInitialState))
+			if (!const_cast<UGorgeousObjectVariable*>(this)->BuildCustomAutoReplicationPayload(Declaration.PropertyName, SerializedValue.Payload, ConditionContext))
 			{
 				GT_I_LOG("GT.ObjectVariables.Payload.CustomSkipped", TEXT("Custom AutoReplication payload for property %s on %s was skipped because no handler provided data."),
 					*Declaration.PropertyName.ToString(), *GetName());
@@ -1836,33 +1844,38 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 			continue;
 		}
 
-		if (Declaration->Mode == EGorgeousReplicationMode::ECustomPayload)
-		{
-			const bool bHandled = ApplyCustomAutoReplicationPayload(SerializedProperty.PropertyName, SerializedProperty.Payload, SerializedProperty.bIsInitialState != 0);
-			if (!bHandled)
-			{
-				GT_W_LOG("GT.ObjectVariables.Payload.CustomApplyFailed", TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
-				continue;
-			}
-			bAppliedAny = true;
-			continue;
-		}
-
-		if (SerializedProperty.Payload.Num() == 0)
-		{
-			continue;
-		}
-
 		void* PropertyData = Declaration->CachedProperty->ContainerPtrToValuePtr<void>(this);
 		if (!PropertyData)
 		{
 			continue;
 		}
 
-		if (!GorgeousObjectVariable_Private::DeserializePropertyValue(this, Declaration->CachedProperty, PropertyData, Declaration->Mode, PackageMap, SerializedProperty.Payload, Declaration->bInitializeNullReferences))
+		bool bApplied = false;
+		if (Declaration->Mode == EGorgeousReplicationMode::ECustomPayload)
 		{
-			GT_W_LOG("GT.ObjectVariables.Payload.DeserializeFailed", TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
-			continue;
+			FGorgeousAutoReplicationConditionContext ConditionContext;
+			ConditionContext.PackageMap = PackageMap;
+			ConditionContext.bIsInitialState = SerializedProperty.bIsInitialState != 0;
+			bApplied = ApplyCustomAutoReplicationPayload(Declaration->PropertyName, SerializedProperty.Payload, ConditionContext);
+			if (!bApplied)
+			{
+				GT_W_LOG("GT.ObjectVariables.Payload.CustomApplyFailed", TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
+				continue;
+			}
+		}
+		else
+		{
+			if (SerializedProperty.Payload.Num() == 0)
+			{
+				continue;
+			}
+
+			if (!GorgeousObjectVariable_Private::DeserializePropertyValue(this, Declaration->CachedProperty, PropertyData, Declaration->Mode, PackageMap, SerializedProperty.Payload, Declaration->bInitializeNullReferences))
+			{
+				GT_W_LOG("GT.ObjectVariables.Payload.DeserializeFailed", TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
+				continue;
+			}
+			bApplied = true;
 		}
 
 		// On the CLIENT: sync the change shadow to the freshly applied value.  Without
@@ -1886,13 +1899,13 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 	return bAppliedAny;
 }
 
-bool UGorgeousObjectVariable::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, bool bIsInitialState)
+bool UGorgeousObjectVariable::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	OutPayload.Reset();
 	return false;
 }
 
-bool UGorgeousObjectVariable::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, bool bIsInitialState)
+bool UGorgeousObjectVariable::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	return false;
 }
@@ -3628,6 +3641,12 @@ bool UGorgeousObjectVariable::IsExecutingOnReplicationOwner() const
 	}
 
 	return false;
+}
+
+bool UGorgeousObjectVariable::HasAuthority() const
+{
+	UWorld* World = GetWorld();
+	return World && World->GetNetMode() != NM_Client;
 }
 
 void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)

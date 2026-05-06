@@ -159,7 +159,7 @@ public:
 protected:
 
 	/** Returns the Insight Matrix provider instance for this module (if any). */
-	IGorgeousInsightMatrixProvider* GetInsightProvider() const { return InsightProvider; }
+	class IGorgeousInsightMatrixProvider* GetInsightProvider() const { return (class IGorgeousInsightMatrixProvider*)InsightProvider; }
 	//<------------------------------------------------------------------------->
 
 	
@@ -169,7 +169,7 @@ protected:
 	TSharedPtr<FSlateStyleSet> ModuleStyleSet;
 	
 	// Optional Insight Matrix provider for runtime modules.
-	IGorgeousInsightMatrixProvider* InsightProvider = nullptr;
+	IModularFeature* InsightProvider = nullptr;
 
 	/**
 	 * Optional Gorgeous Library participant.

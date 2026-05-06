@@ -18,6 +18,7 @@
 
 class UGorgeousObjectVariable;
 class UPackageMap;
+class AGorgeousPlayerController;
 UENUM(BlueprintType)
 enum class EGorgeousAutoReplicationBackend : uint8
 {
@@ -221,8 +222,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationPropertyEnvelope
 };
 
 /** Runtime context used to evaluate lifetime conditions & serialization helpers. */
+USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationConditionContext
 {
+	GENERATED_BODY()
+
 	FGorgeousAutoReplicationConditionContext()
 		: bIsInitialState(false)
 		, bIsOwnerConnection(false)
@@ -234,6 +238,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationConditionContext
 		, bDynamicConditionResult(false)
 		, bNetGroupMatch(false)
 		, PackageMap(nullptr)
+		, TargetController(nullptr)
 	{
 	}
 
@@ -281,15 +286,39 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationConditionContext
 		}
 	}
 
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bIsInitialState;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bIsOwnerConnection;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bIsAutonomousProxy;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bIsSimulatedProxy;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bHasReplicatedPhysics;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bIsReplayConnection;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bCustomConditionResult;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bDynamicConditionResult;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bNetGroupMatch;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	FGuid StreamGuid;
-	UPackageMap* PackageMap;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
+	TObjectPtr<UPackageMap> PackageMap;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
+	TObjectPtr<AGorgeousPlayerController> TargetController;
 };

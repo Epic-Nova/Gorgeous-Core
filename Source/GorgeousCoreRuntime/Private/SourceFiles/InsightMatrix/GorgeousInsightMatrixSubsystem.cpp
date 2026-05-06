@@ -21,6 +21,7 @@
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightBaselineSettings.h"
 #include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "Misc/FileHelper.h"
@@ -148,14 +149,14 @@ namespace
 	{
 		if (Args.Num() < 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Usage: Gorgeous.Insight.SetBaseline <TestId> [ProviderName]"));
+			GT_W_LOG("GT.Core.Insight", TEXT("Usage: Gorgeous.Insight.SetBaseline <TestId> [ProviderName]"));
 			return;
 		}
 
 		UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get();
 		if (!Subsystem)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Insight Matrix subsystem not available."));
+			GT_W_LOG("GT.Core.Insight", TEXT("Insight Matrix subsystem not available."));
 			return;
 		}
 
@@ -170,19 +171,19 @@ namespace
 			TArray<IGorgeousInsightMatrixProvider*> Providers = Subsystem->GetProviders();
 			if (!ResolveProviderForTestId(Providers, TestId, ProviderName))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Could not resolve provider for test '%s'. Provide the provider name as second argument."), *TestId.ToString());
+				GT_W_LOG("GT.Core.Insight", TEXT("Could not resolve provider for test '%s'. Provide the provider name as second argument."), *TestId.ToString());
 				return;
 			}
 		}
 
 		if (!Subsystem->SetBaselineFromLastResult(ProviderName, TestId))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("No last result found for test '%s' (%s). Run the test first."), *TestId.ToString(), *ProviderName.ToString());
+			GT_W_LOG("GT.Core.Insight", TEXT("No last result found for test '%s' (%s). Run the test first."), *TestId.ToString(), *ProviderName.ToString());
 			return;
 		}
 
 		Subsystem->RefreshDebugPanel();
-		UE_LOG(LogTemp, Display, TEXT("Baseline updated for test '%s' (%s)."), *TestId.ToString(), *ProviderName.ToString());
+		GT_I_LOG("GT.Core.Insight", TEXT("Baseline updated for test '%s' (%s)."), *TestId.ToString(), *ProviderName.ToString());
 	}
 
 	static FAutoConsoleCommand GInsightSetBaselineCmd(
@@ -408,6 +409,18 @@ void UGorgeousInsightMatrixSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	RegisterInputPreProcessor();
 	FCoreDelegates::OnPostEngineInit.AddUObject(this, &UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor);
+	
+	// --- Modular Feature Integration ---
+	IModularFeatures::Get().OnModularFeatureRegistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered);
+	IModularFeatures::Get().OnModularFeatureUnregistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureUnregistered);
+	
+	// Scan for already registered providers
+	TArray<IGorgeousInsightMatrixProvider*> ExistingProviders = IModularFeatures::Get().GetModularFeatureImplementations<IGorgeousInsightMatrixProvider>(IGorgeousInsightMatrixProvider::GetFeatureName());
+	for (IGorgeousInsightMatrixProvider* Provider : ExistingProviders)
+	{
+		RegisterProvider(Provider);
+	}
+	
 	LoadCachedStats();
 	LoadPanelState();
 }
@@ -416,12 +429,31 @@ void UGorgeousInsightMatrixSubsystem::Deinitialize()
 {
 	UnregisterInputPreProcessor();
 
+	IModularFeatures::Get().OnModularFeatureRegistered().RemoveAll(this);
+	IModularFeatures::Get().OnModularFeatureUnregistered().RemoveAll(this);
+
 	HideInGamePanel();
 	HideDebugPanel();
 	SaveCachedStats();
 	SavePanelState();
 
 	Super::Deinitialize();
+}
+
+void UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered(const FName& FeatureName, IModularFeature* Feature)
+{
+	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
+	{
+		RegisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
+	}
+}
+
+void UGorgeousInsightMatrixSubsystem::OnModularFeatureUnregistered(const FName& FeatureName, IModularFeature* Feature)
+{
+	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
+	{
+		UnregisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
+	}
 }
 
 void UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor()
@@ -1348,7 +1380,7 @@ FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByNam
 
 #if WITH_DEV_AUTOMATION_TESTS
 	FGorgeousInsightRuntimeAutomationTest RuntimeTest;
-	FGorgeousInsightScenarioContext ScenarioContext(Request, Parameters, VariantIndex, RuntimeTest, Descriptor, WorldContextObject);
+	FGorgeousInsightScenarioContext ScenarioContext(Request, Parameters, VariantIndex, &RuntimeTest, Descriptor, WorldContextObject);
 	ScenarioResult = FGorgeousInsightTestMatrix::ExecuteScenario(Descriptor, ScenarioContext);
 	ScenarioResult.AddNote(TEXT("Executed via Insight Matrix runtime"));
 #else

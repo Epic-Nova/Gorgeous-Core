@@ -412,13 +412,13 @@ public:
 
 	/** Override to serialize custom payloads when EGorgeousReplicationMode::CustomPayload is selected. Return true to include the payload in the batch. */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Auto Replication", DisplayName = "Build Custom Auto Replication Payload")
-	bool BuildCustomAutoReplicationPayload(FName PropertyName, UPARAM(ref) TArray<uint8>& OutPayload, bool bIsInitialState);
-	virtual bool BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, bool bIsInitialState);
+	bool BuildCustomAutoReplicationPayload(FName PropertyName, UPARAM(ref) TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext);
+	virtual bool BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext);
 
 	/** Override to consume custom payloads on clients. Return true when the payload was applied successfully. */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Auto Replication", DisplayName = "Apply Custom Auto Replication Payload")
-	bool ApplyCustomAutoReplicationPayload(FName PropertyName, const TArray<uint8>& Payload, bool bIsInitialState);
-	virtual bool ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, bool bIsInitialState);
+	bool ApplyCustomAutoReplicationPayload(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext);
+	virtual bool ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext);
 
 	/** Returns true when this object variable is attached to an AutoReplication entry. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
@@ -439,6 +439,10 @@ public:
 	/** Returns true if this variable is executing on its replication owner (locally owned). */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
 	bool IsExecutingOnReplicationOwner() const;
+
+	/** Returns true when this instance is running on the authority (server). */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
+	bool HasAuthority() const;
 
 	/** Executes a previously queued AutoReplication RPC that targets this object variable instance. */
 	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
@@ -613,6 +617,13 @@ protected:
 	/** Hook that allows derived types to react after deserialization. */
 	virtual void PostDeserializeFromPayload(const FGorgeousObjectVariableSerializedPayload& InPayload);
 	void TryClientAutoReplicateProperty(const FName PropertyName);
+
+	/**
+	 * Marks a specific property as dirty for the AutoReplication system.
+	 * This hints to the coordinator that the stream should be synchronized.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Auto Replication")
+	void MarkPropertyDirty(const FName PropertyName);
 
 	void EnsureRemovedFromRegistry();
 	/**

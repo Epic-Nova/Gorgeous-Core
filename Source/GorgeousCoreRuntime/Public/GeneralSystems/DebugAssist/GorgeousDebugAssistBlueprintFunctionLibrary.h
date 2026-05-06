@@ -141,19 +141,53 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistProjectedCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius, const FLinearColor& Color, const float Duration = 0.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1), const AActor* IgnoreActor = nullptr);
 
-    /** Draws a recognizable diamond (octahedron) at the specified location. */
+    /** 
+     * Draws a debug diamond shape at the specified Location with the given Size, Color, Duration, and persistence.
+     * The diamond is oriented to face the camera for better visibility.
+     * 
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the diamond to draw.
+     * @param Size - Size of the diamond (default is 10.0f).
+     * @param Color - Color of the diamond (default is White).
+     * @param Duration - How long the diamond should be visible in seconds (default is 1.0f).
+     * @param bPersistent - If true, the diamond will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the diamond lines (default is 2.0f).
+     */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistDiamond(const UObject* WorldContextObject, const FVector& Location, float Size = 10.0f, const FLinearColor& Color = FLinearColor::White, float Duration = 1.0f, bool bPersistent = false, float Thickness = 2.0f);
-
-    /** Draws a state-aware point marker (using the diamond shape) based on its relationship to bounds. */
+    
+    /** 
+     * Draws a debug point with different visual states based on the provided EGorgeousDebugAssistPointState.
+     * This allows for quick visual differentiation of points based on their state (e.g., success, failure, warning).
+     * 
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Location of the point to draw.
+     * @param State - The state of the point which determines its visual appearance.
+     * @param VisualParameters - Parameters that control the appearance of the point for different states.
+     */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistPointWithState(const UObject* WorldContextObject, const FVector& Location, EGorgeousDebugAssistPointState State, const FGorgeousDebugAssistVisualParameters& VisualParameters);
 
-    /** Draws a gorgeous downward pointing arrow to mark grounding or locations. */
+    /** 
+     * Draws a debug arrow from Start to End with the specified Size, Color, Duration, and persistence.
+     * The arrowhead is drawn at the End point, pointing back towards the Start.
+     * 
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Start - Starting point of the arrow.
+     * @param End - Ending point of the arrow (where the arrowhead is).
+     * @param Size - Size of the arrowhead (default is 20.0f).
+     * @param Color - Color of the arrow (default is Yellow).
+     * @param Duration - How long the arrow should be visible in seconds (default is 1.0f).
+     * @param bPersistent - If true, the arrow will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the arrow line (default is 2.0f).
+     */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistArrow(const UObject* WorldContextObject, const FVector& Start, const FVector& End, float Size, const FLinearColor& Color, float Duration = 1.0f, bool bPersistent = false, float Thickness = 2.0f);
 
-    /** Clears all currently registered debug ghosts (hit bounds). Useful for resetting state on BeginPlay. */
+    /**
+     * Clears all debug assist visuals that have been drawn. This will remove any lines, points, shapes, or other debug drawings created by the debug assist functions.
+     * Use this function to clean up the debug visuals after they are no longer needed, especially if you have drawn persistent visuals.
+     */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist")
     static void ClearDebugAssistGhosts();
 };

@@ -1037,3 +1037,54 @@ void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& Plugin
 		);
 	}
 }
+
+TArray<FString> UGorgeousPluginHelper::GetRecordedInstalledSystems() const
+{
+	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
+
+	TArray<FString> Systems;
+	if (PersistentDataObject.IsValid())
+	{
+		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+		if (SystemValidation.IsValid())
+		{
+			if (SystemValidation->HasField(TEXT("InstalledSystems")))
+			{
+				TArray<TSharedPtr<FJsonValue>> InstalledSystemsArray = SystemValidation->GetArrayField(TEXT("InstalledSystems"));
+				for (const auto& Value : InstalledSystemsArray)
+				{
+					Systems.Add(Value->AsString());
+				}
+			}
+		}
+	}
+
+	return Systems;
+}
+
+void UGorgeousPluginHelper::RecordInstalledSystems(const TArray<FString>& Systems)
+{
+	LoadPersistentData();
+
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+
+	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
+	if (!SystemValidation.IsValid())
+	{
+		SystemValidation = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
+	}
+
+	TArray<TSharedPtr<FJsonValue>> InstalledSystemsArray;
+	for (const FString& System : Systems)
+	{
+		InstalledSystemsArray.Add(MakeShared<FJsonValueString>(System));
+	}
+
+	SystemValidation->SetArrayField(TEXT("InstalledSystems"), InstalledSystemsArray);
+
+	SavePersistentData();
+}

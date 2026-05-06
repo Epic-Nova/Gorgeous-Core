@@ -19,6 +19,8 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/NetConnection.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationTransporter, Log, All);
@@ -389,13 +391,32 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToClient(cons
 		return false;
 	}
 
+	FGorgeousAutoReplicationPropertyEnvelope FinalEnvelope = Envelope;
+	if (OwningMixin)
+	{
+		if (UGorgeousObjectVariable* Variable = OwningMixin->ResolveVariableForKey(Envelope.EntryKey))
+		{
+			if (Variable->SupportsAutoReplicationFeatures())
+			{
+				FGorgeousAutoReplicationConditionContext ConditionContext;
+				ConditionContext.TargetController = Cast<AGorgeousPlayerController>(TargetController);
+				if (TargetController->GetNetConnection())
+				{
+					ConditionContext.PackageMap = TargetController->GetNetConnection()->PackageMap;
+				}
+				
+				Variable->BuildAutoReplicationPropertyPayload(ConditionContext, FinalEnvelope.Payload);
+			}
+		}
+	}
+
 	if (GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType))
 	{
-		ClientReceivePropertyPayloadReliable(Envelope, RouteType);
+		ClientReceivePropertyPayloadReliable(FinalEnvelope, RouteType);
 	}
 	else
 	{
-		ClientReceivePropertyPayloadUnreliable(Envelope, RouteType);
+		ClientReceivePropertyPayloadUnreliable(FinalEnvelope, RouteType);
 	}
 
 	return true;
@@ -451,7 +472,27 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 
 					if (UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
 					{
-						RelayComponent->RelayPropertyPayloadToClient(Envelope);
+						// Re-build the envelope with the target controller context if custom payload is used
+						FGorgeousAutoReplicationPropertyEnvelope TargetEnvelope = Envelope;
+						if (TargetVariable->SupportsAutoReplicationFeatures())
+						{
+							FGorgeousAutoReplicationConditionContext TargetContext;
+							TargetContext.TargetController = Cast<AGorgeousPlayerController>(PC);
+							
+							if (const AActor* OwnerActor = Cast<AActor>(TargetVariable->GetAutoReplicationOwner()))
+							{
+								TargetContext.bIsOwnerConnection = PC->GetNetConnection() && (OwnerActor->GetNetConnection() == PC->GetNetConnection());
+							}
+
+							if (PC->GetNetConnection())
+							{
+								TargetContext.PackageMap = PC->GetNetConnection()->PackageMap;
+							}
+							
+							TargetVariable->BuildAutoReplicationPropertyPayload(TargetContext, TargetEnvelope.Payload);
+						}
+
+						RelayComponent->RelayPropertyPayloadToClient(TargetEnvelope);
 					}
 				}
 				// Do not fall through to the UE multicast RPC — all eligible clients were served above.
