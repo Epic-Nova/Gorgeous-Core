@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "IDetailCustomization.h"
 #include "DetailLayoutBuilder.h"
+#include "UObject/StrongObjectPtr.h"
 
 class UGorgeousDetailExtension;
 

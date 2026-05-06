@@ -2,10 +2,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "Styling/SlateTypes.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 #include "GeneralSystems/GorgeousPrimaryDataAsset.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "GorgeousUITheme_DA.generated.h"
 
 /**
@@ -94,17 +96,18 @@ public:
 				return *Icon;
 			}
 			
-			// 2. PC Fallback (Keyboard)
+			// 2. Generic Fallback
+			if (const FSlateBrush* GenericIcon = IconGroup->PlatformIcons.Find(TEXT("Generic")))
+			{
+				return *GenericIcon;
+			}
+			
+			// 3. PC Fallback (Keyboard)
 			if (const FSlateBrush* PCIcon = IconGroup->PlatformIcons.Find(TEXT("Keyboard")))
 			{
 				return *PCIcon;
 			}
 			
-			// 3. Generic Fallback
-			if (const FSlateBrush* GenericIcon = IconGroup->PlatformIcons.Find(TEXT("Generic")))
-			{
-				return *GenericIcon;
-			}
 
 			// 4. Emergency Fallback: Take the first available icon in the map
 			for (auto& Pair : IconGroup->PlatformIcons)

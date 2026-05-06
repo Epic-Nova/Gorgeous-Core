@@ -6,6 +6,7 @@
 #include "DetailCategoryBuilder.h"
 #include "IDetailPropertyRow.h"
 #include "PropertyHandle.h"
+#include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectIterator.h"
 
 TMap<FName, TStrongObjectPtr<UGorgeousDetailExtension>> FGorgeousGlobalDetailCustomization::ExtensionRegistry;

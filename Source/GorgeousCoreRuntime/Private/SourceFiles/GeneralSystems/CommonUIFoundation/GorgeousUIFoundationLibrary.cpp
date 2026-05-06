@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationLibrary.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"

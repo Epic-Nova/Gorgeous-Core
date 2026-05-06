@@ -5,7 +5,8 @@
 #include "GameplayTagContainer.h"
 #include "Styling/SlateBrush.h"
 #include "Fonts/SlateFontInfo.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "GorgeousUIFoundationStructures.generated.h"
 
 /**
