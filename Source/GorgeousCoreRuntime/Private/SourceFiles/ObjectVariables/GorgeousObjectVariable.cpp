@@ -3338,14 +3338,17 @@ bool UGorgeousObjectVariable::HandleServerPropertyPollingTick(float DeltaSeconds
 	if (DirtyProperties.Num() > 0)
 	{
 		GT_I_LOG("GT.ObjectVariables.ServerPoll.AttemptReplicate", TEXT("%s: Attempting to replicate %d dirty properties to clients."), *GetName(), DirtyProperties.Num());
-		if (TryServerReplicateProperties(DirtyProperties))
+		
+		// We attempt replication, but regardless of whether any clients were reached, 
+		// we MUST update the shadows on the server to prevent a permanent dirty-detection loop.
+		// New clients will receive the current state via the discovery/initial-sync path.
+		TryServerReplicateProperties(DirtyProperties);
+		
+		for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
 		{
-			for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+			if (DirtyProperties.Contains(Declaration.PropertyName))
 			{
-				if (DirtyProperties.Contains(Declaration.PropertyName))
-				{
-					UpdateChangeShadowForProperty(Declaration);
-				}
+				UpdateChangeShadowForProperty(Declaration);
 			}
 		}
 	}

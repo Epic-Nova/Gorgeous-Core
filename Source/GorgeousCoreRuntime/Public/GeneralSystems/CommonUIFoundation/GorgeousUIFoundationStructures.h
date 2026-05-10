@@ -37,6 +37,12 @@ struct FGorgeousUIUpdatePayload
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
 	FName RoutingID;
+
+	/**
+	 * Optional ID used to distinguish between multiple containers (e.g. Inventory ID).
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FGuid InventoryID;
 };
 
 /**

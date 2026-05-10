@@ -4,6 +4,8 @@
 
 void UGorgeousSignalBridgeTagForwarder::OnBridgePayload(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
+	GT_I_LOG("GT.UI.Forwarder", TEXT("Forwarder received signal for tag %s"), *Tag.ToString());
+
     if (OwningSubsystem)
     {
         OwningSubsystem->HandlePayloadForTag(Tag, Payload);
