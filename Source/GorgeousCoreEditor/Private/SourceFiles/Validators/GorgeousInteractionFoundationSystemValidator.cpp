@@ -74,11 +74,11 @@ void UGorgeousInteractionFoundationSystemValidator::ValidateProjectState(FDataVa
 			ErrorMessage.ToString(),
 			"GT.System.MissingCollisionChannel",
 			Logging_Warning,
-			FName("GT.System.FixCollisionChannel"),
+			FName("GT.System.InteractionFoundation.Validator.FixCollisionChannel"),
 			"",
 			"Add Collision Channel",
 			true,
-			FName("GT.System.CanFixCollisionChannel")
+			FName("GT.System.InteractionFoundation.Validator.CanFixCollisionChannel")
 		);
 	}
 #endif
