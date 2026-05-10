@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "Components/Border.h"
 #include "GameplayTagContainer.h"
+#include "CommonBorder.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GorgeousCommonBorder.generated.h"
 
@@ -11,7 +12,7 @@
  * Overridden Border with Signal Bridge support.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousCommonBorder : public UBorder, public IGorgeousUIWidget_I
+class GORGEOUSCORERUNTIME_API UGorgeousCommonBorder : public UCommonBorder, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
 

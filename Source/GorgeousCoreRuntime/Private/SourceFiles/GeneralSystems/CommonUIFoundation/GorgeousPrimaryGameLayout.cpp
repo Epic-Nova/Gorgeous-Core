@@ -13,6 +13,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/LocalPlayer.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -50,11 +51,11 @@ void UGorgeousPrimaryGameLayout::NativeConstruct()
 	Super::NativeConstruct();
 
 	// Listen for signal-driven widget pushes
-	const FGameplayTag PushTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.PushWidget"));
+	const FGameplayTag PushTag = TAG_Gorgeous_UI_Layout_PushWidget;
 	LayoutSignalDelegate.BindDynamic(this, &UGorgeousPrimaryGameLayout::OnPushWidgetSignalReceived);
 	
 	// Listen for signal-driven layer registration
-	const FGameplayTag RegisterTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.RegisterLayer"));
+	const FGameplayTag RegisterTag = TAG_Gorgeous_UI_Layout_RegisterLayer;
 	FSignalBridgeEventDelegate RegisterDelegate;
 	RegisterDelegate.BindDynamic(this, &UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived);
 
@@ -85,9 +86,9 @@ void UGorgeousPrimaryGameLayout::NativeDestruct()
 		}
 	}
 	USignalBridgeBlueprintFunctionLibrary::Clear(
-		GetWorld(), FGameplayTag::RequestGameplayTag(FName("UI.Layout.PushWidget")), Controller);
+		GetWorld(), TAG_Gorgeous_UI_Layout_PushWidget, Controller);
 	USignalBridgeBlueprintFunctionLibrary::Clear(
-		GetWorld(), FGameplayTag::RequestGameplayTag(FName("UI.Layout.RegisterLayer")), Controller);
+		GetWorld(), TAG_Gorgeous_UI_Layout_RegisterLayer, Controller);
 	Super::NativeDestruct();
 }
 

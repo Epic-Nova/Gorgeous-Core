@@ -16,7 +16,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
 #include "EnhancedInputComponent.h"
-
+#include "UITag.h"
 #include "CommonInputSubsystem.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
@@ -293,8 +293,7 @@ void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(FGameplayTag Signa
 	// 3. WIDGET SPAWNING (Deferred to the UI Layout System)
 	// In a real implementation, we would push this to a CommonActivatableWidgetStack
 	// For this foundation, we broadcast a signal that the UI Layout should handle.
-	FGameplayTag LayoutPushTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.PushWidget"));
-	USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), LayoutPushTag, Payload);
+	USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Layout_PushWidget, Payload);
 }
 
 #include "CommonButtonBase.h"
@@ -359,7 +358,7 @@ void UGorgeousUIFoundationSubsystem::OnInputActionReceived(FGameplayTag SignalTa
 	// Case B: It's an Activatable Widget -> Handle Standard Actions
 	if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(TargetWidget))
 	{
-		static FGameplayTag BackTag = FGameplayTag::RequestGameplayTag("UI.Action.Back");
+		static FGameplayTag BackTag = FGlobalUITags::Get().UIAction_Cancel; // Use Unreal's Default UI Tags
 		if (ActionPayload->ActionTag == BackTag)
 		{
 			if (UFunction* HandleFunc = Activatable->FindFunction(FName("HandleBackAction")))
