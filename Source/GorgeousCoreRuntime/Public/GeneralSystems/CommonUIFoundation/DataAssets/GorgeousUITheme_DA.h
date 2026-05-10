@@ -22,7 +22,7 @@ class GORGEOUSCORERUNTIME_API UGorgeousUITheme_DA : public UGorgeousPrimaryDataA
 public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Theme"); }
-	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterface/Themes") }; }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces/Themes") }; }
 	/** Returns the list of valid platform names for icon mapping. */
 	UFUNCTION()
 	static TArray<FString> GetPlatformOptions()
@@ -81,7 +81,7 @@ public:
 	 * Icons for specific input actions (e.g. UI.Action.Confirm). 
 	 * These are automatically swapped based on the active platform and theme.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Icons")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Icons", meta = (Categories = "UI.Action"))
 	TMap<FGameplayTag, FGorgeousPlatformIconGroup_S> ActionIcons;
 
 	/** Helper to get an icon for an action and platform with prioritized fallbacks. */
