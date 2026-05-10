@@ -33,11 +33,10 @@ void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 		}
 
 		// Also notify via Signal Bridge for dynamic UI registration
-		FGameplayTag RegisterTag = TAG_Gorgeous_UI_Layout_RegisterLayer;
 		FGorgeousRegisterLayerPayload Payload;
 		Payload.LayerTag = LayerTag;
 		Payload.LayerWidget = this;
 
-		USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), RegisterTag, FInstancedStruct::Make(Payload));
+		USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Layout_RegisterLayer, FInstancedStruct::Make(Payload));
 	}
 }

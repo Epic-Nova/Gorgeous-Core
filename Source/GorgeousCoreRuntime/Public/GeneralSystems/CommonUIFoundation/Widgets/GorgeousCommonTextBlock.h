@@ -2,6 +2,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommonTextBlock.h"
 #include "Components/TextBlock.h"
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
@@ -11,7 +12,7 @@
  * Overridden TextBlock with Signal Bridge support.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UTextBlock, public IGorgeousUIWidget_I
+class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UCommonTextBlock, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
 

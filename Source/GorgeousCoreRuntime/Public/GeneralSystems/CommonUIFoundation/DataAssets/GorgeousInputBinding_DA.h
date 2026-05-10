@@ -22,7 +22,7 @@ public:
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("InputBinding"); }
 	virtual TArray<FString> GetPreferredScanPaths() const override { return { TEXT("Input/Bindings") }; }
 	/** Map of conceptual action tags to input action metadata. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (Categories = "UI.Action"))
 	TMap<FGameplayTag, FGorgeousInputBindingInfo_S> Bindings;
 
 #if WITH_EDITOR

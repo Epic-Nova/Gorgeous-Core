@@ -16,6 +16,8 @@ class GORGEOUSCOREEDITOR_API UGorgeousInteractionFoundationSystemValidator : pub
 {
 	GENERATED_BODY()
 
+	UGorgeousInteractionFoundationSystemValidator();
+	
 public:
 	//<============================--- Overrides ---============================>
 	

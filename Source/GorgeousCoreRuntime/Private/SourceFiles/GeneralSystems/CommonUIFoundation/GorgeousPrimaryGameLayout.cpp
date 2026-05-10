@@ -14,6 +14,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/LocalPlayer.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
