@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Actions/AsyncAction_PushGorgeousMessage.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 
 #include "UObject/Stack.h"
@@ -34,8 +35,8 @@ void UAsyncAction_PushGorgeousMessage::Activate()
 		return;
 	}
 
-	FGameplayTag PushTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Push"));
-	FGameplayTag ResultTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Result"));
+	FGameplayTag PushTag = TAG_Gorgeous_UI_System_Message_Push;
+	FGameplayTag ResultTag = TAG_Gorgeous_UI_System_Message_Result;
 	
 	// 1. Register local signal rules for these tags
 	FGorgeousSignalBridgeAccessRules_S Rules;
@@ -55,7 +56,7 @@ void UAsyncAction_PushGorgeousMessage::Activate()
 void UAsyncAction_PushGorgeousMessage::HandleMessageResult(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	// Clean up listeners
-	FGameplayTag ResultTag = FGameplayTag::RequestGameplayTag(FName("UI.System.Message.Result"));
+	FGameplayTag ResultTag = TAG_Gorgeous_UI_System_Message_Result;
 	USignalBridgeBlueprintFunctionLibrary::Clear(WorldContextObject, ResultTag, nullptr);
 
 	const FGorgeousUIMessageResult* Result = Payload.GetPtr<FGorgeousUIMessageResult>();

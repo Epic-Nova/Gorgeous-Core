@@ -75,6 +75,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
 	void SetCurrentTheme(UGorgeousUITheme_DA* NewTheme);
 
+	/** Applies a theme to a single widget via its shared processor. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
+	void ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* Theme, const UGorgeousUITheme_DA* FallbackTheme = nullptr);
+
 	/** Broadcasts theme application to all registered widgets (without changing the stored theme). */
 	void BroadcastThemeApplied(UGorgeousUITheme_DA* Theme);
 

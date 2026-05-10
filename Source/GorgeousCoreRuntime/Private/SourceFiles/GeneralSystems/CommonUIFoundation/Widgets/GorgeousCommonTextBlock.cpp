@@ -6,6 +6,23 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonTextBlock)
 
+UGorgeousCommonTextBlock::UGorgeousCommonTextBlock(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"Text",
+		"Color",
+		"ColorAndOpacity",
+		"Font",
+		"ShadowColorAndOpacity",
+		"ShadowOffset",
+		"Justification",
+		"AutoWrapText",
+		"WrapTextAt",
+		"MinDesiredWidth"
+	};
+}
+
 void UGorgeousCommonTextBlock::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -18,12 +35,20 @@ void UGorgeousCommonTextBlock::OnWidgetRebuilt()
 	UE_UI_REGISTER_WIDGET_RAW()
 }
 
+void UGorgeousCommonTextBlock::ReleaseSlateResources(bool bReleaseChildren)
+{
+	UE_UI_UNREGISTER_WIDGET()
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
 void UGorgeousCommonTextBlock::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	if (Theme && TypographyTag.IsValid())
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
 	{
-		FGorgeousUITypography_S TypeInfo = Theme->GetTypography(TypographyTag);
-		SetFont(TypeInfo.Font);
-		SetColorAndOpacity(FSlateColor(TypeInfo.Color));
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
 	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }

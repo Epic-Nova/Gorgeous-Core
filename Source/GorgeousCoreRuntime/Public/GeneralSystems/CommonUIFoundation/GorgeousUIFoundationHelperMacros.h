@@ -7,12 +7,26 @@
 #include "Components/Widget.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
 
+#if WITH_EDITOR
+struct FPropertyChangedChainEvent;
+struct FPropertyChangedEvent;
+#endif
+
 class UGorgeousUITheme_DA;
 class UGorgeousUIFoundationSubsystem;
 
 /**
  * Macros to reduce boilerplate in Gorgeous UI Foundation widgets.
  */
+
+#if WITH_EDITOR
+#define UE_UI_WIDGET_EDITOR_MEMBERS() \
+	virtual void PostLoad() override; \
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override; \
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+#else
+#define UE_UI_WIDGET_EDITOR_MEMBERS()
+#endif
 
 /**
  * Drops into the class declaration to implement IGorgeousUIWidget_I.
@@ -32,10 +46,13 @@ protected: \
 	TMap<FName, FLinearColor> TargetThemeColors; \
 	TMap<FName, FLinearColor> CurrentThemeColors; \
 	bool bIsInterpTheme = false; \
+	\
 public: \
 	virtual UObject* GetAsWidget() override { return (UObject*)this; } \
 	virtual float GetWidgetOpacity() const override { if (const UWidget* __W = (const UWidget*)this) return __W->GetRenderOpacity(); return 1.0f; } \
 	virtual void SetWidgetOpacity(float InOpacity) override { if (UWidget* __W = (UWidget*)this) __W->SetRenderOpacity(InOpacity); } \
+	virtual bool UseStylePropertyAllowList() const override { return bUseStylePropertyAllowList; } \
+	virtual const TSet<FName>& GetStylePropertyAllowList() const override { return StylePropertyAllowList; } \
 	virtual float GetTargetOpacity() const override { return TargetOpacity; } \
 	virtual float GetStartOpacity() const override { return StartOpacity; } \
 	virtual FGorgeousUIInterpConfig_S GetOpacityInterpConfig() const override { return OpacityInterpConfig; } \
@@ -59,6 +76,9 @@ public: \
 	\
 	/* Applies a state-specific configuration (visibility, opacity, animation) to this widget. */ \
 	virtual void ApplyOverlayConfig(const FGorgeousUIStateConfig& Config) override; \
+	\
+	void ApplyEditorThemeIfNeeded(); \
+	UE_UI_WIDGET_EDITOR_MEMBERS() \
 public:
 
 /** Registration logic for standard UWidgets (Borders, Boxes). Use in SynchronizeProperties. */
@@ -75,7 +95,10 @@ public:
 				} \
 			} \
 		} \
-	}
+	} \
+	\
+	/* Editor-time theme evaluation */ \
+	ApplyEditorThemeIfNeeded();
 
 /** Registration logic for UUserWidgets. Use in NativeConstruct. */
 #define UE_UI_REGISTER_WIDGET_USER() \

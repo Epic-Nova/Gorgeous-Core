@@ -9,6 +9,9 @@
 /**
  * Base widget for the HUD Action Bar stripe.
  * Displays available input actions, their icons, and names.
+ * 
+ * @note There already is UCommonBoundActionBar provided by CommonUI, 
+ * but as the setup of CommonUI is wierd, we introduce our own system, so users don't have to lift heavy implentations.
  */
 UCLASS(Abstract, Blueprintable)
 class GORGEOUSCORERUNTIME_API UGorgeousActionBar_CAW : public UGorgeousActivatableWidget

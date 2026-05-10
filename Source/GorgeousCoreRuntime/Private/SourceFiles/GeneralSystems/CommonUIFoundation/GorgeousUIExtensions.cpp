@@ -76,10 +76,11 @@ void UGorgeousUIExtensions::PushGorgeousWidgetAsync(UObject* WorldContextObject,
 	}
 }
 
+//@TODO
 FName UGorgeousUIExtensions::SuspendGorgeousInput(APlayerController* PlayerController, FName Reason)
 {
 	if (!PlayerController) return NAME_None;
-
+	
 	// In a AAA system, we would push a suspension token to a stack.
 	// For now, we'll use a unique name.
 	FName Token = FName(*FString::Printf(TEXT("%s_%f"), *Reason.ToString(), FPlatformTime::Seconds()));
@@ -90,6 +91,7 @@ FName UGorgeousUIExtensions::SuspendGorgeousInput(APlayerController* PlayerContr
 	return Token;
 }
 
+//@TODO - implement a stack of suspension tokens to allow multiple overlapping input suspensions (e.g. during nested menu navigation)
 void UGorgeousUIExtensions::ResumeGorgeousInput(APlayerController* PlayerController, FName Token)
 {
 	if (!PlayerController || Token.IsNone()) return;

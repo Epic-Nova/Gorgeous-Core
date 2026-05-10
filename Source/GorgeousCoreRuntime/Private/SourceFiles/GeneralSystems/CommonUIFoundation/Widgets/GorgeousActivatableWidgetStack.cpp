@@ -4,6 +4,7 @@
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 
@@ -32,7 +33,7 @@ void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 		}
 
 		// Also notify via Signal Bridge for dynamic UI registration
-		FGameplayTag RegisterTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.RegisterLayer"));
+		FGameplayTag RegisterTag = TAG_Gorgeous_UI_Layout_RegisterLayer;
 		FGorgeousRegisterLayerPayload Payload;
 		Payload.LayerTag = LayerTag;
 		Payload.LayerWidget = this;

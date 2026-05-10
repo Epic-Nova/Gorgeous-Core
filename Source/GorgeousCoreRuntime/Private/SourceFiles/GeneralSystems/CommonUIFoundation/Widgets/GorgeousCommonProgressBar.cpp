@@ -5,6 +5,18 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonProgressBar)
 
+UGorgeousCommonProgressBar::UGorgeousCommonProgressBar(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"Percent",
+		"Value",
+		"FillColorAndOpacity",
+		"WidgetStyle",
+		"bIsMarquee"
+	};
+}
+
 void UGorgeousCommonProgressBar::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -17,10 +29,20 @@ void UGorgeousCommonProgressBar::OnWidgetRebuilt()
 	UE_UI_REGISTER_WIDGET_RAW()
 }
 
+void UGorgeousCommonProgressBar::ReleaseSlateResources(bool bReleaseChildren)
+{
+	UE_UI_UNREGISTER_WIDGET()
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
 void UGorgeousCommonProgressBar::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	if (Theme)
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
 	{
-		WidgetStyle = Theme->GetProgressBarStyle("DefaultProgressBar");
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
 	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }

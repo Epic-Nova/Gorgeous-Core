@@ -3,7 +3,8 @@
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget.h"
-#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIPolicy.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
@@ -152,6 +153,19 @@ void UGorgeousUIFoundationSubsystem::BroadcastThemeApplied(UGorgeousUITheme_DA* 
 	}
 }
 
+void UGorgeousUIFoundationSubsystem::ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* Theme, const UGorgeousUITheme_DA* FallbackTheme)
+{
+	if (!Widget) return;
+
+	if (UGorgeousUIProcessor* Processor = GetSharedProcessorForWidget(Widget))
+	{
+		Processor->ApplyThemeToWidget(Widget, Theme, FallbackTheme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(Widget, Theme, FallbackTheme);
+}
+
 void UGorgeousUIFoundationSubsystem::BroadcastStateSwitch(UGorgeousUIState_DA* NewState)
 {
 	SwitchUIState(NewState);
@@ -293,7 +307,7 @@ void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(FGameplayTag Signa
 	// 3. WIDGET SPAWNING (Deferred to the UI Layout System)
 	// In a real implementation, we would push this to a CommonActivatableWidgetStack
 	// For this foundation, we broadcast a signal that the UI Layout should handle.
-	FGameplayTag LayoutPushTag = FGameplayTag::RequestGameplayTag(FName("UI.Layout.PushWidget"));
+	FGameplayTag LayoutPushTag = TAG_Gorgeous_UI_Layout_PushWidget;
 	USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), LayoutPushTag, Payload);
 }
 
@@ -359,7 +373,7 @@ void UGorgeousUIFoundationSubsystem::OnInputActionReceived(FGameplayTag SignalTa
 	// Case B: It's an Activatable Widget -> Handle Standard Actions
 	if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(TargetWidget))
 	{
-		static FGameplayTag BackTag = FGameplayTag::RequestGameplayTag("UI.Action.Back");
+		static FGameplayTag BackTag = TAG_Gorgeous_UI_Action_Back;
 		if (ActionPayload->ActionTag == BackTag)
 		{
 			if (UFunction* HandleFunc = Activatable->FindFunction(FName("HandleBackAction")))
@@ -412,18 +426,25 @@ void UGorgeousUIFoundationSubsystem::OnFocusRequestReceived(FGameplayTag SignalT
 
 void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const FInstancedStruct& Payload)
 {
+	const FGorgeousUIUpdatePayload* UpdatePayload = Payload.GetPtr<FGorgeousUIUpdatePayload>();
+	const FName TargetRoutingID = UpdatePayload ? UpdatePayload->RoutingID : NAME_None;
+
 	// Iterate registered widgets and dispatch payloads to shared processors for widgets
-	// that have the matching binding tag.
+	// that have the matching binding tag and routing ID (if specified).
 	for (auto& Entry : RegisteredWidgets)
 	{
 		if (IGorgeousUIWidget_I* WidgetInterface = Entry.GetInterface())
 		{
 			if (WidgetInterface->GetBindingTag() == Tag)
 			{
-				UObject* Obj = Entry.GetObject();
-				if (UGorgeousUIProcessor* SharedProcessor = GetSharedProcessorForWidget(Obj))
+				// If a RoutingID is specified in the payload, only dispatch to the widget with a matching ID.
+				if (TargetRoutingID.IsNone() || WidgetInterface->GetRoutingID() == TargetRoutingID)
 				{
-					SharedProcessor->OnSignalReceived(Obj, Tag, Payload);
+					UObject* Obj = Entry.GetObject();
+					if (UGorgeousUIProcessor* SharedProcessor = GetSharedProcessorForWidget(Obj))
+					{
+						SharedProcessor->OnSignalReceived(Obj, Tag, Payload);
+					}
 				}
 			}
 		}

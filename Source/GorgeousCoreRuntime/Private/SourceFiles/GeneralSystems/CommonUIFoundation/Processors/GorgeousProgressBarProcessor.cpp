@@ -4,6 +4,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "Containers/Ticker.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 
 UGorgeousProgressBarProcessor::UGorgeousProgressBarProcessor()
 {
@@ -25,6 +26,11 @@ void UGorgeousProgressBarProcessor::OnSignalReceived(UObject* Widget, FGameplayT
 
 	for (const auto& Pair : MasterPayload->Updates)
 	{
+		if (!UGorgeousUIProcessor::IsStylePropertyAllowed(ProgressBar, Pair.Key))
+		{
+			continue;
+		}
+
 		if (Pair.Key == FName("Percent") || Pair.Key == FName("Value"))
 		{
 			float FloatOut = 0.0f;
@@ -39,7 +45,7 @@ void UGorgeousProgressBarProcessor::OnSignalReceived(UObject* Widget, FGameplayT
 		else
 		{
 			// Universal reflection for everything else (FillColor, Visibility, etc.)
-			ApplyPropertyToTarget(ProgressBar, Pair.Key, Pair.Value);
+			ApplyStylePropertyToTarget(ProgressBar, Pair.Key, Pair.Value);
 		}
 	}
 
@@ -53,6 +59,25 @@ void UGorgeousProgressBarProcessor::BeginDestroy()
 {
 	StopTicking();
 	Super::BeginDestroy();
+}
+
+void UGorgeousProgressBarProcessor::ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme)
+{
+	UGorgeousCommonProgressBar* ProgressBar = Cast<UGorgeousCommonProgressBar>(Widget);
+	if (!ProgressBar)
+	{
+		Super::ApplyThemeToWidget(Widget, PrimaryTheme, FallbackTheme);
+		return;
+	}
+
+	ApplyThemeToWidgetInternal(Widget, PrimaryTheme, FallbackTheme);
+
+	if (PrimaryTheme)
+	{
+		FProgressBarStyle Style = PrimaryTheme->GetProgressBarStyle("DefaultProgressBar");
+		FInstancedStruct StylePayload = FInstancedStruct::Make(Style);
+		ApplyStylePropertyToTarget(ProgressBar, "WidgetStyle", StylePayload);
+	}
 }
 
 void UGorgeousProgressBarProcessor::StartTicking()

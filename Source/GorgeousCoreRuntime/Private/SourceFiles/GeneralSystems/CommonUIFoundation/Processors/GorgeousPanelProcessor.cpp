@@ -70,6 +70,6 @@ void UGorgeousPanelProcessor::OnSignalReceived(UObject* Widget, FGameplayTag Sig
 		}
 
 		// Fallback to universal reflection on the owning widget
-		ApplyPropertyToTarget(Widget, Pair.Key, Pair.Value);
+		ApplyStylePropertyToTarget(Widget, Pair.Key, Pair.Value);
 	}
 }

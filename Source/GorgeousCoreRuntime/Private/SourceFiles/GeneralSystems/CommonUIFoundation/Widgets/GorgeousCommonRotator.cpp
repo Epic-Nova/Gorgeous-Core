@@ -8,6 +8,17 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonRotator)
 
+UGorgeousCommonRotator::UGorgeousCommonRotator(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"SelectedIndex",
+		"RenderOpacity",
+		"Visibility",
+		"IsEnabled"
+	};
+}
+
 void UGorgeousCommonRotator::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -37,4 +48,12 @@ void UGorgeousCommonRotator::OnRotatorSignalReceived(FGameplayTag SignalTag, con
 
 void UGorgeousCommonRotator::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }

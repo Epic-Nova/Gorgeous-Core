@@ -4,6 +4,17 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonWidgetSwitcher)
 
+UGorgeousCommonWidgetSwitcher::UGorgeousCommonWidgetSwitcher(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"ActiveWidgetIndex",
+		"RenderOpacity",
+		"Visibility",
+		"IsEnabled"
+	};
+}
+
 void UGorgeousCommonWidgetSwitcher::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -16,6 +27,20 @@ void UGorgeousCommonWidgetSwitcher::OnWidgetRebuilt()
 	UE_UI_REGISTER_WIDGET_RAW()
 }
 
+void UGorgeousCommonWidgetSwitcher::ReleaseSlateResources(bool bReleaseChildren)
+{
+	UE_UI_UNREGISTER_WIDGET()
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
 void UGorgeousCommonWidgetSwitcher::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }

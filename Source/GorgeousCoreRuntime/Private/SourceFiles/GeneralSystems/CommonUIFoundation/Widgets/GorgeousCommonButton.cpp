@@ -7,6 +7,17 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonButton)
 
+UGorgeousCommonButton::UGorgeousCommonButton(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"Enabled",
+		"IsEnabled",
+		"Style",
+		"ContentPadding"
+	};
+}
+
 void UGorgeousCommonButton::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -21,6 +32,14 @@ void UGorgeousCommonButton::NativeDestruct()
 
 void UGorgeousCommonButton::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }
 
 void UGorgeousCommonButton::NativeOnHovered()
