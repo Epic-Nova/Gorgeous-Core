@@ -20,7 +20,7 @@ class GORGEOUSCORERUNTIME_API UGorgeousUIMessageConfig_DA : public UGorgeousPrim
 public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Message"); }
-	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterface/Messages") }; }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces/Messages") }; }
 
 	/** The widget class to spawn for this message. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
@@ -43,6 +43,6 @@ public:
 	TMap<FName, FText> Buttons;
 
 	/** The layer to push the message onto (e.g. Modal, Overlay). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (Categories = "UI.Layer"))
 	FGameplayTag LayerTag;
 };

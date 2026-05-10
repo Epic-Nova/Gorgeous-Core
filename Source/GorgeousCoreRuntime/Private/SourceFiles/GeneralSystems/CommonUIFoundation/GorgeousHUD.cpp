@@ -10,10 +10,11 @@
 #include "Algo/Sort.h"
 #include "Blueprint/UserWidget.h"
 #include "CommonActivatableWidget.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 AGorgeousHUD::AGorgeousHUD()
 {
-	ActionBarLayerTag = FGameplayTag::RequestGameplayTag("UI.Layer.HUD", false);
+	ActionBarLayerTag = TAG_Gorgeous_UI_Layer_HUD;
 }
 
 void AGorgeousHUD::BeginPlay()

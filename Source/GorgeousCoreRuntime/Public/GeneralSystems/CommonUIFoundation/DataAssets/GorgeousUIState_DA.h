@@ -19,9 +19,9 @@ class GORGEOUSCORERUNTIME_API UGorgeousUIState_DA : public UGorgeousPrimaryDataA
 public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_State"); }
-	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterface/States") }; }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces/States") }; }
 	/** Unique tag identifying this state. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State", meta = (Categories = "UI.State"))
 	FGameplayTag StateTag;
 
 	/** Friendly name for the state. */

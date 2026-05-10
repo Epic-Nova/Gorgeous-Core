@@ -10,6 +10,7 @@
 
 /**
  * A test detail extension that adds a "Gorgeous!" button to a property row.
+ * @note: Can be used for e.g. Inventory Icon Generator Adapter Pack to define besides the Icon property capture an icon
  */
 UCLASS()
 class UGorgeousTestDetailExtension : public UGorgeousDetailExtension

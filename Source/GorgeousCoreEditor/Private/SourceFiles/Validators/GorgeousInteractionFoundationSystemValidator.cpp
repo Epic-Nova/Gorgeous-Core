@@ -14,6 +14,21 @@
 
 #include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
 
+UGorgeousInteractionFoundationSystemValidator::UGorgeousInteractionFoundationSystemValidator()
+{
+#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(INTERACTIONFOUNDATION)
+	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
+		StaticClass(),
+		FName("GT.System.InteractionFoundation.Validator.FixCollisionChannel"),
+		FName("HandleFixCollisionChannel"));
+
+	UGT_EditorLogging_FL::RegisterLogHyperlinkCondition(
+		StaticClass(),
+		FName("GT.System.InteractionFoundation.Validator.CanFixCollisionChannel"),
+		FName("HandleCanFixCollisionChannel"));
+#endif
+}
+
 bool UGorgeousInteractionFoundationSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {
 #if GORGEOUS_GENERAL_SYSTEM_INSTALLED(INTERACTIONFOUNDATION)
