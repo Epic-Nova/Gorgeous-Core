@@ -20,11 +20,14 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 		return nullptr;
 	}
 
+	GT_I_LOG("GT.SignalBridge", TEXT("Retrieving Signal Bridge for world %s (Context: %s)"), *World->GetName(), *GetNameSafe(WorldContextObject));
+
 	UGorgeousObjectVariable* ExistingVar = nullptr;
 	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, SignalBridgeEntryKey, ExistingVar))
 	{
 		if (USignalBridgeStorage_OV* Storage = Cast<USignalBridgeStorage_OV>(ExistingVar))
 		{
+			GT_I_LOG("GT.SignalBridge", TEXT("Found Signal Bridge via AutoReplication: %s"), *Storage->GetName());
 			return Storage;
 		}
 	}
@@ -49,7 +52,26 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 		}
 	}
 
-	return nullptr; 
+	// FALLBACK: If we are here, AutoReplication failed to resolve (likely misconfigured level settings).
+	// We'll look for a transient storage attached to the world as a local-only fallback.
+	USignalBridgeStorage_OV* LocalStorage = nullptr;
+	for (TObjectIterator<USignalBridgeStorage_OV> It; It; ++It)
+	{
+		if (It->GetVariableWorld() == World && !It->IsTemplate())
+		{
+			LocalStorage = *It;
+			break;
+		}
+	}
+
+	if (!LocalStorage)
+	{
+		GT_W_LOG("GT.SignalBridge", TEXT("Signal Bridge: AutoReplication failed and no local storage found. Creating transient fallback for world %s."), *World->GetName());
+		LocalStorage = NewObject<USignalBridgeStorage_OV>(World);
+	}
+
+	GT_I_LOG("GT.SignalBridge", TEXT("Returning Signal Bridge: %s"), *LocalStorage->GetName());
+	return LocalStorage; 
 }
 
 void USignalBridgeBlueprintFunctionLibrary::RegisterSignal(UObject* WorldContextObject, FGameplayTag Tag, const FGorgeousSignalBridgeAccessRules_S& Rules, AGorgeousPlayerController* Requester)

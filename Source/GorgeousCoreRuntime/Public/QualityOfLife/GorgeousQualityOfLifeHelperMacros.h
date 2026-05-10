@@ -14,6 +14,7 @@
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Misc/Guid.h"
+#include "UObject/UObjectThreadContext.h"
 
 class AActor;
 class AGorgeousPlayerState;
@@ -26,7 +27,10 @@ class AGorgeousGameState;
 		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 	} \
 	AutoReplicationMixin.Bind(this, &AdditionalGorgeousData, &ReplicatedAutoReplicationVariables); \
-	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities);
+	if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+	{ \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+	}
 
 /** Declares a standard QoL constructor that wires the networking default and self-reference bootstrap. */
 #define UE_QOL_DEFINE_CONSTRUCTOR(Class, bDefaultNetworking) \
@@ -54,7 +58,10 @@ class AGorgeousGameState;
 			FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 			return; \
 		} \
-		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+		{ \
+			FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		} \
 	}
 
 /** Defines PostLoad so deserialized assets re-establish their self reference. */
@@ -67,7 +74,10 @@ class AGorgeousGameState;
 			FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 			return; \
 		} \
-		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+		{ \
+			FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		} \
 	}
 
 /** Convenience macro that declares both PostInitProperties and PostLoad overrides. */

@@ -38,17 +38,28 @@ void USignalBridgeStorage_OV::RegisterSignal(FGameplayTag Tag, const FGorgeousSi
 {
 	if (HasAuthority())
 	{
-		AccessRules.Add(Tag, Rules);
-		MarkPropertyDirty(GET_MEMBER_NAME_CHECKED(USignalBridgeStorage_OV, AccessRules));
+		FGorgeousSignalBridgeAccessRules_S NormalizedRules = Rules;
+		if (!NormalizedRules.RegisteredBy && Requester)
+		{
+			NormalizedRules.RegisteredBy = Requester;
+		}
+
+		// Only mark dirty if the rules are actually different
+		if (!AccessRules.Contains(Tag) || !(AccessRules[Tag] == NormalizedRules))
+		{
+			AccessRules.Add(Tag, NormalizedRules);
+			MarkPropertyDirty(GET_MEMBER_NAME_CHECKED(USignalBridgeStorage_OV, AccessRules));
+		}
 	}
 }
 
 bool USignalBridgeStorage_OV::Listen(FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
 {
-	if (!Controller) return false;
-
-	// Bind local delegate
+	// Bind local delegate - Always allowed locally
 	LocalBindings.FindOrAdd(Tag).Add(Delegate);
+	GT_I_LOG("GT.SignalBridge", TEXT("[%s] Registered local listener for tag %s."), *GetName(), *Tag.ToString());
+
+	if (!Controller) return true; // Local only success
 
 	// Register with server if we are a client
 	if (!HasAuthority())
@@ -182,7 +193,12 @@ void USignalBridgeStorage_OV::FireLocalSignal(FGameplayTag Tag, const FInstanced
 {
 	if (FSignalBridgeEventMulticastDelegate* Delegate = LocalBindings.Find(Tag))
 	{
+		GT_I_LOG("GT.SignalBridge", TEXT("[%s] Firing local signal for tag %s."), *GetName(), *Tag.ToString());
 		Delegate->Broadcast(Tag, Payload);
+	}
+	else
+	{
+		GT_I_LOG("GT.SignalBridge", TEXT("[%s] No local listeners found for tag %s."), *GetName(), *Tag.ToString());
 	}
 }
 

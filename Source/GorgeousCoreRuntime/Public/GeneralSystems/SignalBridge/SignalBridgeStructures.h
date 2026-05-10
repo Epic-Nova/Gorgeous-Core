@@ -6,9 +6,9 @@
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
 #include "SignalBridgeStructures.generated.h"
 
-class AGorgeousPlayerController;
 
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FSignalBridgeEventDelegate, FGameplayTag, SignalTag, const FInstancedStruct&, Payload);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FSignalBridgeEventMulticastDelegate, FGameplayTag, SignalTag, const FInstancedStruct&, Payload);
@@ -84,4 +84,13 @@ struct GORGEOUSCORERUNTIME_API FGorgeousSignalBridgeAccessRules_S
 	/** The controller that registered this signal. Used for 'OwningControllerOnly' policy. */
 	UPROPERTY(BlueprintReadOnly, Category = "Signal Bridge")
 	TObjectPtr<AGorgeousPlayerController> RegisteredBy;
+
+	bool operator==(const FGorgeousSignalBridgeAccessRules_S& Other) const
+	{
+		return bNetworked == Other.bNetworked &&
+			AccessPolicy == Other.AccessPolicy &&
+			AllowedClasses == Other.AllowedClasses &&
+			AllowedControllers == Other.AllowedControllers &&
+			RegisteredBy == Other.RegisteredBy;
+	}
 };
