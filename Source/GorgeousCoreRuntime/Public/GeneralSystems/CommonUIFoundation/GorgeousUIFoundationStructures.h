@@ -30,6 +30,13 @@ struct FGorgeousUIUpdatePayload
 	 */
 	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
 	FGameplayTag AnimationTag;
+
+	/**
+	 * Optional ID used to route this update to a specific widget instance 
+	 * among many sharing the same BindingTag (e.g. Slot Index).
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	FName RoutingID;
 };
 
 /**

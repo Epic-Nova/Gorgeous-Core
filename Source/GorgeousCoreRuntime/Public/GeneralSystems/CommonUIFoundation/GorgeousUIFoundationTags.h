@@ -18,3 +18,11 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Focus_Request);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Input_Action);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_System_Message_Push);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_System_Message_Result);
+
+// Layout & Layer Signals
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Layout_PushWidget);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Layout_RegisterLayer);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Layer_HUD);
+
+// Actions
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Action_Back);

@@ -3,6 +3,7 @@
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonTextBlock.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
+#include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 
 UGorgeousTextProcessor::UGorgeousTextProcessor()
 {
@@ -19,6 +20,11 @@ void UGorgeousTextProcessor::OnSignalReceived(UObject* Widget, FGameplayTag Sign
 
 	for (const auto& Pair : UpdatePayload->Updates)
 	{
+		if (!UGorgeousUIProcessor::IsStylePropertyAllowed(TextBlock, Pair.Key))
+		{
+			continue;
+		}
+
 		if (Pair.Key == FName("Text"))
 		{
 			FText TextOut;
@@ -38,6 +44,31 @@ void UGorgeousTextProcessor::OnSignalReceived(UObject* Widget, FGameplayTag Sign
 		}
 
 		// Fallback to universal reflection for any other property
-		ApplyPropertyToTarget(TextBlock, Pair.Key, Pair.Value);
+		ApplyStylePropertyToTarget(TextBlock, Pair.Key, Pair.Value);
+	}
+}
+
+void UGorgeousTextProcessor::ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme)
+{
+	UGorgeousCommonTextBlock* TextBlock = Cast<UGorgeousCommonTextBlock>(Widget);
+	if (!TextBlock)
+	{
+		Super::ApplyThemeToWidget(Widget, PrimaryTheme, FallbackTheme);
+		return;
+	}
+
+	ApplyThemeToWidgetInternal(Widget, PrimaryTheme, FallbackTheme);
+
+	if (PrimaryTheme && TextBlock->TypographyTag.IsValid())
+	{
+		FGorgeousUITypography_S TypeInfo = PrimaryTheme->GetTypography(TextBlock->TypographyTag);
+		if (IsStylePropertyAllowed(TextBlock, "Font"))
+		{
+			TextBlock->SetFont(TypeInfo.Font);
+		}
+		if (IsStylePropertyAllowed(TextBlock, "ColorAndOpacity"))
+		{
+			TextBlock->SetColorAndOpacity(FSlateColor(TypeInfo.Color));
+		}
 	}
 }

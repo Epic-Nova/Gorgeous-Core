@@ -19,6 +19,11 @@ void UGorgeousButtonProcessor::OnSignalReceived(UObject* Widget, FGameplayTag Si
 
 	for (const auto& Pair : UpdatePayload->Updates)
 	{
+		if (!UGorgeousUIProcessor::IsStylePropertyAllowed(Button, Pair.Key))
+		{
+			continue;
+		}
+
 		if (Pair.Key == FName("Enabled") || Pair.Key == FName("IsEnabled"))
 		{
 			bool bEnabledVal = false;
@@ -30,6 +35,24 @@ void UGorgeousButtonProcessor::OnSignalReceived(UObject* Widget, FGameplayTag Si
 		}
 
 		// Fallback to universal reflection for any other property
-		ApplyPropertyToTarget(Button, Pair.Key, Pair.Value);
+		ApplyStylePropertyToTarget(Button, Pair.Key, Pair.Value);
+	}
+}
+
+void UGorgeousButtonProcessor::ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme)
+{
+	UGorgeousCommonButton* Button = Cast<UGorgeousCommonButton>(Widget);
+	if (!Button)
+	{
+		Super::ApplyThemeToWidget(Widget, PrimaryTheme, FallbackTheme);
+		return;
+	}
+
+	ApplyThemeToWidgetInternal(Widget, PrimaryTheme, FallbackTheme);
+
+	// Reapply CommonUI style assets to ensure additive behavior.
+	if (UCommonButtonStyle* Style = Button->GetStyle())
+	{
+		Button->SetStyle(Style->GetClass());
 	}
 }

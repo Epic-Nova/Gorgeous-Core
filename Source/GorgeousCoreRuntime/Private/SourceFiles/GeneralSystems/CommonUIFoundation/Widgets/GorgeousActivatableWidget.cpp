@@ -11,6 +11,16 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousActivatableWidget)
 
+UGorgeousActivatableWidget::UGorgeousActivatableWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"RenderOpacity",
+		"Visibility",
+		"IsEnabled"
+	};
+}
+
 void UGorgeousActivatableWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -25,6 +35,14 @@ void UGorgeousActivatableWidget::NativeDestruct()
 
 void UGorgeousActivatableWidget::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }
 
 void UGorgeousActivatableWidget::NativeOnActivated()

@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "InstancedStruct.h"
+#include "StructUtils/InstancedStruct.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "InteractionFoundation_I.generated.h"
 //<-------------------------------------------------------------------------->

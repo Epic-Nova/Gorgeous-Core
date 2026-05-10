@@ -13,6 +13,17 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonWidget)
 
+UGorgeousCommonWidget::UGorgeousCommonWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"Brush",
+		"RenderOpacity",
+		"Visibility",
+		"IsEnabled"
+	};
+}
+
 void UGorgeousCommonWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -27,33 +38,37 @@ void UGorgeousCommonWidget::NativeDestruct()
 
 void UGorgeousCommonWidget::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+	}
+	else
+	{
+		UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
+	}
+
 	if (Theme)
 	{
-		// 1. Update Action Icons based on current platform/theme
-		UpdateActionIcon();
-
-		// 2. Setup Theme Color Interpolation Targets
-		for (auto& Pair : Theme->StyleProperties)
-		{
-			if (const FLinearColor* ColorPtr = Pair.Value.GetPtr<FLinearColor>())
-			{
-				StartThemeColors.Add(Pair.Key, CurrentThemeColors.FindOrAdd(Pair.Key, *ColorPtr));
-				TargetThemeColors.Add(Pair.Key, *ColorPtr);
-				ElapsedThemeTime = 0.0f;
-				bIsInterpTheme = true;
-			}
-			else
-			{
-				// Reflective Magic: Automatically apply non-color properties (Fonts, Sizes, etc.)
-				UGorgeousUIProcessor::ApplyPropertyToTarget(this, Pair.Key, Pair.Value);
-			}
-		}
+		UpdateActionIcon(Theme);
 	}
 }
 
-void UGorgeousCommonWidget::UpdateActionIcon()
+void UGorgeousCommonWidget::UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOverride)
 {
 	if (!ActionTag.IsValid()) return;
+	if (!UGorgeousUIProcessor::IsStylePropertyAllowed(this, "Brush")) return;
+
+	if (ThemeOverride)
+	{
+		FSlateBrush IconBrush = ThemeOverride->GetActionIcon(ActionTag, TEXT("Generic"));
+		if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
+		{
+			FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
+			UGorgeousUIProcessor::ApplyStylePropertyToTarget(this, "Brush", Payload);
+		}
+		return;
+	}
 
 	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 	if (Subsystem)
@@ -62,11 +77,11 @@ void UGorgeousCommonWidget::UpdateActionIcon()
 		{
 			const FName PlatformName = Subsystem->GetCurrentPlatformName();
 			FSlateBrush IconBrush = Theme->GetActionIcon(ActionTag, PlatformName);
-            
+			
 			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
 			{
 				FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
-				UGorgeousUIProcessor::ApplyPropertyToTarget(this, "Brush", Payload);
+				UGorgeousUIProcessor::ApplyStylePropertyToTarget(this, "Brush", Payload);
 			}
 		}
 	}

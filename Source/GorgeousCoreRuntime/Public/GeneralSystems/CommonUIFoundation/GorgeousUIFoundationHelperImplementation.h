@@ -3,6 +3,7 @@
 
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+#include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "Components/Widget.h"
 #include "Blueprint/UserWidget.h"
 #include "Curves/CurveFloat.h"
@@ -11,6 +12,32 @@
  * IMPLEMENTATION bodies for Gorgeous UI Foundation macros.
  * Include this ONLY in .cpp files to avoid circular dependencies with the Subsystem.
  */
+
+#if WITH_EDITOR
+#define UE_UI_WIDGET_EDITOR_IMPLEMENTATION(Class) \
+	void Class::ApplyEditorThemeIfNeeded() \
+	{ \
+		UGorgeousUIProcessor::ApplyEditorThemeToWidget(this); \
+	} \
+	void Class::PostLoad() \
+	{ \
+		Super::PostLoad(); \
+		ApplyEditorThemeIfNeeded(); \
+	} \
+	void Class::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) \
+	{ \
+		Super::PostEditChangeProperty(PropertyChangedEvent); \
+		ApplyEditorThemeIfNeeded(); \
+	} \
+	void Class::PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) \
+	{ \
+		Super::PostEditChangeChainProperty(PropertyChangedEvent); \
+		ApplyEditorThemeIfNeeded(); \
+	}
+#else
+#define UE_UI_WIDGET_EDITOR_IMPLEMENTATION(Class) \
+	void Class::ApplyEditorThemeIfNeeded() {}
+#endif
 
 #define UE_UI_IMPLEMENT_WIDGET_INTERFACE(Class) \
 	void Class::OnThemeApplied(const UGorgeousUITheme_DA* Theme) \
@@ -52,6 +79,8 @@
 			this->bIsInterpTheme = Config.bEnableThemeInterp; \
 		} \
 	} \
+	UE_UI_WIDGET_EDITOR_IMPLEMENTATION(Class) \
+	\
 	void Class::TickInterpolation_Implementation(float DeltaTime) \
 	{ \
 		auto __CalcInterpAlpha = [](float InAlpha, EGorgeousUIInterpType_E InType, const FRuntimeFloatCurve& InCurve) -> float \

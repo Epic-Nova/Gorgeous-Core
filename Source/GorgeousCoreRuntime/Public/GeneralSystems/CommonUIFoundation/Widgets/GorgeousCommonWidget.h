@@ -14,6 +14,7 @@ class UGorgeousUIState_DA;
 /**
  * Base widget for the Gorgeous UI system.
  * Inherits from CommonUserWidget for Common UI compatibility.
+ * 
  */
 UCLASS(Abstract, BlueprintType, Blueprintable)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonWidget : public UCommonUserWidget, public IGorgeousUIWidget_I
@@ -22,6 +23,8 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonWidget : public UCommonUserWidget, 
 
 public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
+
+	UGorgeousCommonWidget(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
 	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
@@ -34,13 +37,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
 
+	/** Routing ID for this widget instance (e.g. Slot Index). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
+	FName RoutingID;
+
+	/** Enables the per-widget style allow list. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
+	bool bUseStylePropertyAllowList = true;
+
+	/** Properties that can be styled by themes or Signal Bridge payloads. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
+	TSet<FName> StylePropertyAllowList;
+
 	/** Optional Action Tag for this widget (e.g. UI.Action.Confirm). Used for dynamic icon swapping. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
 	FGameplayTag ActionTag;
 
 	/** Updates the widget's icon based on the current theme and input method. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void UpdateActionIcon();
+	void UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOverride = nullptr);
 
 	/**
 	 * Map of UI States to animation names.
@@ -54,9 +69,11 @@ public:
 	void OnUIStateChanged(UGorgeousUIState_DA* NewState);
 
 	// IGorgeousUIWidget_I interface
+	virtual FName GetRoutingID() const override { return RoutingID; }
+	virtual void SetRoutingID(FName InID) override { RoutingID = InID; }
 	// End of IGorgeousUIWidget_I interface
 
 protected:
-	virtual void NativeConstruct();
-	virtual void NativeDestruct();
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 };

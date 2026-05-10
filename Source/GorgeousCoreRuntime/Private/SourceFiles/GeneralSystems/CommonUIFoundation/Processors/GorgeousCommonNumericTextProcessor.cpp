@@ -22,6 +22,11 @@ void UGorgeousCommonNumericTextProcessor::OnSignalReceived(UObject* Widget, FGam
 		FName PropertyName = Pair.Key;
 		const FInstancedStruct& Value = Pair.Value;
 
+		if (!UGorgeousUIProcessor::IsStylePropertyAllowed(TextBlock, PropertyName))
+		{
+			continue;
+		}
+
 		if (PropertyName == "Value" || PropertyName == "CurrentValue" || PropertyName == "TargetValue")
 		{
 			float FloatValueOut = 0.0f;

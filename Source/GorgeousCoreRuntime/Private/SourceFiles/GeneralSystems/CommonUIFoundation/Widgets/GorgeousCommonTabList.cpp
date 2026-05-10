@@ -8,6 +8,18 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonTabList)
 
+UGorgeousCommonTabList::UGorgeousCommonTabList(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"TabButtonStyle",
+		"TabTextStyle",
+		"RenderOpacity",
+		"Visibility",
+		"IsEnabled"
+	};
+}
+
 void UGorgeousCommonTabList::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -41,4 +53,12 @@ void UGorgeousCommonTabList::OnTabSelectSignalReceived(FGameplayTag SignalTag, c
 
 void UGorgeousCommonTabList::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
+	{
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
+	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }

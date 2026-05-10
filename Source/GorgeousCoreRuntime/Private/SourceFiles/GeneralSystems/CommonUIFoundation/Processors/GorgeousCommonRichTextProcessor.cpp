@@ -22,6 +22,11 @@ void UGorgeousCommonRichTextProcessor::OnSignalReceived(UObject* Widget, FGamepl
 		FName PropertyName = Pair.Key;
 		const FInstancedStruct& Value = Pair.Value;
 
+		if (!UGorgeousUIProcessor::IsStylePropertyAllowed(TextBlock, PropertyName))
+		{
+			continue;
+		}
+
 		if (PropertyName == "Text")
 		{
 			FText TextValueOut;

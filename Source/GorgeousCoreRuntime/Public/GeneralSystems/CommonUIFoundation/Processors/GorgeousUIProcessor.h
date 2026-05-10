@@ -8,6 +8,7 @@
 #include "GorgeousUIProcessor.generated.h"
 
 class UObject;
+class UGorgeousUITheme_DA;
 
 /**
  * Base class for all UI Processor objects.
@@ -51,4 +52,29 @@ public:
 	 * @return true if the property was successfully applied.
 	 */
 	static bool ApplyPropertyToTarget(UObject* Target, FName PropertyName, const FInstancedStruct& Value);
+
+	/** Applies a style value to a target object using the style allow list. */
+	static bool ApplyStylePropertyToTarget(UObject* Target, FName PropertyName, const FInstancedStruct& Value);
+
+	/** Returns true if the property is allowed for styling updates. */
+	static bool IsStylePropertyAllowed(const UObject* Target, FName PropertyName);
+
+	/** Returns the project default theme from developer settings. */
+	static const UGorgeousUITheme_DA* GetDefaultTheme();
+
+	/** Applies resolved theme properties to a widget (uses binding tag prefix + fallback). */
+	static void ApplyThemeToWidgetInternal(UObject* Target, const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme = nullptr);
+
+	/** Applies resolved theme properties to a widget via a processor instance. */
+	virtual void ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme = nullptr);
+
+#if WITH_EDITOR
+	/** Applies editor-time theme evaluation using project settings. */
+	static void ApplyEditorThemeToWidget(UObject* Target);
+#endif
+
+private:
+	static bool ResolveThemeProperty(const UGorgeousUITheme_DA* Theme, FName Key, FInstancedStruct& OutValue);
+	static bool ResolveThemePropertyWithFallback(const UGorgeousUITheme_DA* PrimaryTheme, const UGorgeousUITheme_DA* FallbackTheme, const FGameplayTag& BindingTag, FName PropertyName, FInstancedStruct& OutValue);
+	static void ApplyInterpolatedThemeColors(UObject* Target);
 };

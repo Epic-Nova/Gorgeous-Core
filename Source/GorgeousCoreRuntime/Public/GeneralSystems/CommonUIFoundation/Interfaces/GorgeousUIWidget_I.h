@@ -26,6 +26,24 @@ public:
 	/** Returns the binding tag for this widget. */
 	virtual FGameplayTag GetBindingTag() const = 0;
 
+	/** Returns the routing ID for this widget instance (e.g. Slot Index). */
+	virtual FName GetRoutingID() const { return NAME_None; }
+
+	/** Sets the routing ID for this widget instance. */
+	virtual void SetRoutingID(FName InID) {}
+
+	/** Returns true if the style allow list should be enforced. */
+	virtual bool UseStylePropertyAllowList() const { return true; }
+
+	/** Returns the style property allow list for this widget. */
+	virtual const TSet<FName>& GetStylePropertyAllowList() const { static TSet<FName> Dummy; return Dummy; }
+
+	/** Returns true if the property is allowed for styling updates. */
+	virtual bool IsStylePropertyAllowed(FName PropertyName) const
+	{
+		return !UseStylePropertyAllowList() || GetStylePropertyAllowList().Contains(PropertyName);
+	}
+
 	/** Returns the widget/object instance for this UI element. */
 	virtual UObject* GetAsWidget() = 0;
 

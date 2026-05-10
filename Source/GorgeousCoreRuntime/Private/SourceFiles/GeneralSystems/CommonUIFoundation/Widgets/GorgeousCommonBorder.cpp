@@ -6,6 +6,18 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousCommonBorder)
 
+UGorgeousCommonBorder::UGorgeousCommonBorder(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	StylePropertyAllowList = {
+		"Brush",
+		"BrushColor",
+		"ContentColor",
+		"ContentColorAndOpacity",
+		"Padding"
+	};
+}
+
 void UGorgeousCommonBorder::SynchronizeProperties()
 {
 	Super::SynchronizeProperties();
@@ -18,16 +30,20 @@ void UGorgeousCommonBorder::OnWidgetRebuilt()
 	UE_UI_REGISTER_WIDGET_RAW()
 }
 
+void UGorgeousCommonBorder::ReleaseSlateResources(bool bReleaseChildren)
+{
+	UE_UI_UNREGISTER_WIDGET()
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
 void UGorgeousCommonBorder::ApplyThemeInterpolation(const UGorgeousUITheme_DA* Theme)
 {
-	if (Theme)
+	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
+	if (Subsystem)
 	{
-		SetBrush(Theme->GetBrush("BorderBrush"));
+		Subsystem->ApplyThemeToWidget(this, Theme);
+		return;
 	}
-	
-	if (TargetThemeColors.Contains("BorderColor"))
-	{
-		FLinearColor DisplayColor = CurrentThemeColors.Contains("BorderColor") ? CurrentThemeColors["BorderColor"] : TargetThemeColors["BorderColor"];
-		SetBrushColor(DisplayColor);
-	}
+
+	UGorgeousUIProcessor::ApplyThemeToWidgetInternal(this, Theme);
 }
