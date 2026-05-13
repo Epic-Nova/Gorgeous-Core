@@ -19,6 +19,10 @@
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
 
+//=============================================================================
+// Helpers
+//=============================================================================
+
 namespace
 {
 	constexpr int32 MaxPropertyTraversalDepth = 4;
@@ -132,6 +136,10 @@ namespace
 		return SchemaMap->TargetDefinition.TargetClass.LoadSynchronous();
 	}
 }
+
+//=============================================================================
+// UGorgeousDataSchemaMapping_DA Implementation
+//=============================================================================
 
 bool UGorgeousDataSchemaMapping_DA::IsMigrationActionEnabled() const
 {

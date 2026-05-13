@@ -11,3 +11,4 @@
 #pragma once
 
 //@TODO: Planned for version 1.1 and upwards
+//@todo: Consult the wildcard interface plan before implementing this

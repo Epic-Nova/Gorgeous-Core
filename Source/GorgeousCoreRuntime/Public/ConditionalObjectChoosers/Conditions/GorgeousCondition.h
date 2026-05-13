@@ -12,7 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserTypes.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousCondition.generated.h"
 //<-------------------------------------------------------------------------->
@@ -20,27 +20,22 @@
 /**
  * Base class for conditions used in conditional object choosers.
  *
- * Key features include:
- * - Mode selection from EConditionalChooserMode_E.
- * - CheckCondition function to evaluate the condition.
- *
  * @author Nils Bergemann
  * @note This class serves as a base for specific condition implementations.
  */
-UCLASS(Blueprintable, BlueprintType, EditInlineNew)
+UCLASS(Blueprintable, BlueprintType, EditInlineNew,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Overview", 
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Conditions/Conditions", 
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Examples/"
+		))
 class UGorgeousCondition : public UObject
 {
 	GENERATED_BODY()
 
+	//<=======================--- Blueprint Functions ---=======================>
 public:
-
-	/**
-	 * The mode of the condition.
-	 * Only used for algebraic conditions, for gameplay tag conditions the mode is determined by the fight mode.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Condition")
-	EConditionalChooserMode_E Mode;
-
+	
 	/**
 	 * Checks the blueprint overwritten condition and returns a result.
 	 *
@@ -48,4 +43,16 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Condition")
 	uint8 CheckCondition();
+	//<------------------------------------------------------------------------->
+
+	
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	
+	/**
+	 * The mode of the condition.
+	 * Only used for algebraic conditions, for gameplay tag conditions the mode is determined by the fight mode.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Condition")
+	EConditionalChooserMode_E Mode;
+	//<------------------------------------------------------------------------->
 };

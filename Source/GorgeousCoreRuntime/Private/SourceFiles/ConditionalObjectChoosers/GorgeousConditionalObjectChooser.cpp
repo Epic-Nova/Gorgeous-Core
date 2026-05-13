@@ -20,7 +20,7 @@ namespace
 	 * Best-effort placeholder detection without depending on private engine headers.
 	 * Linker placeholders usually carry PLACEHOLDER in their name or outer name.
 	 */
-	static bool IsLikelyPlaceholder(const UObject* Obj)
+	bool IsLikelyPlaceholder(const UObject* Obj)
 	{
 		if (!IsValid(Obj))
 		{

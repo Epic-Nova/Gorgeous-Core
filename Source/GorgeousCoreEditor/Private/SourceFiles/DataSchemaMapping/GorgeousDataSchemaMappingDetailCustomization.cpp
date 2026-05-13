@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
-#include "DataSchemaMapping/GorgeousDataSchemaMappingStructures.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingTypes.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetData.h"
 #include "ContentBrowserModule.h"

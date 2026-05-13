@@ -12,13 +12,12 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserTypes.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
-
 
 uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 {

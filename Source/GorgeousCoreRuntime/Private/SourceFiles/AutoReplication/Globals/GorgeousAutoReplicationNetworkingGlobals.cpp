@@ -9,7 +9,7 @@
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
 
-#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationNetworkingLibrary.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationNetworkingGlobals.h"
 
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformProcess.h"
@@ -51,7 +51,7 @@ static FString GetCachedMachineFingerprint()
 }
 }
 
-FString UGorgeousAutoReplicationNetworkingLibrary::MakeStablePlayerConnectionId(const APlayerController* PlayerController)
+FString UGorgeousAutoReplicationNetworkingGlobals::MakeStablePlayerConnectionId(const APlayerController* PlayerController)
 {
 	if (!PlayerController)
 	{

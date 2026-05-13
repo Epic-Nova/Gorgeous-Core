@@ -60,7 +60,7 @@ protected:
  * Exposes static functions and properties that are used throughout the module.
  */
 UCLASS(BlueprintType, DisplayName = "Gorgeous Core Globals")
-class UGorgeousCoreRuntimeGlobals : public UObject
+class UGorgeousCoreRuntimeGlobals : public UGorgeous
 {
 	GENERATED_BODY()
 

@@ -19,27 +19,38 @@
 //<-------------------------------------------------------------------------->
 
 /**
- * A conditional object chooser that selects an object variable based on a condition.
- *
- * Key features include:
- * - ConditionCheck: A GorgeousCondition object to determine the selection.
- * - Conditions: An array of GorgeousObjectVariables to choose from.
- * - DecideCondition function to select the appropriate object variable.
+ * A conditional chooser that selects an object variable based on a condition.
  *
  * @author Nils Bergemann
  * @note This class allows for dynamic object selection based on specified conditions.
  */
-UCLASS(Blueprintable, BlueprintType)
+UCLASS(Blueprintable, BlueprintType, 
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Overview", 
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Choosers",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Examples/"
+		))
 class GORGEOUSCORERUNTIME_API UGorgeousConditionalObjectChooser : public UObject
 {
 	GENERATED_BODY()
+	
+	//<============================--- Overrides ---============================>
+	
+	// Sanitizes serialized data after load to drop placeholders created by circular blueprint dependencies.
+	virtual void PostLoad() override;
 
+	// Sanitizes during load so placeholders are nulled before dependency repair runs.
+	virtual void Serialize(FArchive& Ar) override;
+	//<------------------------------------------------------------------------->
+
+	
+	//<=======================--- Blueprint Functions ---=======================>
 public:
-
+	
 	/**
 	 * Selects an object variable based on the condition check.
 	 *
-	 * @return The selected GorgeousObjectVariable.
+	 * @return The selected Object Variable.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Conditional Object Chooser")
 	UGorgeousObjectVariable* DecideCondition() const;
@@ -51,30 +62,28 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Gorgeous Conditional Object Chooser")
 	void CleanupInvalidEntries();
 
-	/**
-	 * The condition check object.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", Setter = SetConditionCheck, meta = (AllowAbstract = "true"))
+	
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	
+	// The condition check that should be performed.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", Setter, meta = (AllowAbstract = "true"))
 	TObjectPtr<UGorgeousCondition> ConditionCheck = nullptr;
 
-	/**
-	 * The array of object variables to choose from.
-	 */
+	// The object variables that can be selected based on the condition check.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category = "Conditional Object Chooser", meta = (AllowAbstract = "true"))
 	TArray<TObjectPtr<UGorgeousObjectVariable>> Conditions;
-
+	//<------------------------------------------------------------------------->
+	
+	
+	//<============================--- C++ Only ---=============================>
 private:
-
-	// Sanitizes serialized data after load to drop placeholders created by circular blueprint dependencies.
-	virtual void PostLoad() override;
-
-	// Sanitizes during load so placeholders are nulled before dependency repair runs.
-	virtual void Serialize(FArchive& Ar) override;
-
+	
 	/**
-	 * Sets the condition check variable and ensures that the variable is not this object.
+	 * Sets the condition check variable and ensures that the assigned object is valid and of the correct type.
+	 * 
 	 * @param NewConditionCheck The new condition check to set.
 	 */
+	UFUNCTION(BlueprintCallable)
 	void SetConditionCheck(UGorgeousCondition* NewConditionCheck);
-	
+	//<------------------------------------------------------------------------->
 };
