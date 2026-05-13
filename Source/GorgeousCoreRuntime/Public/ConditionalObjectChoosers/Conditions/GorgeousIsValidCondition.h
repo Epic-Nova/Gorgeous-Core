@@ -16,35 +16,27 @@
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousIsValidCondition.generated.h"
 //<-------------------------------------------------------------------------->
+
 /**
  * A condition that checks if objects are valid (not null).
- *
- * Key features include:
- * - Object inputs A and B.
- * - Mode selection from EConditionalChooserMode_E (inherited from UGorgeousCondition).
- * - CheckCondition function to evaluate the condition.
- *
+ * 
+ * Uses Param A & Param B and applies the selected mode to evaluate if the chooser should return byte 0 for false or byte 1 for true.
+ * 
  * @author Nils Bergemann
  * @note This condition can be used in conditional object choosers to select objects based on object validity.
  */
-UCLASS(MinimalAPI, Blueprintable, BlueprintType)
+UCLASS(MinimalAPI, Blueprintable, BlueprintType, 
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Overview", 
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Conditions/IsValidCondition", 
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ConditionalObjectChoosers/Examples/"
+		))
 class UGorgeousIsValidCondition : public UGorgeousCondition
 {
 	GENERATED_BODY()
 
+	//<=======================--- Blueprint Functions ---=======================>
 public:
-
-	/**
-	 * The first object input.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
-	UObject* A;
-
-	/**
-	 * The second object input.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
-	UObject* B;
 	
 	/**
 	 * Checks if the object inputs are valid based on the selected mode.
@@ -53,4 +45,17 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous IsValid Condition")
 	virtual uint8 CheckCondition_Implementation() override;
+	//<------------------------------------------------------------------------->
+
+	
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	
+	// The first object input
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
+	UObject* A;
+
+	// The second object input. 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous IsValid Condition")
+	UObject* B;
+	//<------------------------------------------------------------------------->
 };

@@ -8,7 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "DataSchemaMapping/GorgeousDataSchemaMappingStructures.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingTypes.h"
 #include "Helpers/GorgeousPropertyPathHelper.h"
 
 bool FGorgeousDataSchemaSourceSnapshot_S::TryGetValueByPath(const FString& InPath, FString& OutValue) const

@@ -16,15 +16,13 @@
 //<-------------------------------------------------------------------------->
 
 /**
- * A structure representing a functional structure.
- *
- * Key features include:
- * - Unique identifier (Identifier).
- * - Default constructor to generate a new identifier.
- * - Virtual destructor.
- * - Editor-specific functions (PostEditChangeProperty, PreEditChangeProperty).
- *
- * @note This structure can be used to define various functional structures within the game.
+ * Structure for defining functional structures within the game. 
+ * This structure can be extended to include various properties and functions as needed for specific use cases.
+ * 
+ * Functional structures enable structures to receive editor events and have an owner object, 
+ * allowing for more dynamic and interactive data structures in Unreal Engine.
+ * 
+ * @author Nils Bergemann
  */
 USTRUCT(Blueprintable, DisplayName = "Gorgeous Functional Structure")
 struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
@@ -32,28 +30,26 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	GENERATED_BODY()
 
 	//<================--- Friend Classes ---================>
+#if WITH_EDITOR
 	friend class FGorgeousFunctionalStructurePropertyTypeCustomization;
+#endif WITH_EDITOR
 	//<------------------------------------------------------>
 
-	/**
-	 * Default constructor.
-	 */
+	// Default constructor that initializes the identifier with a new GUID and sets the owner object to nullptr.
 	FGorgeousFunctionalStructure_S()
 	{
 		Identifier = FGuid::NewGuid();
 		OwnerObject = nullptr;
 	}
 
-
-	/**
-	 * Virtual destructor.
+	/** 
+	 * The destructor is declared as virtual to allow for proper cleanup in case of inheritance, 
+	 * even though USTRUCTs typically do not have virtual functions. 
+	 * This is a safeguard for any potential future extensions where this struct might be inherited by a class or another struct that requires a destructor.
 	 */
 	virtual ~FGorgeousFunctionalStructure_S() = default;
 
-	/**
-	 * Unique identifier for the functional structure.
-	 * Initialized to empty GUID to satisfy UHT requirements, then set to new GUID in constructor.
-	 */
+	// Unique identifier for this functional structure instance. This can be used to track instances across editor sessions or for debugging purposes.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure", meta = (DisplayPriority = 99))
 	FGuid Identifier = FGuid();
 
@@ -86,8 +82,10 @@ protected:
 
 #if WITH_EDITORONLY_DATA
 	
-	/**
-	 * The outer object that holds this structure. Can be used for Instanced UPROPERTY's.
+	/** 
+	 * The owner object of this functional structure. 
+	 * This allows the structure to have context about which UObject it belongs to, 
+	 * enabling it to respond to editor events and interact with the owning object as needed.
 	 */
 	UPROPERTY(Transient)
 	UObject* OwnerObject;

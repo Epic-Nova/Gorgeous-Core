@@ -206,6 +206,7 @@ public:
      */
     //static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);
 
+   
     /**
      * Sets the value of a property with any type for an object variable identified by its unique identifier.
      *
@@ -222,51 +223,7 @@ public:
     UFUNCTION(BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "Value"))
     static void SetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, const int32& Value);
 
-    DECLARE_FUNCTION(execSetUniversalVariable)
-    {
-       P_GET_STRUCT(FGuid, Identifier);
-       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-       Stack.StepCompiledIn<FProperty>(nullptr);
-       const FProperty* SourceProperty  = Stack.MostRecentProperty;
-       const void* SourcePropertyAddress  = Stack.MostRecentPropertyAddress;
-       P_FINISH;
-
-       if (OptionalPropertyName.IsNone())
-       {
-          OptionalPropertyName = "Value";
-       }
-
-       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-       {
-          if (ObjectVariable->UniqueIdentifier == Identifier)
-          {
-             FoundObjectVariable = ObjectVariable;
-             break;
-          }
-       }
-
-       if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
-       {
-          if (const FProperty* TargetProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-          {
-             if (TargetProperty->SameType(SourceProperty))
-             {
-               if (!FoundObjectVariable->ValidateVariableAssignment(OptionalPropertyName, SourceProperty, SourcePropertyAddress))
-               {
-                  GT_E_LOG("GT.ObjectVariables.Universal.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *OptionalPropertyName.ToString(), *GetNameSafe(FoundObjectVariable));
-                  return;
-               }
-               TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
-             }
-             else
-             {
-               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
-             }
-          }
-       }
-    }
+    DECLARE_FUNCTION(execSetUniversalVariable);
 
     /**
      * Gets the value of a property with any type from an object variable identified by its unique identifier.
@@ -283,47 +240,8 @@ public:
      */
     UFUNCTION(BlueprintPure, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
     static void GetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, int32& OutValue);
-
-    DECLARE_FUNCTION(execGetUniversalVariable)
-    {
-       P_GET_STRUCT(FGuid, Identifier);
-       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-       Stack.StepCompiledIn<FProperty>(nullptr);
-       void* OutValueAddress = Stack.MostRecentPropertyAddress;
-       const FProperty* OutValueProperty = Stack.MostRecentProperty;
-       P_FINISH;
-
-       if (OptionalPropertyName.IsNone())
-       {
-          OptionalPropertyName = "Value";
-       }
-
-       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-       {
-          if (ObjectVariable->UniqueIdentifier == Identifier)
-          {
-             FoundObjectVariable = ObjectVariable;
-             break;
-          }
-       }
-
-       if (FoundObjectVariable)
-       {
-          if (const FProperty* SourceProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-          {
-             if (SourceProperty->SameType(OutValueProperty))
-             {
-                SourceProperty->CopyCompleteValue(OutValueAddress, SourceProperty->ContainerPtrToValuePtr<void>(FoundObjectVariable));
-             }
-             else
-             {
-               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
-             }
-          }
-       }
-    }
+   
+    DECLARE_FUNCTION(execGetUniversalVariable);
 
     /**
      * Registers a new object variable with the registry.

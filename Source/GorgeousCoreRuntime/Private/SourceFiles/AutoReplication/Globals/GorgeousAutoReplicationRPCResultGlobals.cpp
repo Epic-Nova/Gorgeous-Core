@@ -8,7 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCResultLibrary.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationRPCResultGlobals.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
@@ -32,42 +32,42 @@ namespace
 // FGorgeousAutoReplicationRPCResult
 // =============================================================================
 
-UGorgeousObjectVariable* UGorgeousAutoReplicationRPCResultLibrary::GetTargetVariable(const FGorgeousAutoReplicationRPCResult& Result)
+UGorgeousObjectVariable* UGorgeousAutoReplicationRPCResultGlobals::GetTargetVariable(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.TargetVariable;
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::HasTargetVariable(const FGorgeousAutoReplicationRPCResult& Result)
+bool UGorgeousAutoReplicationRPCResultGlobals::HasTargetVariable(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.TargetVariable != nullptr;
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::IsServerResult(const FGorgeousAutoReplicationRPCResult& Result)
+bool UGorgeousAutoReplicationRPCResultGlobals::IsServerResult(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.Responder.IsValid() && Result.Responder.bIsServer;
 }
 
-FGorgeousAutoReplicationRPCResponderHandle UGorgeousAutoReplicationRPCResultLibrary::GetResponder(const FGorgeousAutoReplicationRPCResult& Result)
+FGorgeousAutoReplicationRPCResponderHandle UGorgeousAutoReplicationRPCResultGlobals::GetResponder(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.Responder;
 }
 
-FString UGorgeousAutoReplicationRPCResultLibrary::GetResponderDescription(const FGorgeousAutoReplicationRPCResult& Result)
+FString UGorgeousAutoReplicationRPCResultGlobals::GetResponderDescription(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return DescribeResponder(Result.Responder);
 }
 
-FName UGorgeousAutoReplicationRPCResultLibrary::GetHandlerName(const FGorgeousAutoReplicationRPCResult& Result)
+FName UGorgeousAutoReplicationRPCResultGlobals::GetHandlerName(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.QueuedRPC.Payload.HandlerName;
 }
 
-FName UGorgeousAutoReplicationRPCResultLibrary::GetRPCKey(const FGorgeousAutoReplicationRPCResult& Result)
+FName UGorgeousAutoReplicationRPCResultGlobals::GetRPCKey(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	return Result.QueuedRPC.Key;
 }
 
-FString UGorgeousAutoReplicationRPCResultLibrary::GetTargetKindInfo(const FGorgeousAutoReplicationRPCResult& Result)
+FString UGorgeousAutoReplicationRPCResultGlobals::GetTargetKindInfo(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	const UEnum* Enum = StaticEnum<EGorgeousAutoReplicationTargetKind>();
 	if (!Enum)
@@ -87,22 +87,22 @@ FString UGorgeousAutoReplicationRPCResultLibrary::GetTargetKindInfo(const FGorge
 // FGorgeousAutoReplicationRPCAsyncResult
 // =============================================================================
 
-FGorgeousAutoReplicationRPCResult UGorgeousAutoReplicationRPCResultLibrary::GetPrimaryResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+FGorgeousAutoReplicationRPCResult UGorgeousAutoReplicationRPCResultGlobals::GetPrimaryResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.Result;
 }
 
-UGorgeousObjectVariable* UGorgeousAutoReplicationRPCResultLibrary::GetPrimaryTargetVariable(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+UGorgeousObjectVariable* UGorgeousAutoReplicationRPCResultGlobals::GetPrimaryTargetVariable(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.Result.TargetVariable;
 }
 
-FGorgeousAutoReplicationRPCResponderHandle UGorgeousAutoReplicationRPCResultLibrary::GetPrimaryResponder(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+FGorgeousAutoReplicationRPCResponderHandle UGorgeousAutoReplicationRPCResultGlobals::GetPrimaryResponder(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.Result.Responder;
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::GetResultForResponder(
+bool UGorgeousAutoReplicationRPCResultGlobals::GetResultForResponder(
 	const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult,
 	const FString& ResponderKey,
 	FGorgeousAutoReplicationRPCResult& OutResult)
@@ -116,14 +116,14 @@ bool UGorgeousAutoReplicationRPCResultLibrary::GetResultForResponder(
 	return false;
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::HasResultForResponder(
+bool UGorgeousAutoReplicationRPCResultGlobals::HasResultForResponder(
 	const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult,
 	const FString& ResponderKey)
 {
 	return AsyncResult.ResultMap.Contains(ResponderKey);
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::GetResultForResponderHandle(
+bool UGorgeousAutoReplicationRPCResultGlobals::GetResultForResponderHandle(
 	const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult,
 	const FGorgeousAutoReplicationRPCResponderHandle& ResponderHandle,
 	FGorgeousAutoReplicationRPCResult& OutResult)
@@ -131,41 +131,41 @@ bool UGorgeousAutoReplicationRPCResultLibrary::GetResultForResponderHandle(
 	return GetResultForResponder(AsyncResult, ResponderHandle.GetStableKey(), OutResult);
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::HasResultForResponderHandle(
+bool UGorgeousAutoReplicationRPCResultGlobals::HasResultForResponderHandle(
 	const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult,
 	const FGorgeousAutoReplicationRPCResponderHandle& ResponderHandle)
 {
 	return HasResultForResponder(AsyncResult, ResponderHandle.GetStableKey());
 }
 
-TArray<FGorgeousAutoReplicationRPCResult> UGorgeousAutoReplicationRPCResultLibrary::GetAllResults(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+TArray<FGorgeousAutoReplicationRPCResult> UGorgeousAutoReplicationRPCResultGlobals::GetAllResults(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.ResultSet;
 }
 
-TArray<FString> UGorgeousAutoReplicationRPCResultLibrary::GetAllResponderKeys(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+TArray<FString> UGorgeousAutoReplicationRPCResultGlobals::GetAllResponderKeys(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	TArray<FString> Keys;
 	AsyncResult.ResultMap.GenerateKeyArray(Keys);
 	return Keys;
 }
 
-int32 UGorgeousAutoReplicationRPCResultLibrary::GetResultCount(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+int32 UGorgeousAutoReplicationRPCResultGlobals::GetResultCount(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.ResultSet.Num();
 }
 
-UGorgeousRPC_OV* UGorgeousAutoReplicationRPCResultLibrary::GetResultContainer(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+UGorgeousRPC_OV* UGorgeousAutoReplicationRPCResultGlobals::GetResultContainer(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.ResultContainer;
 }
 
-bool UGorgeousAutoReplicationRPCResultLibrary::IsLastResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+bool UGorgeousAutoReplicationRPCResultGlobals::IsLastResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return AsyncResult.bIsLastResult;
 }
 
-FString UGorgeousAutoReplicationRPCResultLibrary::GetResponderProgress(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+FString UGorgeousAutoReplicationRPCResultGlobals::GetResponderProgress(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	if (AsyncResult.TotalExpectedResponders <= 0)
 	{
@@ -176,7 +176,7 @@ FString UGorgeousAutoReplicationRPCResultLibrary::GetResponderProgress(const FGo
 		AsyncResult.TotalExpectedResponders);
 }
 
-float UGorgeousAutoReplicationRPCResultLibrary::GetResponderProgressFraction(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+float UGorgeousAutoReplicationRPCResultGlobals::GetResponderProgressFraction(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	if (AsyncResult.TotalExpectedResponders <= 0)
 	{
@@ -194,7 +194,7 @@ float UGorgeousAutoReplicationRPCResultLibrary::GetResponderProgressFraction(con
 // When TargetVariable is a UGorgeousRPC_OV (i.e. the completion path has already
 // replaced the leaf OV with the container), drill one level deeper so ReturnOV
 // always holds the actual handler-written OV, never the container itself.
-FGorgeousAutoReplicationRPCValueResult UGorgeousAutoReplicationRPCResultLibrary::ToValueResult(const FGorgeousAutoReplicationRPCResult& Result)
+FGorgeousAutoReplicationRPCValueResult UGorgeousAutoReplicationRPCResultGlobals::ToValueResult(const FGorgeousAutoReplicationRPCResult& Result)
 {
 	FGorgeousAutoReplicationRPCValueResult Out;
 	Out.Responder = Result.Responder;
@@ -235,12 +235,12 @@ FGorgeousAutoReplicationRPCValueResult UGorgeousAutoReplicationRPCResultLibrary:
 	return Out;
 }
 
-FGorgeousAutoReplicationRPCValueResult UGorgeousAutoReplicationRPCResultLibrary::GetPrimaryValueResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+FGorgeousAutoReplicationRPCValueResult UGorgeousAutoReplicationRPCResultGlobals::GetPrimaryValueResult(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	return ToValueResult(AsyncResult.Result);
 }
 
-TArray<FGorgeousAutoReplicationRPCValueResult> UGorgeousAutoReplicationRPCResultLibrary::GetAllValueResults(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
+TArray<FGorgeousAutoReplicationRPCValueResult> UGorgeousAutoReplicationRPCResultGlobals::GetAllValueResults(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult)
 {
 	TArray<FGorgeousAutoReplicationRPCValueResult> Out;
 	Out.Reserve(AsyncResult.ResultSet.Num());

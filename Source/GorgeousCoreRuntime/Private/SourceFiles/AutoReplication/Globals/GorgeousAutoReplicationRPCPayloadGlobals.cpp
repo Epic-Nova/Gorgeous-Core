@@ -8,7 +8,7 @@
 |                    Epic Nova is an independent entity,                    |
 |        that has nothing in common with Epic Games in any capacity.        |
 <==========================================================================*/
-#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadGlobals.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Serialization/MemoryWriter.h"
@@ -100,7 +100,7 @@ namespace GorgeousRPCPayloadLibrary_Private
 }
 
 //-----------------------------------------------------------------------------
-FGorgeousRPCPayload UGorgeousAutoReplicationRPCPayloadLibrary::MakeAutoReplicationRPCPayload(const FName HandlerName)
+FGorgeousRPCPayload UGorgeousAutoReplicationRPCPayloadGlobals::MakeAutoReplicationRPCPayload(const FName HandlerName)
 {
 	FGorgeousRPCPayload Payload;
 	Payload.HandlerName = HandlerName;
@@ -108,7 +108,7 @@ FGorgeousRPCPayload UGorgeousAutoReplicationRPCPayloadLibrary::MakeAutoReplicati
 }
 
 //-----------------------------------------------------------------------------
-bool UGorgeousAutoReplicationRPCPayloadLibrary::AddArgumentFromProperty(
+bool UGorgeousAutoReplicationRPCPayloadGlobals::AddArgumentFromProperty(
 	FGorgeousRPCPayload& Payload, FName ArgumentName,
 	const FProperty* Property, const void* ValuePtr)
 {
@@ -140,7 +140,7 @@ bool UGorgeousAutoReplicationRPCPayloadLibrary::AddArgumentFromProperty(
 //-----------------------------------------------------------------------------
 // CustomThunk – wildcard "add any value as RPC argument"
 //-----------------------------------------------------------------------------
-DEFINE_FUNCTION(UGorgeousAutoReplicationRPCPayloadLibrary::execAddAutoReplicationRPCArgument)
+DEFINE_FUNCTION(UGorgeousAutoReplicationRPCPayloadGlobals::execAddAutoReplicationRPCArgument)
 {
 	// Param 1: Payload (ref)
 	P_GET_STRUCT_REF(FGorgeousRPCPayload, Payload);
@@ -155,13 +155,13 @@ DEFINE_FUNCTION(UGorgeousAutoReplicationRPCPayloadLibrary::execAddAutoReplicatio
 	P_FINISH;
 
 	P_NATIVE_BEGIN;
-	UGorgeousAutoReplicationRPCPayloadLibrary::AddArgumentFromProperty(Payload, ArgumentName, ValueProperty, ValueAddr);
+	UGorgeousAutoReplicationRPCPayloadGlobals::AddArgumentFromProperty(Payload, ArgumentName, ValueProperty, ValueAddr);
 	*(FGorgeousRPCPayload*)RESULT_PARAM = Payload;
 	P_NATIVE_END;
 }
 
 // Native stub required by DECLARE_FUNCTION – never called directly.
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCArgument(
 	FGorgeousRPCPayload& Payload, FName /*ArgumentName*/, int32 /*Value*/)
 {
 	check(false && "AddAutoReplicationRPCArgument: call via Blueprint (CustomThunk) only.");
@@ -171,7 +171,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 //-----------------------------------------------------------------------------
 // Typed convenience helpers
 //-----------------------------------------------------------------------------
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCBoolArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCBoolArgument(
 	FGorgeousRPCPayload& Payload, FName ArgumentName, bool bValue)
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
@@ -182,7 +182,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 	return Payload;
 }
 
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCIntArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCIntArgument(
 	FGorgeousRPCPayload& Payload, FName ArgumentName, int32 Value)
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
@@ -193,7 +193,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 	return Payload;
 }
 
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCFloatArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCFloatArgument(
 	FGorgeousRPCPayload& Payload, FName ArgumentName, double Value)
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
@@ -205,7 +205,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 	return Payload;
 }
 
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCStringArgument(
 	FGorgeousRPCPayload& Payload, FName ArgumentName, const FString& Value)
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
@@ -217,7 +217,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 	return Payload;
 }
 
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCNameArgument(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCNameArgument(
 	FGorgeousRPCPayload& Payload, FName ArgumentName, FName Value)
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
@@ -229,7 +229,7 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicati
 }
 
 //-----------------------------------------------------------------------------
-FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadLibrary::SetAutoReplicationRPCTimeout(
+FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::SetAutoReplicationRPCTimeout(
 	FGorgeousRPCPayload& Payload, float TimeoutSeconds)
 {
 	Payload.TimeoutSeconds = TimeoutSeconds;

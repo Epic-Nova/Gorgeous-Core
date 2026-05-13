@@ -13,12 +13,12 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreUtilitiesMinimalShared.h"
-#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // UGorgeousIsValidCondition Implementation
 //=============================================================================
+
 uint8 UGorgeousIsValidCondition::CheckCondition_Implementation()
 {
 	switch (Mode)
@@ -42,7 +42,7 @@ uint8 UGorgeousIsValidCondition::CheckCondition_Implementation()
 		case EConditionalChooserMode_E::N_B_ONLY:
 			return B == nullptr;
 		default:
-			GT_W_LOG("GT.ConditionalObjectChoosers.Invalid_Mode", TEXT("Invalid mode for UGorgeousIsValidCondition: %d"), static_cast<int32>(Mode));
+			GT_W_LOG("GT.Core.ConditionalObjectChoosers.Invalid_Mode", TEXT("Invalid mode for UGorgeousIsValidCondition: %d"), static_cast<int32>(Mode));
 			return false;
 	}
 }

@@ -68,7 +68,7 @@
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-#include "AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadGlobals.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "UnitTests/GorgeousAutoReplicationTransporterProbe.h"
@@ -516,12 +516,12 @@ namespace GorgeousComprehensiveReplicationTests
 		int32 RandomInt,
 		const FString& RandomString)
 	{
-		FGorgeousRPCPayload Payload = UGorgeousAutoReplicationRPCPayloadLibrary::MakeAutoReplicationRPCPayload(HandlerName);
-		UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCIntArgument(Payload, TEXT("TestInputInt"), RandomInt);
-		UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(Payload, TEXT("TestInputString"), RandomString);
-		UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCIntArgument(Payload, TEXT("Sequence"), SequenceId);
-		UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(Payload, TEXT("Origin"), *RoleLabel(bIsServer));
-		UGorgeousAutoReplicationRPCPayloadLibrary::AddAutoReplicationRPCStringArgument(Payload, TEXT("Timestamp"),
+		FGorgeousRPCPayload Payload = UGorgeousAutoReplicationRPCPayloadGlobals::MakeAutoReplicationRPCPayload(HandlerName);
+		UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCIntArgument(Payload, TEXT("TestInputInt"), RandomInt);
+		UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCStringArgument(Payload, TEXT("TestInputString"), RandomString);
+		UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCIntArgument(Payload, TEXT("Sequence"), SequenceId);
+		UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCStringArgument(Payload, TEXT("Origin"), *RoleLabel(bIsServer));
+		UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicationRPCStringArgument(Payload, TEXT("Timestamp"),
 			FDateTime::UtcNow().ToString(TEXT("yyyy-MM-dd_HH-mm-ss-fff")));
 		return Payload;
 	}

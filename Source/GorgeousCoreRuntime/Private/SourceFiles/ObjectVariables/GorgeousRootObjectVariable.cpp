@@ -748,6 +748,94 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	DefaultOrphanResolution = PreviousResolution;
 }
 
+DEFINE_FUNCTION(UGorgeousRootObjectVariable::execSetUniversalVariable)
+{
+	P_GET_STRUCT(FGuid, Identifier);
+	P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	const FProperty* SourceProperty  = Stack.MostRecentProperty;
+	const void* SourcePropertyAddress  = Stack.MostRecentPropertyAddress;
+	P_FINISH;
+
+	if (OptionalPropertyName.IsNone())
+	{
+		OptionalPropertyName = "Value";
+	}
+
+	UGorgeousObjectVariable* FoundObjectVariable = nullptr;
+
+	for (const auto ObjectVariable : GetVariableHierarchyRegistry())
+	{
+		if (ObjectVariable->UniqueIdentifier == Identifier)
+		{
+			FoundObjectVariable = ObjectVariable;
+			break;
+		}
+	}
+
+	if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
+	{
+		if (const FProperty* TargetProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
+		{
+			if (TargetProperty->SameType(SourceProperty))
+			{
+				if (!FoundObjectVariable->ValidateVariableAssignment(OptionalPropertyName, SourceProperty, SourcePropertyAddress))
+				{
+					GT_E_LOG("GT.ObjectVariables.Universal.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *OptionalPropertyName.ToString(), *GetNameSafe(FoundObjectVariable));
+					return;
+				}
+				TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
+			}
+			else
+			{
+				GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
+			}
+		}
+	}
+}
+
+DEFINE_FUNCTION(UGorgeousRootObjectVariable::execGetUniversalVariable)
+{
+	P_GET_STRUCT(FGuid, Identifier);
+	P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
+	Stack.StepCompiledIn<FProperty>(nullptr);
+	void* OutValueAddress = Stack.MostRecentPropertyAddress;
+	const FProperty* OutValueProperty = Stack.MostRecentProperty;
+	P_FINISH;
+
+	if (OptionalPropertyName.IsNone())
+	{
+		OptionalPropertyName = "Value";
+	}
+
+	UGorgeousObjectVariable* FoundObjectVariable = nullptr;
+
+	for (const auto ObjectVariable : GetVariableHierarchyRegistry())
+	{
+		if (ObjectVariable->UniqueIdentifier == Identifier)
+		{
+			FoundObjectVariable = ObjectVariable;
+			break;
+		}
+	}
+
+	if (FoundObjectVariable)
+	{
+		if (const FProperty* SourceProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
+		{
+			if (SourceProperty->SameType(OutValueProperty))
+			{
+				SourceProperty->CopyCompleteValue(OutValueAddress, SourceProperty->ContainerPtrToValuePtr<void>(FoundObjectVariable));
+			}
+			else
+			{
+				GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
+			}
+		}
+	}
+}
+
+
 void UGorgeousRootObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewObjectVariable, FName RegistryKey)
 {
 	if (!NewObjectVariable)

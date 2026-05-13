@@ -23,7 +23,7 @@
         { \
             return UGorgeousSingleton::GetSingleton<ClassType>(WorldContextObject, Scope); \
         } \
-            static void DestroySingleton(UObject* WorldContextObject = nullptr, EGorgeousSingletonScope Scope = EGorgeousSingletonScope::Global) \
+        static void DestroySingleton(UObject* WorldContextObject = nullptr, EGorgeousSingletonScope Scope = EGorgeousSingletonScope::Global) \
         { \
             UGorgeousSingleton::DestroySingleton<ClassType>(WorldContextObject, Scope); \
         }

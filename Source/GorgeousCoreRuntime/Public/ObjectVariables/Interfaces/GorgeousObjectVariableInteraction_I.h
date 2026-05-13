@@ -47,4 +47,22 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables")
 	FGuid GetUniqueIdentifierForObjectVariable();
+
+
+	/**
+	 * @TODO: Try to replace the interfaces with these two functions. When it works, we can drop the planned code generators
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
+	void GetObjectVariableParameter(int32& OutValue, const FName OptionalVariableName);
+	
+	DECLARE_FUNCTION(execGetObjectVariableParameter) {}
+	
+	virtual void GetObjectVariableParameter_Implementation(int32& OutValue, const FName OptionalVariableName) {}
+	
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "NewValue"))
+	void SetObjectVariableParameter(const int32& NewValue, const FName OptionalVariableName);
+	
+	DECLARE_FUNCTION(execSetObjectVariableParameter) {}
+	
+	virtual void SetObjectVariableParameter_Implementation(const int32& NewValue, const FName OptionalVariableName) {}
 };

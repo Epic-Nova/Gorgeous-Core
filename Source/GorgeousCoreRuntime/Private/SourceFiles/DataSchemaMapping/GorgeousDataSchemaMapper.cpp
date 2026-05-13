@@ -19,6 +19,10 @@
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
 
+//=============================================================================
+// FGorgeousDataSchemaMapper Implementation
+//=============================================================================
+
 bool FGorgeousDataSchemaMapper::ApplySnapshotToObject(
 	const FGorgeousDataSchemaSourceSnapshot_S& SourceSnapshot,
 	UObject* TargetObject,
