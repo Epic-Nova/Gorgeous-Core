@@ -12,8 +12,8 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
-#include "InstancedStruct.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //<--------------------------=== Module Includes ===------------------------->
 #include "InteractionFoundation_I.generated.h"
 //<-------------------------------------------------------------------------->
@@ -53,6 +53,14 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
 	FInstancedStruct Focus(AActor* InteractingActor) const;
+
+	/**
+	 * Called when the focus on the implementing object is ending. This can be used to clean up any context or state that was set during the Focus function.
+	 * 
+	 * @param InteractingActor The actor that is ending the focus on this object. This can be used to clean up any context or state that was set during the Focus function.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	void Unfocus(AActor* InteractingActor) const;
 	
 	/**
 	 * Executes the interaction with the implementing object. This function should contain the actual logic of what happens when an interaction is performed with this object.
