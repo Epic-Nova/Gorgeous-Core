@@ -16,6 +16,8 @@
 #include "QualityOfLife/GorgeousPlayerController.h"
 //<-------------------------------------------------------------------------->
 
+TMap<TObjectPtr<AActor>, TObjectPtr<AActor>> UGorgeousInteractionFoundationBlueprintFunctionLibrary::InteractionActors = TMap<TObjectPtr<AActor>, TObjectPtr<AActor>>();
+
 namespace GorgeousInteractionFoundation
 {
     static AActor* ResolveInteractingActor(const UObject* ContextObject)
@@ -207,14 +209,39 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryCanInteract(AAct
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, FInstancedStruct& OutFocusData)
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, const bool bAutoSendUnfocus, FInstancedStruct& OutFocusData)
 {
-    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    if (!IsValid(InteractingActor))
     {
         return false;
     }
+    
+    if (bAutoSendUnfocus)
+    {
+        if (const TObjectPtr<AActor>* PreviousTarget = InteractionActors.Find(InteractingActor))
+        {
+            if (*PreviousTarget == TargetActor)
+            {
+                OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor);
+                return true;
+            }
+            
+            if (IsValid(*PreviousTarget))
+            {
+                IInteractionFoundation_I::Execute_Unfocus(*PreviousTarget, InteractingActor);
+            }
+        }
+    }
 
+    if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
+    {
+        InteractionActors.Remove(InteractingActor);
+        return false;
+    }
+
+    InteractionActors.Add(InteractingActor, TargetActor);
     OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor);
+
     return true;
 }
 
@@ -257,6 +284,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceInter
 bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus(const UObject* WorldContextObject,
     const FGorgeousInteractionSphereTraceParameters& TraceParameters,
     const FGameplayTag InteractionTag,
+    bool bAutoSendUnfocus,
     FInstancedStruct& OutFocusData,
     FHitResult& OutHitResult)
 {
@@ -336,5 +364,5 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus
         return false;
     }
 
-    return TryFocus(TargetActor, InteractingActor, OutFocusData);
+    return TryFocus(TargetActor, InteractingActor, bAutoSendUnfocus, OutFocusData);
 }

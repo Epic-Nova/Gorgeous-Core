@@ -57,7 +57,7 @@ public:
      * Tries to check if interaction with the target actor is currently possible. Returns false if the target actor does not implement the interaction interface or if the check failed for any reason.
      * 
      * @param TargetActor The actor to check for interaction possibility.
-     * @param InteractingActor The actor that is trying to interact with the target actor. This can be used by the target actor to determine if interaction is possible based on the context of the interacting actor.
+     * @param InteractingActor The actor that is trying to interact with the target actor.
      * @param bCanInteract The output parameter that will contain the result of the interaction possibility check if the function returns true.
      * 
      * @return True if the interaction possibility was successfully checked, false otherwise.
@@ -69,19 +69,20 @@ public:
      * Tries to request the focus data from the target actor. Returns false if the target actor does not implement the interaction interface or if the request failed for any reason.
      * 
      * @param TargetActor The actor to request the focus data from.
-     * @param InteractingActor The actor that is trying to focus on the target actor. This can be used by the target actor to determine the focus data based on the context of the interacting actor.
+     * @param InteractingActor The actor that is trying to focus on the target actor.
+     * @param bAutoSendUnfocus Automatically calls Unfocus on the target actor with the interacting actor as parameter if the focus request is successful.
      * @param OutFocusData The output parameter that will contain the requested focus data if the function returns true.
      * 
      * @return True if the focus data was successfully requested, false otherwise.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
-    static bool TryFocus(AActor* TargetActor, AActor* InteractingActor, FInstancedStruct& OutFocusData);
+    static bool TryFocus(AActor* TargetActor, AActor* InteractingActor, bool bAutoSendUnfocus, FInstancedStruct& OutFocusData);
 
     /** 
      * Tries to execute the interaction with the target actor. Returns false if the target actor does not implement the interaction interface or if the interaction failed for any reason.
      * 
      * @param TargetActor The actor to interact with.
-     * @param InteractingActor The actor that is trying to interact with the target actor. This can be used by the target actor to determine the context of the interaction and to apply effects or changes to the interacting actor if necessary.
+     * @param InteractingActor The actor that is trying to interact with the target actor.
      * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
      * 
      * @return True if the interaction was successfully executed, false otherwise.
@@ -94,7 +95,7 @@ public:
      * 
      * @param WorldContextObject The world context object for locating the world in which to perform the trace.
      * @param HitResult The hit result of a previous trace or focus that defined the interaction target.
-     * @param InteractionTag The gameplay tag representing the type of interaction to perform. This can be used by the hit actor to determine if it supports this type of interaction and how to handle it.
+     * @param InteractionTag The gameplay tag representing the type of interaction to perform.
      * 
      * @return True if the hit result contains a valid interactable target and the interaction was successfully executed, false otherwise.
      */
@@ -108,7 +109,8 @@ public:
      * 
      * @param WorldContextObject The world context object for locating the world in which to perform the trace.
      * @param TraceParameters The parameters defining the sphere trace, such as start and end locations, radius, and collision channel.
-     * @param InteractionTag The gameplay tag representing the type of interaction to focus on. This can be used by the hit actor to determine if it supports this type of interaction and how to provide the focus data for it.
+     * @param InteractionTag The gameplay tag representing the type of interaction to focus on.
+     * @param bAutoSendUnfocus Automatically calls Unfocus on the target actor with the interacting actor as parameter if the focus request is successful.
      * @param OutFocusData The output parameter that will contain the focus data provided by the hit actor if the function returns true.
      * @param OutHitResult The output parameter that will contain the hit result of the trace if the function returns true.
      * 
@@ -118,8 +120,14 @@ public:
     static bool TrySphereTraceFocus(const UObject* WorldContextObject,
         const FGorgeousInteractionSphereTraceParameters& TraceParameters,
         FGameplayTag InteractionTag,
+        const bool bAutoSendUnfocus,
         FInstancedStruct& OutFocusData,
         FHitResult& OutHitResult);
+    
+private:
+    
+    // Map of actors currently in the focus of another actor.
+    static TMap<TObjectPtr<AActor>, TObjectPtr<AActor>> InteractionActors;
 };
 
 using UGT_InteractionFoundation_FL = UGorgeousInteractionFoundationBlueprintFunctionLibrary;
