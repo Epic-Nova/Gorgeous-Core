@@ -66,11 +66,13 @@ void UGorgeousCommonButton::PlayThemedSound(FGameplayTag SoundTag)
 	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 	if (Subsystem)
 	{
-		if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+		// Reverse iterate to fetch resources from the most recent theme first
+		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
 		{
-			if (USoundBase* Sound = Theme->GetThemedSound(SoundTag))
+			if (USoundBase* Sound = Subsystem->GetCurrentThemes()[i]->GetThemedSound(SoundTag))
 			{
 				UGameplayStatics::PlaySound2D(this, Sound);
+				break;
 			}
 		}
 	}

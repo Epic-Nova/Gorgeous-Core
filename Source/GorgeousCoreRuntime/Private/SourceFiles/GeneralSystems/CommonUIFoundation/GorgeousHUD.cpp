@@ -117,20 +117,27 @@ void AGorgeousHUD::RefreshActionBar()
 	UGorgeousUIFoundationSubsystem* Subsystem = GetOwningPlayerController() ? GetOwningPlayerController()->GetLocalPlayer()->GetSubsystem<UGorgeousUIFoundationSubsystem>() : nullptr;
 	if (!Subsystem) return;
 
-	UGorgeousInputBinding_DA* Bindings = Subsystem->GetActiveInputBindings();
-	UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme();
+	TArray<UGorgeousInputBinding_DA*> Bindings = Subsystem->GetActiveInputBindings();
+	TArray<UGorgeousUITheme_DA*> Themes = Subsystem->GetCurrentThemes();
 	FName PlatformName = Subsystem->GetCurrentPlatformName();
 
-	if (!Bindings || !Theme)
+	if (Bindings.IsEmpty())
 	{
 		GT_W_LOG("GT.HUD", TEXT("RefreshActionBar: Skipping refresh. Bindings: %s, Theme: %s"), 
-			Bindings ? TEXT("Valid") : TEXT("NULL"), 
-			Theme ? TEXT("Valid") : TEXT("NULL"));
+			Bindings.IsEmpty() ? TEXT("Empty") : TEXT("Valid Data"), 
+			Themes.IsEmpty() ? TEXT("Empty") : TEXT("Valid Data"));
 		return;
 	}
-
+	
+	//Flatten the map out for easier access
+	TMap<FGameplayTag, FGorgeousInputBindingInfo_S> FlattenedBindings;
+	for (auto Binding : Bindings)
+	{
+		FlattenedBindings.Append(Binding->Bindings);
+	}
+	
 	GT_I_LOG("GT.HUD", TEXT("RefreshActionBar: Refreshing Action Bar with %d bindings for platform '%s'"), 
-		Bindings->Bindings.Num(), *PlatformName.ToString());
+		FlattenedBindings.Num(), *PlatformName.ToString());
 
 	TArray<FGorgeousActionBarEntry_S> Entries;
 
@@ -144,8 +151,8 @@ void AGorgeousHUD::RefreshActionBar()
 		// For now, let's assume if a consumer is registered in a context, 
 		// we show all "Active" actions for that context.
 	}
-
-	for (const auto& Pair : Bindings->Bindings)
+	
+	for (const auto& Pair : FlattenedBindings)
 	{
 		const FGameplayTag& ActionTag = Pair.Key;
 		const FGorgeousInputBindingInfo_S& Info = Pair.Value;
@@ -155,9 +162,18 @@ void AGorgeousHUD::RefreshActionBar()
 			// Check if this action belongs to an active context or is global
 			// For simplicity, we currently show all enabled bindings in the active BindingAsset.
 			// The user can swap BindingAssets to change what's shown.
-			
+		
 			FGorgeousActionBarEntry_S Entry;
-			Entry.Icon = Theme->GetActionIcon(ActionTag, PlatformName);
+			// Reverse iterate to fetch resources from the most recent theme first
+			for (int32 i = 0; i < Themes.Num() - 1; --i)
+			{
+				if (const FSlateBrush Brush = Themes[i]->GetActionIcon(ActionTag, PlatformName); 
+					Brush.GetResourceName() != NAME_None)
+				{
+					Entry.Icon = Brush;
+					break;
+				}
+			}
 			Entry.ActionName = Info.DisplayName.IsEmpty() ? FText::FromName(ActionTag.GetTagName()) : Info.DisplayName;
 			Entries.Add(Entry);
 

@@ -36,12 +36,21 @@ FSlateBrush UGorgeousUIExtensions::GetGorgeousActionIcon(UObject* WorldContextOb
 	UGorgeousUIFoundationSubsystem* Subsystem = LocalPlayer->GetSubsystem<UGorgeousUIFoundationSubsystem>();
 	if (!Subsystem) return FSlateBrush();
 
-	UGorgeousUITheme_DA* CurrentTheme = Subsystem->GetCurrentTheme();
-	if (!CurrentTheme) return FSlateBrush();
-
-	// Use hardware-aware platform detection
-	const FName PlatformName = Subsystem->GetCurrentPlatformName();
-	return CurrentTheme->GetActionIcon(ActionTag, PlatformName);
+	TArray<UGorgeousUITheme_DA*> CurrentThemes = Subsystem->GetCurrentThemes();
+	if (CurrentThemes.IsEmpty()) return FSlateBrush();
+	
+	// Reverse iterate to fetch resources from the most recent theme first
+	//@TODO: Since this reverse iterating code is used very often in the gorgeous ui context, we might want to write a template functor for this
+	for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+	{
+		if (const FSlateBrush ThemeBrush = Subsystem->GetCurrentThemes()[i]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName()); 
+			ThemeBrush.GetResourceName() != NAME_None)
+		{
+			return ThemeBrush;
+		}
+	}
+	
+	return FSlateBrush();
 }
 
 UCommonActivatableWidget* UGorgeousUIExtensions::PushGorgeousWidget(UObject* WorldContextObject, FGameplayTag LayerTag, TSubclassOf<UCommonActivatableWidget> WidgetClass, ULocalPlayer* LocalPlayer)

@@ -177,6 +177,7 @@ UObject* UGorgeousCoreRuntimeGlobals::GetNamedObjectReference(const FName Displa
 
 UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* WorldContextObject, const TSubclassOf<UObject> QualityOfLifeClass)
 {
+	//@TODO: Broken as for current version
 	const TArray<UObject*> All = GetQualityOfLifeReferences(WorldContextObject, QualityOfLifeClass);
 	return All.Num() > 0 ? All[0] : nullptr;
 }

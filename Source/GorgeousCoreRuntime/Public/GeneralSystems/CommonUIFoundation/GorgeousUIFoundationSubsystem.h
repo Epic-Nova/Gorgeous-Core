@@ -48,7 +48,7 @@ public:
 	// End USubsystem Interface
 
 	/** Switches the current global UI state. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Switch UI State")
 	void SwitchUIState(UGorgeousUIState_DA* NewState, bool bImmediate = false);
 
 	/** Called by widgets when they have finished their outgoing transition animations. */
@@ -65,11 +65,17 @@ public:
 
 	/** Returns the currently active UI state. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousUIState_DA* GetCurrentUIState() const { return CurrentState; }
+	TArray<UGorgeousUIState_DA*> GetCurrentUIStates() const { return CurrentStates; }
 
 	/** Returns the currently active theme. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousUITheme_DA* GetCurrentTheme() const { return CurrentTheme; }
+	TArray<UGorgeousUITheme_DA*> GetCurrentThemes() const { return CurrentThemes; }
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
+	UGorgeousUIState_DA* GetMostRecentUIState() const { return CurrentStates.Last(); }
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
+	UGorgeousUITheme_DA* GetMostRecentTheme() const { return CurrentThemes.Last(); }
 
 	/** Sets and broadcasts a new theme to all registered widgets. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
@@ -97,7 +103,10 @@ public:
 
 	/** Returns the currently active input bindings. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousInputBinding_DA* GetActiveInputBindings() const { return ActiveInputBindings; }
+	TArray<UGorgeousInputBinding_DA*> GetActiveInputBindings() const { return ActiveInputBindings; }
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
+	UGorgeousInputBinding_DA* GetMostRecentInputBindings() const { return ActiveInputBindings.Last(); }
 
 	/** Manually sets the active input bindings. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
@@ -138,11 +147,11 @@ protected:
 protected:
 	/** Current active UI state. */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous UI")
-	TObjectPtr<UGorgeousUIState_DA> CurrentState;
+	TArray<TObjectPtr<UGorgeousUIState_DA>> CurrentStates;
 
 	/** Current active theme. */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous UI")
-	TObjectPtr<UGorgeousUITheme_DA> CurrentTheme;
+	TArray<TObjectPtr<UGorgeousUITheme_DA>> CurrentThemes;
 
 	/** Mapping of widget/object classes to their corresponding processor classes. */
 	UPROPERTY(EditAnywhere, Category = "Gorgeous UI")
@@ -166,7 +175,7 @@ protected:
 
 	/** The currently active input-to-tag mapping. */
 	UPROPERTY(Transient)
-	TObjectPtr<UGorgeousInputBinding_DA> ActiveInputBindings;
+	TArray<TObjectPtr<UGorgeousInputBinding_DA>> ActiveInputBindings;
 
 	/** Internal helper to setup the input bridge on the HUD. */
 	void SetupInputBridgeOnHUD();

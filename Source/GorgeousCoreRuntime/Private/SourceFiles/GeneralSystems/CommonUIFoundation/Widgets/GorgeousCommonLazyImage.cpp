@@ -71,11 +71,15 @@ void UGorgeousCommonLazyImage::UpdateActionIcon(const UGorgeousUITheme_DA* Theme
 			{
 				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
 				{
-					if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+					// Reverse iterate to fetch resources from the most recent theme first
+					for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
 					{
-						const FName PlatformName = Subsystem->GetCurrentPlatformName();
-						FSlateBrush IconBrush = Theme->GetActionIcon(ActionTag, PlatformName);
-						SetBrush(IconBrush);
+						if (const FSlateBrush ThemeBrush = Subsystem->GetCurrentThemes()[i]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName()); 
+							ThemeBrush.GetResourceName() != NAME_None)
+						{
+							SetBrush(ThemeBrush);
+							break;
+						}
 					}
 				}
 			}

@@ -72,11 +72,13 @@ public:
      * @param InteractingActor The actor that is trying to focus on the target actor.
      * @param bAutoSendUnfocus Automatically calls Unfocus on the target actor with the interacting actor as parameter if the focus request is successful.
      * @param OutFocusData The output parameter that will contain the requested focus data if the function returns true.
+     * @param bOutWasRefreshRequest Indicates if the focus request is a refresh request of the interaction data. Typically true after the first focus and false on the initial focus.
+     * @param bOutWasUnfocus Indicates if the focus request resulted in an unfocus action after the last focused actor lost focus.
      * 
      * @return True if the focus data was successfully requested, false otherwise.
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
-    static bool TryFocus(AActor* TargetActor, AActor* InteractingActor, bool bAutoSendUnfocus, FInstancedStruct& OutFocusData);
+    static bool TryFocus(AActor* TargetActor, AActor* InteractingActor, bool bAutoSendUnfocus, FInstancedStruct& OutFocusData, bool& bOutWasRefreshRequest, bool& bOutWasUnfocus);
 
     /** 
      * Tries to execute the interaction with the target actor. Returns false if the target actor does not implement the interaction interface or if the interaction failed for any reason.
@@ -113,6 +115,9 @@ public:
      * @param bAutoSendUnfocus Automatically calls Unfocus on the target actor with the interacting actor as parameter if the focus request is successful.
      * @param OutFocusData The output parameter that will contain the focus data provided by the hit actor if the function returns true.
      * @param OutHitResult The output parameter that will contain the hit result of the trace if the function returns true.
+     * @param bOutWasRefreshRequest Indicates if the interaction attempt is a refresh request of the interaction data. Typically true after the first focus and false on the initial focus.
+     * @param bOutWasUnfocus Indicates if the focus request resulted in an unfocus action after the last focused actor lost focus.
+
      * 
      * @return True if a valid interactable target was hit and the focus data was successfully requested, false otherwise.
      */
@@ -122,6 +127,8 @@ public:
         FGameplayTag InteractionTag,
         const bool bAutoSendUnfocus,
         FInstancedStruct& OutFocusData,
+        bool& bOutWasRefreshRequest,
+        bool& bOutWasUnfocus,
         FHitResult& OutHitResult);
     
 private:

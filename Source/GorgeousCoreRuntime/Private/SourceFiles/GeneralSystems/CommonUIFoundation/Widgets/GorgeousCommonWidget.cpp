@@ -73,15 +73,16 @@ void UGorgeousCommonWidget::UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOve
 	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 	if (Subsystem)
 	{
-		if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+		// Reverse iterate to fetch resources from the most recent theme first
+		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
 		{
-			const FName PlatformName = Subsystem->GetCurrentPlatformName();
-			FSlateBrush IconBrush = Theme->GetActionIcon(ActionTag, PlatformName);
-			
+			FSlateBrush IconBrush =  Subsystem->GetCurrentThemes()[0]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName());
+		
 			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
 			{
 				FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
 				UGorgeousUIProcessor::ApplyStylePropertyToTarget(this, "Brush", Payload);
+				break;
 			}
 		}
 	}
