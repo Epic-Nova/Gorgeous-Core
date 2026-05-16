@@ -20,13 +20,26 @@ public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_State"); }
 	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces/States") }; }
-	/** Unique tag identifying this state. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State", meta = (Categories = "UI.State"))
-	FGameplayTag StateTag;
-
-	/** Friendly name for the state. */
+	
+	/**
+	 * Weather the current state should be cleared or if this state should be additive to the current one
+	 * 
+	 * If true, all previously applied InputMappingContexts will not be cleared & this new state serves as an addition to the current one.
+	 * If false, clears all current states and applies this one.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
-	FText StateName;
+	bool bAdditiveToCurrentState;
+	
+	/**
+	 * Weather the current theme should be cleared or if the theme being applied should be additive to the current one.
+	 * 
+	 * If true, the new theme will be applied on top of the current one instead of replacing it.
+	 * If false, clear all current themes and applies this one.
+	 * This allows you to layer themes on top of each other (e.g. a "Danger" theme on top of the base "Combat" theme).
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
+	bool bAdditiveToCurrentTheme;
+	
 
 	/** Optional animation to play when entering this state globally. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")

@@ -2,5 +2,5 @@
 #include "GeneralSystems/StatsFoundation/GorgeousStatTags.h"
 
 // Stat Signals
-UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Signal_Stat_Changed, "Signal.Stat.Changed");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Signal_Stat_Restored, "Signal.Stat.Restored");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Signal_Stat_Changed, "GT.StatsFoundation.Signal.Changed");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Signal_Stat_Restored, "GT.StatsFoundation.Signal.Restored");

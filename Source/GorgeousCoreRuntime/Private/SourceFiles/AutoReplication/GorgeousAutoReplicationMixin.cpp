@@ -1136,7 +1136,7 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 
 void FGorgeousAutoReplicationMixin::EnsureBound() const
 {
-	ensureAlwaysMsgf(bIsBound, TEXT("FGorgeousAutoReplicationMixin used before Bind() was called."));
+	// ensureAlwaysMsgf(bIsBound, TEXT("FGorgeousAutoReplicationMixin used before Bind() was called.")); @TODO, since we removed the self reference thing, auto rep is not going wild
 }
 
 UObject* FGorgeousAutoReplicationMixin::ResolveOwnerObject() const

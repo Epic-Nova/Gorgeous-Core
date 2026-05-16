@@ -91,7 +91,7 @@ void UAsyncAction_CreateGorgeousWidgetAsync::OnWidgetClassLoaded()
 			{
 				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
 				{
-					if (UGorgeousUITheme_DA* Theme = Subsystem->GetCurrentTheme())
+					if (UGorgeousUITheme_DA* Theme = Subsystem->GetMostRecentTheme())
 					{
 						Subsystem->BroadcastThemeApplied(Theme);
 					}

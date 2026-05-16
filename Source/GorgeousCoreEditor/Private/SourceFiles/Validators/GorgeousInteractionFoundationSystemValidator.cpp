@@ -51,22 +51,24 @@ void UGorgeousInteractionFoundationSystemValidator::ValidateProjectState(FDataVa
 {
 #if GORGEOUS_GENERAL_SYSTEM_INSTALLED(INTERACTIONFOUNDATION)
 	const UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
-	bool bFoundInteractables = false;
+	bool bFoundInteractable = false;
 	
-	// Check if 'Interactables' collision channel exists
+	//@TODO: Register a trace channel instead of a preset
+	
+	// Check if 'Interactable' collision channel exists
 	for (int32 i = ECC_GameTraceChannel1; i <= ECC_GameTraceChannel18; ++i)
 	{
 		const ECollisionChannel Channel = static_cast<ECollisionChannel>(i);
-		if (CollisionProfile->ReturnChannelNameFromContainerIndex(static_cast<int32>(Channel)) == FName("Interactables"))
+		if (CollisionProfile->ReturnChannelNameFromContainerIndex(static_cast<int32>(Channel)) == FName("Interactable"))
 		{
-			bFoundInteractables = true;
+			bFoundInteractable = true;
 			break;
 		}
 	}
 
-	if (!bFoundInteractables)
+	if (!bFoundInteractable)
 	{
-		const FText ErrorMessage = NSLOCTEXT("GT.Validation", "MissingInteractablesChannel", "The required collision channel 'Interactables' is missing in Project Settings. Interaction systems may not function correctly.");
+		const FText ErrorMessage = NSLOCTEXT("GT.Validation", "MissingInteractableChannel", "The required collision channel 'Interactable' is missing in Project Settings. Interaction systems may not function correctly.");
 		InContext.AddError(ErrorMessage);
 		
 		// Log with hyperlink for easy fixing
@@ -110,9 +112,9 @@ void UGorgeousInteractionFoundationSystemValidator::HandleFixCollisionChannel(co
 	// Update DefaultEngine.ini
 	const FString ConfigPath = FPaths::ProjectConfigDir() / TEXT("DefaultEngine.ini");
 	
-	// Format: +DefaultChannelResponses=(Channel=ECC_GameTraceChannel1,Name="Interactables",DefaultResponse=ECR_Ignore,bCanModify=True,bStaticObject=False)
+	// Format: +DefaultChannelResponses=(Channel=ECC_GameTraceChannel1,Name="Interactable",DefaultResponse=ECR_Ignore,bCanModify=True,bStaticObject=False)
 	const FString Section = TEXT("/Script/Engine.CollisionProfile");
-	const FString Entry = FString::Printf(TEXT("(Channel=%s,Name=\"Interactables\",DefaultResponse=ECR_Ignore,bCanModify=True,bStaticObject=False)"), 
+	const FString Entry = FString::Printf(TEXT("(Channel=%s,Name=\"Interactable\",DefaultResponse=ECR_Ignore,bCanModify=True,bStaticObject=False)"), 
 		*UCollisionProfile::Get()->ReturnChannelNameFromContainerIndex(static_cast<int32>(FirstAvailable)).ToString());
 	
 	// We need to use FConfigCacheIni to add to the array
@@ -122,7 +124,7 @@ void UGorgeousInteractionFoundationSystemValidator::HandleFixCollisionChannel(co
 	GConfig->SetArray(*Section, TEXT("DefaultChannelResponses"), ExistingResponses, ConfigPath);
 	GConfig->Flush(false, ConfigPath);
 
-	FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GT.Validation", "RestartRequired", "Collision channel 'Interactables' added. You must restart the editor for the changes to take effect."));
+	FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GT.Validation", "RestartRequired", "Collision channel 'Interactable' added. You must restart the editor for the changes to take effect."));
 #endif
 }
 

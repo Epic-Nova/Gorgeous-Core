@@ -57,7 +57,9 @@ namespace FGorgeousQualityOfLifeStatics
 {
 	void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData)
 	{
-		if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject))
+		if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject) 
+			|| !Owner->HasAnyFlags(RF_ArchetypeObject)
+			|| !Owner->GetOutermost()->HasAnyPackageFlags(PKG_EditorOnly))
 		{
 			return;
 		}
@@ -75,6 +77,11 @@ namespace FGorgeousQualityOfLifeStatics
 		}
 	}
 
+	void SanitizeCDOAdditionalDataOnLevelSwitch(const FString& LevelName)
+	{
+		
+	}
+
 	UObject_AOTOV* EnsureSelfReference(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData, const bool bExposeThroughNetworkStack)
 	{
 		if (!Owner)
@@ -86,6 +93,12 @@ namespace FGorgeousQualityOfLifeStatics
 		if (Owner->HasAnyFlags(RF_ClassDefaultObject))
 		{
 			SanitizeCDOAdditionalData(Owner, AdditionalData);
+			return nullptr;
+		}
+		
+		// Do no instantiate or persist self-reference entries on in editor objects
+		if (Owner->HasAnyFlags(RF_ArchetypeObject) && Owner->GetOutermost()->HasAnyPackageFlags(PKG_EditorOnly))
+		{
 			return nullptr;
 		}
 
@@ -171,7 +184,7 @@ namespace FGorgeousQualityOfLifeStatics
 		{
 			if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(PreferredRoot))
 			{
-				SelfVariable->SetParent(Root);
+				// SelfVariable->SetParent(Root); @TODO
 			}
 		}
 

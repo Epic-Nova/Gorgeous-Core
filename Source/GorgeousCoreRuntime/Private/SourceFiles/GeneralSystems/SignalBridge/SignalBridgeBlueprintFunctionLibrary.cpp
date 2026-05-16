@@ -110,6 +110,7 @@ void USignalBridgeBlueprintFunctionLibrary::Dispatch(UObject* WorldContextObject
 
 void USignalBridgeBlueprintFunctionLibrary::DispatchLocal(UObject* WorldContextObject, FGameplayTag Tag, const FInstancedStruct& Payload)
 {
+	//@TODO: Seems not to work
 	if (USignalBridgeStorage_OV* Storage = GetSignalBridgeStorage(WorldContextObject))
 	{
 		Storage->FireLocalSignal(Tag, Payload);

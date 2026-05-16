@@ -49,10 +49,12 @@ public:
 	/**
 	 * Requests additional metadata from the implementing object that can be used to determine how to interact with it or to provide additional context for the interaction.
 	 * 
+	 * @param InteractingActor The actor that is ending the focus on this object. This can be used to clean up any context or state that was set during the Focus function.
+	 * @param bRefreshRequest Indicates if the Focus is a refresh request of the interaction data. Typically true after the first focus and false on the initial focus.
 	 * @return An instanced struct containing the interaction metadata. The actual struct type can be defined by the implementing object and should be determined by the interaction tags it provides.
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
-	FInstancedStruct Focus(AActor* InteractingActor) const;
+	FInstancedStruct Focus(AActor* InteractingActor, bool bRefreshRequest) const;
 
 	/**
 	 * Called when the focus on the implementing object is ending. This can be used to clean up any context or state that was set during the Focus function.

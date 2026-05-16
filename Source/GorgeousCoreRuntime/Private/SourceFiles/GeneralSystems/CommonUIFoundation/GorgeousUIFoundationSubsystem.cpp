@@ -117,12 +117,13 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 void UGorgeousUIFoundationSubsystem::SetCurrentTheme(UGorgeousUITheme_DA* NewTheme)
 {
-	if (CurrentTheme == NewTheme) return;
-	CurrentTheme = NewTheme;
+	if (const UGorgeousUITheme_DA* AffectedTheme = CurrentThemes.IsValidIndex(CurrentThemes.Num() - 1) ? CurrentThemes.Last() : nullptr; 
+		AffectedTheme== NewTheme) return;
+	CurrentThemes.Push(NewTheme);
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Theme '%s'"), NewTheme ? *NewTheme->GetName() : TEXT("None"));
 
-	BroadcastThemeApplied(CurrentTheme);
+	BroadcastThemeApplied(CurrentThemes.Last());
 
 	// Trigger HUD refresh so the Action Bar picks up new themed icons
 	if (ULocalPlayer* LP = GetLocalPlayer())
@@ -176,16 +177,26 @@ void UGorgeousUIFoundationSubsystem::OnInputMethodChanged(ECommonInputType NewIn
 	// When the input method changes, we re-broadcast the current theme.
 	// Every widget will receive OnThemeApplied and re-fetch its Action Icons 
 	// from the theme based on the new platform/input type.
-	if (CurrentTheme)
+	if (CurrentThemes.Last())
 	{
-		BroadcastThemeApplied(CurrentTheme);
+		BroadcastThemeApplied(CurrentThemes.Last());
 	}
 }
 
 void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings)
 {
-	if (ActiveInputBindings == NewBindings) return;
-	ActiveInputBindings = NewBindings;
+	if (const UGorgeousInputBinding_DA* AffectedBinding = ActiveInputBindings.IsValidIndex(ActiveInputBindings.Num() - 1) ? ActiveInputBindings.Last() : nullptr; 
+		AffectedBinding == NewBindings) return;
+	
+	if (GetMostRecentUIState()->bAdditiveToCurrentState)
+	{
+		ActiveInputBindings.Push(GetMostRecentUIState()->InputBindings);
+	}
+	else
+	{
+		ActiveInputBindings.Empty();
+		ActiveInputBindings.Push(NewBindings);
+	}
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Input Bindings '%s'"), NewBindings ? *NewBindings->GetName() : TEXT("None"));
 
@@ -210,25 +221,29 @@ void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
 	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
 
-	if (!HUD || !ActiveInputBindings) return;
+	if (!HUD || ActiveInputBindings.IsEmpty()) return;
 
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
 	if (!EIC) return;
 
 	// Note: In a production environment, we'd want to manage these bindings more carefully 
 	// (e.g. removing old ones). For this prototype, we'll assume the HUD manages its own component.
-	for (const auto& Pair : ActiveInputBindings->Bindings)
+	for (auto ActiveInputBinding : ActiveInputBindings)
 	{
-		if (UInputAction* Action = Pair.Value.Action)
+		for (const auto& Pair : ActiveInputBinding->Bindings)
 		{
-			EIC->BindAction(Action, ETriggerEvent::Triggered, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
+			if (UInputAction* Action = Pair.Value.Action)
+			{
+				EIC->BindAction(Action, ETriggerEvent::Started, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
+				EIC->BindAction(Action, ETriggerEvent::Completed, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
+			}
 		}
 	}
 }
 
 void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputActionValue& Value, UInputAction* Action)
 {
-	if (!ActiveInputBindings || !Action) return;
+	if (ActiveInputBindings.IsEmpty() || !Action) return;
 
 	ULocalPlayer* LP = GetLocalPlayer();
 	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
@@ -236,13 +251,16 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 
 	if (!HUD) return;
 
-	// Find the tag for this action
-	for (const auto& Pair : ActiveInputBindings->Bindings)
+	for (auto ActiveInputBinding : ActiveInputBindings)
 	{
-		if (Pair.Value.Action == Action)
+		// Find the tag for this action
+		for (const auto& Pair : ActiveInputBinding->Bindings)
 		{
-			HUD->DispatchGorgeousInput(Pair.Key, Value);
-			break;
+			if (Pair.Value.Action == Action)
+			{
+				HUD->DispatchGorgeousInput(Pair.Key, Value);
+				break;
+			}
 		}
 	}
 }
@@ -450,9 +468,10 @@ void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState, bool bImmediate)
+void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState, const bool bImmediate)
 {
-	if (!NewState || CurrentState == NewState) return;
+	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
+	if (!NewState || AffectedState == NewState) return;
 
 	if (bImmediate)
 	{
@@ -471,7 +490,7 @@ void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState
 		if (UObject* WidgetObj = It->GetObject())
 		{
 			// We only wait for widgets that are actually visible/active on screen
-			if (UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
+			if (const UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
 			{
 				if (UserWidget->IsVisible())
 				{
@@ -518,10 +537,12 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 	ULocalPlayer* LP = GetLocalPlayer();
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP ? LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
 
+	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
+	
 	// 1. Remove old IMCs
-	if (CurrentState && InputSubsystem)
+	if (AffectedState && InputSubsystem && !NewState->bAdditiveToCurrentState)
 	{
-		for (const FGorgeousInputMappingConfig_S& Config : CurrentState->InputMappingContexts)
+		for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputMappingContexts)
 		{
 			if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 			{
@@ -530,14 +551,14 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 		}
 	}
 
-	CurrentState = NewState;
+	CurrentStates.Push(NewState);
 
-	if (CurrentState)
+	if (CurrentStates.Last())
 	{
 		// 2. Add new IMCs
 		if (InputSubsystem)
 		{
-			for (const FGorgeousInputMappingConfig_S& Config : CurrentState->InputMappingContexts)
+			for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputMappingContexts)
 			{
 				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 				{
@@ -547,15 +568,15 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 		}
 
 		// 3. Apply Theme
-		if (CurrentState->Theme)
+		if (GetMostRecentUIState()->Theme)
 		{
-			SetCurrentTheme(CurrentState->Theme);
+			SetCurrentTheme(GetMostRecentUIState()->Theme);
 		}
 
 		// 4. Apply Input Bindings
-		if (CurrentState->InputBindings)
+		if (CurrentStates.Last()->InputBindings)
 		{
-			SetActiveInputBindings(CurrentState->InputBindings);
+			SetActiveInputBindings(CurrentStates.Last()->InputBindings);
 		}
 
 		// 5. Notify all registered widgets of the state change
@@ -570,21 +591,21 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 					if (RawObj->IsA(UGorgeousCommonWidget::StaticClass()))
 					{
 						UGorgeousCommonWidget* CommonWidget = static_cast<UGorgeousCommonWidget*>(RawObj);
-						CommonWidget->OnUIStateChanged(CurrentState);
+						CommonWidget->OnUIStateChanged(CurrentStates.Last());
 					}
 					else if (RawObj->IsA(UGorgeousActivatableWidget::StaticClass()))
 					{
 						UGorgeousActivatableWidget* Activatable = static_cast<UGorgeousActivatableWidget*>(RawObj);
-						Activatable->OnUIStateChanged(CurrentState);
+						Activatable->OnUIStateChanged(CurrentStates.Last());
 					}
 
 					// Apply Overlay Configuration if defined for this widget's tag
-					if (CurrentState->OverlayConfig)
+					if (CurrentStates.Last()->OverlayConfig)
 					{
 						const FGameplayTag BindingTag = WidgetInterface->GetBindingTag();
 						if (BindingTag.IsValid())
 						{
-							if (const FGorgeousUIStateConfig* Config = CurrentState->OverlayConfig->WidgetConfigs.Find(BindingTag))
+							if (const FGorgeousUIStateConfig* Config = CurrentStates.Last()->OverlayConfig->WidgetConfigs.Find(BindingTag))
 							{
 								WidgetInterface->ApplyOverlayConfig(*Config);
 							}
@@ -598,9 +619,9 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 			}
 		}
 
-		OnTransitionFinished.Broadcast(CurrentState);
+		OnTransitionFinished.Broadcast(CurrentStates.Last());
 
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: State Transition to '%s' Complete."), *CurrentState->GetName());
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: State Transition to '%s' Complete."), *CurrentStates.Last()->GetName());
 	}
 }
 
@@ -614,9 +635,12 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered Widget '%s' (Binding Tag: %s)"), *WidgetObj->GetName(), *Widget->GetBindingTag().ToString());
 
 	// 1. Initial Aesthetic Application
-	if (CurrentTheme)
+	if (!CurrentThemes.IsEmpty())
 	{
-		Widget->OnThemeApplied(CurrentTheme);
+		for (auto Theme : CurrentThemes)
+		{
+			Widget->OnThemeApplied(Theme);
+		}
 	}
 
 	// 2. Setup Shared Processor for Signal Handling

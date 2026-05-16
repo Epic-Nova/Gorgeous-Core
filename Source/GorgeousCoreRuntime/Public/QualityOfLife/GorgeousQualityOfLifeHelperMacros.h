@@ -21,16 +21,22 @@ class AGorgeousPlayerState;
 class AGorgeousGameState;
 
 /** Common helper dropped into QoL class constructors to bind the mixin and ensure the self reference entry exists. */
-#define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
-	if (HasAnyFlags(RF_ClassDefaultObject)) \
+#define UE_QOL_INITIALIZE_ADDITIONAL_DATA_NEEDS_REWORK() \
+	if (HasAnyFlags(RF_ClassDefaultObject) || HasAnyFlags(RF_ArchetypeObject)) \
 	{ \
 		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
+	} \
+	if (GIsEditor) \
+	{ \
+		FCoreUObjectDelegates::PreLoadMap.AddStatic(&FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalDataOnLevelSwitch); \
 	} \
 	AutoReplicationMixin.Bind(this, &AdditionalGorgeousData, &ReplicatedAutoReplicationVariables); \
 	if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
 	{ \
 		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
 	}
+
+#define UE_QOL_INITIALIZE_ADDITIONAL_DATA()
 
 /** Declares a standard QoL constructor that wires the networking default and self-reference bootstrap. */
 #define UE_QOL_DEFINE_CONSTRUCTOR(Class, bDefaultNetworking) \

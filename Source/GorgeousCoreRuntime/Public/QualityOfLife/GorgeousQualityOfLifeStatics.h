@@ -32,6 +32,8 @@ namespace FGorgeousQualityOfLifeStatics
 
 	/** Strips any default object variables from a CDO so they don't end up serialized into cooked assets. */
 	GORGEOUSCORERUNTIME_API void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData);
+	
+	GORGEOUSCORERUNTIME_API void SanitizeCDOAdditionalDataOnLevelSwitch(const FString& LevelName);
 
 	// ── Local Player Stable ID helpers ────────────────────────────────────
 	// These delegate to UGorgeousLocalPlayerRegistry_GIS; they are thin

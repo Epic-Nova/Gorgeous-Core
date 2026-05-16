@@ -31,6 +31,11 @@ namespace GorgeousInteractionFoundation
         {
             return Actor;
         }
+        
+        if (const UActorComponent* ActorComponent = Cast<UActorComponent>(const_cast<UObject*>(ContextObject)))
+        {
+            return ActorComponent->GetOwner();
+        }
 
         if (APlayerController* PlayerController = Cast<APlayerController>(const_cast<UObject*>(ContextObject)))
         {
@@ -209,8 +214,12 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryCanInteract(AAct
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, const bool bAutoSendUnfocus, FInstancedStruct& OutFocusData)
+bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, const bool bAutoSendUnfocus, FInstancedStruct& OutFocusData, bool& bOutWasRefreshRequest, bool& bOutWasUnfocus)
 {
+    // Always initialize out parameters to an explicit default state at the absolute start
+    bOutWasRefreshRequest = false;
+    bOutWasUnfocus = false;
+
     if (!IsValid(InteractingActor))
     {
         return false;
@@ -218,29 +227,41 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* Ta
     
     if (bAutoSendUnfocus)
     {
-        if (const TObjectPtr<AActor>* PreviousTarget = InteractionActors.Find(InteractingActor))
+        if (const TObjectPtr<AActor>* PreviousTargetPtr = InteractionActors.Find(InteractingActor))
         {
-            if (*PreviousTarget == TargetActor)
+            const AActor* PreviousTarget = PreviousTargetPtr->Get();
+
+            // If we are already focusing this exact target, just refresh focus data and return
+            if (PreviousTarget == TargetActor && IsValid(TargetActor))
             {
-                OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor);
+                OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor, true);
+                bOutWasRefreshRequest = true;
                 return true;
             }
             
-            if (IsValid(*PreviousTarget))
+            // If it's a different actor, send the Unfocus event immediately
+            if (IsValid(PreviousTarget))
             {
-                IInteractionFoundation_I::Execute_Unfocus(*PreviousTarget, InteractingActor);
+                IInteractionFoundation_I::Execute_Unfocus(PreviousTarget, InteractingActor);
+                bOutWasUnfocus = true;
             }
+
+            // Clean the map tracking early so we don't leave stale references 
+            InteractionActors.Remove(InteractingActor);
         }
     }
 
+    // Now validate if the new target is allowed to be focused
     if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
     {
+        // If it's invalid, ensure it's wiped from our tracking map (in case bAutoSendUnfocus was false)
         InteractionActors.Remove(InteractingActor);
         return false;
     }
 
+    // Successfully assign the new focus target
     InteractionActors.Add(InteractingActor, TargetActor);
-    OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor);
+    OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor, false);
 
     return true;
 }
@@ -286,45 +307,63 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus
     const FGameplayTag InteractionTag,
     bool bAutoSendUnfocus,
     FInstancedStruct& OutFocusData,
+    bool& bOutWasRefreshRequest,
+    bool& bOutWasUnfocus,
     FHitResult& OutHitResult)
 {
+// Explicitly initialize out booleans at the root function call boundary
+    bOutWasRefreshRequest = false;
+    bOutWasUnfocus = false;
+
     const FGorgeousDebugAssistVisualParameters& DebugVisualParameters = TraceParameters.DebugVisualParameters;
 
     const bool bHit = GorgeousInteractionFoundation::PerformSphereTrace(WorldContextObject, TraceParameters, OutHitResult);
     const FLinearColor TraceColor = GorgeousInteractionFoundation::ResolveTraceColor(WorldContextObject, OutHitResult, InteractionTag, DebugVisualParameters);
+    
     if (DebugVisualParameters.bEnabled)
     {
         const FVector EndPoint = bHit ? OutHitResult.Location : TraceParameters.End;
         UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTrace(WorldContextObject, TraceParameters.Start, EndPoint, TraceParameters.Radius, TraceColor, DebugVisualParameters);
-
     }
+
+    // Helper lambda to clean up focus safely before returning false
+    auto HandleFailedFocus = [WorldContextObject, bAutoSendUnfocus, &OutFocusData, &bOutWasRefreshRequest, &bOutWasUnfocus]() -> bool
+    {
+        if (bAutoSendUnfocus)
+        {
+            if (AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject))
+            {
+                // Passing nullptr as TargetActor tells TryFocus to clear the tracking and send Unfocus
+                // TryFocus will handle mutating bOutWasRefreshRequest and bOutWasUnfocus contextually
+                return TryFocus(nullptr, InteractingActor, bAutoSendUnfocus, OutFocusData, bOutWasRefreshRequest, bOutWasUnfocus);
+            }
+        }
+        return false;
+    };
 
     if (!bHit)
     {
-        return false;
+        return HandleFailedFocus();
     }
 
     if (DebugVisualParameters.bEnabled)
     {
         const bool bFollowTrace = DebugVisualParameters.HitSphere.bFollowTrace || DebugVisualParameters.HitBox.bFollowTrace || DebugVisualParameters.HitPoint.bFollowTrace;
-
         const float BoundsDuration = bFollowTrace ? 0.0f : 0.75f;
 
         FGorgeousDebugAssistVisualParameters SyncedParams = DebugVisualParameters;
         SyncedParams.TracePathColor = TraceColor;
         UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(WorldContextObject, TraceParameters.Start, TraceParameters.End, OutHitResult, SyncedParams);
 
-
         if (DebugVisualParameters.VFX.bEnableGroundingRing)
         {
             if (AActor* HitActor = OutHitResult.GetActor())
             {
                 FVector Origin = HitActor->GetActorLocation();
-                FHitResult GroundHit;
                 FCollisionQueryParams Params;
                 Params.AddIgnoredActor(HitActor);
                 
-                if (WorldContextObject->GetWorld()->LineTraceSingleByChannel(GroundHit, Origin, Origin + FVector(0, 0, -1000.0f), ECC_Visibility, Params))
+                if (FHitResult GroundHit; WorldContextObject->GetWorld()->LineTraceSingleByChannel(GroundHit, Origin, Origin + FVector(0, 0, -1000.0f), ECC_Visibility, Params))
                 {
                     const FVector ArrowEnd = GroundHit.ImpactPoint;
                     const FVector ArrowStart = ArrowEnd + FVector(0, 0, 40.0f);
@@ -350,19 +389,19 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus
     AActor* TargetActor = OutHitResult.GetActor();
     if (!TargetActor || !GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
     {
-        return false;
+        return HandleFailedFocus();
     }
 
     AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject);
     if (!InteractingActor)
     {
-        return false;
+        return false; 
     }
 
     if (bool bCanInteract = false; !TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
     {
-        return false;
+        return HandleFailedFocus();
     }
 
-    return TryFocus(TargetActor, InteractingActor, bAutoSendUnfocus, OutFocusData);
+    return TryFocus(TargetActor, InteractingActor, bAutoSendUnfocus, OutFocusData, bOutWasRefreshRequest, bOutWasUnfocus);
 }
