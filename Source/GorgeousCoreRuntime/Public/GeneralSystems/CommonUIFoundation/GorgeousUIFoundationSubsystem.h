@@ -75,7 +75,7 @@ public:
 	UGorgeousUIState_DA* GetMostRecentUIState() const { return CurrentStates.Last(); }
 	
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
-	UGorgeousUITheme_DA* GetMostRecentTheme() const { return CurrentThemes.Last(); }
+	UGorgeousUITheme_DA* GetMostRecentTheme() const;
 
 	/** Sets and broadcasts a new theme to all registered widgets. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
