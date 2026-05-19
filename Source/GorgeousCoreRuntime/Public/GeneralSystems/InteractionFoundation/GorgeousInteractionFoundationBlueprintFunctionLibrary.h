@@ -134,7 +134,7 @@ public:
 private:
     
     // Map of actors currently in the focus of another actor.
-    static TMap<TObjectPtr<AActor>, TObjectPtr<AActor>> InteractionActors;
+    static TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> InteractionActors;
 };
 
 using UGT_InteractionFoundation_FL = UGorgeousInteractionFoundationBlueprintFunctionLibrary;

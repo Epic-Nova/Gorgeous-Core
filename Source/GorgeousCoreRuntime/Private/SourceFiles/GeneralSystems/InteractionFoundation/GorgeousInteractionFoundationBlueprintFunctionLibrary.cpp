@@ -16,7 +16,7 @@
 #include "QualityOfLife/GorgeousPlayerController.h"
 //<-------------------------------------------------------------------------->
 
-TMap<TObjectPtr<AActor>, TObjectPtr<AActor>> UGorgeousInteractionFoundationBlueprintFunctionLibrary::InteractionActors = TMap<TObjectPtr<AActor>, TObjectPtr<AActor>>();
+TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundationBlueprintFunctionLibrary::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
 
 namespace GorgeousInteractionFoundation
 {
@@ -227,8 +227,10 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* Ta
     
     if (bAutoSendUnfocus)
     {
-        if (const TObjectPtr<AActor>* PreviousTargetPtr = InteractionActors.Find(InteractingActor))
+        // Query the map using the raw pointer (TMap can find items using the underlying raw pointer)
+        if (const TWeakObjectPtr<AActor>* PreviousTargetPtr = InteractionActors.Find(InteractingActor))
         {
+            // Resolve the weak pointer to a raw pointer safely
             const AActor* PreviousTarget = PreviousTargetPtr->Get();
 
             // If we are already focusing this exact target, just refresh focus data and return
@@ -259,7 +261,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* Ta
         return false;
     }
 
-    // Successfully assign the new focus target
+    // Successfully assign the new focus target (implicit conversion to TWeakObjectPtr)
     InteractionActors.Add(InteractingActor, TargetActor);
     OutFocusData = IInteractionFoundation_I::Execute_Focus(TargetActor, InteractingActor, false);
 
