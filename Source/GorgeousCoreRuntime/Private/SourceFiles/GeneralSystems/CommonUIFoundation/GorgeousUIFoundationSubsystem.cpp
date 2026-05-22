@@ -174,7 +174,7 @@ void UGorgeousUIFoundationSubsystem::ApplyThemeToWidget(UObject* Widget, const U
 
 void UGorgeousUIFoundationSubsystem::BroadcastStateSwitch(UGorgeousUIState_DA* NewState)
 {
-	SwitchUIState(NewState);
+	PushUIState(NewState);
 }
 
 void UGorgeousUIFoundationSubsystem::OnInputMethodChanged(ECommonInputType NewInputType)
@@ -239,6 +239,7 @@ void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 		{
 			if (UInputAction* Action = Pair.Value.Action)
 			{
+				//@TODO: Support for Input Action Triggers
 				EIC->BindAction(Action, ETriggerEvent::Started, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
 				EIC->BindAction(Action, ETriggerEvent::Completed, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
 			}
@@ -473,7 +474,7 @@ void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState, const bool bImmediate)
+void UGorgeousUIFoundationSubsystem::PushUIState(UGorgeousUIState_DA* NewState, bool bImmediate)
 {
 	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
 	if (!NewState || AffectedState == NewState) return;
@@ -485,16 +486,13 @@ void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState
 		return;
 	}
 
-	// 1. Start Transition Phase
 	PendingState = NewState;
 	TransitioningWidgets.Empty();
 
-	// Gather all currently active widgets that want to participate in the transition
 	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
 	{
 		if (UObject* WidgetObj = It->GetObject())
 		{
-			// We only wait for widgets that are actually visible/active on screen
 			if (const UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
 			{
 				if (UserWidget->IsVisible())
@@ -509,14 +507,98 @@ void UGorgeousUIFoundationSubsystem::SwitchUIState(UGorgeousUIState_DA* NewState
 	{
 		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Starting State Transition to '%s'. Waiting for %d widgets..."), *NewState->GetName(), TransitioningWidgets.Num());
 		OnTransitionStarted.Broadcast(NewState);
-		// The system now waits for NotifyWidgetTransitionComplete calls from these widgets.
-		// A fallback timer could be added here to prevent infinite hangs.
 	}
 	else
 	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Switching State to '%s' (Immediate)."), *NewState->GetName());
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Pushing State '%s' (Immediate)."), *NewState->GetName());
 		ExecuteStateSwap();
 	}
+}
+
+void UGorgeousUIFoundationSubsystem::RemoveUIState(TSubclassOf<UGorgeousUIState_DA> StateClass, bool bImmediate)
+{
+	if (!StateClass) return;
+
+	int32 RemoveIndex = INDEX_NONE;
+	for (int32 i = CurrentStates.Num() - 1; i >= 0; --i)
+	{
+		if (UGorgeousUIState_DA* State = CurrentStates[i])
+		{
+			if (State->IsA(StateClass))
+			{
+				RemoveIndex = i;
+				break;
+			}
+		}
+	}
+
+	if (RemoveIndex == INDEX_NONE) return;
+
+	const bool bWasTopState = (RemoveIndex == CurrentStates.Num() - 1);
+	CurrentStates.RemoveAt(RemoveIndex);
+
+	if (!bWasTopState)
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removed non-active state '%s' from stack."), *StateClass->GetName());
+		return;
+	}
+
+	UGorgeousUIState_DA* NewTopState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
+	if (!NewTopState)
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removed active state '%s'. No fallback state available."), *StateClass->GetName());
+		return;
+	}
+
+	if (bImmediate)
+	{
+		PendingState = NewTopState;
+		ExecuteStateSwap();
+		return;
+	}
+
+	PendingState = NewTopState;
+	TransitioningWidgets.Empty();
+
+	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
+	{
+		if (UObject* WidgetObj = It->GetObject())
+		{
+			if (const UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
+			{
+				if (UserWidget->IsVisible())
+				{
+					TransitioningWidgets.Add(WidgetObj);
+				}
+			}
+		}
+	}
+
+	if (TransitioningWidgets.Num() > 0)
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removing state '%s'. Waiting for %d widgets..."), *StateClass->GetName(), TransitioningWidgets.Num());
+		OnTransitionStarted.Broadcast(NewTopState);
+	}
+	else
+	{
+		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removing state '%s' (Immediate)."), *StateClass->GetName());
+		ExecuteStateSwap();
+	}
+}
+
+UGorgeousUIState_DA* UGorgeousUIFoundationSubsystem::GetUIStateByObject(
+	UGorgeousUIState_DA* InState) const
+{
+	if (!GetCurrentUIStates().Contains(InState)) return nullptr;
+	
+	return GetCurrentUIStates()[GetCurrentUIStates().Find(InState)];
+}
+
+UGorgeousUITheme_DA* UGorgeousUIFoundationSubsystem::GetThemeByObject(UGorgeousUITheme_DA* InTheme) const
+{
+	if (!GetCurrentThemes().Contains(InTheme)) return nullptr;
+	
+	return GetCurrentThemes()[GetCurrentThemes().Find(InTheme)];
 }
 
 void UGorgeousUIFoundationSubsystem::NotifyWidgetTransitionComplete(UObject* Widget)
@@ -556,7 +638,10 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 		}
 	}
 
-	CurrentStates.Push(NewState);
+	if (!CurrentStates.IsValidIndex(CurrentStates.Num() - 1) || CurrentStates.Last() != NewState)
+	{
+		CurrentStates.Push(NewState);
+	}
 
 	if (CurrentStates.Last())
 	{

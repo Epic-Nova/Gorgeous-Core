@@ -47,9 +47,13 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	// End USubsystem Interface
 
-	/** Switches the current global UI state. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Switch UI State")
-	void SwitchUIState(UGorgeousUIState_DA* NewState, bool bImmediate = false);
+	/** Pushes a state on top of the active UI state stack. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Push UI State")
+	void PushUIState(UGorgeousUIState_DA* NewState, bool bImmediate = false);
+	
+	/** Removes the most recent matching state from the active UI state stack. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Remove UI State")
+	void RemoveUIState(TSubclassOf<UGorgeousUIState_DA> StateClass, bool bImmediate = false);
 
 	/** Called by widgets when they have finished their outgoing transition animations. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
@@ -76,6 +80,12 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
 	UGorgeousUITheme_DA* GetMostRecentTheme() const;
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
+	UGorgeousUIState_DA* GetUIStateByObject(UGorgeousUIState_DA* InState) const;
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
+	UGorgeousUITheme_DA* GetThemeByObject(UGorgeousUITheme_DA* InTheme) const;
 
 	/** Sets and broadcasts a new theme to all registered widgets. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")

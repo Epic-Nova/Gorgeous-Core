@@ -49,7 +49,7 @@ public:
 	/**
 	 * Requests additional metadata from the implementing object that can be used to determine how to interact with it or to provide additional context for the interaction.
 	 * 
-	 * @param InteractingActor The actor that is ending the focus on this object. This can be used to clean up any context or state that was set during the Focus function.
+	 * @param InteractingActor The actor that is ending the focus on this object.
 	 * @param bRefreshRequest Indicates if the Focus is a refresh request of the interaction data. Typically true after the first focus and false on the initial focus.
 	 * @return An instanced struct containing the interaction metadata. The actual struct type can be defined by the implementing object and should be determined by the interaction tags it provides.
 	 */
@@ -59,7 +59,7 @@ public:
 	/**
 	 * Called when the focus on the implementing object is ending. This can be used to clean up any context or state that was set during the Focus function.
 	 * 
-	 * @param InteractingActor The actor that is ending the focus on this object. This can be used to clean up any context or state that was set during the Focus function.
+	 * @param InteractingActor The actor that is ending the focus on this object.
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
 	void Unfocus(AActor* InteractingActor) const;
@@ -67,9 +67,54 @@ public:
 	/**
 	 * Executes the interaction with the implementing object. This function should contain the actual logic of what happens when an interaction is performed with this object.
 	 * 
-	 * @param InteractingActor The actor that is performing the interaction. This can be used to determine the context of the interaction and to apply effects or changes to the interacting actor if necessary.
+	 * @param InteractingActor The actor that is performing the interaction. 
 	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
 	 */	
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
 	void Interact(AActor* InteractingActor, const FHitResult& HitResult);
+
+	/**
+	 * Called when the secondary interaction button is pressed. This can be used for context-specific interactions that are different from the primary interaction (e.g. aiming, alternate fire mode, etc.)
+	 * 
+	 * @param InteractingActor The actor that is performing the secondary interaction.
+	 * @param KeyTag A gameplay tag representing the specific secondary interaction button that was pressed. 
+	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	void InteractSecondaryButton(AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+	
+	/**
+	 * Executes a hold interaction with the implementing object. (e.g. charging, opening a door, etc.)
+	 * Typically called from Event Tick while the interaction is being held. Does not indicate that the interaction is completed.
+	 * 
+	 * @param InteractingActor The actor that is performing the interaction. 
+	 * @param HoldDuration The duration for which the interaction has been held. (e.g. how much a door is opened, how charged an attack is, etc.)
+	 * @param RemainingDuration The remaining duration until the hold interaction is completed. (e.g. how much time is left until a door is fully opened, an attack is fully charged, etc.)
+	 * @param KeyTag A gameplay tag representing the specific secondary interaction button that was pressed. Empty when the primary interaction button is affected.
+	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	void InteractHold(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+	
+	/**
+	 * Called when the interaction with the implementing object is ending. 
+	 * 
+	 * @param InteractingActor The actor that is ending the interaction.
+	 * @param KeyTag A gameplay tag representing the specific secondary interaction button that was pressed. Empty when the primary interaction button is affected.
+	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	void InteractRelease(AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+
+	/**
+	 * Called when a hold interaction with the implementing object is canceled before completion. (e.g. releasing a door before it's fully opened, canceling a charge attack, etc.)
+	 * 
+	 * @param InteractingActor The actor that is canceling the hold interaction.
+	 * @param HoldDuration The duration for which the interaction was held before cancellation.
+	 * @param RemainingDuration The remaining duration until the hold interaction is completed. (e.g. how much time is left until a door is fully opened, an attack is fully charged, etc.)
+	 * @param KeyTag A gameplay tag representing the specific secondary interaction button that was pressed. Empty when the primary interaction button is affected.
+	 * @param HitResult The hit result of the trace or focus that triggered this interaction. This provides spatial context such as impact point and component.
+	 */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	void InteractCancel(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
 };
