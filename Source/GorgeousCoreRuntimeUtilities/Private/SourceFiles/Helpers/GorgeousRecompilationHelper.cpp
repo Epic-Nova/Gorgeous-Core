@@ -70,10 +70,18 @@ TArray<FString> UGorgeousRecompilationHelper::GetActiveGorgeousSystems()
 		Systems.Add(TEXT("StatsFoundation"));
 	#endif
 
-	#ifdef GORGEOUS_SYSTEM_INSTALLED_PLAYLISTSYSTEM
-		Systems.Add(TEXT("PlaylistSystem"));
+	#ifdef GORGEOUS_SYSTEM_INSTALLED_PLAYLIST
+		Systems.Add(TEXT("Playlist"));
 	#endif
 
+	#ifdef GORGEOUS_SYSTEM_INSTALLED_TEAM
+		Systems.Add(TEXT("Team"));
+	#endif
+	
+	#ifdef GORGEOUS_SYSTEM_INSTALLED_VISUALDATAGEATHERING
+		Systems.Add(TEXT("VisualDataGathering"));
+	#endif
+	
 	// Plugins
 	#ifdef GORGEOUSTHINGS_WITH_EVENTS
 		Systems.Add(TEXT("Plugin:Events"));

@@ -55,8 +55,13 @@ void USignalBridgeStorage_OV::RegisterSignal(FGameplayTag Tag, const FGorgeousSi
 
 bool USignalBridgeStorage_OV::Listen(FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
 {
+	if (!Tag.IsValid() || !Delegate.IsBound())
+	{
+		return false;
+	}
+
 	// Bind local delegate - Always allowed locally
-	LocalBindings.FindOrAdd(Tag).Add(Delegate);
+	LocalBindings.FindOrAdd(Tag).AddUnique(Delegate);
 	GT_I_LOG("GT.SignalBridge", TEXT("[%s] Registered local listener for tag %s."), *GetName(), *Tag.ToString());
 
 	if (!Controller) return true; // Local only success
@@ -77,14 +82,14 @@ bool USignalBridgeStorage_OV::Listen(FGameplayTag Tag, AGorgeousPlayerController
 
 bool USignalBridgeStorage_OV::ListenToActor(FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
 {
-	if (!Controller || !TargetActor) return false;
+	if (!Controller || !TargetActor || !Tag.IsValid() || !Delegate.IsBound()) return false;
 
 	// For local bindings, we currently don't have per-actor filtering in the multicast delegate.
 	// But we can wrap the delegate in a lambda that filters by source.
 	// However, to stay consistent with the server-side optimization, we'll use a special local binding map or just filter in the delegate.
 	
 	// Actually, let's just use the standard local bindings but the server will only send us relevant ones.
-	LocalBindings.FindOrAdd(Tag).Add(Delegate);
+	LocalBindings.FindOrAdd(Tag).AddUnique(Delegate);
 
 	if (!HasAuthority())
 	{

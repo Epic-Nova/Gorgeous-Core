@@ -55,7 +55,7 @@ void UGorgeousActivatableWidget::NativeOnActivated()
 		if (Subsystem)
 		{
 			PreviousState = Subsystem->GetMostRecentUIState();
-			Subsystem->SwitchUIState(AutoState);
+			Subsystem->PushUIState(AutoState);
 		}
 	}
 }
@@ -67,7 +67,7 @@ void UGorgeousActivatableWidget::NativeOnDeactivated()
 		UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 		if (Subsystem)
 		{
-			Subsystem->SwitchUIState(PreviousState);
+			Subsystem->RemoveUIState(AutoState ? AutoState->GetClass() : PreviousState->GetClass());
 		}
 	}
 
