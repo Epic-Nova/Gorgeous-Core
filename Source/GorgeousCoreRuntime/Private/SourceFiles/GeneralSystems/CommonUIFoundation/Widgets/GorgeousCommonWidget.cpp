@@ -59,24 +59,14 @@ void UGorgeousCommonWidget::UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOve
 	if (!ActionTag.IsValid()) return;
 	if (!UGorgeousUIProcessor::IsStylePropertyAllowed(this, "Brush")) return;
 
-	if (ThemeOverride)
-	{
-		FSlateBrush IconBrush = ThemeOverride->GetActionIcon(ActionTag, TEXT("Generic"));
-		if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
-		{
-			FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
-			UGorgeousUIProcessor::ApplyStylePropertyToTarget(this, "Brush", Payload);
-		}
-		return;
-	}
-
 	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 	if (Subsystem)
 	{
 		// Reverse iterate to fetch resources from the most recent theme first
 		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
 		{
-			FSlateBrush IconBrush =  Subsystem->GetCurrentThemes()[0]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName());
+			const UGorgeousUITheme_DA* FinalTheme = ThemeOverride ? ThemeOverride : Subsystem->GetCurrentThemes()[i];
+			FSlateBrush IconBrush = FinalTheme->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName());
 		
 			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
 			{

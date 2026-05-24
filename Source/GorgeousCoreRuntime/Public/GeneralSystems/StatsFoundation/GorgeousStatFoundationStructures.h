@@ -4,7 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
-#include "GorgeousStatStructures.generated.h"
+#include "GorgeousStatFoundationStructures.generated.h"
 
 class AGorgeousPlayerController;
 

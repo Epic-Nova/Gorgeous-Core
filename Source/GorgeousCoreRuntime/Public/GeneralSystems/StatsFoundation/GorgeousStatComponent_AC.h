@@ -4,10 +4,10 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
-#include "GorgeousStatStructures.h"
+#include "GorgeousStatFoundationStructures.h"
 #include "GorgeousStatComponent_AC.generated.h"
 
-class UGorgeousStatStorage_OV;
+class UGorgeousStatFoundationStorage_OV;
 
 /**
  * Component that adds Gorgeous Stat functionality to an actor.
@@ -25,7 +25,7 @@ public:
 
 	/** Gets the underlying replicated storage. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Stats")
-	UGorgeousStatStorage_OV* GetStatStorage() const { return StatStorage; }
+	UGorgeousStatFoundationStorage_OV* GetStatStorage() const { return StatStorage; }
 
 	/** Sets a stat value directly (Authority Only). */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats")
@@ -42,7 +42,7 @@ public:
 protected:
 	/** Internal storage object, managed by Gorgeous Auto Replication. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	TObjectPtr<UGorgeousStatStorage_OV> StatStorage;
+	TObjectPtr<UGorgeousStatFoundationStorage_OV> StatStorage;
 
 	/** Callback for stat changes from storage. */
 	UFUNCTION()

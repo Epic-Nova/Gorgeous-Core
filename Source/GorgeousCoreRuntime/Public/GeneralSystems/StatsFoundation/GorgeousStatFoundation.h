@@ -4,17 +4,18 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
-#include "GorgeousStatBlueprintFunctionLibrary.generated.h"
+#include "GorgeousCoreRuntimeGlobals.h"
+#include "GorgeousStatFoundation.generated.h"
 
 class UGorgeousStatComponent_AC;
-class UGorgeousStatStorage_OV;
+class UGorgeousStatFoundationStorage_OV;
 class AGorgeousPlayerController;
 
 /**
  * Blueprint Function Library for the Gorgeous Stat System.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousStatBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
+class GORGEOUSCORERUNTIME_API UGorgeousStatFoundation : public UGorgeous
 {
 	GENERATED_BODY()
 
@@ -23,7 +24,7 @@ public:
 	 * Resolves the global Stat storage object. 
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats", meta = (WorldContext = "WorldContextObject"))
-	static UGorgeousStatStorage_OV* GetGorgeousStatStorage(UObject* WorldContextObject, bool bRequireNetworking = true);
+	static UGorgeousStatFoundationStorage_OV* GetGorgeousStatStorage(UObject* WorldContextObject, bool bRequireNetworking = true);
 
 	/** Finds the stat component on the controlled pawn of the player controller. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Stats", meta = (WorldContext = "WorldContextObject"))

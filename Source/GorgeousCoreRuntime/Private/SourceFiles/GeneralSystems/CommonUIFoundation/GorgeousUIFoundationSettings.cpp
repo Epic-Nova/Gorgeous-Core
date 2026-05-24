@@ -8,6 +8,9 @@ UGorgeousUIFoundationSettings::UGorgeousUIFoundationSettings(const FObjectInitia
 	if (DefaultLayoutClass.IsNull())
 	{
 		DefaultLayoutClass = TSoftClassPtr<UGorgeousPrimaryGameLayout>(
-			FSoftObjectPath(TEXT("/Script/GorgeousCoreRuntime.GorgeousPrimaryGameLayout")));
+			FSoftObjectPath(TEXT("/GorgeousCore/Systems/CommonUIFoundation/UserInterfaces/BP_DefaultPrimaryGameLayout_CUW.BP_DefaultPrimaryGameLayout_CUW")));
+		
+		DefaultTheme = TSoftObjectPtr<UGorgeousUITheme_DA>(
+			FSoftObjectPath(TEXT("/GorgeousCore/Systems/CommonUIFoundation/UserInterfaces/Themes/DT_Theme_Dark.DT_Theme_Dark")));
 	}
 }

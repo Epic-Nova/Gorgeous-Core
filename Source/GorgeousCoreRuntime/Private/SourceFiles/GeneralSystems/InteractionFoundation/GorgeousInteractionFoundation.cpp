@@ -6,17 +6,17 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundationBlueprintFunctionLibrary.h"
-#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 //<-------------------------------------------------------------------------->
 
-TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundationBlueprintFunctionLibrary::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
+TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundation::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
 
 namespace GorgeousInteractionFoundation
 {
@@ -192,7 +192,7 @@ namespace GorgeousInteractionFoundation
 // UGorgeousInteractionFoundationBlueprintFunctionLibrary Implementation
 //=============================================================================
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags)
+bool UGorgeousInteractionFoundation::TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags)
 {
     if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
     {
@@ -203,7 +203,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryRequestInteracti
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryCanInteract(AActor* TargetActor, AActor* InteractingActor, bool& bCanInteract)
+bool UGorgeousInteractionFoundation::TryCanInteract(AActor* TargetActor, AActor* InteractingActor, bool& bCanInteract)
 {
     if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
     {
@@ -214,7 +214,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryCanInteract(AAct
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* TargetActor, AActor* InteractingActor, const bool bAutoSendUnfocus, FInstancedStruct& OutFocusData, bool& bOutWasRefreshRequest, bool& bOutWasUnfocus)
+bool UGorgeousInteractionFoundation::TryFocus(AActor* TargetActor, AActor* InteractingActor, const bool bAutoSendUnfocus, FInstancedStruct& OutFocusData, bool& bOutWasRefreshRequest, bool& bOutWasUnfocus)
 {
     // Always initialize out parameters to an explicit default state at the absolute start
     bOutWasRefreshRequest = false;
@@ -268,7 +268,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryFocus(AActor* Ta
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryInteract(AActor* TargetActor, AActor* InteractingActor, const FHitResult& HitResult)
+bool UGorgeousInteractionFoundation::TryInteract(AActor* TargetActor, AActor* InteractingActor, const FHitResult& HitResult)
 {
     if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
     {
@@ -279,7 +279,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TryInteract(AActor*
     return true;
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceInteract(const UObject* WorldContextObject,
+bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* WorldContextObject,
     const FHitResult& HitResult,
     const FGameplayTag InteractionTag)
 {
@@ -304,7 +304,7 @@ bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceInter
     return TryInteract(TargetActor, InteractingActor, HitResult);
 }
 
-bool UGorgeousInteractionFoundationBlueprintFunctionLibrary::TrySphereTraceFocus(const UObject* WorldContextObject,
+bool UGorgeousInteractionFoundation::TrySphereTraceFocus(const UObject* WorldContextObject,
     const FGorgeousInteractionSphereTraceParameters& TraceParameters,
     const FGameplayTag InteractionTag,
     bool bAutoSendUnfocus,

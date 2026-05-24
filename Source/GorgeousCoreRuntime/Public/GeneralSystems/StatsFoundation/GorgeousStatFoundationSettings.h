@@ -3,20 +3,20 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "GorgeousStatStructures.h"
-#include "GorgeousStatSettings.generated.h"
+#include "GorgeousStatFoundationStructures.h"
+#include "GorgeousStatFoundationSettings.generated.h"
 
 /**
  * Developer Settings for the Gorgeous Stat System.
  */
 UCLASS(Config = GorgeousStats, DefaultConfig, meta = (DisplayName = "Core ↪ Stats"))
 
-class GORGEOUSCORERUNTIME_API UGorgeousStatSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UGorgeousStatSettings();
+	UGorgeousStatFoundationSettings();
 
 	/** Global registry of all available stats in the project. */
 	UPROPERTY(Config, EditAnywhere, Category = "Stat Registry", meta = (ForceInlineRow))

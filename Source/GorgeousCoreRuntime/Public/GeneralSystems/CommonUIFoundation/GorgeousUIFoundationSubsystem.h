@@ -73,7 +73,7 @@ public:
 
 	/** Returns the currently active theme. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	TArray<UGorgeousUITheme_DA*> GetCurrentThemes() const { return CurrentThemes; }
+	TArray<UGorgeousUITheme_DA*> GetCurrentThemes() const;
 	
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
 	UGorgeousUIState_DA* GetMostRecentUIState() const { return CurrentStates.Last(); }
