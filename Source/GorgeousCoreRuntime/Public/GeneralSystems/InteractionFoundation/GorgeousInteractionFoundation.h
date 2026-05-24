@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
@@ -17,14 +17,14 @@
 #include "GeneralSystems/DebugAssist/DebugAssistStructures.h"
 #include "GameplayTagContainer.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
-#include "GorgeousInteractionFoundationBlueprintFunctionLibrary.generated.h"
+#include "GorgeousInteractionFoundation.generated.h"
 //<-------------------------------------------------------------------------->
-
+//@TODO: Make it a UGorgeous
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
-| Display Name: Gorgeous Interaction Foundation Blueprint Function Library
-| Functional Name: UGorgeousInteractionFoundationBlueprintFunctionLibrary
+| Display Name: Gorgeous Interaction Foundation
+| Functional Name: UGorgeousInteractionFoundation
 | Parent Class: UBlueprintFunctionLibrary
 | Class Suffix: -
 | Author: Nils Bergemann
@@ -36,7 +36,7 @@
 <===========================================================================>
 */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundationBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
+class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
 {
     GENERATED_BODY()
 
@@ -137,4 +137,4 @@ private:
     static TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> InteractionActors;
 };
 
-using UGT_InteractionFoundation_FL = UGorgeousInteractionFoundationBlueprintFunctionLibrary;
+using UGT_IF = UGorgeousInteractionFoundation;

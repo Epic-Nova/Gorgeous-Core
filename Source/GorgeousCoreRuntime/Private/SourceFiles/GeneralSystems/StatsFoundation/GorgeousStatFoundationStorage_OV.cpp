@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
-#include "GeneralSystems/StatsFoundation/GorgeousStatStorage_OV.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatSettings.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatListenerStructures.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationSettings.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationListenerStructures.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
@@ -10,14 +10,14 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 
-UGorgeousStatStorage_OV::UGorgeousStatStorage_OV()
+UGorgeousStatFoundationStorage_OV::UGorgeousStatFoundationStorage_OV()
 {
 	bSupportsNetworking = true;
 	ReplicationMode = EGorgeousObjectVariableReplicationMode::EFullAutoReplication;
 	bUseSharedNetworkStack = true;
 }
 
-void UGorgeousStatStorage_OV::OnReplicationActivated_Implementation(const FGorgeousAutoReplicationContext& Context)
+void UGorgeousStatFoundationStorage_OV::OnReplicationActivated_Implementation(const FGorgeousAutoReplicationContext& Context)
 {
 	Super::OnReplicationActivated_Implementation(Context);
 	
@@ -26,12 +26,12 @@ void UGorgeousStatStorage_OV::OnReplicationActivated_Implementation(const FGorge
 	RegisterReplicatedProperty(TEXT("AllActorStats"), EGorgeousReplicationMode::ECustomPayload);
 }
 
-bool UGorgeousStatStorage_OV::CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller, FName PropertyName) const
+bool UGorgeousStatFoundationStorage_OV::CanControllerAccessVariable_Implementation(AGorgeousPlayerController* Controller, FName PropertyName) const
 {
 	return true;
 }
 
-bool UGorgeousStatStorage_OV::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
+bool UGorgeousStatFoundationStorage_OV::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	AGorgeousPlayerController* Controller = ConditionContext.TargetController;
 	if (!Controller) return false;
@@ -80,7 +80,7 @@ bool UGorgeousStatStorage_OV::BuildCustomAutoReplicationPayload_Implementation(F
 	return true;
 }
 
-bool UGorgeousStatStorage_OV::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
+bool UGorgeousStatFoundationStorage_OV::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	if (Payload.Num() == 0) return false;
 
@@ -132,13 +132,13 @@ bool UGorgeousStatStorage_OV::ApplyCustomAutoReplicationPayload_Implementation(F
 	return true;
 }
 
-void UGorgeousStatStorage_OV::SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester)
+void UGorgeousStatFoundationStorage_OV::SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester)
 {
 	if (!HasAuthority() || !Actor) return;
 
 	if (Requester && !EvaluateStatAccess(Requester, Actor, Tag)) return;
 
-	const UGorgeousStatSettings* Settings = GetDefault<UGorgeousStatSettings>();
+	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	if (const FGorgeousStat_S* Metadata = Settings->FindStatMetadata(Tag))
 	{
 		// Apply clamping if enabled
@@ -179,7 +179,7 @@ void UGorgeousStatStorage_OV::SetStatValue(AActor* Actor, FGameplayTag Tag, floa
 	}
 }
 
-float UGorgeousStatStorage_OV::GetStatValue(AActor* Actor, FGameplayTag Tag) const
+float UGorgeousStatFoundationStorage_OV::GetStatValue(AActor* Actor, FGameplayTag Tag) const
 {
 	if (const FGorgeousStatValues_S* ActorStats = AllActorStats.Find(Actor))
 	{
@@ -189,7 +189,7 @@ float UGorgeousStatStorage_OV::GetStatValue(AActor* Actor, FGameplayTag Tag) con
 		}
 	}
 
-	if (const FGorgeousStat_S* Metadata = GetDefault<UGorgeousStatSettings>()->FindStatMetadata(Tag))
+	if (const FGorgeousStat_S* Metadata = GetDefault<UGorgeousStatFoundationSettings>()->FindStatMetadata(Tag))
 	{
 		return Metadata->DefaultValue;
 	}
@@ -197,12 +197,12 @@ float UGorgeousStatStorage_OV::GetStatValue(AActor* Actor, FGameplayTag Tag) con
 	return 0.0f;
 }
 
-bool UGorgeousStatStorage_OV::HasStat(AActor* Actor, FGameplayTag Tag) const
+bool UGorgeousStatFoundationStorage_OV::HasStat(AActor* Actor, FGameplayTag Tag) const
 {
-	return AllActorStats.Contains(Actor) || GetDefault<UGorgeousStatSettings>()->StatRegistry.Contains(Tag);
+	return AllActorStats.Contains(Actor) || GetDefault<UGorgeousStatFoundationSettings>()->StatRegistry.Contains(Tag);
 }
 
-void UGorgeousStatStorage_OV::AddAllowedController(AActor* Actor, FGameplayTag Tag, AGorgeousPlayerController* Controller)
+void UGorgeousStatFoundationStorage_OV::AddAllowedController(AActor* Actor, FGameplayTag Tag, AGorgeousPlayerController* Controller)
 {
 	if (HasAuthority() && Actor && Controller)
 	{
@@ -213,7 +213,7 @@ void UGorgeousStatStorage_OV::AddAllowedController(AActor* Actor, FGameplayTag T
 	}
 }
 
-void UGorgeousStatStorage_OV::RemoveAllowedController(AActor* Actor, FGameplayTag Tag, AGorgeousPlayerController* Controller)
+void UGorgeousStatFoundationStorage_OV::RemoveAllowedController(AActor* Actor, FGameplayTag Tag, AGorgeousPlayerController* Controller)
 {
 	if (HasAuthority() && Actor && Controller)
 	{
@@ -228,7 +228,7 @@ void UGorgeousStatStorage_OV::RemoveAllowedController(AActor* Actor, FGameplayTa
 	}
 }
 
-bool UGorgeousStatStorage_OV::EvaluateStatAccess(AGorgeousPlayerController* Controller, AActor* Actor, FGameplayTag Tag) const
+bool UGorgeousStatFoundationStorage_OV::EvaluateStatAccess(AGorgeousPlayerController* Controller, AActor* Actor, FGameplayTag Tag) const
 {
 	if (!Actor) return false;
 
@@ -241,7 +241,7 @@ bool UGorgeousStatStorage_OV::EvaluateStatAccess(AGorgeousPlayerController* Cont
 		}
 	}
 
-	if (const FGorgeousStat_S* Metadata = GetDefault<UGorgeousStatSettings>()->FindStatMetadata(Tag))
+	if (const FGorgeousStat_S* Metadata = GetDefault<UGorgeousStatFoundationSettings>()->FindStatMetadata(Tag))
 	{
 		const FGorgeousStatAccessRules_S& Rules = Metadata->AccessRules;
 		switch (Rules.AccessPolicy)
@@ -262,7 +262,7 @@ bool UGorgeousStatStorage_OV::EvaluateStatAccess(AGorgeousPlayerController* Cont
 	return false;
 }
 
-FGorgeousStatListener_S& UGorgeousStatStorage_OV::GetOrCreateListenerRegistry(AActor* Actor)
+FGorgeousStatListener_S& UGorgeousStatFoundationStorage_OV::GetOrCreateListenerRegistry(AActor* Actor)
 {
 	if (FGorgeousStatListener_S* Existing = DictionaryAssociations.Find(Actor))
 	{

@@ -4,9 +4,9 @@
 #include "CoreMinimal.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "GameplayTagContainer.h"
-#include "GorgeousStatListenerStructures.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatStructures.h"
-#include "GorgeousStatStorage_OV.generated.h"
+#include "GorgeousStatFoundationListenerStructures.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStructures.h"
+#include "GorgeousStatFoundationStorage_OV.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousStatChangedDelegate, FGameplayTag, StatTag, float, NewValue);
 
@@ -16,12 +16,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousStatChangedDelegate, FGame
  * Uses custom payload replication to ensure clients only receive stats they are authorized to see.
  */
 UCLASS(BlueprintType)
-class GORGEOUSCORERUNTIME_API UGorgeousStatStorage_OV : public UGorgeousObjectVariable
+class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationStorage_OV : public UGorgeousObjectVariable
 {
 	GENERATED_BODY()
 
 public:
-	UGorgeousStatStorage_OV();
+	UGorgeousStatFoundationStorage_OV();
 
 	/** Sets a stat value for a specific actor. Authority only. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats")

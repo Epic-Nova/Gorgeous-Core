@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
-#include "GeneralSystems/StatsFoundation/GorgeousStatBlueprintFunctionLibrary.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundation.h"
 #include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatStorage_OV.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
@@ -11,7 +11,7 @@
 
 static const FName StatStorageEntryKey = TEXT("StatStorage");
 
-UGorgeousStatStorage_OV* UGorgeousStatBlueprintFunctionLibrary::GetGorgeousStatStorage(UObject* WorldContextObject, bool bRequireNetworking)
+UGorgeousStatFoundationStorage_OV* UGorgeousStatFoundation::GetGorgeousStatStorage(UObject* WorldContextObject, bool bRequireNetworking)
 {
 	if (!WorldContextObject) return nullptr;
 
@@ -21,7 +21,7 @@ UGorgeousStatStorage_OV* UGorgeousStatBlueprintFunctionLibrary::GetGorgeousStatS
 	UGorgeousObjectVariable* ExistingVar = nullptr;
 	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, StatStorageEntryKey, ExistingVar))
 	{
-		if (UGorgeousStatStorage_OV* Storage = Cast<UGorgeousStatStorage_OV>(ExistingVar))
+		if (UGorgeousStatFoundationStorage_OV* Storage = Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar))
 		{
 			return Storage;
 		}
@@ -34,13 +34,13 @@ UGorgeousStatStorage_OV* UGorgeousStatBlueprintFunctionLibrary::GetGorgeousStatS
 		{
 			if (!WorldSettings->AdditionalGorgeousData.Contains(StatStorageEntryKey))
 			{
-				if (WorldSettings->RegisterAutoReplicationEntry(StatStorageEntryKey, UGorgeousStatStorage_OV::StaticClass(), true, false, FGorgeousAutoReplicationStreamConfig()))
+				if (WorldSettings->RegisterAutoReplicationEntry(StatStorageEntryKey, UGorgeousStatFoundationStorage_OV::StaticClass(), true, false, FGorgeousAutoReplicationStreamConfig()))
 				{
 					UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(WorldContextObject, AGorgeousWorldSettings::StaticClass());
 
 					if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, StatStorageEntryKey, ExistingVar))
 					{
-						return Cast<UGorgeousStatStorage_OV>(ExistingVar);
+						return Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar);
 					}
 				}
 			}
@@ -50,7 +50,7 @@ UGorgeousStatStorage_OV* UGorgeousStatBlueprintFunctionLibrary::GetGorgeousStatS
 	return nullptr;
 }
 
-UGorgeousStatComponent_AC* UGorgeousStatBlueprintFunctionLibrary::GetStatComponent(UObject* WorldContextObject)
+UGorgeousStatComponent_AC* UGorgeousStatFoundation::GetStatComponent(UObject* WorldContextObject)
 {
 	if (!WorldContextObject) return nullptr;
 
@@ -65,7 +65,7 @@ UGorgeousStatComponent_AC* UGorgeousStatBlueprintFunctionLibrary::GetStatCompone
 	return nullptr;
 }
 
-float UGorgeousStatBlueprintFunctionLibrary::GetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag)
+float UGorgeousStatFoundation::GetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag)
 {
 	if (UGorgeousStatComponent_AC* Component = Actor ? Actor->FindComponentByClass<UGorgeousStatComponent_AC>() : GetStatComponent(WorldContextObject))
 	{
@@ -74,7 +74,7 @@ float UGorgeousStatBlueprintFunctionLibrary::GetStatValue(UObject* WorldContextO
 	return 0.0f;
 }
 
-void UGorgeousStatBlueprintFunctionLibrary::SetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Value)
+void UGorgeousStatFoundation::SetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Value)
 {
 	APlayerController* PC = WorldContextObject ? WorldContextObject->GetWorld()->GetFirstPlayerController() : nullptr;
 	AGorgeousPlayerController* GPC = PC ? Cast<AGorgeousPlayerController>(PC) : nullptr;
@@ -85,7 +85,7 @@ void UGorgeousStatBlueprintFunctionLibrary::SetStatValue(UObject* WorldContextOb
 	}
 }
 
-void UGorgeousStatBlueprintFunctionLibrary::ModifyStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Delta)
+void UGorgeousStatFoundation::ModifyStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Delta)
 {
 	APlayerController* PC = WorldContextObject ? WorldContextObject->GetWorld()->GetFirstPlayerController() : nullptr;
 	AGorgeousPlayerController* GPC = PC ? Cast<AGorgeousPlayerController>(PC) : nullptr;
@@ -96,17 +96,17 @@ void UGorgeousStatBlueprintFunctionLibrary::ModifyStatValue(UObject* WorldContex
 	}
 }
 
-void UGorgeousStatBlueprintFunctionLibrary::AddAllowedController(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, AGorgeousPlayerController* Controller)
+void UGorgeousStatFoundation::AddAllowedController(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, AGorgeousPlayerController* Controller)
 {
-	if (UGorgeousStatStorage_OV* Storage = GetGorgeousStatStorage(WorldContextObject))
+	if (UGorgeousStatFoundationStorage_OV* Storage = GetGorgeousStatStorage(WorldContextObject))
 	{
 		Storage->AddAllowedController(Actor, StatTag, Controller);
 	}
 }
 
-void UGorgeousStatBlueprintFunctionLibrary::RemoveAllowedController(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, AGorgeousPlayerController* Controller)
+void UGorgeousStatFoundation::RemoveAllowedController(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, AGorgeousPlayerController* Controller)
 {
-	if (UGorgeousStatStorage_OV* Storage = GetGorgeousStatStorage(WorldContextObject))
+	if (UGorgeousStatFoundationStorage_OV* Storage = GetGorgeousStatStorage(WorldContextObject))
 	{
 		Storage->RemoveAllowedController(Actor, StatTag, Controller);
 	}

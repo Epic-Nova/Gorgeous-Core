@@ -3,7 +3,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "GorgeousStatListenerStructures.generated.h"
+#include "GorgeousStatFoundationListenerStructures.generated.h"
 
 class AGorgeousPlayerController;
 class AActor;

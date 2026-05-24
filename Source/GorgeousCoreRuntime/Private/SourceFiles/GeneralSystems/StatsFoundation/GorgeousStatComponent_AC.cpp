@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatStorage_OV.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatSettings.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationSettings.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "QualityOfLife/GorgeousPlayerState.h"
@@ -45,7 +45,7 @@ void UGorgeousStatComponent_AC::InitializeStatStorage()
 	// On the server, ensure the global storage exists.
 	if (GetOwner()->HasAuthority())
 	{
-		GS->RegisterAutoReplicationEntry(StatStorageKey, UGorgeousStatStorage_OV::StaticClass(), true, false, FGorgeousAutoReplicationStreamConfig());
+		GS->RegisterAutoReplicationEntry(StatStorageKey, UGorgeousStatFoundationStorage_OV::StaticClass(), true, false, FGorgeousAutoReplicationStreamConfig());
 		UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(World, AGorgeousGameState::StaticClass());
 	}
 
@@ -53,14 +53,14 @@ void UGorgeousStatComponent_AC::InitializeStatStorage()
 	UGorgeousObjectVariable* ExistingVar = nullptr;
 	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World, StatStorageKey, ExistingVar))
 	{
-		StatStorage = Cast<UGorgeousStatStorage_OV>(ExistingVar);
+		StatStorage = Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar);
 		if (StatStorage)
 		{
 			StatStorage->OnStatChanged.AddDynamic(this, &UGorgeousStatComponent_AC::HandleStatChanged);
 			
 			// Dispatch a "Restored" signal locally so the HUD knows to do a full refresh.
 			// This is especially important after respawn or re-connecting to a shared OV.
-			const UGorgeousStatSettings* Settings = GetDefault<UGorgeousStatSettings>();
+			const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 			USignalBridgeBlueprintFunctionLibrary::DispatchLocal(this, Settings->RestoredSignal, FInstancedStruct());
 		}
 	}
@@ -74,7 +74,7 @@ void UGorgeousStatComponent_AC::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 
 void UGorgeousStatComponent_AC::RegisterSignalListeners()
 {
-	const UGorgeousStatSettings* Settings = GetDefault<UGorgeousStatSettings>();
+	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	for (const auto& Pair : Settings->StatRegistry)
 	{
 		if (Pair.Value.ModificationSignal.IsValid())
@@ -117,7 +117,7 @@ float UGorgeousStatComponent_AC::GetStat(FGameplayTag Tag) const
 
 void UGorgeousStatComponent_AC::HandleStatChanged(FGameplayTag Tag, float NewValue)
 {
-	const UGorgeousStatSettings* Settings = GetDefault<UGorgeousStatSettings>();
+	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	if (Settings->bAutoDispatchChangeSignals)
 	{
 		FGameplayTag ChangeSignal = FGameplayTag::RequestGameplayTag(
@@ -138,7 +138,7 @@ void UGorgeousStatComponent_AC::OnSignalReceived(FGameplayTag SignalTag, const F
 	if (!GetOwner()->HasAuthority()) return;
 
 	// Find which stat this signal belongs to
-	const UGorgeousStatSettings* Settings = GetDefault<UGorgeousStatSettings>();
+	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	for (const auto& Pair : Settings->StatRegistry)
 	{
 		if (Pair.Value.ModificationSignal == SignalTag)

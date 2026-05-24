@@ -3,14 +3,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CheatManager.h"
-#include "GorgeousStatCheatManagerExtension.generated.h"
+#include "GorgeousStatFoundationCheatManagerExtension.generated.h"
 
 /**
  * Cheat Manager Extension for the Gorgeous Stat System.
  * Provides console commands to manipulate stats during development.
  */
 UCLASS()
-class GORGEOUSCORERUNTIME_API UGorgeousStatCheatManagerExtension : public UCheatManagerExtension
+class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationCheatManagerExtension : public UCheatManagerExtension
 {
 	GENERATED_BODY()
 

@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "QualityOfLife/GorgeousPlayerController.h"
 
@@ -17,7 +17,7 @@
 #include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
-#include "GeneralSystems/StatsFoundation/GorgeousStatCheatManagerExtension.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationCheatManagerExtension.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
@@ -44,7 +44,7 @@ UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousPlayerController)
 UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 	if (CheatManager)
 	{
-		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
 	}
 )
 

@@ -115,9 +115,22 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 
+TArray<UGorgeousUITheme_DA*> UGorgeousUIFoundationSubsystem::GetCurrentThemes() const
+{
+	TArray<UGorgeousUITheme_DA*> AffectedThemes;
+	
+	if (CurrentThemes.IsValidIndex(CurrentThemes.Num() - 1))
+	{
+		AffectedThemes.Add(const_cast<TArray<UGorgeousUITheme_DA*>::ElementType>(UGorgeousUIProcessor::GetDefaultTheme()));
+	}
+	AffectedThemes.Append(CurrentThemes);
+	
+	return AffectedThemes;
+}
+
 UGorgeousUITheme_DA* UGorgeousUIFoundationSubsystem::GetMostRecentTheme() const
 {	
-	return CurrentThemes.IsValidIndex(CurrentThemes.Num() - 1) ? CurrentThemes.Last() : nullptr;
+	return GetCurrentThemes().Last();
 }
 
 void UGorgeousUIFoundationSubsystem::SetCurrentTheme(UGorgeousUITheme_DA* NewTheme)
