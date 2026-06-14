@@ -21,7 +21,11 @@ public:
 	/**
 	 * Pushes a Gorgeous Message to the screen and waits for a result.
 	 */
+<<<<<<< HEAD
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Messaging", meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
+=======
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Messaging", meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
+>>>>>>> b4c134c (Some other changes i dont remember)
 	static UAsyncAction_PushGorgeousMessage* PushGorgeousMessage(
 		UObject* InWorldContextObject, 
 		FText Title, 

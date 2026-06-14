@@ -76,4 +76,3 @@ UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_Gorgeous_UI_Layout_PushWidget, "GT.UI.Layer.S
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_Signal_Carousel_Next, "UI.Action.Signal.Carousel.Next");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_Signal_Carousel_Prev, "UI.Action.Signal.Carousel.Prev");
 
-

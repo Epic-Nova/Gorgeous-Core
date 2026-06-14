@@ -47,7 +47,11 @@ IGorgeousThingsModuleInterface* UGorgeousPluginHelper::GetCoreModuleInterface(
 	const EGorgeousModuleFunctionality FunctionalityType) const
 {
 	// Search registered core modules for the requested functionality type
+<<<<<<< HEAD
 	for (const auto& Element : RegisteredCoreModules)
+=======
+	for (const TPair Element : RegisteredCoreModules)
+>>>>>>> b4c134c (Some other changes i dont remember)
 	{
 		if (Element.Value == FunctionalityType)
 		{

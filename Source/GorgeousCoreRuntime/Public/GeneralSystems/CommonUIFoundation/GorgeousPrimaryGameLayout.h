@@ -13,7 +13,11 @@ class UCommonActivatableWidgetContainerBase;
 class UCommonActivatableWidget;
 
 /**
+<<<<<<< HEAD
  * The primary layout root for the Gorgeous Core|Common UI Foundation system.
+=======
+ * The primary layout root for the Gorgeous UI system.
+>>>>>>> b4c134c (Some other changes i dont remember)
  *
  * --- SETUP (Blueprint side) ---
  * 1. Create a Widget Blueprint that inherits from UGorgeousPrimaryGameLayout.
@@ -36,8 +40,13 @@ class GORGEOUSCORERUNTIME_API UGorgeousPrimaryGameLayout : public UCommonUserWid
 public:
 	/** O(1) lookup via UGorgeousUIPolicy. */
 	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayoutForPrimaryPlayer(const UObject* WorldContextObject);
+<<<<<<< HEAD
 	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(const APlayerController* PlayerController);
 	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(const ULocalPlayer* LocalPlayer);
+=======
+	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(APlayerController* PlayerController);
+	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(ULocalPlayer* LocalPlayer);
+>>>>>>> b4c134c (Some other changes i dont remember)
 
 	UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer);
 
@@ -45,7 +54,11 @@ public:
 	virtual void NativeDestruct();
 
 	/** Synchronously push a widget class to a named layer. */
+<<<<<<< HEAD
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Layout")
+=======
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Layout")
+>>>>>>> b4c134c (Some other changes i dont remember)
 	UCommonActivatableWidget* PushWidgetToLayerStack(FGameplayTag LayerName, UClass* ActivatableWidgetClass);
 
 	/**
@@ -60,6 +73,7 @@ public:
 		TFunction<void(UCommonActivatableWidget&)> InitFunc = nullptr);
 
 	/** Searches all layers and removes the widget. */
+<<<<<<< HEAD
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Layout")
 	void FindAndRemoveWidgetFromLayer(UCommonActivatableWidget* ActivatableWidget);
 
@@ -87,12 +101,33 @@ public:
 public:
 	/** Call this in your Blueprint's construct (or use UGorgeousActivatableWidgetStack for auto-registration). */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Layout")
+=======
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Layout")
+	void FindAndRemoveWidgetFromLayer(UCommonActivatableWidget* ActivatableWidget);
+
+	/** Returns the stack container for a layer tag, or null if not registered. */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous UI|Layout")
+	UCommonActivatableWidgetContainerBase* GetLayerWidget(FGameplayTag LayerName);
+
+	/** Whether the layout is collapsed and only responds to persistent input. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Layout")
+	void SetIsDormant(bool bDormant);
+	bool IsDormant() const { return bIsDormant; }
+
+public:
+	/** Call this in your Blueprint's construct (or use UGorgeousActivatableWidgetStack for auto-registration). */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Layout")
+>>>>>>> b4c134c (Some other changes i dont remember)
 	void RegisterLayer(UPARAM(meta = (Categories = "UI.Layer")) FGameplayTag LayerTag,
 	                   UCommonActivatableWidgetContainerBase* LayerWidget);
 
 protected:
 	/** Override to respond to dormancy changes. */
+<<<<<<< HEAD
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation|Layout")
+=======
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI|Layout")
+>>>>>>> b4c134c (Some other changes i dont remember)
 	void OnIsDormantChanged();
 
 private:
