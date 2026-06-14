@@ -322,10 +322,10 @@ void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag C
 	FString FirstConsumerName  = FirstConsumer  ? FirstConsumer->GetName()  : TEXT("Unknown");
 	FString SecondConsumerName = SecondConsumer ? SecondConsumer->GetName() : TEXT("Unknown");
 
-	GT_W_LOG_FULL_EX(
+	/*GT_W_LOG_FULL_EX(
 		*FString::Printf(TEXT("InputConflict.%s"), *ActionTag.ToString()),
 		TEXT("Input Conflict! Both [%s] and [%s] in context '%s' are fighting for Priority Tier %d on Action '%s'."),
-		GT_DURATION,
+		4.f,
 		true,  // Screen
 		true,  // Log
 		true,  // Override
@@ -336,7 +336,7 @@ void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag C
 		*SecondConsumerName,
 		*Context.ToString(),
 		*ActionTag.ToString()
-	);
+	);*/
 }
 
 UGorgeousPrimaryGameLayout* AGorgeousHUD::GetPrimaryLayout() const
