@@ -56,20 +56,32 @@ void UGorgeousCommonLazyImage::UpdateActionIcon(const UGorgeousUITheme_DA* Theme
 	if (!ActionTag.IsValid()) return;
 	if (!UGorgeousUIProcessor::IsStylePropertyAllowed(this, "Brush")) return;
 
-	UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
-	if (Subsystem)
+	if (ThemeOverride)
 	{
-		// Reverse iterate to fetch resources from the most recent theme first
-		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+		FSlateBrush IconBrush = ThemeOverride->GetActionIcon(ActionTag, TEXT("Generic"));
+		SetBrush(IconBrush);
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
-			const UGorgeousUITheme_DA* FinalTheme = ThemeOverride ? ThemeOverride : Subsystem->GetCurrentThemes()[i];
-			FSlateBrush IconBrush = FinalTheme->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName());
-		
-			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)
+			if (ULocalPlayer* LP = PC->GetLocalPlayer())
 			{
-				FInstancedStruct Payload = FInstancedStruct::Make(IconBrush);
-				UGorgeousUIProcessor::ApplyStylePropertyToTarget(this, "Brush", Payload);
-				break;
+				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
+				{
+					// Reverse iterate to fetch resources from the most recent theme first
+					for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+					{
+						if (const FSlateBrush ThemeBrush = Subsystem->GetCurrentThemes()[i]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName()); 
+							ThemeBrush.GetResourceName() != NAME_None)
+						{
+							SetBrush(ThemeBrush);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
