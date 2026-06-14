@@ -16,6 +16,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSignalForwarder.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSettings.h"
 #include "EnhancedInputComponent.h"
 #include "UITag.h"
 #include "CommonInputSubsystem.h"
@@ -206,14 +207,32 @@ void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBindin
 	if (const UGorgeousInputBinding_DA* AffectedBinding = ActiveInputBindings.IsValidIndex(ActiveInputBindings.Num() - 1) ? ActiveInputBindings.Last() : nullptr; 
 		AffectedBinding == NewBindings) return;
 	
-	if (GetMostRecentUIState()->bAdditiveToCurrentState)
+	const UGorgeousUIState_DA* RecentState = GetMostRecentUIState();
+	if (RecentState && RecentState->bAdditiveToCurrentState)
 	{
-		ActiveInputBindings.Push(GetMostRecentUIState()->InputBindings);
+		ActiveInputBindings.Push(NewBindings);
 	}
 	else
 	{
 		ActiveInputBindings.Empty();
-		ActiveInputBindings.Push(NewBindings);
+		
+		// Always keep default settings-based input bindings at the base of the active stack (index 0)
+		const auto FoundationSettings = GetDefault<UGorgeousUIFoundationSettings>();
+		if (FoundationSettings)
+		{
+			if (UGorgeousInputBinding_DA* DefaultBindings = FoundationSettings->DefaultInputBindings.LoadSynchronous())
+			{
+				if (NewBindings != DefaultBindings)
+				{
+					ActiveInputBindings.Push(DefaultBindings);
+				}
+			}
+		}
+
+		if (NewBindings)
+		{
+			ActiveInputBindings.Push(NewBindings);
+		}
 	}
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Input Bindings '%s'"), NewBindings ? *NewBindings->GetName() : TEXT("None"));
@@ -244,25 +263,45 @@ void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
 	if (!EIC) return;
 
-	// Note: In a production environment, we'd want to manage these bindings more carefully 
-	// (e.g. removing old ones). For this prototype, we'll assume the HUD manages its own component.
+	// Clear previously bridged action bindings using stored handles to prevent duplicate callbacks
+	for (uint32 Handle : BridgedBindingHandles)
+	{
+		EIC->RemoveBindingByHandle(Handle);
+	}
+	BridgedBindingHandles.Empty();
+
 	for (auto ActiveInputBinding : ActiveInputBindings)
 	{
+		if (!ActiveInputBinding) continue;
+
 		for (const auto& Pair : ActiveInputBinding->Bindings)
 		{
 			if (UInputAction* Action = Pair.Value.Action)
 			{
-				//@TODO: Support for Input Action Triggers
-				EIC->BindAction(Action, ETriggerEvent::Started, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
-				EIC->BindAction(Action, ETriggerEvent::Completed, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction, Action);
+				// CRITICAL: Tells Enhanced Input whether to swallow the hardware key or let it pass through
+				Action->bConsumeInput = Pair.Value.bConsumeInput;
+				
+				// Determine which trigger events to bind (custom configuration)
+				TArray<ETriggerEvent> EventsToBind = Pair.Value.TriggerEventsToBind;
+				if (EventsToBind.IsEmpty())
+				{
+					EventsToBind = { ETriggerEvent::Started, ETriggerEvent::Triggered, ETriggerEvent::Completed, ETriggerEvent::Canceled };
+				}
+
+				for (ETriggerEvent Event : EventsToBind)
+				{
+					FEnhancedInputActionEventBinding& Binding = EIC->BindAction(Action, Event, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction);
+					BridgedBindingHandles.Add(Binding.GetHandle());
+				}
 			}
 		}
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputActionValue& Value, UInputAction* Action)
+// ReSharper disable once CppMemberFunctionMayBeConst (If we would make it const, then the BindAction is not satisfied)
+void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputActionInstance& Instance)
 {
-	if (ActiveInputBindings.IsEmpty() || !Action) return;
+	if (ActiveInputBindings.IsEmpty()) return;
 
 	ULocalPlayer* LP = GetLocalPlayer();
 	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
@@ -270,15 +309,32 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 
 	if (!HUD) return;
 
-	for (auto ActiveInputBinding : ActiveInputBindings)
+	const UInputAction* Action = Instance.GetSourceAction();
+	if (!Action) return;
+
+	bool bInputWasConsumed = false;
+
+	// Iterate in reverse priority order (state-specific bindings first, then default mappings)
+	for (int32 i = ActiveInputBindings.Num() - 1; i >= 0; --i)
 	{
-		// Find the tag for this action
+		if (bInputWasConsumed) break;
+
+		const UGorgeousInputBinding_DA* ActiveInputBinding = ActiveInputBindings[i];
+		if (!ActiveInputBinding) continue;
+
 		for (const auto& Pair : ActiveInputBinding->Bindings)
 		{
 			if (Pair.Value.Action == Action)
 			{
-				HUD->DispatchGorgeousInput(Pair.Key, Value);
-				break;
+				// Pass the custom bConsumeInput rule down to the HUD dispatcher
+				bool bHandled = HUD->DispatchGorgeousInput(Pair.Key, Instance, Pair.Value.bConsumeInput);
+				
+				// If a consumer handled the action AND it's configured to consume, we kill further routing
+				if (bHandled && Pair.Value.bConsumeInput)
+				{
+					bInputWasConsumed = true;
+					break; 
+				}
 			}
 		}
 	}
@@ -309,16 +365,16 @@ FName UGorgeousUIFoundationSubsystem::GetCurrentPlatformName() const
 	if (GamepadStr.Contains(TEXT("nintendo")) || GamepadStr.Contains(TEXT("switch"))) return TEXT("Switch");
 
 	// 3. Fallback to Platform Macros if hardware ID is generic/unknown
-#if PLATFORM_WINDOWS || PLATFORM_XBOXONE || PLATFORM_XBOXSERIES
-	return TEXT("Xbox");
-#elif PLATFORM_PS4 || PLATFORM_PS5
-	return TEXT("PlayStation");
-#elif PLATFORM_SWITCH
-	return TEXT("Switch");
-#elif PLATFORM_ANDROID || PLATFORM_IOS
-	return TEXT("Mobile");
+#if WITH_EDITOR || PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC
+	return FName(TEXT("Xbox")); // PC builds treat generic gamepads as XInput/Xbox layout
 #else
-	return TEXT("Generic");
+	// Fallback using Unreal's runtime platform string name for consoles/mobile
+	FString PlatformName = FPlatformProperties::PlatformName();
+	if (PlatformName.Contains(TEXT("Xbox"))) return FName(TEXT("Xbox"));
+	if (PlatformName.Contains(TEXT("PS")) || PlatformName.Contains(TEXT("PlayStation"))) return FName(TEXT("PlayStation"));
+	if (PlatformName.Contains(TEXT("Switch"))) return FName(TEXT("Switch"));
+    
+	return FName(TEXT("Generic"));
 #endif
 }
 
@@ -642,11 +698,20 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 	// 1. Remove old IMCs
 	if (AffectedState && InputSubsystem && !NewState->bAdditiveToCurrentState)
 	{
-		for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputMappingContexts)
+		if (AffectedState->InputBindings)
 		{
-			if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
+			for (const FGorgeousInputMappingConfig_S& Config : AffectedState->InputBindings->InputMappingContexts)
 			{
-				InputSubsystem->RemoveMappingContext(IMC);
+				// Skip removing default mappings, as they should remain active globally
+				if (Config.bIsDefaultMapping)
+				{
+					continue;
+				}
+
+				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
+				{
+					InputSubsystem->RemoveMappingContext(IMC);
+				}
 			}
 		}
 	}
@@ -661,7 +726,7 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 		// 2. Add new IMCs
 		if (InputSubsystem)
 		{
-			for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputMappingContexts)
+			for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputBindings->InputMappingContexts)
 			{
 				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 				{

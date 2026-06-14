@@ -86,7 +86,7 @@ public:
 	virtual void NotifyReadyForStateSwap() {}
 
 	/** Processes interpolation for opacity and theme colors. */
-	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI")
+	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
 	void TickInterpolation(float DeltaTime);
 
 	/** Applies a state-specific configuration. */

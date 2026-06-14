@@ -178,7 +178,7 @@ struct FObjectVariablePinConfiguration_S
 	}
 };
 
-#endif WITH_EDITORONLY_DATA
+#endif
 
 /**
  * Multi-map value wrapper for object variables.

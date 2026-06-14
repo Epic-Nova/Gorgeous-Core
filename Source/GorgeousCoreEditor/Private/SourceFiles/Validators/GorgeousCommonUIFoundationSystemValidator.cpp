@@ -21,7 +21,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/Blueprint.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
-#include "ENgine/GameViewportClient.h"
+#include "Engine/GameViewportClient.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
 

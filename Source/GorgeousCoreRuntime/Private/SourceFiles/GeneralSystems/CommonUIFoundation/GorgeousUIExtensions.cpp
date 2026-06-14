@@ -11,7 +11,7 @@
 
 AGorgeousHUD* UGorgeousUIExtensions::GetGorgeousHUD(const UObject* WorldContextObject)
 {
-	if (UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr)
+	if (const UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr)
 	{
 		if (APlayerController* PC = World->GetFirstPlayerController())
 		{
@@ -126,4 +126,13 @@ float UGorgeousUIExtensions::CalculateEasedAlpha(float InAlpha, EGorgeousUIInter
 	}
 
 	return InAlpha;
+}
+
+void UGorgeousUIExtensions::SetInputTriggerHoldTimeThreshold(UInputTrigger* Trigger,
+	const float& HoldTimeThreshold)
+{
+	auto* HoldTriggerReference = Cast<UInputTriggerHold>(Trigger);
+	if (!HoldTriggerReference) return;
+	
+	HoldTriggerReference->HoldTimeThreshold = HoldTimeThreshold;
 }

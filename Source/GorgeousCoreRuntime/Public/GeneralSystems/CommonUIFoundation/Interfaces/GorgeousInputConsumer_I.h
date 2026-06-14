@@ -28,12 +28,15 @@ public:
 	 * @param Value The actual input data (digital or analog).
 	 * @return True if the input was consumed and should not be propagated further.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous|Input")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
 	bool HandleGorgeousInput(FGameplayTag ActionTag, const FInputActionValue& Value);
+	
+	UFUNCTION(Blueprintable, BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
+	bool HandleGorgeousInputAdvanced(FGameplayTag ActionTag, const FInputActionInstance& Instance);
 
 	/**
 	 * Returns the consumption priority. Higher values are processed first.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous|Input")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
 	int32 GetInputConsumerPriority() const;
 };

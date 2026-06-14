@@ -9,12 +9,17 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Algo/Sort.h"
 #include "Blueprint/UserWidget.h"
+#include "Engine/GameInstance.h"
 #include "CommonActivatableWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
+#include "EnhancedInputSubsystems.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSettings.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
+#include "InputMappingContext.h"
 
 AGorgeousHUD::AGorgeousHUD()
 {
-	ActionBarLayerTag = TAG_Gorgeous_UI_Layer_HUD;
+	ActionBarLayerTag = TAG_Gorgeous_UI_Layer_ActionBar;
 }
 
 void AGorgeousHUD::BeginPlay()
@@ -55,6 +60,26 @@ void AGorgeousHUD::BeginPlay()
 			}
 		}
 	}
+	
+	// Push Default IMC Bindings
+	const ULocalPlayer* LP = GetOwningPlayerController()->GetLocalPlayer();
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP ? LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
+	GT_E_LOG_ENSURE(InputSubsystem, "GT.Core.CommonUIFoundation.HUD.DefaultInputMapping", TEXT("Could not find EnhancedInputLocalPlayerSubsystem as InputSubsystem"));
+
+	const auto FoundationSettings = GetDefault<UGorgeousUIFoundationSettings>();
+	
+	if (FoundationSettings->DefaultInputBindings.LoadSynchronous())
+	{
+		for (const FGorgeousInputMappingConfig_S& Config : FoundationSettings->DefaultInputBindings->InputMappingContexts)
+		{
+			if (const UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
+			{
+				InputSubsystem->AddMappingContext(IMC, Config.Priority);
+			}
+		}	
+	}
+	
+	LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()->SetActiveInputBindings(FoundationSettings->DefaultInputBindings.Get());
 }
 
 void AGorgeousHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -68,6 +93,13 @@ void AGorgeousHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+bool AGorgeousHUD::IsInputConsumerRegistered(UObject* Object)
+{
+	return ActiveConsumers.ContainsByPredicate([Object](const FInputConsumerEntry& Entry) {
+		return Entry.Consumer.GetObject() == Object;
+	});
 }
 
 void AGorgeousHUD::RegisterInputConsumer(UObject* Consumer, FGameplayTag Context)
@@ -152,6 +184,8 @@ void AGorgeousHUD::RefreshActionBar()
 		// we show all "Active" actions for that context.
 	}
 	
+	UGorgeousPrimaryGameLayout* Layout = GetPrimaryLayout();
+
 	for (const auto& Pair : FlattenedBindings)
 	{
 		const FGameplayTag& ActionTag = Pair.Key;
@@ -159,13 +193,41 @@ void AGorgeousHUD::RefreshActionBar()
 
 		if (Info.bShouldDisplayInActionBar)
 		{
+			// Check layer context-awareness if AllowedActionBarLayers is specified
+			if (!Info.AllowedActionBarLayers.IsEmpty())
+			{
+				bool bLayerIsActiveAndVisible = false;
+				if (Layout)
+				{
+					for (const FGameplayTag& LayerTag : Info.AllowedActionBarLayers)
+					{
+						if (Layout->IsLayerVisible(LayerTag))
+						{
+							if (const UCommonActivatableWidgetContainerBase* Container = Layout->GetLayerWidget(LayerTag))
+							{
+								if (Container->GetActiveWidget() != nullptr)
+								{
+									bLayerIsActiveAndVisible = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+				if (!bLayerIsActiveAndVisible)
+				{
+					GT_I_LOG("GT.HUD", TEXT("RefreshActionBar: Skipping Action '%s' (not allowed in current pushed layers)."), *ActionTag.ToString());
+					continue; // Skip displaying this action in the action bar
+				}
+			}
+
 			// Check if this action belongs to an active context or is global
 			// For simplicity, we currently show all enabled bindings in the active BindingAsset.
 			// The user can swap BindingAssets to change what's shown.
 		
 			FGorgeousActionBarEntry_S Entry;
 			// Reverse iterate to fetch resources from the most recent theme first
-			for (int32 i = 0; i < Themes.Num() - 1; --i)
+			for (int32 i = Themes.Num() - 1; i >= 0; --i)
 			{
 				if (const FSlateBrush Brush = Themes[i]->GetActionIcon(ActionTag, PlatformName); 
 					Brush.GetResourceName() != NAME_None)
@@ -189,54 +251,92 @@ void AGorgeousHUD::RefreshActionBar()
 	ActionBarWidget->UpdateActionBar(Entries);
 }
 
-bool AGorgeousHUD::DispatchGorgeousInput(FGameplayTag ActionTag, const FInputActionValue& Value)
+bool AGorgeousHUD::DispatchGorgeousInput(FGameplayTag ActionTag, const FInputActionInstance& Instance, bool bConsumeInput)
 {
-	TArray<FGameplayTag> HandlingContexts;
 	bool bHandled = false;
+	
+	struct FFrameHandlerTracker
+	{
+		FGameplayTag Context;
+		int32 Priority;
+		UObject* Consumer;
+	};
+	TArray<FFrameHandlerTracker> HandlersThisFrame;
 
 	for (const auto& Entry : ActiveConsumers)
 	{
-		if (Entry.Consumer->Execute_HandleGorgeousInput(Entry.Consumer.GetObject(), ActionTag, Value))
+		// Conditional Pass-Through: If a higher priority layer already handled this input,
+		// and the binding rules specify consumption, skip lower priority layers entirely.
+		if (bHandled && bConsumeInput)
+		{
+			break;
+		}
+
+		UObject* ConsumerObj = Entry.Consumer.GetObject();
+		if (!IsValid(ConsumerObj)) continue;
+
+		// 1. Try Advanced Interface
+		bool bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInputAdvanced(ConsumerObj, ActionTag, Instance);
+
+		// 2. Fallback to Simple Interface
+		if (!bConsumerHandled)
+		{
+			ETriggerEvent TriggerEvent = Instance.GetTriggerEvent();
+			if (TriggerEvent == ETriggerEvent::Started || TriggerEvent == ETriggerEvent::Triggered)
+			{
+				bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInput(ConsumerObj, ActionTag, Instance.GetValue());
+			}
+		}
+
+		// 3. Priority-Aware Conflict Detection
+		if (bConsumerHandled)
 		{
 			bHandled = true;
-			HandlingContexts.AddUnique(Entry.Context);
-			
-			// Conflict Detection: If multiple consumers in the SAME context would have handled this,
-			// or if multiple active contexts are competing without a clear priority chain.
-			// For now, we warn if multiple consumers are handling the same tag in the same context.
+
+			UObject* ConflictingConsumer = nullptr;
+			for (const auto& Tracked : HandlersThisFrame)
+			{
+				if (Tracked.Context == Entry.Context && Tracked.Priority == Entry.Priority)
+				{
+					ConflictingConsumer = Tracked.Consumer;
+					break;
+				}
+			}
+
+			if (ConflictingConsumer)
+			{
+				CheckForInputConflicts(ActionTag, Entry.Context, Entry.Priority, ConflictingConsumer, ConsumerObj);
+			}
+			else
+			{
+				HandlersThisFrame.Add({ Entry.Context, Entry.Priority, ConsumerObj });
+			}
 		}
 	}
 
 	return bHandled;
 }
 
-void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag Context)
+void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag Context, int32 Priority, UObject* FirstConsumer, UObject* SecondConsumer) const
 {
-	int32 HandlersInContext = 0;
-	for (const auto& Entry : ActiveConsumers)
-	{
-		if (Entry.Context == Context)
-		{
-			HandlersInContext++;
-		}
-	}
+	FString FirstConsumerName  = FirstConsumer  ? FirstConsumer->GetName()  : TEXT("Unknown");
+	FString SecondConsumerName = SecondConsumer ? SecondConsumer->GetName() : TEXT("Unknown");
 
-	if (HandlersInContext > 1)
-	{
-		GT_W_LOG_FULL_EX(
-			*FString::Printf(TEXT("InputConflict.%s"), *ActionTag.ToString()),
-			TEXT("Input Conflict Detected! Multiple consumers in context '%s' are responding to Action '%s'."),
-			GT_DURATION,
-			true,  // Screen
-			true,  // Log
-			true,  // Override
-			true,  // TOAST
-			this,
-			nullptr,
-			*Context.ToString(),
-			*ActionTag.ToString()
-		);
-	}
+	GT_W_LOG_FULL_EX(
+		*FString::Printf(TEXT("InputConflict.%s"), *ActionTag.ToString()),
+		TEXT("Input Conflict! Both [%s] and [%s] in context '%s' are fighting for Priority Tier %d on Action '%s'."),
+		GT_DURATION,
+		true,  // Screen
+		true,  // Log
+		true,  // Override
+		true,  // TOAST
+		this,
+		nullptr,
+		*FirstConsumerName,
+		*SecondConsumerName,
+		*Context.ToString(),
+		*ActionTag.ToString()
+	);
 }
 
 UGorgeousPrimaryGameLayout* AGorgeousHUD::GetPrimaryLayout() const

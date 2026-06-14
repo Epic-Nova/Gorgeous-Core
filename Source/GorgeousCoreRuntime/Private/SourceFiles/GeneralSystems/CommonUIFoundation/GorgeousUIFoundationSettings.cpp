@@ -12,5 +12,8 @@ UGorgeousUIFoundationSettings::UGorgeousUIFoundationSettings(const FObjectInitia
 		
 		DefaultTheme = TSoftObjectPtr<UGorgeousUITheme_DA>(
 			FSoftObjectPath(TEXT("/GorgeousCore/Systems/CommonUIFoundation/UserInterfaces/Themes/DT_Theme_Dark.DT_Theme_Dark")));
+		
+		DefaultInputBindings = TSoftObjectPtr<UGorgeousInputBinding_DA>(
+			FSoftObjectPath(TEXT("/GorgeousCore/Systems/CommonUIFoundation/Input/DA_InputBinding_Generic.DA_InputBinding_Generic")));
 	}
 }

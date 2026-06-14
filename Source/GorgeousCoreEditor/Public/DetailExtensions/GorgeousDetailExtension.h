@@ -9,7 +9,7 @@
 #include "GorgeousDetailExtension.generated.h"
 
 /**
- * Base class for modular property customizations in the Unreal Editor.
+ * Base class for modular property customizations in the Unreal Editor.F
  * Can be triggered via metadata: meta = (GorgeousDetailExtension = "ExtensionName")
  */
 UCLASS(Abstract, Blueprintable)

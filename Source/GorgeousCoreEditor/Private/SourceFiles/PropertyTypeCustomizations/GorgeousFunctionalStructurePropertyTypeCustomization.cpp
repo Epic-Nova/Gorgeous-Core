@@ -107,7 +107,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 		GORGEOUS_54_LOWER(
 			IDetailGroup& AdvancedGroup = ChildBuilder.AddGroup("Advanced", FText::FromString("Advanced"));
 		)
-		for (const auto AdvancedHandle : AdvancedHandles)
+		for (const auto& AdvancedHandle : AdvancedHandles)
 		{
 			AdvancedGroup.AddPropertyRow(AdvancedHandle);
 		}

@@ -9,6 +9,7 @@
 
 //@TODO: Show Notification calls, as the hud is the primary owner for ui, this is a great place to show notifications
 
+struct FInputActionInstance;
 /**
  * Centralized manager for the Gorgeous UI layer and input dispatching.
  * Acts as the bridge between Enhanced Input/CommonUI and IGorgeousInputConsumer_I.
@@ -25,6 +26,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// End AActor Interface
+	
+	UFUNCTION(BlueprintPure, Category = "Gorgeous|Input")
+	bool IsInputConsumerRegistered(UObject* Object);
 
 	/** 
 	 * Registers a consumer to receive tag-based input. 
@@ -43,7 +47,7 @@ public:
 	void RefreshActionBar();
 
 	/** Dispatches a tag-based input to all registered consumers. */
-	bool DispatchGorgeousInput(FGameplayTag ActionTag, const FInputActionValue& Value);
+	bool DispatchGorgeousInput(FGameplayTag ActionTag, const FInputActionInstance& Instance, bool bConsumeInput);
 
 	/** Helper to retrieve the primary game layout from the local player. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous|UI")
@@ -82,7 +86,7 @@ protected:
 	TArray<FInputConsumerEntry> ActiveConsumers;
 
 	/** Checks for input conflicts within the same context and triggers a toast if found. */
-	void CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag Context);
+	void CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag Context, int32 Priority, UObject* FirstConsumer, UObject* SecondConsumer) const;
 
 	/** The class of the action bar widget to spawn. */
 	UPROPERTY(EditAnywhere, Category = "Gorgeous|UI")

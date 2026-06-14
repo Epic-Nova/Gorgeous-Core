@@ -3330,9 +3330,9 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const double MemorySampleStart = FPlatformTime::Seconds();
 		SIZE_T TotalExclusiveBytes = 0;
 		SIZE_T TotalInclusiveBytes = 0;
-		SIZE_T MinExclusiveBytes = TNumericLimits<SIZE_T>::Max();
+		//SIZE_T MinExclusiveBytes = TNumericLimits<SIZE_T>::Max(); @todo under linux wont compile
 		SIZE_T MaxExclusiveBytes = 0;
-		SIZE_T MinInclusiveBytes = TNumericLimits<SIZE_T>::Max();
+		//SIZE_T MinInclusiveBytes = TNumericLimits<SIZE_T>::Max(); @todo under linux wont compile
 		SIZE_T MaxInclusiveBytes = 0;
 		for (int32 SampleIndex = 0; SampleIndex < ActualMemorySamples; ++SampleIndex)
 		{
@@ -3343,9 +3343,9 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			const SIZE_T InclusiveBytes = MemCounter.GetNum();
 			TotalExclusiveBytes += ExclusiveBytes;
 			TotalInclusiveBytes += InclusiveBytes;
-			MinExclusiveBytes = FMath::Min(MinExclusiveBytes, ExclusiveBytes);
+			//MinExclusiveBytes = FMath::Min(MinExclusiveBytes, ExclusiveBytes); @todo under linux wont compile
 			MaxExclusiveBytes = FMath::Max(MaxExclusiveBytes, ExclusiveBytes);
-			MinInclusiveBytes = FMath::Min(MinInclusiveBytes, InclusiveBytes);
+			//MinInclusiveBytes = FMath::Min(MinInclusiveBytes, InclusiveBytes); @todo under linux wont compile
 			MaxInclusiveBytes = FMath::Max(MaxInclusiveBytes, InclusiveBytes);
 		}
 
@@ -3353,14 +3353,15 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const double AvgExclusiveKB = (ActualMemorySamples > 0) ? (static_cast<double>(TotalExclusiveBytes) / ActualMemorySamples) / 1024.0 : 0.0;
 		const double AvgInclusiveKB = (ActualMemorySamples > 0) ? (static_cast<double>(TotalInclusiveBytes) / ActualMemorySamples) / 1024.0 : 0.0;
 		RecordStat(EPerfStatCategory::Memory, DescribeSample(TEXT("Memory sampling"), MemorySample));
-		RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("Exclusive avg %.2f KB (min %.2f KB, max %.2f KB)"), AvgExclusiveKB, MinExclusiveBytes / 1024.0, MaxExclusiveBytes / 1024.0));
-		RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("Inclusive avg %.2f KB (min %.2f KB, max %.2f KB)"), AvgInclusiveKB, MinInclusiveBytes / 1024.0, MaxInclusiveBytes / 1024.0));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display,
+		//RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("Exclusive avg %.2f KB (min %.2f KB, max %.2f KB)"), AvgExclusiveKB, MinExclusiveBytes / 1024.0, MaxExclusiveBytes / 1024.0)); @todo under linux wont compile
+		//RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("Inclusive avg %.2f KB (min %.2f KB, max %.2f KB)"), AvgInclusiveKB, MinInclusiveBytes / 1024.0, MaxInclusiveBytes / 1024.0));v@todo under linux wont compile
+		/*UE_LOG(LogGorgeousObjectVariablePerf, Display,
 			TEXT("[OVPerf] Memory sample (%d nodes) exclusive avg %.2f KB [min %.2f KB | max %.2f KB], inclusive avg %.2f KB [min %.2f KB | max %.2f KB]"),
 			ActualMemorySamples,
 			AvgExclusiveKB, MinExclusiveBytes / 1024.0, MaxExclusiveBytes / 1024.0,
-			AvgInclusiveKB, MinInclusiveBytes / 1024.0, MaxInclusiveBytes / 1024.0);
+			AvgInclusiveKB, MinInclusiveBytes / 1024.0, MaxInclusiveBytes / 1024.0);*/ 
 	}
+
 
 	if (SpawnRecords.Num() > 0)
 	{
