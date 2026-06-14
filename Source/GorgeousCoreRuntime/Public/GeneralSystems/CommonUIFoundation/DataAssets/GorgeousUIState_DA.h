@@ -53,16 +53,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
 	class UGorgeousUITheme_DA* Theme;
 
-<<<<<<< HEAD
-=======
-	/** 
-	 * Input Mapping Contexts to push when this state is active.
-	 * Automatically managed by the Subsystem.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	TArray<FGorgeousInputMappingConfig_S> InputMappingContexts;
-
->>>>>>> b4c134c (Some other changes i dont remember)
 	/**
 	 * Tag-to-Action bindings to activate with this state.
 	 */

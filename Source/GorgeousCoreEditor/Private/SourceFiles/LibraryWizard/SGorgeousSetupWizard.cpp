@@ -131,7 +131,7 @@ void SGorgeousSetupWizard::Construct(const FArguments& InArgs)
 	{
 		if (!SourceTemplate->ConfigurationPayloadClasses.IsEmpty())
 		{
-			for (const TSubclassOf<UObject>& PayloadClass : SourceTemplate->ConfigurationPayloadClasses)
+			for (const TSubclassOf<UObject> PayloadClass : SourceTemplate->ConfigurationPayloadClasses)
 			{
 				if (PayloadClass)
 				{

@@ -25,11 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateTransitionStarted, UGorgeo
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateTransitionFinished, UGorgeousUIState_DA*, NewState);
 
 /**
-<<<<<<< HEAD
  * Manager for the Gorgeous Core|Common UI Foundation Foundation system.
-=======
- * Manager for the Gorgeous UI Foundation system.
->>>>>>> b4c134c (Some other changes i dont remember)
  * Handles state switching, processor lifecycle, and Signal Bridge integration.
  */
 UCLASS()
@@ -52,7 +48,6 @@ public:
 	// End USubsystem Interface
 
 	/** Pushes a state on top of the active UI state stack. */
-<<<<<<< HEAD
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation", DisplayName = "Push UI State")
 	void PushUIState(UGorgeousUIState_DA* NewState, bool bImmediate = false);
 	
@@ -98,53 +93,6 @@ public:
 
 	/** Applies a theme to a single widget via its shared processor. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
-=======
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Push UI State")
-	void PushUIState(UGorgeousUIState_DA* NewState, bool bImmediate = false);
-	
-	/** Removes the most recent matching state from the active UI state stack. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI", DisplayName = "Remove UI State")
-	void RemoveUIState(TSubclassOf<UGorgeousUIState_DA> StateClass, bool bImmediate = false);
-
-	/** Called by widgets when they have finished their outgoing transition animations. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void NotifyWidgetTransitionComplete(UObject* Widget);
-
-	/** Event fired when a UI state transition begins. Widgets should use this to trigger outro animations. */
-	UPROPERTY(BlueprintAssignable, Category = "Gorgeous UI")
-	FOnUIStateTransitionStarted OnTransitionStarted;
-
-	/** Event fired when a UI state transition completes and the new state is applied. Widgets should use this for intro animations. */
-	UPROPERTY(BlueprintAssignable, Category = "Gorgeous UI")
-	FOnUIStateTransitionFinished OnTransitionFinished;
-
-	/** Returns the currently active UI state. */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	TArray<UGorgeousUIState_DA*> GetCurrentUIStates() const { return CurrentStates; }
-
-	/** Returns the currently active theme. */
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	TArray<UGorgeousUITheme_DA*> GetCurrentThemes() const;
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousUIState_DA* GetMostRecentUIState() const { return CurrentStates.Last(); }
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
-	UGorgeousUITheme_DA* GetMostRecentTheme() const;
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousUIState_DA* GetUIStateByObject(UGorgeousUIState_DA* InState) const;
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	UGorgeousUITheme_DA* GetThemeByObject(UGorgeousUITheme_DA* InTheme) const;
-
-	/** Sets and broadcasts a new theme to all registered widgets. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
-	void SetCurrentTheme(UGorgeousUITheme_DA* NewTheme);
-
-	/** Applies a theme to a single widget via its shared processor. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
->>>>>>> b4c134c (Some other changes i dont remember)
 	void ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* Theme, const UGorgeousUITheme_DA* FallbackTheme = nullptr);
 
 	/** Broadcasts theme application to all registered widgets (without changing the stored theme). */
@@ -154,11 +102,7 @@ public:
 	void BroadcastStateSwitch(UGorgeousUIState_DA* NewState);
 
 	/** Returns the current platform name based on the active input method. */
-<<<<<<< HEAD
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation")
-=======
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
->>>>>>> b4c134c (Some other changes i dont remember)
 	FName GetCurrentPlatformName() const;
 
 	/** Registers a widget and assigns a shared processor if a binding tag is present. */
@@ -168,7 +112,6 @@ public:
 	void UnregisterWidget(IGorgeousUIWidget_I* Widget);
 
 	/** Returns the currently active input bindings. */
-<<<<<<< HEAD
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation")
 	TArray<UGorgeousInputBinding_DA*> GetActiveInputBindings() const { return ActiveInputBindings; }
 	
@@ -177,16 +120,6 @@ public:
 
 	/** Manually sets the active input bindings. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
-=======
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")
-	TArray<UGorgeousInputBinding_DA*> GetActiveInputBindings() const { return ActiveInputBindings; }
-	
-	UFUNCTION(BlueprintPure, Category = "Gorgeous UI")	
-	UGorgeousInputBinding_DA* GetMostRecentInputBindings() const { return ActiveInputBindings.Last(); }
-
-	/** Manually sets the active input bindings. */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
->>>>>>> b4c134c (Some other changes i dont remember)
 	void SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings);
 
 protected:
@@ -223,7 +156,6 @@ protected:
 
 protected:
 	/** Current active UI state. */
-<<<<<<< HEAD
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Common UI Foundation")
 	TArray<TObjectPtr<UGorgeousUIState_DA>> CurrentStates;
 
@@ -233,17 +165,6 @@ protected:
 
 	/** Mapping of widget/object classes to their corresponding processor classes. */
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Core|Common UI Foundation")
-=======
-	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous UI")
-	TArray<TObjectPtr<UGorgeousUIState_DA>> CurrentStates;
-
-	/** Current active theme. */
-	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous UI")
-	TArray<TObjectPtr<UGorgeousUITheme_DA>> CurrentThemes;
-
-	/** Mapping of widget/object classes to their corresponding processor classes. */
-	UPROPERTY(EditAnywhere, Category = "Gorgeous UI")
->>>>>>> b4c134c (Some other changes i dont remember)
 	TMap<TSubclassOf<UObject>, TSubclassOf<UGorgeousUIProcessor>> ProcessorClasses;
 
 protected:
@@ -266,12 +187,9 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UGorgeousInputBinding_DA>> ActiveInputBindings;
 
-<<<<<<< HEAD
 	/** Active Enhanced Input action binding handles. Used to clean up previously bound actions on the HUD player controller. */
 	TArray<uint32> BridgedBindingHandles;
 
-=======
->>>>>>> b4c134c (Some other changes i dont remember)
 	/** Internal helper to setup the input bridge on the HUD. */
 	void SetupInputBridgeOnHUD();
 
@@ -287,9 +205,5 @@ protected:
 	TSet<TWeakObjectPtr<UObject>> TransitioningWidgets;
 
 	/** Handler for Enhanced Input actions bridged to tags. */
-<<<<<<< HEAD
 	void HandleBridgedInputAction(const FInputActionInstance& Instance);
-=======
-	void HandleBridgedInputAction(const FInputActionValue& Value, UInputAction* Action);
->>>>>>> b4c134c (Some other changes i dont remember)
 };
