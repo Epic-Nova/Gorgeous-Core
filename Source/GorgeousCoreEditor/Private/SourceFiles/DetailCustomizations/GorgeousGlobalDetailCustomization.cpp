@@ -63,12 +63,12 @@ void FGorgeousGlobalDetailCustomization::ProcessProperties(IDetailLayoutBuilder&
 					// Get the category this property belongs to
 					FName CategoryName = Property->GetMetaData(TEXT("Category")).IsEmpty() ? TEXT("Default") : *Property->GetMetaData(TEXT("Category"));
 					IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(CategoryName);
-					
-					// Add the property row and let the extension customize it
-					IDetailPropertyRow& PropertyRow = Category.AddProperty(PropertyHandle);
-					
-					FDetailWidgetRow& HeaderRow = PropertyRow.CustomWidget(false);
-					Extension->CustomizeHeader(PropertyHandle, HeaderRow);
+
+					// Hide the default row and replace it with a meta-driven custom row so extensions can
+					// reliably inject buttons/widgets even for container properties like arrays and maps.
+					DetailBuilder.HideProperty(PropertyHandle);
+					FDetailWidgetRow& CustomRow = Category.AddCustomRow(Property->GetDisplayNameText());
+					Extension->CustomizeHeader(PropertyHandle, CustomRow);
 				}
 			}
 		}

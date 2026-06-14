@@ -21,8 +21,16 @@ public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("InputBinding"); }
 	virtual TArray<FString> GetPreferredScanPaths() const override { return { TEXT("Input/Bindings") }; }
+	
+	/** 
+	 * Input Mapping Contexts to push when this binding is active.
+	 * Automatically managed by the Subsystem.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TArray<FGorgeousInputMappingConfig_S> InputMappingContexts;
+	
 	/** Map of conceptual action tags to input action metadata. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (Categories = "UI.Action"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (Categories = "UI.Action", ForceInlineRow, ShowOnlyInnerProperties))
 	TMap<FGameplayTag, FGorgeousInputBindingInfo_S> Bindings;
 
 #if WITH_EDITOR

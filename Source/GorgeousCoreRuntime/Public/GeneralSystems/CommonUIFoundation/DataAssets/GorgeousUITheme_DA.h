@@ -22,7 +22,7 @@ class GORGEOUSCORERUNTIME_API UGorgeousUITheme_DA : public UGorgeousPrimaryDataA
 public:
 	/** UGorgeousPrimaryDataAsset Interface */
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Theme"); }
-	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces/Themes") }; }
+	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces") }; }
 	/** Returns the list of valid platform names for icon mapping. */
 	UFUNCTION()
 	static TArray<FString> GetPlatformOptions()
@@ -31,7 +31,7 @@ public:
 	}
 
 	/** Map of style property names to their values. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Styles")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Styles", meta = (ShowOnlyInnerProperties))
 	TMap<FName, FInstancedStruct> StyleProperties;
 
 	/** Helper to get a color by name. */

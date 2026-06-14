@@ -597,7 +597,7 @@ public:
 	 */
 	FObjectVariablePinConfiguration_S GetObjectVariablePinConfiguration() const { return PinConfiguration; }
 	
-#endif WITH_EDITOR
+#endif
 
 private:
 	bool InvokeNativeAutoReplicationRPCHandler(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
@@ -821,7 +821,7 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<UGorgeousObjectVariable> DefaultValuePtr;
 	
-#endif WITH_EDITORONLY_DATA
+#endif
 
 	struct FReplicatedPropertyDeclaration
 	{

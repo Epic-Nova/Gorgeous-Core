@@ -32,7 +32,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	//<================--- Friend Classes ---================>
 #if WITH_EDITOR
 	friend class FGorgeousFunctionalStructurePropertyTypeCustomization;
-#endif WITH_EDITOR
+#endif
 	//<------------------------------------------------------>
 
 	// Default constructor that initializes the identifier with a new GUID and sets the owner object to nullptr.
@@ -90,5 +90,5 @@ protected:
 	UPROPERTY(Transient)
 	UObject* OwnerObject;
 
-#endif WITH_EDITORONLY_DATA
+#endif
 };

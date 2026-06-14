@@ -13,7 +13,8 @@
 	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
-	"IsBetaVersion": false,
+	"IsExperimentalVersion": true,
+	"Installed": true,
 	"Modules": [
 		{
 			"Name": "GorgeousCoreRuntime",
@@ -80,8 +81,10 @@
 		{
 			"Name": "StructUtils",
 			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": true
 		}
-	],
-	"IsExperimentalVersion": false,
-	"Installed": false
+	]
 }

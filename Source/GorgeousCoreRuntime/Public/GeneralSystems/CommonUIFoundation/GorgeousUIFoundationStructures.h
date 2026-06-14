@@ -7,6 +7,7 @@
 #include "Fonts/SlateFontInfo.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+#include "InputTriggers.h"
 #include "GorgeousUIFoundationStructures.generated.h"
 
 /**
@@ -22,26 +23,26 @@ struct FGorgeousUIUpdatePayload
 	 * Map of property names (e.g., "Text", "Color", "Progress") to their new values.
 	 * Using FInstancedStruct allows us to pass any data type (float, FText, FLinearColor, etc.).
 	 */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	TMap<FName, FInstancedStruct> Updates;
 
 	/**
 	 * Optional animation tag to play when this update is applied.
 	 */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag AnimationTag;
 
 	/**
 	 * Optional ID used to route this update to a specific widget instance 
 	 * among many sharing the same BindingTag (e.g. Slot Index).
 	 */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FName RoutingID;
 
 	/**
 	 * Optional ID used to distinguish between multiple containers (e.g. Inventory ID).
 	 */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGuid InventoryID;
 };
 
@@ -61,10 +62,10 @@ struct FGorgeousTextUpdatePayload : public FGorgeousUIBaseUpdatePayload
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FText Text;
 
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FLinearColor Color = FLinearColor::White;
 };
 
@@ -74,7 +75,7 @@ struct FGorgeousProgressUpdatePayload : public FGorgeousUIBaseUpdatePayload
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	float Progress = 0.0f;
 };
 
@@ -85,15 +86,15 @@ struct FGorgeousPanelUpdatePayload : public FGorgeousUIBaseUpdatePayload
 	GENERATED_BODY()
 
 	/** Optional child widget to add. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	UUserWidget* ChildWidget = nullptr;
 
 	/** Whether to clear the children before adding. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	bool bClearChildren = false;
 
 	/** Optional child widget to remove. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	UUserWidget* WidgetToRemove = nullptr;
 };
 
@@ -104,7 +105,7 @@ struct FGorgeousFocusRequestPayload : public FGorgeousUIBaseUpdatePayload
 	GENERATED_BODY()
 
 	/** The binding tag of the widget that should receive focus. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag TargetTag;
 };
 
@@ -115,11 +116,11 @@ struct FGorgeousGridUpdatePayload : public FGorgeousPanelUpdatePayload
 	GENERATED_BODY()
 
 	/** Row index for the operation. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	int32 Row = 0;
 
 	/** Column index for the operation. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	int32 Column = 0;
 };
 
@@ -132,11 +133,11 @@ struct FGorgeousInputActionPayload : public FGorgeousUIBaseUpdatePayload
 	GENERATED_BODY()
 
 	/** The input action tag to trigger (e.g., UI.Action.Back). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag ActionTag;
 
 	/** If valid, only routes to this specific widget. Otherwise routes to the global active stack. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag TargetWidgetTag;
 };
 
@@ -152,7 +153,7 @@ struct FGorgeousPlatformIconGroup_S
 	 * Map of Platform Name to Icon Brush.
 	 * Common Keys: Keyboard, Xbox, PlayStation, Switch, Mobile
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI", meta = (GetOptions = "GetPlatformOptions"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation", meta = (GetOptions = "GetPlatformOptions"))
 	TMap<FName, FSlateBrush> PlatformIcons;
 };
 
@@ -175,11 +176,11 @@ struct FGorgeousRegisterLayerPayload : public FGorgeousUIBaseUpdatePayload
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag LayerTag;
 
 	/** The stack widget being registered. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	TObjectPtr<UObject> LayerWidget = nullptr;
 };
 
@@ -189,10 +190,13 @@ struct FGorgeousInputMappingConfig_S
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	TSoftObjectPtr<class UInputMappingContext> InputMapping;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Core|Common UI Foundation")
+	bool bIsDefaultMapping = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation", meta = (EditCondition = "!bIsDefaultMapping", EditConditionHides))
 	int32 Priority = 0;
 };
 
@@ -209,10 +213,22 @@ struct FGorgeousInputBindingInfo_S
 	/** If true, this action will be displayed in the HUD's action bar. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	bool bShouldDisplayInActionBar = true;
+	
+	/** If true, this input will be consumed once handled. Turn off to allow lower-priority systems or actions to see the key. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	bool bConsumeInput = false;
 
 	/** Friendly name for the action. If empty, uses the tag name. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
 	FText DisplayName;
+
+	/** Trigger events to bind for this action. If empty, defaults to Started, Triggered, Completed, Canceled. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input")
+	TArray<ETriggerEvent> TriggerEventsToBind;
+
+	/** Specify which layers this action can be displayed in. If empty, it's allowed on any layer. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input", meta = (Categories = "GT.UI.Layer", EditCondition = "bShouldDisplayInActionBar", EditConditionHides))
+	TArray<FGameplayTag> AllowedActionBarLayers;
 };
 
 /** Data for a single entry in the HUD action bar. */
@@ -241,23 +257,23 @@ struct FGorgeousUIMessageRequest
 	GENERATED_BODY()
 
 	/** Unique ID for this specific message instance to track the result. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGuid RequestID;
 
 	/** The title text for the dialog. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FText Title;
 
 	/** The main body/message text. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FText Message;
 
 	/** The configuration asset defining the look and feel. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	TObjectPtr<const UGorgeousUIMessageConfig_DA> Config;
 
 	/** Optional custom data to pass to the message widget. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	TMap<FName, FString> Metadata;
 
 	FGorgeousUIMessageRequest()
@@ -274,11 +290,11 @@ struct FGorgeousUIMessageResult
 	GENERATED_BODY()
 
 	/** The ID of the request this result belongs to. */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGuid RequestID;
 
 	/** The tag of the button that was clicked (e.g., "Confirm", "Cancel", "Repair"). */
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous UI")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FName ResultTag;
 
 	FGorgeousUIMessageResult()

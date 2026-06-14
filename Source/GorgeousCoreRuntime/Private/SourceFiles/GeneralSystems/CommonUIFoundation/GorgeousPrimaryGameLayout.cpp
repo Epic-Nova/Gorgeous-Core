@@ -14,6 +14,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/LocalPlayer.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer)
@@ -26,7 +27,7 @@ UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer&
 	return UGorgeousUIPolicy::GetPrimaryPlayerLayout(WorldContextObject);
 }
 
-/*static*/ UGorgeousPrimaryGameLayout* UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(APlayerController* PlayerController)
+/*static*/ UGorgeousPrimaryGameLayout* UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(const APlayerController* PlayerController)
 {
 	if (const UGorgeousUIPolicy* Policy = UGorgeousUIPolicy::GetCurrent(PlayerController))
 	{
@@ -35,7 +36,7 @@ UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer&
 	return nullptr;
 }
 
-/*static*/ UGorgeousPrimaryGameLayout* UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(ULocalPlayer* LocalPlayer)
+/*static*/ UGorgeousPrimaryGameLayout* UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(const ULocalPlayer* LocalPlayer)
 {
 	if (LocalPlayer)
 	{
@@ -184,6 +185,49 @@ UCommonActivatableWidgetContainerBase* UGorgeousPrimaryGameLayout::GetLayerWidge
 	return Layers.FindRef(LayerName);
 }
 
+void UGorgeousPrimaryGameLayout::HideLayer(FGameplayTag LayerName)
+{
+	if (UCommonActivatableWidgetContainerBase* Layer = GetLayerWidget(LayerName))
+	{
+		Layer->SetVisibility(ESlateVisibility::Collapsed);
+		
+		// Refresh action bar when layer visibility changes
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
+}
+
+void UGorgeousPrimaryGameLayout::ShowLayer(FGameplayTag LayerName)
+{
+	if (UCommonActivatableWidgetContainerBase* Layer = GetLayerWidget(LayerName))
+	{
+		Layer->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		
+		// Refresh action bar when layer visibility changes
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
+}
+
+bool UGorgeousPrimaryGameLayout::IsLayerVisible(FGameplayTag LayerName) const
+{
+	if (const UCommonActivatableWidgetContainerBase* Layer = Layers.FindRef(LayerName))
+	{
+		return Layer->GetVisibility() != ESlateVisibility::Collapsed && Layer->GetVisibility() != ESlateVisibility::Hidden;
+	}
+	return false;
+}
+
 void UGorgeousPrimaryGameLayout::RegisterLayer(FGameplayTag LayerTag, UCommonActivatableWidgetContainerBase* LayerWidget)
 {
 	if (!LayerTag.IsValid() || !LayerWidget) return;
@@ -210,6 +254,15 @@ void UGorgeousPrimaryGameLayout::OnWidgetStackTransitioning(UCommonActivatableWi
 		{
 			const FName SuspendToken = SuspendInputTokens.Pop();
 			UGorgeousUIExtensions::ResumeGorgeousInput(GetOwningPlayer(), SuspendToken);
+		}
+
+		// Refresh action bar when a layer transition finishes (active widget changes)
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
 		}
 	}
 }

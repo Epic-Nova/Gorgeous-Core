@@ -43,6 +43,6 @@ public:
 	TMap<FName, FText> Buttons;
 
 	/** The layer to push the message onto (e.g. Modal, Overlay). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (Categories = "UI.Layer"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (Categories = "GT.UI.Layer"))
 	FGameplayTag LayerTag;
 };

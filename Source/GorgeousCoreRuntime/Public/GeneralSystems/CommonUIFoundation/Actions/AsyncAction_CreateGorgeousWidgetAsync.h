@@ -23,7 +23,7 @@ public:
 	/**
 	 * Asynchronously loads and creates a Gorgeous widget.
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Gorgeous UI|Extensions", meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic, Category = "Gorgeous Core|Common UI Foundation|Extensions", meta = (BlueprintInternalUseOnly = "true", WorldContext = "InWorldContextObject"))
 	static UAsyncAction_CreateGorgeousWidgetAsync* CreateGorgeousWidgetAsync(
 		UObject* InWorldContextObject, 
 		TSoftClassPtr<UUserWidget> WidgetClass,
