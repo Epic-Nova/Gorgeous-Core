@@ -601,6 +601,32 @@ TArray<FString> UGorgeousGeneralSystemValidator::GetGorgeousSystemDirectories()
 	return Results;
 }
 
+TArray<FString> UGorgeousGeneralSystemValidator::GetGorgeousPluginDirectories()
+{
+	TArray<FString> Results;
+	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
+	if (!PluginHelper)
+	{
+		Results.Add(TEXT("/GorgeousCore"));
+		return Results;
+	}
+
+	TSet<FName> KnownPlugins = PluginHelper->GetKnownGorgeousPlugins();
+	if (KnownPlugins.Num() == 0)
+	{
+		Results.Add(TEXT("/GorgeousCore"));
+	}
+	else
+	{
+		for (const FName& Plugin : KnownPlugins)
+		{
+			Results.Add(FString::Printf(TEXT("/%s"), *Plugin.ToString()));
+		}
+	}
+
+	return Results;
+}
+
 void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 {
 	// Prevent multiple concurrent scans
@@ -615,10 +641,11 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
 	if (!PluginHelper) return;
 
+	const bool bIsFirstTime = !PluginHelper->HasRunInitialValidation();
 	const int32 CurrentCount = PluginHelper->GetSystemValidationCount();
 	const int32 Interval = PluginHelper->GetSystemValidationInterval();
 
-	if (CurrentCount < Interval - 1)
+	if (!bIsFirstTime && CurrentCount < Interval - 1)
 	{
 		PluginHelper->IncrementSystemValidationCount();
 		GT_I_LOG("GT.GeneralSystemValidator", TEXT("Skipping system validation (attempt %d/%d)"), CurrentCount + 1, Interval);
@@ -628,7 +655,7 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	// Reset count as we are performing validation now
 	PluginHelper->SetSystemValidationCount(0);
 
-	TArray<FString> ScannedDirs = GetGorgeousSystemDirectories();
+	TArray<FString> ScannedDirs = GetGorgeousPluginDirectories();
 	if (ScannedDirs.Num() == 0)
 	{
 		return;
@@ -639,8 +666,6 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	TArray<FAssetData> FoundAssets;
 	
 	FARFilter Filter;
-	Filter.ClassPaths.Add(UBlueprint::StaticClass()->GetClassPathName());
-	Filter.ClassPaths.Add(UDataRegistry::StaticClass()->GetClassPathName());
 	for (const FString& Dir : ScannedDirs)
 	{
 		Filter.PackagePaths.Add(FName(*Dir));
@@ -650,28 +675,13 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 
 	ARM.Get().GetAssets(Filter, FoundAssets);
 
-	TArray<FAssetData> FilteredAssets;
-	for (const FAssetData& Asset : FoundAssets)
+	QueueAssetsForAsyncValidation(FoundAssets);
+
+	// Mark that we have run the initial validation
+	if (bIsFirstTime)
 	{
-		// 1. Support Data Registries
-		if (Asset.AssetClassPath == UDataRegistry::StaticClass()->GetClassPathName())
-		{
-			FilteredAssets.Add(Asset);
-			continue;
-		}
-
-		// 2. Support System Components (Managers, etc.)
-		const FString Name = Asset.AssetName.ToString();
-		if (Name.Contains(TEXT("Manager")) || 
-			Name.Contains(TEXT("Interactor")) ||
-			Name.Contains(TEXT("Handler")) ||
-			Name.Contains(TEXT("Handling")))
-		{
-			FilteredAssets.Add(Asset);
-		}
+		PluginHelper->SetHasRunInitialValidation(true);
 	}
-
-	QueueAssetsForAsyncValidation(FilteredAssets);
 
 	// Call custom validation hooks on all registered modules (Game Thread)
 	FDataValidationContext ModuleContext;

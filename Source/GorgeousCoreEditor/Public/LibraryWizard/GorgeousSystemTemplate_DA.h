@@ -28,7 +28,7 @@ class UGorgeousSetupWizardPayload;
  * workflows for creating complex configuration objects (e.g., Inventory setups,
  * Skill Trees).
  *
- * Templates are editor-only assets — they define *how* to create runtime data,
+ * Templates are editor-only assets, they define *how* to create runtime data,
  * but are never cooked into shipping builds.
  *
  * Wizard flow:

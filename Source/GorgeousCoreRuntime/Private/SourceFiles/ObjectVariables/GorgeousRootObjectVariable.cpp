@@ -592,7 +592,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	// Step 1: clean non-root OVs from every registry tree.
 	//
 	// bFullCleanup == false  (level switch): remove only dangling (invalid)
-	//   entries — persistent OVs survive.
+	//   entries, persistent OVs survive.
 	// bFullCleanup == true   (session end):  remove dangling AND
 	//   non-persistent entries.
 	// -----------------------------------------------------------------------
@@ -645,7 +645,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	// EndPlayMap calls ForEachObjectWithOuter(GameInstance, MarkAsGarbage) which asserts
 	// !IsRooted() on every object in the GI's outer chain.
 	// Root OVs carry RF_RootSet; child OVs do NOT (AddToRoot is intentionally NOT called on
-	// child OVs — see NewObjectVariable).  Walk the full tree and clear FallbackOwner on each
+	// child OVs, see NewObjectVariable).  Walk the full tree and clear FallbackOwner on each
 	// descendant (releases the TStrongObjectPtr FGCObject that would otherwise keep the PIE world
 	// reachable past GC), then RemoveFromRoot on the root OV itself.
 	// -----------------------------------------------------------------------

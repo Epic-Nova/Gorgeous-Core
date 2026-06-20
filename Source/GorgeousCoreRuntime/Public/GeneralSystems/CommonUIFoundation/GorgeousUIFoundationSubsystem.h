@@ -141,8 +141,13 @@ protected:
 	void OnInputMethodChanged(ECommonInputType NewInputType);
 
 	/** Delegate handle for the focus request listener. */
-	UPROPERTY()
 	FSignalBridgeEventDelegate FocusRequestDelegate;
+	
+	/** Slate delegate handle for global focus tracking. */
+	FDelegateHandle SlateFocusHandle;
+
+	/** Global hook to intercept focus changes from Slate. */
+	void HandleGlobalFocusChanging(const FFocusEvent& FocusEvent, const FWeakWidgetPath& OldFocusedWidgetPath, const TSharedPtr<SWidget>& OldFocusedWidget, const FWidgetPath& NewFocusedWidgetPath, const TSharedPtr<SWidget>& NewFocusedWidget);
 
 	/** Delegate handle for the input action listener. */
 	UPROPERTY()
@@ -156,8 +161,12 @@ protected:
 
 protected:
 	/** Current active UI state. */
-	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Common UI Foundation")
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "Gorgeous Core|Common UI Foundation")
 	TArray<TObjectPtr<UGorgeousUIState_DA>> CurrentStates;
+
+	/** Parallel array tracking the last focused binding tag for each UI state. */
+	UPROPERTY(Transient)
+	TArray<FGameplayTag> StateFocusHistory;
 
 	/** Current active theme. */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Common UI Foundation")
@@ -197,8 +206,11 @@ protected:
 	void ExecuteStateSwap();
 
 	/** Target state waiting for transition completion. */
-	UPROPERTY(Transient)
+	UPROPERTY()
 	TObjectPtr<UGorgeousUIState_DA> PendingState;
+
+	UPROPERTY(Transient)
+	TArray<FGorgeousPendingFocusRequest> PendingFocusRequests;
 
 	/** Set of widgets currently performing transition animations. */
 	UPROPERTY(Transient)

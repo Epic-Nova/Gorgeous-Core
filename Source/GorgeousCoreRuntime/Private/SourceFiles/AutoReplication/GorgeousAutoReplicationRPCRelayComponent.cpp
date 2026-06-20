@@ -34,7 +34,7 @@ TMap<FGuid, TWeakObjectPtr<APlayerController>> UGorgeousAutoReplicationRPCRelayC
 // =============================================================================
 namespace
 {
-	// Properties that are handled structurally or are pure configuration — never emitted into
+	// Properties that are handled structurally or are pure configuration, never emitted into
 	// the per-node property list.
 	static const TArray<FName> GOVSkippedPropertyNames =
 	{
@@ -50,12 +50,12 @@ namespace
 		{
 			return true;
 		}
-		// Skip transient / editor-only / config — not meaningful as captured data
+		// Skip transient / editor-only / config, not meaningful as captured data
 		if (Prop->HasAnyPropertyFlags(CPF_Transient | CPF_NonPIEDuplicateTransient | CPF_EditorOnly | CPF_Config))
 		{
 			return true;
 		}
-		// Skip UObject / class references — can't safely cross network without a PackageMap
+		// Skip UObject / class references, can't safely cross network without a PackageMap
 		if (Prop->IsA<FObjectProperty>() ||
 			Prop->IsA<FWeakObjectProperty>() ||
 			Prop->IsA<FSoftObjectProperty>() ||
@@ -135,7 +135,7 @@ namespace
 			if (!OVClass)
 			{
 				UE_LOG(LogGorgeousAutoReplicationRelay, Warning,
-					TEXT("ReconstructOVTree: Could not find class '%s' — node skipped."),
+					TEXT("ReconstructOVTree: Could not find class '%s', node skipped."),
 					*Node.ClassPath);
 				continue;
 			}
@@ -269,7 +269,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(
 	Serialized.RelayedReadyState = ReadyState;
 	Relay->ClientRelayAutoReplicationResult(Serialized);
 
-	// For non-multicast types only one result is expected — clean up to avoid accumulation.
+	// For non-multicast types only one result is expected, clean up to avoid accumulation.
 	const bool bIsMulticast =
 		Result.QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EReliableMulticast ||
 		Result.QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast;
@@ -561,7 +561,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
 		break;
 	case EGorgeousAutoReplicationRPCType::EUnreliableMulticast:
 	{
-		// Same fix as the reliable path — route through target mixin's transporter
+		// Same fix as the reliable path, route through target mixin's transporter
 		// rather than the per-GPS PlayerArray loop.
 		FGuid MulticastGuid = QueuedRPC.RequestGuid;
 		TargetMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
@@ -643,7 +643,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::SerializeResult(const FGorgeousA
 	// Capture the full OV tree rooted at the return OV so the receiver can reconstruct it
 	// even when the OV does not exist in the remote registry.
 	// We skip this if TargetVariable is a UGorgeousRPC_OV container (completion path on
-	// the originating side) — in that case we drill through to its first cached result's
+	// the originating side), in that case we drill through to its first cached result's
 	// TargetVariable, which is the actual leaf OV.
 	UGorgeousObjectVariable* RootOV = Result.TargetVariable;
 	if (UGorgeousRPC_OV* Container = Cast<UGorgeousRPC_OV>(RootOV))

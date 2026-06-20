@@ -56,6 +56,33 @@ enum class EGorgeousPluginLoadState : uint8
 <--------------------------------------------------------------------------->
 <===========================================================================>
 */
+USTRUCT(BlueprintType)
+struct FGorgeousOfflineSystemCacheEntry
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SystemId;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString TargetPluginName;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DisplayName;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString Description;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString Version;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadUrl;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> SourcePaths;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> ContentPaths;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") bool bIsCoreSystem = false;
+};
+
+USTRUCT(BlueprintType)
+struct FGorgeousPluginUpdateCacheEntry
+{
+    GENERATED_BODY()
+
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString PluginName;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString AvailableVersion;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString MinimumCoreVersion;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
+};
+
 UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 {
@@ -130,6 +157,18 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @param Reason The reason for the failure.
 	 */
 	void RecordModuleLoadFailure(const IGorgeousThingsModuleInterface* ModuleInterface, const FString& Reason);
+	
+	/**
+	 * Flags whether to abort saving the binary checksum 10 seconds after boot.
+	 * Any validation error from the plugin helper sets this flag.
+	 */
+	static bool bAbortBinaryChecksumSave;
+
+	/**
+	 * Automatically triggered 10 seconds after engine boot to generate and save the checksum
+	 * of the current GorgeousCore binaries, bypassing the installer on next boot.
+	 */
+	static void GenerateAndSaveBinaryChecksum();
 	
 	/**
 	 * Checks if a plugin is installed (exists in the plugin manager).
@@ -211,6 +250,63 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 */
 	void RecordInstalledSystems(const TArray<FString>& Systems);
 
+	/**
+	 * Checks if the persistent data file exists on disk.
+	 */
+	bool HasPersistentDataFile() const;
+
+	/**
+	 * Retrieves the offline cache of installable systems from persistent data.
+	 * Returns an array of parsed structs.
+	 */
+	TArray<FGorgeousOfflineSystemCacheEntry> GetOfflineSystemCache() const;
+
+	/**
+	 * Retrieves the offline cache of plugin updates from persistent data.
+	 * Returns an array of parsed structs.
+	 */
+	TArray<FGorgeousPluginUpdateCacheEntry> GetPluginUpdateCache() const;
+
+	/**
+	 * Sets the plugin update cache and saves it to disk.
+	 */
+	void SetPluginUpdateCache(const TArray<FGorgeousPluginUpdateCacheEntry>& NewCache);
+
+	/**
+	 * Checks if a specific plugin has an update available in the cache.
+	 */
+	bool HasPluginUpdateAvailable(const FName& PluginName) const;
+
+	/**
+	 * Gets the changelog URL for a specific plugin if an update is available.
+	 */
+	FString GetPluginUpdateChangelogUrl(const FName& PluginName) const;
+
+	/**
+	 * Checks if the initial system validation sweep has successfully completed.
+	 */
+	bool HasRunInitialValidation() const;
+
+	/**
+	 * Sets whether the initial system validation sweep has completed.
+	 */
+	void SetHasRunInitialValidation(bool bHasRun);
+
+	/**
+	 * Gets the file path for storing persistent Gorgeous metadata.
+	 */
+	static FString GetGorgeousPersistentDataFilePath();
+	
+	/**
+	 * Loads the persistent data from disk.
+	 */
+	void LoadPersistentData();
+	
+	/**
+	 * Saves the persistent data to disk.
+	 */
+	void SavePersistentData();
+
 private:
 	
 	/**
@@ -256,21 +352,7 @@ private:
 	 */
 	static FString GetCircularDependencyPairKey(const FName& PluginA, const FName& PluginB);
 	
-	/**
-	 * Gets the file path for storing persistent Gorgeous metadata.
-	 */
-	static FString GetGorgeousPersistentDataFilePath();
-	
-	/**
-	 * Loads the persistent data from disk.
-	 */
-	void LoadPersistentData();
-	
-	/**
-	 * Saves the persistent data to disk.
-	 */
-	void SavePersistentData();
-	//<------------------------------------------------------------------------->
+
 
 	
 	//<============================--- Variables ---============================>
@@ -307,9 +389,15 @@ private:
 	
 	// Known Gorgeous plugins (populated during registration)
 	TSet<FName> KnownGorgeousPlugins;
-	
+
 	// Cache validation results per plugin
 	TMap<FName, bool> ValidatedDependencies;
+	
+	// Cache of system validation counts per plugin.
+	TMap<FName, int32> PluginValidationCounts;
+
+	// Cached plugin update information from persistent data
+	TArray<FGorgeousPluginUpdateCacheEntry> CachedPluginUpdates;
 	
 	// Cache validation failure reasons
 	TMap<FName, FString> ValidationFailureReasons;

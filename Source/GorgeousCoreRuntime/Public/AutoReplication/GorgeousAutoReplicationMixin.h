@@ -137,8 +137,8 @@ public:
  * AdditionalGorgeousData map of a QoL class (e.g. GorgeousPlayerController, GorgeousPlayerState).
  * A replication slot is only allocated when InitializeAdditionalData() iterates entries with
  * bReplicate=true.  We plan to extend this so that replication is also available for object
- * variables that are NOT registered in AdditionalGorgeousData — e.g. standalone variables
- * created at runtime or owned by non-QoL actors — by allowing direct slot allocation through
+ * variables that are NOT registered in AdditionalGorgeousData, e.g. standalone variables
+ * created at runtime or owned by non-QoL actors, by allowing direct slot allocation through
  * the mixin without requiring an AdditionalGorgeousData entry.
  *
  * @TODO NOTE (future plan): We also plan to support runtime registration of individual

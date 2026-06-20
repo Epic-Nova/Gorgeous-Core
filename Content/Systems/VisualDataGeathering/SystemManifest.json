@@ -1,0 +1,7 @@
+{
+  "SystemId": "VisualDataGeathering",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/VisualDataGeathering"
+  ]
+}

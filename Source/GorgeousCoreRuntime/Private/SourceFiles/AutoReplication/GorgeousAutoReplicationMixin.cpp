@@ -951,7 +951,7 @@ void FGorgeousAutoReplicationMixin::InitializeTransporter()
 	// Components created dynamically must be created on the server and replicate to clients.
 	if (!TransporterInstance)
 	{
-		// Try to adopt an unlinked (replicated) transporter — one that arrived from the server
+		// Try to adopt an unlinked (replicated) transporter, one that arrived from the server
 		// but hasn't been bound to a mixin yet (OwningMixin == nullptr).
 		// NOTE: IsLinkedToMixin(nullptr) returns true when OwningMixin IS null, so this
 		// correctly finds transporter components that are waiting to be claimed by a mixin

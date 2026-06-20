@@ -1,6 +1,6 @@
 // Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|            GorgeousVault — Unreal Build Tool ThirdParty Module             |
+|            GorgeousVault, Unreal Build Tool ThirdParty Module             |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
 |              administrated by Epic Nova. All rights reserved.             |

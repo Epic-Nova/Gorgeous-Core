@@ -199,9 +199,9 @@ public:
      *
      * @param DyingWorld     The world that is about to be garbage-collected.
      * @param bSessionEnded  true when the game session is ending (PIE close, game exit)
-     *                       — performs a full purge including root OVs outered to the
+     *                      , performs a full purge including root OVs outered to the
      *                       GameInstance and the GI itself.  false during a level switch
-     *                       — only purges non-persistent OVs directly outered to the
+     *                      , only purges non-persistent OVs directly outered to the
      *                       dying world, preserving persistent root OVs and the GI.
      */
     //static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);

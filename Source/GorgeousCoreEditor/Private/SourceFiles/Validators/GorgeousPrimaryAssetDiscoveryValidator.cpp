@@ -23,13 +23,18 @@ bool UGorgeousPrimaryAssetDiscoveryValidator::CanValidateAsset_Implementation(co
 {
 	if (!InObject) return false;
 
-	return InObject->IsA<UPrimaryDataAsset>();
+	return InObject->IsA<UGorgeousPrimaryDataAsset>();
 }
 
 EDataValidationResult UGorgeousPrimaryAssetDiscoveryValidator::ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
-	UPrimaryDataAsset* PDA = Cast<UPrimaryDataAsset>(InAsset);
+	UGorgeousPrimaryDataAsset* PDA = Cast<UGorgeousPrimaryDataAsset>(InAsset);
 	if (!PDA) return EDataValidationResult::Valid;
+
+	if (!PDA->RegistrationConfig.bShouldRegister || !PDA->RegistrationConfig.bRequireRegistration)
+	{
+		return EDataValidationResult::Valid;
+	}
 
 	UAssetManager& AssetManager = UAssetManager::Get();
 	FPrimaryAssetId AssetId = AssetManager.GetPrimaryAssetIdForObject(PDA);
@@ -74,18 +79,38 @@ void UGorgeousPrimaryAssetDiscoveryValidator::HandleRegisterAssetType(const FStr
 
 	const FName TypeName = Type.GetName();
 
+	FString PackagePath = FPackageName::GetLongPackagePath(AssetPath);
+	FDirectoryPath FallbackDir;
+	FallbackDir.Path = PackagePath;
+
 	// Check if already exists
-	bool bExists = false;
-	for (const FPrimaryAssetTypeInfo& Info : Settings->PrimaryAssetTypesToScan)
+	FPrimaryAssetTypeInfo* ExistingInfo = nullptr;
+	for (FPrimaryAssetTypeInfo& Info : Settings->PrimaryAssetTypesToScan)
 	{
 		if (Info.PrimaryAssetType == TypeName)
 		{
-			bExists = true;
+			ExistingInfo = &Info;
 			break;
 		}
 	}
 
-	if (!bExists)
+	bool bModified = false;
+
+	if (ExistingInfo)
+	{
+		const bool bHasFallbackDir = ExistingInfo->GetDirectories().ContainsByPredicate(
+			[&FallbackDir](const FDirectoryPath& Existing)
+			{
+				return Existing.Path.Equals(FallbackDir.Path, ESearchCase::IgnoreCase);
+			});
+
+		if (!bHasFallbackDir)
+		{
+			ExistingInfo->GetDirectories().Add(FallbackDir);
+			bModified = true;
+		}
+	}
+	else
 	{
 		FPrimaryAssetTypeInfo NewInfo;
 		NewInfo.PrimaryAssetType = Type;
@@ -121,9 +146,6 @@ void UGorgeousPrimaryAssetDiscoveryValidator::HandleRegisterAssetType(const FStr
 		}
 
 		// 2. Always add the current asset's directory as a fallback/immediate fix
-		FString PackagePath = FPackageName::GetLongPackagePath(AssetPath);
-		FDirectoryPath FallbackDir;
-		FallbackDir.Path = PackagePath;
 		const bool bHasFallbackDir = NewInfo.GetDirectories().ContainsByPredicate(
 			[&FallbackDir](const FDirectoryPath& Existing)
 			{
@@ -134,13 +156,19 @@ void UGorgeousPrimaryAssetDiscoveryValidator::HandleRegisterAssetType(const FStr
 			NewInfo.GetDirectories().Add(FallbackDir);
 		}
 
-		Settings->Modify();
 		Settings->PrimaryAssetTypesToScan.Add(NewInfo);
+		bModified = true;
+	}
+
+	if (bModified)
+	{
+		Settings->Modify();
+		Settings->TryUpdateDefaultConfigFile();
 		Settings->SaveConfig(CPF_Config, *Settings->GetDefaultConfigFilename());
 
 		UAssetManager::Get().ReinitializeFromConfig();
 
-		FMessageDialog::Open(EAppMsgType::Ok, FText::Format(NSLOCTEXT("GT.AssetManager", "Registered", "Registered Type '{0}' for path '{1}' and preferred subdirectories."), FText::FromName(TypeName), FText::FromString(PackagePath)));
+		FMessageDialog::Open(EAppMsgType::Ok, FText::Format(NSLOCTEXT("GT.AssetManager", "Registered", "Registered Type '{0}' and path '{1}' in Asset Manager settings."), FText::FromName(TypeName), FText::FromString(PackagePath)));
 	}
 }
 

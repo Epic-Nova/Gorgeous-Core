@@ -13,7 +13,7 @@ namespace FGorgeousQualityOfLifeStatics
 	/**
 	 * Removes Owner from the SelfReference OV's object array without destroying the
 	 * shared OV itself.  Used when a single player leaves a splitscreen session or
-	 * disconnects from the server — the OV must persist for the remaining players.
+	 * disconnects from the server, the OV must persist for the remaining players.
 	 * Also prunes any other stale (invalid) entries from the array at the same time.
 	 * If the array becomes empty after removal the entire OV entry is cleaned up.
 	 */

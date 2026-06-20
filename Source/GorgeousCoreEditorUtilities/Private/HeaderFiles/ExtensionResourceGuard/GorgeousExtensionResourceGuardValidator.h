@@ -52,7 +52,7 @@ public:
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 
 	/**
-	 * Hyperlink action handler — enables the specified plugin in the
+	 * Hyperlink action handler, enables the specified plugin in the
 	 * project descriptor and prompts the user to restart the editor.
 	 *
 	 * @param PluginName The name of the plugin to enable (passed as action payload).

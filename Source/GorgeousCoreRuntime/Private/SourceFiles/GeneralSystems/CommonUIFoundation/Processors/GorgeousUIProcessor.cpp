@@ -53,7 +53,7 @@ bool UGorgeousUIProcessor::ApplyPropertyToTarget(UObject* Target, FName Property
 	if (UFunction* SetterFunc = TargetClass->FindFunctionByName(*SetterName))
 	{
 		// We only handle functions with exactly one input parameter (return values are fine).
-		// Count actual input params — skip return value properties.
+		// Count actual input params, skip return value properties.
 		int32 InputParamCount = 0;
 		for (TFieldIterator<FProperty> It(SetterFunc); It && (It->PropertyFlags & CPF_Parm); ++It)
 		{

@@ -1,0 +1,9 @@
+{
+  "SystemId": "CommonUIFoundation",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/CommonUIFoundation",
+    "Source/GorgeousCoreRuntime/Public/GeneralSystems/CommonUIFoundation",
+    "Source/GorgeousCoreRuntime/Private/GeneralSystems/CommonUIFoundation"
+  ]
+}

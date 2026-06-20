@@ -43,7 +43,7 @@ public:
 	
 	//<=======================--- Blueprint Functions ---=======================>
 	
-	/// Hyperlink action handler — registers the correct directory in the DataRegistry settings.
+	/// Hyperlink action handler, registers the correct directory in the DataRegistry settings.
 	UFUNCTION()
 	void HandleRegisterDirectoryHyperlink(const FString& Payload);
 	

@@ -1,0 +1,7 @@
+{
+  "SystemId": "Team",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/Team"
+  ]
+}

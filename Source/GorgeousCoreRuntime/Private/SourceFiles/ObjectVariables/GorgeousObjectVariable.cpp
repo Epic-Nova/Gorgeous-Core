@@ -772,8 +772,8 @@ namespace GorgeousObjectVariable_Private
 					break;
 				// Use GetTransientPackage() as Outer, NOT TargetObject.
 				// If we used TargetObject (a PIE-world OV), then after PIE ends the
-				// return OV — stored in CachedResults.TargetVariable (TObjectPtr) on the
-				// async action — would anchor the full Outer chain all the way up to the
+				// return OV, stored in CachedResults.TargetVariable (TObjectPtr) on the
+				// async action, would anchor the full Outer chain all the way up to the
 				// PIE UWorld, causing EndPlayMap to assert "still referenced".
 				// GetTransientPackage() breaks that chain: the return OV lives in the
 				// transient package and cannot anchor any PIE actors or worlds.
@@ -862,7 +862,7 @@ namespace GorgeousObjectVariable_Private
 		}
 		else
 		{
-			// Failed to fill params — the pre-constructed OV was never seen by the handler
+			// Failed to fill params, the pre-constructed OV was never seen by the handler
 			ConstructedReturnOV = nullptr;
 		}
 
@@ -1492,9 +1492,9 @@ void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewO
 	{
 		// Derive a stable map key following the priority chain:
 		//   1. Explicit RegistryKey passed by the caller.
-		//   2. DisplayName — set before this call to either the user-supplied DisplayNameOverride or a
+		//   2. DisplayName, set before this call to either the user-supplied DisplayNameOverride or a
 		//      randomly generated name (see SetDisplayName), so this branch is taken in virtually all cases.
-		//   3. GUID string — final safety net for any code path that bypasses SetDisplayName.
+		//   3. GUID string, final safety net for any code path that bypasses SetDisplayName.
 		FName Key = RegistryKey;
 		if (Key == NAME_None)
 		{
@@ -1508,11 +1508,11 @@ void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewO
 		{
 			if (*ExistingSlot && IsValid(ExistingSlot->Get()))
 			{
-				// Genuine collision with a live variable — append GUID fragment
+				// Genuine collision with a live variable, append GUID fragment
 				Key = FName(*FString::Printf(TEXT("%s_%s"), *Key.ToString(),
 					*NewObjectVariable->UniqueIdentifier.ToString().Left(8)));
 			}
-			// else: stale / null slot — replace in-place without suffix
+			// else: stale / null slot, replace in-place without suffix
 		}
 		VariableRegistry.Add(Key, NewObjectVariable);
 		UGorgeousRootObjectVariable::TrackRegisteredVariable(NewObjectVariable);
@@ -1528,7 +1528,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::FindInRegistry(FName Key, cons
 		return !Class || Variable->IsA(Class);
 	};
 
-	// Exact is a direct TMap lookup — O(1)
+	// Exact is a direct TMap lookup, O(1)
 	if (MatchCase == EFindInRegistryMatchCase::Exact)
 	{
 		const TObjectPtr<UGorgeousObjectVariable>* Found = VariableRegistry.Find(Key);

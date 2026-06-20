@@ -55,7 +55,7 @@ void FGorgeousRPCDebugTracker::OnRPCInitiated(
 	{
 		if (Entries.IsValidIndex(*ExistingIdx))
 		{
-			// Entry already exists — nothing to do.
+			// Entry already exists, nothing to do.
 			return;
 		}
 	}
@@ -173,14 +173,14 @@ void FGorgeousRPCDebugTracker::OnRPCExecuted(
 					Existing.ReturnValuePreview = Snapshot.ReturnValuePreview;
 					Existing.ReadyState        = EGorgeousRPCReadyState::Ready;
 				}
-				// Non-deferred duplicate: silently discard — keeps the timeline clean.
+				// Non-deferred duplicate: silently discard, keeps the timeline clean.
 				break;
 			}
 		}
 	}
 	else
 	{
-		// Fresh non-deferred snapshot — no snapshot for this responder yet.
+		// Fresh non-deferred snapshot, no snapshot for this responder yet.
 		Entry.Responses.Add(MoveTemp(Snapshot));
 	}
 
@@ -261,7 +261,7 @@ void FGorgeousRPCDebugTracker::OnRPCResponderReadyStateChanged(
 			Snapshot.ReadyState = ReadyState;
 			if (!ResponderKey.IsEmpty())
 			{
-				break; // Found the specific responder — stop.
+				break; // Found the specific responder, stop.
 			}
 		}
 	}

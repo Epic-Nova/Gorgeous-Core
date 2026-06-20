@@ -5,6 +5,11 @@
 UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_Gorgeous_UI_Focus_Request, "GT.UI.Action.Focus.Request", 
 	"Signal Bridge -> Send: Requests that a specific widget (by tag) takes focus.");
 
+UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_Gorgeous_UI_Focus_Changed, "GT.UI.Event.Focus.Changed", 
+	"Broadcast by the Gorgeous UI Foundation when a Gorgeous Widget receives focus.");
+UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_Gorgeous_UI_Focus_Navigated, "GT.UI.Event.Focus.Navigated", 
+	"Broadcast when focus changes specifically due to directional navigation (gamepad/keyboard). Useful for UI tick sounds.");
+
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_System_Message_Push, "GT.UI.System.Message.Push");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_System_Message_Result, "GT.UI.System.Message.Result");
 

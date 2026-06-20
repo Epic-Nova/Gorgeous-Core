@@ -33,15 +33,11 @@
 // FGorgeousCoreRuntimeModule Implementation
 //=============================================================================
 
-#include "Helpers/GorgeousRecompilationHelper.h"
+
 
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
-	// Check for system changes that might require a full recompilation/re-install
-	if (UGorgeousRecompilationHelper::CheckRecompilationRequirement())
-	{
-		UGorgeousRecompilationHelper::TriggerGorgeousRecompilation();
-	}
+
 
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
 	/*const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));

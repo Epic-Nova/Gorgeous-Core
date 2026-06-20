@@ -15,3 +15,10 @@
  * @note Not used atm, planned to be introduced with upcoming new major version
  */
 #define GORGEOUS_API_ENDPOINT "https://api.gorgeous.simsalabim.studio"
+
+/**
+ * Endpoint URL for the Gorgeous API V1.
+ */
+#define GORGEOUS_API_V1_ENDPOINT GORGEOUS_API_ENDPOINT "/api/v1"
+
+#define GORGEOUS_API_ENDPOINT_UPDATE_CHECK GORGEOUS_API_V1_ENDPOINT "/systems/update-check"

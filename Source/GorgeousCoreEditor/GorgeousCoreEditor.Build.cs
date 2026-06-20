@@ -74,18 +74,16 @@ public class GorgeousCoreEditor : ModuleRules
                 "AssetDefinition",
                 "ToolWidgets",
                 "Settings",
-                "CommonUI"
+                "CommonUI",
+                "EditorSubsystem"
             });
 
-        
-        /* Planned for 2.0
+        PrivateDependencyModuleNames.AddRange(new[]
+        {
             "HTTP",
             "Json",
-            "JsonUtilities",
-            AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
-         */
-        
-        
+            "JsonUtilities"
+        });
         PrivateDependencyModuleNames.AddRange(new[]
         {
             "GorgeousCoreRuntime", 

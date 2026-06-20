@@ -59,7 +59,7 @@ bool AGorgeousPlayerState::IsRemoteNetConnection_Implementation() const
 	const APlayerController* PC = Cast<APlayerController>(GetOwningController());
 	if (!PC)
 	{
-		// No owning controller reachable — this is a remote player's PS on a client
+		// No owning controller reachable, this is a remote player's PS on a client
 		// (the matching PC only exists on the server).
 		return true;
 	}
@@ -73,7 +73,7 @@ FUniqueNetIdRepl AGorgeousPlayerState::GetPlayerNetId_Implementation() const
 
 FString AGorgeousPlayerState::GetGorgeousStablePlayerId_Implementation() const
 {
-	// Prefer the replicated stable ID — it is visible on all machines including
+	// Prefer the replicated stable ID, it is visible on all machines including
 	// clients reading another player's PS.  Fall back to the local registry for
 	// the local player before the first replication cycle completes.
 	if (!ReplicatedGorgeousStableId.IsEmpty())

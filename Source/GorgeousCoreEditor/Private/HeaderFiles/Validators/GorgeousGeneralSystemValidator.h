@@ -47,7 +47,7 @@ public:
 	
 	//<=======================--- Blueprint Functions ---=======================>
 	
-	/// Hyperlink action handler — registers general systems primary data asset
+	/// Hyperlink action handler, registers general systems primary data asset
 	UFUNCTION()
 	void HandleRegisterAssetRegistryEntry(const FString& Payload);
 	//<------------------------------------------------------------------------->
@@ -65,8 +65,13 @@ public:
 	void ScanAndRecreateMissingPDAs();
 	
 	static void QueueAssetsForAsyncValidation(const TArray<FAssetData>& Assets);
-	static void RequestSystemValidationScan();
+	/** Retrieves all known gorgeous system directories */
 	static TArray<FString> GetGorgeousSystemDirectories();
+
+	/** Retrieves all known gorgeous plugin root directories */
+	static TArray<FString> GetGorgeousPluginDirectories();
+	
+	static void RequestSystemValidationScan();
 	
 	bool IsSystemAssetManagerRegistered() const;
 	bool IsSystemComponent(const FString Name, const uint8 CheckMode = 0) const;

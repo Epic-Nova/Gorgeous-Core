@@ -1,0 +1,8 @@
+{
+  "SystemId": "DebugAssist",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Source/GorgeousCoreRuntime/Public/GeneralSystems/DebugAssist",
+    "Source/GorgeousCoreRuntime/Private/GeneralSystems/DebugAssist"
+  ]
+}

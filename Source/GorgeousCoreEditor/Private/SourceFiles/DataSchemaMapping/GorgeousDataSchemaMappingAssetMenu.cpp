@@ -25,7 +25,7 @@
 
 namespace
 {
-	FToolMenuOwnerScoped GDataSchemaMappingMenuOwner{TEXT("GorgeousDataSchemaMappingAssetMenu")};
+	static const FName GDataSchemaMappingMenuOwnerName{TEXT("GorgeousDataSchemaMappingAssetMenu")};
 
 	void AddMigrationEntries(FToolMenuSection& Section, const TArray<FAssetData> SelectedAssets, const TArray<TWeakObjectPtr<UGorgeousDataSchemaMapping_DA>> MatchingMaps)
 	{
@@ -119,6 +119,8 @@ void FGorgeousDataSchemaMappingAssetMenu::Register()
 		return;
 	}
 
+	FToolMenuOwnerScoped GDataSchemaMappingMenuOwner{ GDataSchemaMappingMenuOwnerName };
+
 	if (UToolMenu* Menu = ToolMenus->ExtendMenu("ContentBrowser.AssetContextMenu.AssetActionsSubMenu"))
 	{
 		Menu->AddDynamicSection(
@@ -134,13 +136,13 @@ void FGorgeousDataSchemaMappingAssetMenu::Unregister()
 		return;
 	}
 
-	const UToolMenus* ToolMenus = UToolMenus::Get();
+	UToolMenus* ToolMenus = UToolMenus::Get();
 	if (!ToolMenus)
 	{
 		return;
 	}
 
-	ToolMenus->UnregisterOwner(GDataSchemaMappingMenuOwner.GetOwner());
+	ToolMenus->UnregisterOwner(GDataSchemaMappingMenuOwnerName);
 }
 
 #undef LOCTEXT_NAMESPACE

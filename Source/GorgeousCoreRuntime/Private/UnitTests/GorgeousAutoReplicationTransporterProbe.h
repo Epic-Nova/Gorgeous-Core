@@ -12,7 +12,7 @@
 /**
  * Enhanced test double that records RPC execution origin, destination, and
  * reliability for every routed call.  Unlike the lightweight TransporterSpy
- * this probe captures a full trace log — each entry records WHAT happened,
+ * this probe captures a full trace log, each entry records WHAT happened,
  * WHERE the call started (server/client), and WHERE it was dispatched plus
  * whether it was reliable or unreliable.
  */

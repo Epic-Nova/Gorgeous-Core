@@ -62,14 +62,4 @@ public:
 	/** Calculates an eased alpha based on the interpolation type. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation|Math")
 	static float CalculateEasedAlpha(float InAlpha, EGorgeousUIInterpType_E InterpType);
-
-
-	/**
-	 * Sets the hold time threshold for an input trigger. Useful for dynamically adjusting input responsiveness based on game state or player preferences.
-	 * 
-	 * @param Trigger The input trigger to modify. Must be of type UInputTriggerHold or a subclass thereof.
-	 * @param HoldTimeThreshold The new hold time threshold in seconds. Must be non-negative
-	 */
-	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Extensions|Input", meta = (WorldContext = "WorldContextObject"))
-	static void SetInputTriggerHoldTimeThreshold(class UInputTrigger* Trigger, const float& HoldTimeThreshold);
 };

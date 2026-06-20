@@ -8,6 +8,7 @@
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "InputTriggers.h"
+#include "Types/SlateEnums.h"
 #include "GorgeousUIFoundationStructures.generated.h"
 
 /**
@@ -107,6 +108,81 @@ struct FGorgeousFocusRequestPayload : public FGorgeousUIBaseUpdatePayload
 	/** The binding tag of the widget that should receive focus. */
 	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag TargetTag;
+
+	/** Optional routing ID to request focus on a specific widget instance. */
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FName RoutingID;
+};
+
+/** Payload broadcast when focus changes. */
+USTRUCT(BlueprintType)
+struct FGorgeousFocusChangedPayload_S : public FGorgeousUIBaseUpdatePayload
+{
+	GENERATED_BODY()
+
+	/** The binding tag of the widget that received focus. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FGameplayTag FocusedTag;
+
+	/** The routing ID of the widget that received focus. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FName RoutingID;
+};
+
+/** Enum defining fallback strategies when focus restoration fails. */
+UENUM(BlueprintType)
+enum class EGorgeousFocusFallbackStrategy_E : uint8
+{
+	None = 0 UMETA(DisplayName = "Let CommonUI Decide"),
+	FocusSpecificWidget = 1 UMETA(DisplayName = "Focus Specific Widget")
+};
+
+/** Configuration for fallback focus. */
+USTRUCT(BlueprintType)
+struct FGorgeousFocusFallbackConfig_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	EGorgeousFocusFallbackStrategy_E Strategy = EGorgeousFocusFallbackStrategy_E::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation", meta = (EditCondition = "Strategy == EGorgeousFocusFallbackStrategy_E::FocusSpecificWidget", EditConditionHides))
+	FGameplayTag TargetTag;
+};
+
+/** Data structural mapping for directional focus routing. */
+USTRUCT(BlueprintType)
+struct FGorgeousFocusRoute_S
+{
+	GENERATED_BODY()
+
+	/** The starting binding tag. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FGameplayTag SourceTag;
+
+	/** The navigation direction that triggers this route. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	EUINavigation Direction = EUINavigation::Invalid;
+
+	/** The target binding tag to focus. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FGameplayTag TargetTag;
+};
+
+/** Internal structure for deferred focus requests. */
+USTRUCT(BlueprintType)
+struct FGorgeousPendingFocusRequest
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FGameplayTag TargetTag;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FName RoutingID;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	double ExpirationTime = 0.0;
 };
 
 /** Payload for grid panel updates. */

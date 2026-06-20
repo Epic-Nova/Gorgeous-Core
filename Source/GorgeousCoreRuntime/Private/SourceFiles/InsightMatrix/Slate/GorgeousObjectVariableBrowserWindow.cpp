@@ -379,7 +379,7 @@ void SGorgeousObjectVariableBrowserWindow::RefreshTree()
 				continue;
 			}
 
-			// Annotate with world/connection info — use the OV's own GetVariableWorld()
+			// Annotate with world/connection info, use the OV's own GetVariableWorld()
 			// which walks Outer -> FallbackOwner -> Outer chain via UGorgeousBaseWorldContextUObject.
 			// Root variables are created with GetTransientPackage() as outer, so
 			// GetVariableWorld() returns nullptr until FallbackOwner is injected by
@@ -388,7 +388,7 @@ void SGorgeousObjectVariableBrowserWindow::RefreshTree()
 			UWorld* VarWorld = RootVar->GetVariableWorld();
 			FWorldConnection Conn = FindConnectionForWorld(VarWorld);
 
-			// Apply world filter — pass through OVs that have no world context
+			// Apply world filter, pass through OVs that have no world context
 			const bool bHasWorldContext = VarWorld != nullptr && Conn.IsValid();
 			if (!WorldFilter.IsEmpty() && bHasWorldContext && Conn.Label != WorldFilter)
 			{
@@ -477,7 +477,7 @@ TSharedRef<ITableRow> SGorgeousObjectVariableBrowserWindow::OnGenerateRow(TShare
 	const bool bIsRoot = Item->bIsRoot;
 	const bool bIsValid = Item->IsValid();
 
-	// Accent color by variable kind — root: blue, networked: green, local: subtle gray
+	// Accent color by variable kind, root: blue, networked: green, local: subtle gray
 	const FLinearColor AccentColor = !bIsValid
 		? FLinearColor(0.35f, 0.35f, 0.35f, 0.85f)
 		: bIsRoot
@@ -545,7 +545,7 @@ TSharedRef<ITableRow> SGorgeousObjectVariableBrowserWindow::OnGenerateRow(TShare
 			];
 	}
 
-	// Connection/world badge — shows which PIE world this variable belongs to
+	// Connection/world badge, shows which PIE world this variable belongs to
 	if (!Item->WorldLabel.IsEmpty())
 	{
 		ChipRow->AddSlot()
@@ -1489,11 +1489,11 @@ FLinearColor SGorgeousObjectVariableBrowserWindow::GetConnectionColor(int32 Inde
 {
 	if (bIsServer)
 	{
-		// Server palette — cool blue
+		// Server palette, cool blue
 		return FLinearColor(0.20f, 0.60f, 0.90f, 0.85f);
 	}
 
-	// Client palette — warm, cycling
+	// Client palette, warm, cycling
 	static const FLinearColor ClientColors[] =
 	{
 		FLinearColor(0.25f, 0.78f, 0.45f, 0.85f),  // green

@@ -29,7 +29,7 @@ public:
 	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */
-	virtual void GorgeousStartupModule() override {}
+	virtual void GorgeousStartupModule() override;
 
 	/**
 	 * The override function of the module interface that is called to unload this module.

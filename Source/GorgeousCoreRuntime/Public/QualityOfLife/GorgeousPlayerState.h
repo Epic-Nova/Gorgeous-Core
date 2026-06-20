@@ -123,7 +123,7 @@ protected:
 	 * Prefer reading this through GetGorgeousStablePlayerId() (IGorgeousPlayerConnectionInfo_I)
 	 * rather than accessing this property directly.
 	 *
-	 * NOTE — future replacement planned:
+	 * NOTE, future replacement planned:
 	 * This property is implemented as a classic replicated UPROPERTY with a manual
 	 * OnRep handler, a server RPC, and a RefreshReplicatedStableId helper.  That is a
 	 * significant amount of boilerplate for a single FString.

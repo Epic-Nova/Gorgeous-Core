@@ -59,7 +59,7 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 	}
 
 	// Skip entirely if the content pack is not present on disk
-	// The system is optional — if it was removed, the guard is inert.
+	// The system is optional, if it was removed, the guard is inert.
 	if (!Guard->IsContentPresent())
 	{
 		AssetPasses(Guard);
@@ -97,11 +97,11 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 				*PluginName.ToString(),
 				*Guard->SystemDisplayName.ToString());
 
-			// Hard validation error — this goes to the Data Validation message log.
+			// Hard validation error, this goes to the Data Validation message log.
 			AssetFails(Guard, FText::FromString(ErrorMessage));
 			bHasErrors = true;
 
-			// Begin enforcement immediately — the user may never click the
+			// Begin enforcement immediately, the user may never click the
 			// hyperlink. If they do click it and accept the restart,
 			// HandleEnableRequiredPlugin will call StopEnforcement().
 			if (GEditor)
@@ -257,7 +257,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 		return;
 	}
 
-	// Already enabled — nothing to do
+	// Already enabled, nothing to do
 	if (Plugin->IsEnabled())
 	{
 		GT_I_LOG("GT.ExtensionResourceGuard",
@@ -274,7 +274,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 
 	if (Result == EAppReturnType::Yes)
 	{
-		// User accepted — stop enforcement if it was running
+		// User accepted, stop enforcement if it was running
 		if (GEditor)
 		{
 			if (UGorgeousExtensionResourceGuardEnforcer* Enforcer =
@@ -288,7 +288,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 	}
 	else
 	{
-		// User rejected — begin enforcement countdown
+		// User rejected, begin enforcement countdown
 		if (GEditor)
 		{
 			if (UGorgeousExtensionResourceGuardEnforcer* Enforcer =

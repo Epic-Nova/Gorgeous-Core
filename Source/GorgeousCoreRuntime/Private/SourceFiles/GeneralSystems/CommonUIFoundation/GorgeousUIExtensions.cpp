@@ -127,12 +127,3 @@ float UGorgeousUIExtensions::CalculateEasedAlpha(float InAlpha, EGorgeousUIInter
 
 	return InAlpha;
 }
-
-void UGorgeousUIExtensions::SetInputTriggerHoldTimeThreshold(UInputTrigger* Trigger,
-	const float& HoldTimeThreshold)
-{
-	auto* HoldTriggerReference = Cast<UInputTriggerHold>(Trigger);
-	if (!HoldTriggerReference) return;
-	
-	HoldTriggerReference->HoldTimeThreshold = HoldTimeThreshold;
-}
