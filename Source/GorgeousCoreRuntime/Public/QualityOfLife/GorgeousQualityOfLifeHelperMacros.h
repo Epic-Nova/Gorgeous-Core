@@ -159,7 +159,7 @@ class AGorgeousGameState;
  * AGorgeousPlayerController and does NOT need to be done here.
  */
 // UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS requires AGorgeousPlayerState to be a complete type
-// at the instantiation site — include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
+// at the instantiation site, include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
 #define UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS(Class) \
 	void Class::PostLogin(APlayerController* NewPlayer) \
 	{ \

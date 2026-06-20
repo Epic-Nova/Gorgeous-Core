@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+
+class FGorgeousCoreLibraryParticipant;
 //<-------------------------------------------------------------------------->
 
 /**
@@ -93,4 +95,6 @@ private:
 	//TSharedPtr<FGorgeousRainbowGraphPinFactory> RainbowPinFactory;
 	//TSharedPtr<FGorgeousRainbowConnectionFactory> RainbowConnectionFactory;
 	//<------------------------------------------------------------------------->
+
+	TUniquePtr<FGorgeousCoreLibraryParticipant> CoreLibraryParticipant;
 };

@@ -20,13 +20,13 @@ class UCommonActivatableWidget;
  * 2. In the Blueprint's Graph, call RegisterLayer for each stack you placed in the designer.
  *    (Or use UGorgeousActivatableWidgetStack which auto-registers itself).
  * 3. Assign the blueprint class to UGorgeousUIPolicy::DefaultLayoutClass.
- * Done — the policy creates it for you automatically.
+ * Done, the policy creates it for you automatically.
  *
  * --- LAYER TAGS (recommended) ---
- *   UI.Layer.Background — HUD, world elements
- *   UI.Layer.Game       — In-game menus (pause, map)
- *   UI.Layer.Modal      — Dialogs, confirmations
- *   UI.Layer.Loading    — Loading screens (always on top)
+ *   UI.Layer.Background, HUD, world elements
+ *   UI.Layer.Game      , In-game menus (pause, map)
+ *   UI.Layer.Modal     , Dialogs, confirmations
+ *   UI.Layer.Loading   , Loading screens (always on top)
  */
 UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UGorgeousPrimaryGameLayout : public UCommonUserWidget
@@ -51,7 +51,7 @@ public:
 	/**
 	 * Asynchronously load + push a widget to a named layer.
 	 * Input is suspended until the load completes (or is cancelled).
-	 * @return Streaming handle — cancel it to abort and resume input immediately.
+	 * @return Streaming handle, cancel it to abort and resume input immediately.
 	 */
 	TSharedPtr<FStreamableHandle> PushWidgetToLayerStackAsync(
 		FGameplayTag LayerName,

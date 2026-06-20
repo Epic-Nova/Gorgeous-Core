@@ -58,8 +58,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRPCResponseSnapshot
 	/**
 	 * Phase label for deferred responses, used to distinguish the two timeline entries
 	 * produced per deferred responder:
-	 *   "Prepared" — container created, handler hasn't signalled readiness yet (OV empty)
-	 *   "Ready"    — handler called MarkAutoReplicationRPCResponderReady (OV populated)
+	 *   "Prepared", container created, handler hasn't signalled readiness yet (OV empty)
+	 *   "Ready"   , handler called MarkAutoReplicationRPCResponderReady (OV populated)
 	 * Empty for non-deferred (immediate) responses.
 	 */
 	FString Phase;
@@ -133,7 +133,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRPCDebugEntry
  *
  * **Performance contract**: a static `bIsEnabled` flag is checked inline before
  * any allocation or map lookup. When disabled (the default) the overhead is a
- * single branch per RPC dispatch — effectively zero-cost in production runtimes.
+ * single branch per RPC dispatch, effectively zero-cost in production runtimes.
  *
  * Enable/disable is driven by opening/closing the RPC Inspector window.
  */

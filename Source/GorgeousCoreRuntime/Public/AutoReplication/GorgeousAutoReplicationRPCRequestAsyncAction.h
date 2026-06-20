@@ -140,7 +140,7 @@ public:
 	 * GetResultForResponder, …) works identically on both pins.
 	 *
 	 * Result.bIsLastResult is true when this firing is also the last one (all responders
-	 * have replied).  ResultContainer is populated progressively — it holds all results
+	 * have replied).  ResultContainer is populated progressively, it holds all results
 	 * received so far, including the one that just triggered this event.
 	 */
 	UPROPERTY(BlueprintAssignable)

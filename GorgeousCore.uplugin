@@ -43,6 +43,11 @@
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "GorgeousCoreStartupHook",
+			"Type": "Editor",
+			"LoadingPhase": "PostConfigInit"
 		}
 	],
 	"Plugins": [

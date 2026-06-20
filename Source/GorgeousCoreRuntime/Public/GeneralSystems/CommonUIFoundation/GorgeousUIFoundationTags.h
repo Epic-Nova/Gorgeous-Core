@@ -11,6 +11,8 @@
 
 // System Signals
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Focus_Request);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Focus_Changed);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Focus_Navigated);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_System_Message_Push);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_System_Message_Result);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Input_Action);

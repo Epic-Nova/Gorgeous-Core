@@ -103,7 +103,7 @@ public:
 
 	/**
 	 * Binds all three delegate pins on the supplied async action. Call BEFORE Activate().
-	 * Safe to call multiple times (previous bindings are NOT removed — use Reset() for data only).
+	 * Safe to call multiple times (previous bindings are NOT removed, use Reset() for data only).
 	 */
 	void BindTo(UGorgeousAutoReplicationRPCRequestAsyncAction* Action)
 	{

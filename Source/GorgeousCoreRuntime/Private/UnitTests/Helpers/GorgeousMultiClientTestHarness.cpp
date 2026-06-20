@@ -401,7 +401,7 @@ bool FGorgeousMultiClientAutomationTest::RunTest(const FString& Parameters)
 	if (!FGorgeousMultiClientTestOrchestrator::RunTests(Config, Report))
 	{
 		AddWarning(TEXT("PIE is not running with multiple players. Start PIE with Play → Multiplayer Options → Number of Players = 3, Run Dedicated Server = true."));
-		return true; // Don't fail the test — just warn
+		return true; // Don't fail the test, just warn
 	}
 
 	// Transcribe

@@ -153,7 +153,7 @@ TSharedPtr<FStreamableHandle> UGorgeousPrimaryGameLayout::PushWidgetToLayerStack
 			}
 		}));
 
-	// Bind cancel delegate — always resume input even if the async load is aborted
+	// Bind cancel delegate, always resume input even if the async load is aborted
 	if (Handle.IsValid())
 	{
 		Handle->BindCancelDelegate(FStreamableDelegate::CreateWeakLambda(this, [this, SuspendToken]()
@@ -234,7 +234,7 @@ void UGorgeousPrimaryGameLayout::RegisterLayer(FGameplayTag LayerTag, UCommonAct
 	if (IsDesignTime()) return;
 
 	Layers.Add(LayerTag, LayerWidget);
-	// FIX: Use correct API — OnTransitioningChanged, not OnWillRefresh
+	// FIX: Use correct API, OnTransitioningChanged, not OnWillRefresh
 	LayerWidget->OnTransitioningChanged.AddUObject(this, &UGorgeousPrimaryGameLayout::OnWidgetStackTransitioning);
 	// Zero transition duration to prevent gamepad focus issues (matches Lyra)
 	LayerWidget->SetTransitionDuration(0.0);

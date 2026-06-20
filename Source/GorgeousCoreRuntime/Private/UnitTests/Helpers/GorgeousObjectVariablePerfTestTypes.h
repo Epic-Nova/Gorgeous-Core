@@ -56,13 +56,13 @@ struct FGorgeousPerfReplicationStimulus
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PIE Environment Fingerprint — proves a test ran on a real net environment
+// PIE Environment Fingerprint, proves a test ran on a real net environment
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
  * Captures immutable facts about the PIE world at the moment a test runs.
  * When embedded in a test result, this proves the scenario executed inside
- * a real PIE multiplayer session — not standalone or a stripped simulation.
+ * a real PIE multiplayer session, not standalone or a stripped simulation.
  */
 USTRUCT()
 struct GORGEOUSCORERUNTIME_API FGorgeousPerfEnvironmentFingerprint
@@ -188,7 +188,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousPerfEnvironmentFingerprint
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Replication Statistics — aggregated timing and value verification
+// Replication Statistics, aggregated timing and value verification
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
@@ -687,7 +687,7 @@ private:
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Scoped Log Capture — captures Warning and Error log lines during lifetime
+// Scoped Log Capture, captures Warning and Error log lines during lifetime
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
@@ -714,7 +714,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScopedLogCapture final : public F
 	// FOutputDevice interface
 	virtual void Serialize(const TCHAR* V, ELogVerbosity::Type Verbosity, const FName& Category) override
 	{
-		// LogHAL emits blank separator lines between every real log entry — strip them out.
+		// LogHAL emits blank separator lines between every real log entry, strip them out.
 		if (Category == FName(TEXT("LogHAL")))
 		{
 			return;

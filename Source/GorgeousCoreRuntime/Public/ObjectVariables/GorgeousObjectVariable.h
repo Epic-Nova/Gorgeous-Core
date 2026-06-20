@@ -341,11 +341,11 @@ public:
      * Registers the object variable with the registry.
      *
      * The key written into the VariableRegistry TMap follows a fixed priority chain:
-     *   1. RegistryKey   — explicit override passed by the caller (rarely needed).
-     *   2. DisplayName   — always present when reached through NewObjectVariable because
+     *   1. RegistryKey  , explicit override passed by the caller (rarely needed).
+     *   2. DisplayName  , always present when reached through NewObjectVariable because
      *                      SetDisplayName() is called before this function; produces either
      *                      the user-supplied DisplayNameOverride or a randomly generated name.
-     *   3. UniqueIdentifier string — last resort for any code path that bypasses SetDisplayName.
+     *   3. UniqueIdentifier string, last resort for any code path that bypasses SetDisplayName.
      *
      * @param NewObjectVariable The object variable to register.
      * @param RegistryKey       Optional explicit key. When NAME_None (default) the key is
@@ -362,7 +362,7 @@ public:
 	 *
 	 * @param Key          The stable registry key to look up (DisplayNameOverride, or the
 	 *                     randomly-generated name assigned at creation time).
-	 * @param Class        Optional type filter — the result is cast to this class. Use
+	 * @param Class        Optional type filter, the result is cast to this class. Use
 	 *                     UGorgeousObjectVariable (the default) to receive any variable type.
 	 * @return             The registered child variable, or nullptr when the key is absent or
 	 *                     the found object does not match Class.

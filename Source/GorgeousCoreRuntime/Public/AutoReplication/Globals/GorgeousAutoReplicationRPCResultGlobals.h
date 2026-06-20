@@ -23,11 +23,11 @@
 
 /***
 ═══════════════════════════════════════════════════════════════════════════════════
-  FGorgeousAutoReplicationRPCValueResult  (slim struct — shortest path to the value)
+  FGorgeousAutoReplicationRPCValueResult  (slim struct, shortest path to the value)
      .ReturnOV      UGorgeousObjectVariable*                ← actual handler-written OV
      .RPCContainer  UGorgeousRPC_OV*                        ← container (populated progressively)
      .Responder     FGorgeousAutoReplicationRPCResponderHandle
-  NOTE: ReturnOV is always the leaf OV — ToValueResult drills through the RPC_OV
+  NOTE: ReturnOV is always the leaf OV, ToValueResult drills through the RPC_OV
         container automatically so you never receive the container as the return value.
 ═══════════════════════════════════════════════════════════════════════════════════
 
@@ -49,7 +49,7 @@
   │  └─ GetResponderProgressFraction() →  float   (0.33)
   │
   ├─[primary shortcuts]────────────────────────────────────────────────────────────
-  │  ├─ GetPrimaryTargetVariable()   →  UGorgeousObjectVariable*  (raw — may be RPC_OV)
+  │  ├─ GetPrimaryTargetVariable()   →  UGorgeousObjectVariable*  (raw, may be RPC_OV)
   │  └─ GetPrimaryResponder()        →  FGorgeousAutoReplicationRPCResponderHandle
   │
   ├─[lookup by key]────────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@
   ├─ ToValueResult()             →  FGorgeousAutoReplicationRPCValueResult  ← collapse to slim
   │
   ├─[value]────────────────────────────────────────────────────────────────
-  │  ├─ GetTargetVariable()      →  UGorgeousObjectVariable*  (raw — may be RPC_OV on completion path)
+  │  ├─ GetTargetVariable()      →  UGorgeousObjectVariable*  (raw, may be RPC_OV on completion path)
   │  └─ HasTargetVariable()      →  bool
   │
   ├─[who]──────────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 
 	/**
 	 * The actual OV the handler wrote its return value into (e.g. UInteger_SOV).
-	 * Drills through the UGorgeousRPC_OV container automatically — always gives you the
+	 * Drills through the UGorgeousRPC_OV container automatically, always gives you the
 	 * leaf value, never the container itself. Null if the handler returned nothing.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|RPC|ValueResult")
@@ -127,7 +127,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 
 	/**
 	 * The UGorgeousRPC_OV container that aggregates all cached results for this request.
-	 * Populated progressively — present on OnSingleResponderCompleted from the first
+	 * Populated progressively, present on OnSingleResponderCompleted from the first
 	 * responder onwards, and fully populated by the time OnCompleted fires.
 	 * Use this when you need the full result set, persistent storage, or Blueprint inspection
 	 * of every responder result.
@@ -167,12 +167,12 @@ class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCResultGlobals : public 
 public:
 
 	// =========================================================================
-	// FGorgeousAutoReplicationRPCResult — single-responder raw result
+	// FGorgeousAutoReplicationRPCResult, single-responder raw result
 	// =========================================================================
 
 	/**
 	 * Returns the object variable that was computed / returned by the RPC handler.
-	 * For EOwner, EObjectVariable, and EActorComponent paths this is the handler-written return OV (e.g. UInteger_SOV) — whichever OV the handler wrote into its first parameter.
+	 * For EOwner, EObjectVariable, and EActorComponent paths this is the handler-written return OV (e.g. UInteger_SOV), whichever OV the handler wrote into its first parameter.
 	 * 
 	 * @param Result The raw result struct from a single responder (e.g. from GetPrimaryResult or GetResultForResponder).
 	 * @return The handler-written return OV for EOwner/EObjectVariable/EActorComponent target kinds, 
@@ -238,7 +238,7 @@ public:
 	static FString GetTargetKindInfo(const FGorgeousAutoReplicationRPCResult& Result);
 
 	// =========================================================================
-	// FGorgeousAutoReplicationRPCAsyncResult — aggregated completion payload
+	// FGorgeousAutoReplicationRPCAsyncResult, aggregated completion payload
 	// (from OnCompleted / OnFailed / OnSingleResponderCompleted)
 	// =========================================================================
 
@@ -398,7 +398,7 @@ public:
 	static float GetResponderProgressFraction(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult);
 
 	// =========================================================================
-	// FGorgeousAutoReplicationRPCValueResult — slim result (shortest path to the value)
+	// FGorgeousAutoReplicationRPCValueResult, slim result (shortest path to the value)
 	// =========================================================================
 
 	/**

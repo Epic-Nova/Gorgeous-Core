@@ -113,7 +113,7 @@ public:
 	 * PlayerController QoL classes in splitscreen: each local PC self-registers into
 	 * the same shared OV, so the array contains one entry per active local player.
 	 * For all singleton classes (GameMode, GameState, etc.) the array will always
-	 * contain at most one element — use GetQualityOfLifeReference instead.
+	 * contain at most one element, use GetQualityOfLifeReference instead.
 	 * If StablePlayerId is non-empty only the entry whose owning PlayerController is
 	 * registered under that stable ID is returned (at most one element).
 	 */

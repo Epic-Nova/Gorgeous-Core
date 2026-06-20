@@ -1,3 +1,7 @@
+#include "Framework/Application/SlateApplication.h"
+#include "Layout/WidgetPath.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/ScrollBox.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
@@ -493,25 +497,88 @@ void UGorgeousUIFoundationSubsystem::OnFocusRequestReceived(FGameplayTag SignalT
 	if (!FocusPayload || !FocusPayload->TargetTag.IsValid()) return;
 
 	// Find the widget with the target tag
+	bool bFound = false;
 	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
 	{
 		if (IGorgeousUIWidget_I* WidgetInterface = It->GetInterface())
 		{
 			if (WidgetInterface->GetBindingTag() == FocusPayload->TargetTag)
 			{
-				UUserWidget* Widget = Cast<UUserWidget>(It->GetObject());
-				
-				// If it's an activatable widget, activate it (which usually handles focus)
-				if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(Widget))
+				if (FocusPayload->RoutingID.IsNone() || WidgetInterface->GetRoutingID() == FocusPayload->RoutingID)
 				{
-					Activatable->ActivateWidget();
+					UUserWidget* Widget = Cast<UUserWidget>(It->GetObject());
+					
+					// If it's an activatable widget, activate it (which usually handles focus)
+					if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(Widget))
+					{
+						Activatable->ActivateWidget();
+					}
+					else
+					{
+						Widget->SetFocus();
+					}
+					bFound = true;
+					break;
 				}
-				else
-				{
-					Widget->SetFocus();
-				}
-				break;
 			}
+		}
+	}
+
+	// Defer focus request if the widget hasn't registered yet
+	if (!bFound && GetWorld())
+	{
+		FGorgeousPendingFocusRequest PendingReq;
+		PendingReq.TargetTag = FocusPayload->TargetTag;
+		PendingReq.RoutingID = FocusPayload->RoutingID;
+		PendingReq.ExpirationTime = GetWorld()->GetTimeSeconds() + 1.0; // 1 second expiry
+		PendingFocusRequests.Add(PendingReq);
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::HandleGlobalFocusChanging(const FFocusEvent& FocusEvent, const FWeakWidgetPath& OldFocusedWidgetPath, const TSharedPtr<SWidget>& OldFocusedWidget, const FWidgetPath& NewFocusedWidgetPath, const TSharedPtr<SWidget>& NewFocusedWidget)
+{
+	if (!NewFocusedWidget.IsValid()) return;
+
+	// Check if this was a navigation event for sound ticks
+	if (FocusEvent.GetCause() == EFocusCause::Navigation)
+	{
+		if (GetWorld())
+		{
+			USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Navigated, FInstancedStruct());
+		}
+	}
+
+	// Find if the new focused SWidget belongs to one of our registered IGorgeousUIWidget_I objects
+	for (auto& Entry : RegisteredWidgets)
+	{
+		UUserWidget* UserWidget = Cast<UUserWidget>(Entry.GetObject());
+		if (UserWidget && UserWidget->GetCachedWidget() == NewFocusedWidget)
+		{
+			// Enforce ScrollBox visibility automatically
+			UWidget* CurrentParent = UserWidget->GetParent();
+			while (CurrentParent)
+			{
+				if (UScrollBox* ScrollBox = Cast<UScrollBox>(CurrentParent))
+				{
+					ScrollBox->ScrollWidgetIntoView(UserWidget, false, EDescendantScrollDestination::IntoView, 0.0f);
+					break;
+				}
+				CurrentParent = CurrentParent->GetParent();
+			}
+
+			if (IGorgeousUIWidget_I* WidgetInterface = Entry.GetInterface())
+			{
+				const FGameplayTag Tag = WidgetInterface->GetBindingTag();
+				if (Tag.IsValid() && GetWorld())
+				{
+					FGorgeousFocusChangedPayload_S PayloadOut;
+					PayloadOut.FocusedTag = Tag;
+					PayloadOut.RoutingID = WidgetInterface->GetRoutingID();
+					
+					USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Changed, FInstancedStruct::Make(PayloadOut));
+				}
+			}
+			break;
 		}
 	}
 }
@@ -605,6 +672,10 @@ void UGorgeousUIFoundationSubsystem::RemoveUIState(TSubclassOf<UGorgeousUIState_
 
 	const bool bWasTopState = (RemoveIndex == CurrentStates.Num() - 1);
 	CurrentStates.RemoveAt(RemoveIndex);
+	if (StateFocusHistory.IsValidIndex(RemoveIndex))
+	{
+		StateFocusHistory.RemoveAt(RemoveIndex);
+	}
 
 	if (!bWasTopState)
 	{
@@ -688,6 +759,35 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 
 	UGorgeousUIState_DA* NewState = PendingState;
 	PendingState = nullptr;
+	
+	// Restore focus memory if available
+	bool bRestoredMemory = false;
+	if (StateFocusHistory.IsValidIndex(StateFocusHistory.Num() - 1))
+	{
+		const FGameplayTag TagToRestore = StateFocusHistory.Last();
+		if (TagToRestore.IsValid() && GetWorld())
+		{
+			FGorgeousFocusRequestPayload FocusReq;
+			FocusReq.TargetTag = TagToRestore;
+			USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Request, FInstancedStruct::Make(FocusReq));
+			bRestoredMemory = true;
+		}
+	}
+
+	// Apply Fallback focus strategy if memory restoration didn't occur
+	if (!bRestoredMemory && NewState)
+	{
+		if (NewState->FocusFallback.Strategy == EGorgeousFocusFallbackStrategy_E::FocusSpecificWidget)
+		{
+			if (NewState->FocusFallback.TargetTag.IsValid() && GetWorld())
+			{
+				FGorgeousFocusRequestPayload FocusReq;
+				FocusReq.TargetTag = NewState->FocusFallback.TargetTag;
+				USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Request, FInstancedStruct::Make(FocusReq));
+			}
+		}
+	}
+
 	TransitioningWidgets.Empty();
 
 	ULocalPlayer* LP = GetLocalPlayer();
@@ -718,6 +818,24 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 
 	if (!CurrentStates.IsValidIndex(CurrentStates.Num() - 1) || CurrentStates.Last() != NewState)
 	{
+		// Track the focus of the current state before we push the new one
+		FGameplayTag LastFocusedTag = FGameplayTag::EmptyTag;
+		for (auto& Entry : RegisteredWidgets)
+		{
+			if (UUserWidget* UserWidget = Cast<UUserWidget>(Entry.GetObject()))
+			{
+				if (UserWidget->HasAnyUserFocus())
+				{
+					if (IGorgeousUIWidget_I* WidgetInterface = Entry.GetInterface())
+					{
+						LastFocusedTag = WidgetInterface->GetBindingTag();
+					}
+					break;
+				}
+			}
+		}
+		StateFocusHistory.Push(LastFocusedTag);
+
 		CurrentStates.Push(NewState);
 	}
 
@@ -840,6 +958,35 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 
 			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), BindingTag, Rules, Controller);
 			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Controller, ListenDelegate);
+		}
+	}
+
+	// Check deferred focus requests
+	if (IGorgeousUIWidget_I* WidgetInterface = Widget)
+	{
+		const FGameplayTag Tag = WidgetInterface->GetBindingTag();
+		if (Tag.IsValid())
+		{
+			for (int32 i = PendingFocusRequests.Num() - 1; i >= 0; --i)
+			{
+				if (PendingFocusRequests[i].TargetTag == Tag)
+				{
+					if (PendingFocusRequests[i].RoutingID.IsNone() || PendingFocusRequests[i].RoutingID == WidgetInterface->GetRoutingID())
+					{
+						UUserWidget* UserWidget = Cast<UUserWidget>(Widget->GetAsWidget());
+						if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(UserWidget))
+						{
+							Activatable->ActivateWidget();
+						}
+						else if (UserWidget)
+						{
+							UserWidget->SetFocus();
+						}
+						PendingFocusRequests.RemoveAt(i);
+						break;
+					}
+				}
+			}
 		}
 	}
 }

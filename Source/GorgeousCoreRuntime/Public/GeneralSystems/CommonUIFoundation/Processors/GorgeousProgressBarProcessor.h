@@ -15,7 +15,7 @@ struct FGorgeousProgressBarInterpState
 /**
  * Processor for UGorgeousCommonProgressBar.
  *
- * Interpolation is driven by the ENGINE tick via FTicker — since this processor
+ * Interpolation is driven by the ENGINE tick via FTicker, since this processor
  * is shared (flyweight), per-widget state is tracked in a map keyed by widget pointer.
  */
 UCLASS()
@@ -39,7 +39,7 @@ private:
 	void StopTicking();
 	bool TickInterp(float DeltaTime);
 
-	/** Per-widget interpolation state — keyed by weak pointer to avoid leaks. */
+	/** Per-widget interpolation state, keyed by weak pointer to avoid leaks. */
 	TMap<TWeakObjectPtr<UObject>, FGorgeousProgressBarInterpState> InterpStates;
 
 	FTSTicker::FDelegateHandle TickHandle;

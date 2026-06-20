@@ -281,7 +281,7 @@ namespace FGorgeousQualityOfLifeStatics
 			IGorgeousArrayObjectVariablesSetter_I::Execute_SetObjectObjectArrayObjectVariable(SelfVariable, NAME_None, CurrentArray);
 		}
 
-		// If the array is now empty the shared OV has no more live references — remove it entirely.
+		// If the array is now empty the shared OV has no more live references, remove it entirely.
 		if (CurrentArray.IsEmpty())
 		{
 			UGorgeousRootObjectVariable::RemoveVariableFromRegistry(SelfVariable);
@@ -298,7 +298,7 @@ namespace FGorgeousQualityOfLifeStatics
 	{
 		// Since EnsureSelfReference now creates exactly one OV per GameInstance outer,
 		// we can find the right entry by checking whether any registered UObject_AOTOV
-		// contains an object of the requested class — no display-name pattern matching needed.
+		// contains an object of the requested class, no display-name pattern matching needed.
 		UGorgeousRootObjectVariable* Roots[] = {
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(false)),
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(true))
@@ -309,7 +309,7 @@ namespace FGorgeousQualityOfLifeStatics
 			if (!Root) { continue; }
 			for (const auto& [EntryKey, EntryPtr] : Root->VariableRegistry)
 			{
-				// Match purely on type and array contents — avoids fragile display-name
+				// Match purely on type and array contents, avoids fragile display-name
 				// substring checks that break when names have _X collision suffixes.
 				if (const UObject_AOTOV* SelfRefOV = Cast<UObject_AOTOV>(EntryPtr.Get()))
 				{
@@ -379,7 +379,7 @@ namespace FGorgeousQualityOfLifeStatics
 					// If a stable ID filter was provided, verify that this object belongs
 					// to the requested player.  We prefer the IGorgeousPlayerConnectionInfo_I
 					// path because it uses ReplicatedGorgeousStableId on PlayerState, which
-					// is replicated to ALL machines — fixing the remote-client cross-
+					// is replicated to ALL machines, fixing the remote-client cross-
 					// assignment bug where GetOwningController() returns null for remote
 					// PS on clients, causing every other player's object to be skipped.
 					if (!StablePlayerId.IsEmpty())

@@ -71,7 +71,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStatsSnapshot
  *
  * **Performance contract**: a static `bIsEnabled` flag is checked inline before
  * every record call. When disabled (default) the overhead is a single branch
- * — zero cost in production. Activation is driven by the Network Traffic
+ *, zero cost in production. Activation is driven by the Network Traffic
  * Inspector window lifecycle.
  */
 class GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStatsCollector

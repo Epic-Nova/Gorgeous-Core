@@ -12,7 +12,7 @@
 /**
  * Comprehensive replication test scenarios that exercise EVERY combination of:
  *
- *   1. Transporter Probe — Local routing verification:
+ *   1. Transporter Probe, Local routing verification:
  *      - 6 RPC types x 3 target kinds x 2 keys = 36 combos
  *      - Verifies direction, reliability, key, and target kind preservation.
  *
@@ -235,7 +235,7 @@ namespace GorgeousComprehensiveReplicationTests
 			}
 			else if (bSenderIsServer)
 			{
-				// Server -> Client: ALL clients are receivers — every connected client
+				// Server -> Client: ALL clients are receivers, every connected client
 				// must receive and verify the replicated value, not just the first one.
 				for (UWorld* W : ClientWorlds)
 				{
@@ -335,7 +335,7 @@ namespace GorgeousComprehensiveReplicationTests
 				}
 			}
 
-			// Drive the core ticker so that FTSTicker-based delegates fire — this includes
+			// Drive the core ticker so that FTSTicker-based delegates fire, this includes
 			// the server-side HandleServerPropertyPollingTick and client-side
 			// HandleClientPropertyPollingTick registered via StartServer/ClientPropertyPolling.
 			// Without this, the mixin polling tickers are never advanced during the wait loop
@@ -409,7 +409,7 @@ namespace GorgeousComprehensiveReplicationTests
 	 * The test subclass has Automation_HandleRPC_WithReturnOV declared as a UFUNCTION so
 	 * that InvokeNativeHandler can locate it by name during dispatch.
 	 * Idempotent: returns the existing entry's variable if one is already cached.
-	 * Does NOT set up property-replication slots — this OV is solely for RPC dispatch.
+	 * Does NOT set up property-replication slots, this OV is solely for RPC dispatch.
 	 */
 	static UGorgeousObjectVariable* SetupAsyncRPCTestOV(
 		AGorgeousPlayerController* Controller,
@@ -421,19 +421,19 @@ namespace GorgeousComprehensiveReplicationTests
 		// If a different OV subclass is cached (e.g. GorgeousPerfObjectVariable registered by
 		// the property-rep test), we must replace the Handle cache with a TestOV so that
 		// InvokeNativeHandler can find Automation_HandleRPC_WithReturnOV by name.
-		// DefaultValue is intentionally left untouched — property-rep tests may still need it.
+		// DefaultValue is intentionally left untouched, property-rep tests may still need it.
 		if (FGorgeousObjectVariableEntry* Existing = Controller->AdditionalGorgeousData.Find(EntryKey))
 		{
 			if (UGorgeousAutomationTestOV* Cached = Cast<UGorgeousAutomationTestOV>(Existing->Handle.GetCachedValue()))
 			{
-				return Cached;  // Truly idempotent — already the right type.
+				return Cached;  // Truly idempotent, already the right type.
 			}
-			// Wrong OV type in cache — create a TestOV and overwrite just the handle.
+			// Wrong OV type in cache, create a TestOV and overwrite just the handle.
 			UGorgeousAutomationTestOV* TestOV = NewObject<UGorgeousAutomationTestOV>(Controller);
 			if (!TestOV) return nullptr;
 			TestOV->bSupportsNetworking = true;
 			Existing->Handle.CacheValue(TestOV);
-			// Do NOT call InitializeAdditionalData here — the entry already exists so the
+			// Do NOT call InitializeAdditionalData here, the entry already exists so the
 			// mixin is already initialised. Calling it would rebuild AdditionalData and erase
 			// the CacheValue we just wrote above.
 			return TestOV;
@@ -444,7 +444,7 @@ namespace GorgeousComprehensiveReplicationTests
 		UGorgeousAutomationTestOV* Variable = NewObject<UGorgeousAutomationTestOV>(Controller);
 		if (!Variable) return nullptr;
 
-		// Minimal networking config — just enough for ExecuteAutoReplicationRPC to accept the call.
+		// Minimal networking config, just enough for ExecuteAutoReplicationRPC to accept the call.
 		Variable->bSupportsNetworking = true;
 
 		FGorgeousObjectVariableEntry& Entry = Controller->AdditionalGorgeousData.FindOrAdd(EntryKey);
@@ -650,7 +650,7 @@ namespace GorgeousComprehensiveReplicationTests
 	//   injects it into the OV, then TICKS replication until the
 	//   RECEIVER world(s) have received the data via their net
 	//   driver. Readback is performed on the RECEIVER controller(s)
-	//   via TryGetValue — the actual replication consumer path.
+	//   via TryGetValue, the actual replication consumer path.
 	//   For multicast, ALL receiving worlds are individually verified.
 	//   The PIE environment fingerprint is embedded as proof.
 	// =====================================================================
@@ -718,7 +718,7 @@ namespace GorgeousComprehensiveReplicationTests
 		{
 			ReceiverWorlds.Add(SenderWorld);
 			Result.AddWarning(FString::Printf(
-				TEXT("[%s] No separate receiver world available — verifying on sender's own world. "
+				TEXT("[%s] No separate receiver world available, verifying on sender's own world. "
 				     "Start PIE with 2+ players to get genuine cross-world replication proof."),
 				Label));
 		}
@@ -742,7 +742,7 @@ namespace GorgeousComprehensiveReplicationTests
 
 		// Verify the test actually started on the correct side. In a genuine multi-player
 		// PIE session this always holds, but in the single-world standalone fallback both
-		// S2C and C2S can land on the same world — surface that as a hard failure rather
+		// S2C and C2S can land on the same world, surface that as a hard failure rather
 		// than silently producing a misleading cross-direction result.
 		const bool bCorrectSide = (bSenderIsServer == bExpectServerOrigin);
 		AddProof(Result, bCorrectSide,
@@ -782,8 +782,8 @@ namespace GorgeousComprehensiveReplicationTests
 		TArray<AGorgeousPlayerController*> ReceiverControllers;
 		TArray<UGorgeousPerfObjectVariable*> ReceiverOVs;
 		TArray<int32> BaselineReceiveCounts;
-		// Per-receiver: true  = Standard UE property replication (OnRep fires, NetReceiveCount increments) — S2C / C2MC second client
-		//               false = Relay RPC path (OnRep never fires on the receiver)           — C2S server / C2MC server
+		// Per-receiver: true  = Standard UE property replication (OnRep fires, NetReceiveCount increments), S2C / C2MC second client
+		//               false = Relay RPC path (OnRep never fires on the receiver)          , C2S server / C2MC server
 		TArray<bool> bExpectNetReceiveCountPerReceiver;
 
 		for (int32 i = 0; i < ReceiverWorlds.Num(); ++i)
@@ -792,7 +792,7 @@ namespace GorgeousComprehensiveReplicationTests
 
 			// For C2S / C2MC scenarios the sender is a client and the relay RPC
 			// (ServerRelayPropertyPayload) arrives on the SERVER's REPLICA of the
-			// client's PlayerController — a non-local controller on the server world.
+			// client's PlayerController, a non-local controller on the server world.
 			// Using ResolveController (which returns the first/local PC) would set up
 			// the wrong controller, causing "UnknownEntry" discards on the relay path.
 			const bool bReceiverIsServerWorld = (RW == PIEWorlds.ServerWorld);
@@ -805,7 +805,7 @@ namespace GorgeousComprehensiveReplicationTests
 			if (!RecvPC && bNeedRemoteController)
 			{
 				Result.AddWarning(FString::Printf(
-					TEXT("[%s] No non-local controller on server world %d — falling back to local. "
+					TEXT("[%s] No non-local controller on server world %d, falling back to local. "
 					     "C2S relay may not be delivered to the expected controller."), Label, i));
 				RecvPC = ResolveController(RW);
 			}
@@ -817,7 +817,7 @@ namespace GorgeousComprehensiveReplicationTests
 			}
 
 			// If this is the same controller as the sender (single-world fallback),
-			// don't create a second OV — use the sender's OV.
+			// don't create a second OV, use the sender's OV.
 			if (RecvPC == SenderController)
 			{
 				ReceiverControllers.Add(RecvPC);
@@ -880,7 +880,7 @@ namespace GorgeousComprehensiveReplicationTests
 		{
 			const double ReplicationWaitStart = FPlatformTime::Seconds();
 			// For S2C / S2MC: standard UE property replication fires OnRep on the client,
-			// incrementing NetReceiveCount — wait for that. For C2S / C2MC (relay path):
+			// incrementing NetReceiveCount, wait for that. For C2S / C2MC (relay path):
 			// OnRep never fires on the server receiver, so just flush net drivers briefly
 			// and verify by comparing actual values instead.
 			const bool bReplicationArrived = TickReplicationUntilReceived(
@@ -895,7 +895,7 @@ namespace GorgeousComprehensiveReplicationTests
 			if (!bReplicationArrived)
 			{
 				Result.AddWarning(FString::Printf(
-					TEXT("[%s] Replication timed out after 2.0s — receiver OVs may not have updated. "
+					TEXT("[%s] Replication timed out after 2.0s, receiver OVs may not have updated. "
 					     "Readback values will be checked but may not match."),
 					Label));
 			}
@@ -910,7 +910,7 @@ namespace GorgeousComprehensiveReplicationTests
 			const FString RecvLabel = FString::Printf(TEXT("%s.Recv%d"), Label, i);
 			const bool bIsSenderWorld = (RecvPC == SenderController);
 
-			// Read through TryGetValue — the real replication consumer path
+			// Read through TryGetValue, the real replication consumer path
 			UGorgeousObjectVariable* ReadBackOV = nullptr;
 			const bool bReadBackFound = RecvPC->GetAutoReplicationMixin().TryGetValue(DefaultEntryKey, ReadBackOV);
 			AddProof(Result, bReadBackFound && ReadBackOV != nullptr,
@@ -970,7 +970,7 @@ namespace GorgeousComprehensiveReplicationTests
 					// UE property replication, so OnRep does not fire and NetReceiveCount stays
 					// at baseline. Value match (scalar/vector/seq) drives pass/fail here.
 					Result.AddNote(FString::Printf(
-						TEXT("[%s] NetReceiveCount=%d (C2S relay path — OnRep not fired; value match drives pass/fail)"),
+						TEXT("[%s] NetReceiveCount=%d (C2S relay path, OnRep not fired; value match drives pass/fail)"),
 						*RecvLabel, RecvNetReceiveCount));
 				}
 			}
@@ -1180,7 +1180,7 @@ namespace GorgeousComprehensiveReplicationTests
 		Sink->BindTo(Action);
 		AddProof(Result, true, FString::Printf(TEXT("[%s] Delegate sink bound (OnCompleted, OnFailed, OnSingleResponderCompleted)"), Label));
 
-		// ── C) Activate — on listen-server, server RPCs complete synchronously ──
+		// ── C) Activate, on listen-server, server RPCs complete synchronously ──
 		const double PreActivateTime = FPlatformTime::Seconds();
 		Action->Activate();
 		const double PostActivateTime = FPlatformTime::Seconds();
@@ -1315,7 +1315,7 @@ namespace GorgeousComprehensiveReplicationTests
 					}
 					else
 					{
-						Result.AddNote(FString::Printf(TEXT("[%s] ResultContainer->GetArgumentContainerByName('TestInputInt') returned null — payload may have been consumed differently."), Label));
+						Result.AddNote(FString::Printf(TEXT("[%s] ResultContainer->GetArgumentContainerByName('TestInputInt') returned null, payload may have been consumed differently."), Label));
 					}
 				}
 
@@ -1375,7 +1375,7 @@ namespace GorgeousComprehensiveReplicationTests
 				}
 				else if (TVarRaw)
 				{
-					Result.AddNote(FString::Printf(TEXT("[%s] E9: TargetVariable is %s, not UInteger_SOV — handler may not have been invoked."),
+					Result.AddNote(FString::Printf(TEXT("[%s] E9: TargetVariable is %s, not UInteger_SOV, handler may not have been invoked."),
 						Label, *TVarRaw->GetClass()->GetName()));
 				}
 			}
@@ -1384,12 +1384,12 @@ namespace GorgeousComprehensiveReplicationTests
 		{
 			// Failure is acceptable for client-targeted RPCs when running on the server
 			// (the mixin may lack the route to a connected client).
-			Result.AddNote(FString::Printf(TEXT("[%s] OnFailed fired — mixin could not dispatch %s from %s (expected when target is unreachable)."),
+			Result.AddNote(FString::Printf(TEXT("[%s] OnFailed fired, mixin could not dispatch %s from %s (expected when target is unreachable)."),
 				Label, *RPCTypeToString(RPCType), *CallerRole));
 		}
 		else
 		{
-			// Neither completed nor failed synchronously — the RPC is pending async delivery
+			// Neither completed nor failed synchronously, the RPC is pending async delivery
 			Result.AddNote(FString::Printf(TEXT("[%s] RPC dispatched but not yet completed synchronously (pending async delivery for %s -> %s)."),
 				Label, *CallerRole, *ExpectedDirection));
 		}
@@ -1470,7 +1470,7 @@ namespace GorgeousComprehensiveReplicationTests
 			for (const FString& P : ToPromote)
 			{
 				Result.Warnings.Remove(P);
-				Result.AddError(FString::Printf(TEXT("[%s] RPC dispatch failed — backend warning elevated to error: %s"), Label, *P));
+				Result.AddError(FString::Printf(TEXT("[%s] RPC dispatch failed, backend warning elevated to error: %s"), Label, *P));
 			}
 		}
 
@@ -1485,7 +1485,7 @@ namespace GorgeousComprehensiveReplicationTests
 		FGorgeousInsightScenarioDescriptor D; \
 		D.ScenarioName = TEXT("AutoReplication.Comprehensive.AsyncAction." #SuffixName); \
 		D.DisplayName  = TEXT(DisplayStr); \
-		D.Description  = TEXT("Async action test: " #SuffixName " — factory, bind, activate, per-responder callback, return-value OV verification."); \
+		D.Description  = TEXT("Async action test: " #SuffixName ", factory, bind, activate, per-responder callback, return-value OV verification."); \
 		D.Tags         = { TEXT("rpc"), TEXT("async-action"), TEXT("return-value"), TEXT(TagDir), TEXT(TagRel), TEXT("comprehensive"), TEXT("value-verification") }; \
 		D.Priority     = InPriority; \
 		D.Runner = [](const FGorgeousInsightScenarioContext& Ctx) { \
@@ -1522,7 +1522,7 @@ namespace GorgeousComprehensiveReplicationTests
 		FGorgeousInsightScenarioDescriptor D; \
 		D.ScenarioName = TEXT("AutoReplication.Comprehensive.AsyncAction." #SuffixName); \
 		D.DisplayName  = TEXT(DisplayStr); \
-		D.Description  = TEXT("Async action test with key variation: " #SuffixName " — factory, bind, activate, return-value OV verification."); \
+		D.Description  = TEXT("Async action test with key variation: " #SuffixName ", factory, bind, activate, return-value OV verification."); \
 		D.Tags         = { TEXT("rpc"), TEXT("async-action"), TEXT("return-value"), TEXT("key"), TEXT(TagDir), TEXT(TagRel), TEXT("comprehensive"), TEXT("value-verification") }; \
 		D.Priority     = InPriority; \
 		D.Runner = [](const FGorgeousInsightScenarioContext& Ctx) { \

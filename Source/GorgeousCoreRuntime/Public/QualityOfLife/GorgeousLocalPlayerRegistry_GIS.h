@@ -28,7 +28,7 @@ class AController;
  * Callers can rename these IDs at any time via RenameLocalPlayer().
  *
  * The registry is kept up to date by binding to FGameModeEvents, so entries are added on
- * PostLogin and removed on Logout — no manual cleanup required between level transitions.
+ * PostLogin and removed on Logout, no manual cleanup required between level transitions.
  */
 UCLASS()
 class GORGEOUSCORERUNTIME_API UGorgeousLocalPlayerRegistry_GIS : public UGameInstanceSubsystem
@@ -77,7 +77,7 @@ public:
 
 	/**
 	 * Returns the next integer that should be used as the N in "LocalPlayer_N" for a new
-	 * registration — max existing auto-index + 1, or 0 if none are registered.
+	 * registration, max existing auto-index + 1, or 0 if none are registered.
 	 */
 	int32 GetNextAutoIndex() const;
 

@@ -46,10 +46,10 @@ namespace GorgeousRPCInspector_Private
 	static FSlateFontInfo GetEmojiFont(const int32 Size)
 	{
 		// Build a composite font once and cache it:
-		//   - Default typeface: engine Roboto — handles all ASCII / Latin characters so that
+		//   - Default typeface: engine Roboto, handles all ASCII / Latin characters so that
 		//     text blocks containing regular text alongside emoji don't trigger
 		//     "Could not find Glyph" warnings (NotoColorEmoji has no Latin glyphs).
-		//   - Sub-typeface: NotoColorEmoji bundled in the plugin — covers the common emoji
+		//   - Sub-typeface: NotoColorEmoji bundled in the plugin, covers the common emoji
 		//     Unicode blocks so that 💤 ✅ ⌛ etc. are rendered correctly on all platforms.
 		static TSharedPtr<const FCompositeFont> CachedComposite;
 
@@ -527,7 +527,7 @@ TSharedRef<SWidget> SGorgeousRPCResponseTimeline::MakeNodeRow(
 							.Padding(0.f)
 						]
 					]
-					// Node glow halo — SBorder-based circle avoids missing-glyph issues
+					// Node glow halo, SBorder-based circle avoids missing-glyph issues
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Center)
 					.VAlign(VAlign_Center)
@@ -1659,7 +1659,7 @@ void SGorgeousRPCInspectorWindow::OnSelectionChanged(
 {
 	// ESelectInfo::Direct is only fired by programmatic ListView->SetSelection() calls
 	// (e.g. from RefreshList during live ticks). User mouse/keyboard events arrive as
-	// OnMouseClick / OnKeyPress. Skip the full panel rebuild for Direct events — the
+	// OnMouseClick / OnKeyPress. Skip the full panel rebuild for Direct events, the
 	// Tick path handles live timeline updates separately.
 	if (SelectInfo == ESelectInfo::Direct)
 	{
@@ -1698,7 +1698,7 @@ void SGorgeousRPCInspectorWindow::OnSelectionChanged(
 		}
 	}
 	// Same GUID  =>  list was refreshed in Tick with the same selection restored.
-	// Skip the left-panel rebuild — the Tick will push an UpdateEntry() to the
+	// Skip the left-panel rebuild, the Tick will push an UpdateEntry() to the
 	// timeline which dirty-checks itself.
 }
 

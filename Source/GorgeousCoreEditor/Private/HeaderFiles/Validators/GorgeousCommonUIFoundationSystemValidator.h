@@ -46,15 +46,15 @@ public:
 	
 	//<=======================--- Blueprint Functions ---=======================>
 	
-	/// Hyperlink action handler — registers the correct directory in the DataRegistry settings.
+	/// Hyperlink action handler, registers the correct directory in the DataRegistry settings.
 	UFUNCTION()
 	void HandleRegisterDirectoryHyperlink(const FString& Payload);
 
-	/// Hyperlink action handler — fixes the Game Viewport Client class in project settings.
+	/// Hyperlink action handler, fixes the Game Viewport Client class in project settings.
 	UFUNCTION()
 	void HandleFixViewportClientHyperlink(const FString& Payload);
 
-	/// Hyperlink condition handler — checks if the Game Viewport Client can be fixed.
+	/// Hyperlink condition handler, checks if the Game Viewport Client can be fixed.
 	UFUNCTION()
 	bool HandleCanFixViewportClientHyperlink(const FString& Payload);
 	

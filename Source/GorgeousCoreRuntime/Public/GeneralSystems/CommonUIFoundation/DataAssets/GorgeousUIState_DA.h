@@ -49,6 +49,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
 	class UGorgeousUIOverlayConfig_DA* OverlayConfig;
 
+	/** Explicit focus routing boundaries for this UI state (e.g. escaping auto-navigation). */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State", meta = (DisplayAfter = "OverlayConfig"))
+	TArray<FGorgeousFocusRoute_S> FocusRoutes;
+
+	/** Fallback configuration for what to focus if no breadcrumb or default exists. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State", meta = (DisplayAfter = "FocusRoutes"))
+	FGorgeousFocusFallbackConfig_S FocusFallback;
+
 	/** Optional theme to apply when this state is active. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
 	class UGorgeousUITheme_DA* Theme;

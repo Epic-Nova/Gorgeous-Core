@@ -1,0 +1,7 @@
+{
+  "SystemId": "Playlist",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/Playlist"
+  ]
+}

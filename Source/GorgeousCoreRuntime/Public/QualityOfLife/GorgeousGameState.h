@@ -102,7 +102,7 @@ protected:
 
 	/**
 	 * Fired on ALL machines when a new PlayerState is added to the PlayerArray.
-	 * Safe to query GetQualityOfLifeReferences(PlayerState) here — the new PS
+	 * Safe to query GetQualityOfLifeReferences(PlayerState) here, the new PS
 	 * will already be in the OV array.
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game State|Players")

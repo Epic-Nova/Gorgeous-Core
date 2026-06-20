@@ -249,7 +249,7 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 	APlayerController* TargetController = nullptr;
 
 	// 1. When the owning actor IS a PlayerController (e.g. a PC subclass receiving a
-	//    server→client RPC), use it directly — GetNetOwningPlayer() is often null for
+	//    server→client RPC), use it directly, GetNetOwningPlayer() is often null for
 	//    a PC instance that lives on the server side before the connection is fully set.
 	if (APlayerController* DirectPC = Cast<APlayerController>(OwnerActor))
 	{
@@ -450,7 +450,7 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 					}
 				}
 
-				// UE multicast RPCs deliver to ALL connections unconditionally — the engine provides no
+				// UE multicast RPCs deliver to ALL connections unconditionally, the engine provides no
 				// per-connection filtering hook. Pivot to per-PC unicasts via each PC's relay component
 				// so that CanControllerReceivePropertyPayload is enforced for every individual client,
 				// identical to the access enforcement done in TryServerReplicateProperties.
@@ -495,13 +495,13 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 						RelayComponent->RelayPropertyPayloadToClient(TargetEnvelope);
 					}
 				}
-				// Do not fall through to the UE multicast RPC — all eligible clients were served above.
+				// Do not fall through to the UE multicast RPC, all eligible clients were served above.
 				return;
 			}
 		}
 	}
 
-	// No root network stack restrictions — all connections are eligible. Use the UE multicast RPC.
+	// No root network stack restrictions, all connections are eligible. Use the UE multicast RPC.
 	if (GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType))
 	{
 		MulticastReceivePropertyPayloadReliable(Envelope, RouteType);
@@ -663,7 +663,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnrelia
 {
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
-	// Same sender validation as the reliable variant — see comment above.
+	// Same sender validation as the reliable variant, see comment above.
 	if (RouteType == EGorgeousAutoReplicationRPCType::EReliableServer
 		|| RouteType == EGorgeousAutoReplicationRPCType::EUnreliableServer)
 	{

@@ -1,0 +1,9 @@
+{
+  "SystemId": "InteractionFoundation",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/InteractionFoundation",
+    "Source/GorgeousCoreRuntime/Public/GeneralSystems/InteractionFoundation",
+    "Source/GorgeousCoreRuntime/Private/GeneralSystems/InteractionFoundation"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "SystemId": "StatsFoundation",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Source/GorgeousCoreRuntime/Public/GeneralSystems/StatsFoundation",
+    "Source/GorgeousCoreRuntime/Private/GeneralSystems/StatsFoundation"
+  ]
+}

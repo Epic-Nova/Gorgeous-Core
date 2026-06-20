@@ -44,7 +44,13 @@ UGorgeousPlaylistSystemValidator::~UGorgeousPlaylistSystemValidator()
 bool UGorgeousPlaylistSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {
 #if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
-	return InAssetData.PackageName.ToString().Contains(TEXT("PlaylistObject")) && InObject->IsA<UBlueprint>();
+	const FString AssetNameStr = InAssetData.AssetName.ToString();
+	// Only validate Blueprints containing PlaylistObject, but skip the base abstract BP_PlaylistObject itself
+	if (AssetNameStr.Contains(TEXT("PlaylistObject")) && AssetNameStr != TEXT("BP_PlaylistObject") && InObject->IsA<UBlueprint>())
+	{
+		return true;
+	}
+	return false;
 #else
 	return false;
 #endif

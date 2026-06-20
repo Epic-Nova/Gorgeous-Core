@@ -13,7 +13,7 @@ class UGorgeousUITheme_DA;
 /**
  * Base class for all UI Processor objects.
  *
- * Processors follow the FLYWEIGHT pattern — one shared instance per type exists for
+ * Processors follow the FLYWEIGHT pattern, one shared instance per type exists for
  * the entire game session. The Subsystem routes each incoming signal to the correct
  * shared processor together with the concrete widget context.
  *
@@ -37,7 +37,7 @@ public:
 public:
 	/**
 	 * Called when a signal arrives for a widget managed by this processor.
-	 * The Widget context is always passed in — DO NOT cache it.
+	 * The Widget context is always passed in, DO NOT cache it.
 	 */
 	virtual void OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload);
 

@@ -300,7 +300,7 @@ void SGorgeousNetworkTrafficInspectorWindow::Construct(const FArguments& InArgs)
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  Tick — capture rolling graph samples
+//  Tick, capture rolling graph samples
 // ════════════════════════════════════════════════════════════════════════════
 
 void SGorgeousNetworkTrafficInspectorWindow::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)

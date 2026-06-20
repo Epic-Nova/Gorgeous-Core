@@ -110,10 +110,10 @@ enum class EGorgeousAutoReplicationTargetKind : uint8
  * state is forwarded to the RPC debug tracker so the inspector panel can show
  * per-responder progress in real time.
  *
- * NotReadyToCollect          — default; the handler has not finished processing yet.
- * ReadyForSingleResponderCallback — the return value has been produced and will be
+ * NotReadyToCollect         , default; the handler has not finished processing yet.
+ * ReadyForSingleResponderCallback, the return value has been produced and will be
  *                                   delivered via OnSingleResponderCompleted shortly.
- * Ready                      — the handler is fully done; results may be collected.
+ * Ready                     , the handler is fully done; results may be collected.
  */
 UENUM(BlueprintType)
 enum class EGorgeousRPCReadyState : uint8
@@ -266,7 +266,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCHandlerContext
 {
 	GENERATED_BODY()
 
-	/** Opaque RPC descriptor — pass directly to MarkAutoReplicationRPCResponderReady. */
+	/** Opaque RPC descriptor, pass directly to MarkAutoReplicationRPCResponderReady. */
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	FGorgeousQueuedRPC QueuedRPC;
 
@@ -347,7 +347,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousSerializedOVNode
 {
 	GENERATED_BODY()
 
-	/** This OV's GUID — preserved on the reconstructed instance. */
+	/** This OV's GUID, preserved on the reconstructed instance. */
 	UPROPERTY()
 	FGuid Identifier;
 
@@ -396,7 +396,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 	FGorgeousAutoReplicationRPCResponderHandle Responder;
 
 	/**
-	 * GUID of the root return OV — kept for backwards-compat / same-machine optimisation
+	 * GUID of the root return OV, kept for backwards-compat / same-machine optimisation
 	 * (when the OV already lives in the receiver's registry, the tree is not re-created).
 	 */
 	UPROPERTY()
@@ -414,8 +414,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 
 	/**
 	 * The ready state under which this result was relayed.
-	 *   Ready (default) — result is final; server should call NotifyRequestCompleted.
-	 *   ReadyForSingleResponderCallback — interim signal; server should fire
+	 *   Ready (default), result is final; server should call NotifyRequestCompleted.
+	 *   ReadyForSingleResponderCallback, interim signal; server should fire
 	 *     ExecuteSingleResponderCallback without completing the overall request.
 	 */
 	UPROPERTY()

@@ -613,7 +613,7 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 /**
  * Registers the "Value" property for auto-replication when the mixin activates replication.
  * Overrides OnReplicationActivated_Implementation so the registration happens at the correct
- * time — after ActivateReplication has set up the mixin context, rather than at object
+ * time, after ActivateReplication has set up the mixin context, rather than at object
  * construction time (PostInitProperties) when bReplicates is not yet true.
  */
 #define UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION \

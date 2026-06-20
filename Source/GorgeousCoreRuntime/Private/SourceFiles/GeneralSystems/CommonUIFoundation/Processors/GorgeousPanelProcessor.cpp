@@ -13,7 +13,7 @@ UGorgeousPanelProcessor::UGorgeousPanelProcessor()
 
 void UGorgeousPanelProcessor::OnSignalReceived(UObject* Widget, FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
-	// Panels are not UUserWidgets themselves — we search the widget tree for a panel component
+	// Panels are not UUserWidgets themselves, we search the widget tree for a panel component
 	// Convention: the widget exposes a panel via a property named "Panel" or "Container"
 	UPanelWidget* Panel = nullptr;
 

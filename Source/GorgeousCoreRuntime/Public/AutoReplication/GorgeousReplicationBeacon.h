@@ -57,7 +57,7 @@ public:
 	/** Called when the beacon connection is fully established. */
 	virtual void OnConnected() override;
 
-	/** Called on connection failure — releases ownership claims. */
+	/** Called on connection failure, releases ownership claims. */
 	virtual void OnFailure() override;
 
 	// ── HTTP ↔ Object Variable RPCs ────────────────────────────────────────
@@ -120,7 +120,7 @@ public:
 	/** Override: spawn our custom beacon client for the incoming connection. */
 	virtual AOnlineBeaconClient* SpawnBeaconActor(UNetConnection* ClientConnection) override;
 
-	/** Override: called after handshake — track the connected client. */
+	/** Override: called after handshake, track the connected client. */
 	virtual void OnClientConnected(AOnlineBeaconClient* NewClientActor, UNetConnection* ClientConnection) override;
 
 	/** Override: called when a client disconnects. */

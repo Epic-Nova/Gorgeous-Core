@@ -282,7 +282,7 @@ bool AGorgeousHUD::DispatchGorgeousInput(FGameplayTag ActionTag, const FInputAct
 		if (!bConsumerHandled)
 		{
 			ETriggerEvent TriggerEvent = Instance.GetTriggerEvent();
-			if (TriggerEvent == ETriggerEvent::Started || TriggerEvent == ETriggerEvent::Triggered)
+			if (TriggerEvent == ETriggerEvent::Triggered)
 			{
 				bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInput(ConsumerObj, ActionTag, Instance.GetValue());
 			}

@@ -6,6 +6,23 @@
 #include "GorgeousPrimaryDataAsset.generated.h"
 
 /**
+ * Configuration structure to define how a primary asset handles Asset Manager registration.
+ */
+USTRUCT(BlueprintType)
+struct FGorgeousAssetRegistrationConfig_S
+{
+	GENERATED_BODY()
+
+	/** If false, this asset type will NOT be automatically registered or validated for registration. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Manager")
+	bool bShouldRegister = true;
+
+	/** If true, validation will fail if it's not registered. If false, it ignores registration status. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Asset Manager", meta=(EditCondition="bShouldRegister"))
+	bool bRequireRegistration = true;
+};
+
+/**
  * Base class for all Gorgeous Primary Data Assets.
  * Provides metadata for automatic Asset Manager registration and discovery.
  */
@@ -32,6 +49,10 @@ public:
 		return PreferredScanPaths.Num() > 0 ? PreferredScanPaths : GetDefaultScanPaths(); 
 	}
 
+	/** Registration configuration for Asset Manager validation. */
+	UPROPERTY(EditAnywhere, Category = "Asset Manager")
+	FGorgeousAssetRegistrationConfig_S RegistrationConfig;
+
 protected:
 	/** Internal default paths if no config override is present. */
 	virtual TArray<FString> GetDefaultScanPaths() const { return {}; }
@@ -46,6 +67,11 @@ protected:
 	/** UPrimaryDataAsset interface */
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
+		if (!RegistrationConfig.bShouldRegister)
+		{
+			return FPrimaryAssetId(); // Return invalid ID if it explicitly opts out
+		}
+
 		FPrimaryAssetType Type = GetPrimaryAssetType();
 		if (Type.IsValid())
 		{

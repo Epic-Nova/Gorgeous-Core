@@ -29,7 +29,7 @@ class IGorgeousLibraryParticipant;
  * The main Gorgeous Library editor tab widget.
  *
  * Layout:
- *   [Left panel — ~220px]      [Right panel — remainder]
+ *   [Left panel, ~220px]      [Right panel, remainder]
  *   +--------------------+     +------------------------------------+
  *   | Gorgeous Inventory |     | Gorgeous Inventory                 |
  *   | Gorgeous Skills    |     | ─── Inventory Templates ──────     |
@@ -41,7 +41,7 @@ class IGorgeousLibraryParticipant;
  *
  * Participants are discovered by iterating all registered module interfaces
  * from UGorgeousPluginHelper and filtering for non-null LibraryParticipant ptrs.
- * Modules without a participant are silently skipped — no warning toast.
+ * Modules without a participant are silently skipped, no warning toast.
  */
 class GORGEOUSCOREEDITOR_API SGorgeousLibraryView : public SCompoundWidget
 {
@@ -82,6 +82,9 @@ private:
 
 	/** Generates a single row widget for the participant list. */
 	TSharedRef<ITableRow> OnGenerateParticipantRow(TSharedPtr<IGorgeousLibraryParticipant> Participant, const TSharedRef<STableViewBase>& OwnerTable);
+
+	/** Called when the participant context menu opens. */
+	TSharedPtr<SWidget> OnParticipantContextMenuOpening();
 	//<-------------------------->
 
 	//<=====--- Asset View Callbacks ---=====>

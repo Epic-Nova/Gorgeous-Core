@@ -22,7 +22,7 @@ AGorgeousReplicationBeaconClient::AGorgeousReplicationBeaconClient(const FObject
 	: Super(ObjectInitializer)
 {
 	// The beacon type is derived from the class name by the engine.
-	// No additional setup required — the host object sets
+	// No additional setup required, the host object sets
 	// ClientBeaconActorClass in its own constructor.
 	// This beacon provides the networking bridge for HTTP API ↔ OV conversion.
 }
@@ -45,7 +45,7 @@ void AGorgeousReplicationBeaconClient::OnFailure()
 	Super::OnFailure();
 }
 
-// ── HTTP ↔ Object Variable RPCs (stubs — JSON→OV conversion to be implemented) ──
+// ── HTTP ↔ Object Variable RPCs (stubs, JSON→OV conversion to be implemented) ──
 
 void AGorgeousReplicationBeaconClient::ClientReceiveVariableSnapshot_Implementation(
 	const FGuid& VariableIdentifier, const TArray<uint8>& Payload)
@@ -59,7 +59,7 @@ void AGorgeousReplicationBeaconClient::ClientReceiveVariableSnapshot_Implementat
 
 bool AGorgeousReplicationBeaconClient::ServerRequestFullSync_Validate(const FName& RootName)
 {
-	// Allow any root name — the handler will validate existence.
+	// Allow any root name, the handler will validate existence.
 	return true;
 }
 
@@ -141,7 +141,7 @@ AGorgeousReplicationBeaconHostObject::AGorgeousReplicationBeaconHostObject(
 {
 	// The engine uses these to route incoming beacon connections
 	// to the correct host object.  This host manages the HTTP API
-	// bridge lifecycle — dispatching requests and converting responses.
+	// bridge lifecycle, dispatching requests and converting responses.
 	ClientBeaconActorClass = AGorgeousReplicationBeaconClient::StaticClass();
 	BeaconTypeName = ClientBeaconActorClass->GetName();
 }

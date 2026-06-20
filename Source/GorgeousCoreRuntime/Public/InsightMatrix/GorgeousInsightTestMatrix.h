@@ -238,7 +238,7 @@ private:
  *     depend on a full game session stack. Alternatively, a dedicated UDP control socket
  *     could be used for ultra-low-overhead metric reporting.
  *   - The orchestrator collects FGorgeousInsightScenarioResult fragments from each
- *     participant, merges them, and calls SaveScenarioResult — identical output format
+ *     participant, merges them, and calls SaveScenarioResult, identical output format
  *     to the current PIE path so the Insight Matrix panel can display results unchanged.
  *   - Scenario descriptors need a new bSupportsStandalone flag so the panel / Gauntlet
  *     launcher can filter and route them appropriately.

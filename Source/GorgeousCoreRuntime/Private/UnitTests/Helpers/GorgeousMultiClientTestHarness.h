@@ -22,7 +22,7 @@
  *   4. Collect and merge results across all endpoints
  *   5. Report aggregate pass/fail with origin/destination proof
  *
- * This runs entirely inside the editor — no external processes, no Gauntlet
+ * This runs entirely inside the editor, no external processes, no Gauntlet
  * controller, no custom exe builds needed.
  *
  * ARCHITECTURE:
@@ -86,7 +86,7 @@ struct FGorgeousMultiClientTestConfig
 	/** Seconds after connections settle before running scenarios. */
 	float WarmupSeconds = 2.0f;
 
-	/** Tag filter — empty = run all 'comprehensive' scenarios. */
+	/** Tag filter, empty = run all 'comprehensive' scenarios. */
 	TSet<FName> TagFilter;
 
 	/** Network emulation preset (-1 = none). */

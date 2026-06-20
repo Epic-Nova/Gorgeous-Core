@@ -1,0 +1,7 @@
+{
+  "SystemId": "General",
+  "Version": "Dev",
+  "PayloadPaths": [
+    "Content/Systems/General"
+  ]
+}

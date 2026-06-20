@@ -25,6 +25,9 @@
 #include "MessageLogModule.h"
 #include "PropertyEditorModule.h"
 #include "ToolMenus.h"
+#include "ISettingsModule.h"
+#include "LibraryWizard/GorgeousLibrarySettings.h"
+#include "LibraryWizard/GorgeousCoreLibraryParticipant.h"
 #include "LibraryWizard/SGorgeousLibraryView.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "DataRegistry.h"
@@ -61,7 +64,7 @@
 
 namespace
 {
-	FToolMenuOwnerScoped GDebugMenuOwner{TEXT("GorgeousCoreEditorUtilities")};
+	static const FName GDebugMenuOwnerName{TEXT("GorgeousCoreEditorUtilities")};
 	static const FName GorgeousLibraryTabName("GorgeousLibrary");
 
 	void RegisterLibraryMenuEntry()
@@ -119,6 +122,8 @@ namespace
 			return;
 		}
 
+		FToolMenuOwnerScoped GDebugMenuOwner{ GDebugMenuOwnerName };
+
 		UToolMenu* AuditMenu = ToolMenus->ExtendMenu("LevelEditor.MainMenu.Tools.Audit");
 		if (!AuditMenu)
 		{
@@ -152,13 +157,13 @@ namespace
 			return;
 		}
 
-		const UToolMenus* ToolMenus = UToolMenus::Get();
+		UToolMenus* ToolMenus = UToolMenus::Get();
 		if (!ToolMenus)
 		{
 			return;
 		}
 
-		ToolMenus->UnregisterOwner(GDebugMenuOwner.GetOwner());
+		ToolMenus->UnregisterOwner(GDebugMenuOwnerName);
 	}
 	
 	void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry)
@@ -166,7 +171,7 @@ namespace
 		if (GBValidationRan)
 		{
 			GT_I_LOG("GorgeousCoreEditor",
-				TEXT("Startup validation already ran — skipping duplicate."));
+				TEXT("Startup validation already ran, skipping duplicate."));
 			return;
 		}
 		GBValidationRan = true;
@@ -237,6 +242,10 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	//RainbowConnectionFactory = MakeShareable(new FGorgeousRainbowConnectionFactory());
 	//FEdGraphUtilities::RegisterVisualPinConnectionFactory(RainbowConnectionFactory);
 	
+
+
+	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateStatic(&RegisterLibraryMenuEntry));
+
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyEditorModule.RegisterCustomClassLayout(
 		UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName(),
@@ -269,7 +278,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		GORGEOUS_STYLE_MAP_ENGINE_SVG_BRUSHES(TEXT("GorgeousPlayerStateBlueprint"), TEXT("AssetIcons/Actor_64.svg"));
 		GORGEOUS_STYLE_MAP_ENGINE_SVG_BRUSHES(TEXT("GorgeousWorldSettingsBlueprint"), TEXT("Common/WorldSettings.svg"));
 
-		// Emoji font — bundled with the plugin so it works on all platforms
+		// Emoji font, bundled with the plugin so it works on all platforms
 		GORGEOUS_STYLE_REGISTER_FONT(TEXT("GorgeousCore.EmojiFont"), TEXT("Fonts/NotoColorEmoji/NotoColorEmoji-Regular"), 14);
 	});
 	
@@ -422,6 +431,9 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
 		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
 
+	CoreLibraryParticipant = MakeUnique<FGorgeousCoreLibraryParticipant>();
+	LibraryParticipant = CoreLibraryParticipant.Get();
+
 	BeginPIEHandle = FEditorDelegates::BeginPIE.AddLambda([](bool bIsSimulating)
 	{
 		if (FModuleManager::Get().IsModuleLoaded("MessageLog") || FModuleManager::Get().LoadModule("MessageLog"))
@@ -498,6 +510,11 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	//FEdGraphUtilities::UnregisterVisualNodeFactory(Factory);
 	//FEdGraphUtilities::UnregisterVisualPinFactory(RainbowPinFactory);
 	//FEdGraphUtilities::UnregisterVisualPinConnectionFactory(RainbowConnectionFactory);
+
+	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+	{
+		SettingsModule->UnregisterSettings("Project", "Gorgeous", "Core");
+	}
 
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{

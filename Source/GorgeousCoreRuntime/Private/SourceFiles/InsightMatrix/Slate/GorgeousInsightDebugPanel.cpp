@@ -394,7 +394,7 @@ public:
 	}
 
 private:
-	// Used for ColumnTestName — keeps a dark base and transitions to a blue-ish highlight on hover.
+	// Used for ColumnTestName, keeps a dark base and transitions to a blue-ish highlight on hover.
 	FSlateColor GetRowHoverBgColor() const
 	{
 		return bIsHovered_Custom
@@ -402,7 +402,7 @@ private:
 			: FLinearColor(0.06f, 0.06f, 0.06f, 0.9f);
 	}
 
-	// Used for all other columns — transparent at rest, same highlight on hover.
+	// Used for all other columns, transparent at rest, same highlight on hover.
 	FSlateColor GetRowHoverBgColorFlat() const
 	{
 		return bIsHovered_Custom
