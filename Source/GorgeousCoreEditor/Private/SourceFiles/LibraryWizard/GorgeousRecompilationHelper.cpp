@@ -50,16 +50,21 @@ bool UGorgeousRecompilationHelper::CheckRecompilationRequirement()
 	{
 		if (bRecompilationNeeded)
 		{
-			GT_W_LOG("GT.Core.Recompilation", TEXT("Recompilation required: System configuration has changed."));
 			bIsRecompilationRequired = true;
 			OnRecompilationRequirementChanged.Broadcast();
 
 			if (GIsEditor && !IsRunningCommandlet())
 			{
-				GorgeousLogging::ShowToastNotification(
+				GT_E_LOG_FULL_EX(
 					TEXT("Recompilation Required"),
 					TEXT("The installed Gorgeous plugins or systems have changed.\nPlease visit the Gorgeous Library to recompile the project."),
-					3 // Error level
+					GT_DURATION,
+					true,
+					true,
+					true,
+					true,
+					nullptr,
+					nullptr
 				);
 			}
 		}
