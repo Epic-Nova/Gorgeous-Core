@@ -10,6 +10,8 @@
 <==========================================================================*/
 
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "InsightMatrix/GorgeousInsightFunctionalTest.h"
+#include "EngineUtils.h"
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -1895,4 +1897,24 @@ void UGorgeousInsightMatrixSubsystem::SavePanelState() const
 	
 	ConfigFile.Dirty = true;
 	ConfigFile.Write(IniPath);
+}
+
+void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		return;
+	}
+
+	if (UWorld* World = WorldContextObject->GetWorld())
+	{
+		for (TActorIterator<AGorgeousInsightFunctionalTest> It(World); It; ++It)
+		{
+			AGorgeousInsightFunctionalTest* TestActor = *It;
+			if (TestActor)
+			{
+				// TODO: Hook into FFunctionalTestingManager for execution
+			}
+		}
+	}
 }

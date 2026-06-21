@@ -150,6 +150,10 @@ public:
 	/** Returns the number of queued tests. */
 	int32 GetQueuedTestCount() const;
 
+	/** Trigger all GameTest-style functional tests within the current local world. */
+	UFUNCTION(BlueprintCallable, Category="Insight Matrix", meta=(WorldContext="WorldContextObject"))
+	void RunAllLocalFunctionalTests(UObject* WorldContextObject);
+
 	FOnGorgeousInsightProviderChanged OnProviderRegistered;
 	FOnGorgeousInsightProviderChanged OnProviderUnregistered;
 

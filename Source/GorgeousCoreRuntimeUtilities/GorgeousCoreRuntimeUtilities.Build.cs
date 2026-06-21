@@ -110,11 +110,13 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
             }
         }
 
-        // Auto-Build Gorgeous Installer (Skip if invoked by the installer itself)
-        if (System.Environment.GetEnvironmentVariable("GORGEOUS_SKIP_INSTALLER_BUILD") != "1")
+        // Auto-Build Gorgeous Installer (Skip if invoked by the installer itself or already built in this UBT run)
+        if (System.Environment.GetEnvironmentVariable("GORGEOUS_SKIP_INSTALLER_BUILD") != "1" &&
+            System.Environment.GetEnvironmentVariable("GORGEOUS_ALREADY_BUILT_INSTALLER") != "1")
         {
             try
             {
+                System.Environment.SetEnvironmentVariable("GORGEOUS_ALREADY_BUILT_INSTALLER", "1");
                 var InstallerDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousInstaller"));
                 var BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", Target.Platform.ToString()));
                 var ExeName = Target.Platform == UnrealTargetPlatform.Win64 ? "gorgeous-installer.exe" : "gorgeous-installer";
@@ -143,7 +145,26 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     ProcInfo = null;
                 }
 
+                bool bNeedsBuild = false;
                 if (ProcInfo != null)
+                {
+                    bNeedsBuild = !File.Exists(ExeDst);
+                    if (!bNeedsBuild)
+                    {
+                        System.DateTime ExeTime = File.GetLastWriteTimeUtc(ExeDst);
+                        var GoFiles = Directory.GetFiles(InstallerDir, "*.go", SearchOption.AllDirectories);
+                        foreach (var F in GoFiles)
+                        {
+                            if (File.GetLastWriteTimeUtc(F) > ExeTime)
+                            {
+                                bNeedsBuild = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (bNeedsBuild && ProcInfo != null)
                 {
                     ProcInfo.UseShellExecute = false;
                     var Proc = System.Diagnostics.Process.Start(ProcInfo);

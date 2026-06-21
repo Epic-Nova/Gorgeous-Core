@@ -1,15 +1,18 @@
 #include "LibraryWizard/GorgeousUpdateManager.h"
+
+#include "HttpModule.h"
 #include "Interfaces/IPluginManager.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Misc/SecureHash.h"
-#include "HttpModule.h"
-#include "Interfaces/IHttpResponse.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Helpers/Macros/GorgeousConnectionHelperMacros.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Helpers/GorgeousLoggingHelper.h"
+#include "Helpers/GorgeousLoggingHelper.h"
+#include "Interfaces/IHttpResponse.h"
 
 void UGorgeousUpdateManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -28,13 +31,43 @@ void UGorgeousUpdateManager::ProbeConnection()
 
 void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-    if (bWasSuccessful && Response.IsValid())
+    FString RequestURL = Request->GetURL();
+
+    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
-        FString CurrentURL = Response->GetURL();
-        if (CurrentURL.StartsWith(TEXT("http://")))
+        if (RequestURL.StartsWith(TEXT("http://")))
         {
             bIsDevMode = true;
-            GT_E_LOG("GT.Updates", TEXT("Entering credentials is dangerous as we are in HTTP mode (possible dev mode)"));
+            GT_W_LOG_FULL_EX(
+                TEXT("Gorgeous Dev Mode Activated"),
+                TEXT("Operating in HTTP is dangerous."),
+                GT_DURATION,
+                true,
+                true,
+                true,
+                true,
+                nullptr,
+                nullptr
+            );
+        }
+        else
+        {
+            bIsDevMode = false;
+        }
+
+        FetchSystemsCatalog();
+    }
+    else
+    {
+        if (RequestURL.StartsWith(TEXT("https://")))
+        {
+            // Fallback to HTTP probe
+            FString FallbackURL = RequestURL.Replace(TEXT("https://"), TEXT("http://"));
+            TSharedRef<IHttpRequest, ESPMode::ThreadSafe> FallbackRequest = FHttpModule::Get().CreateRequest();
+            FallbackRequest->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnProbeConnectionResponse);
+            FallbackRequest->SetURL(FallbackURL);
+            FallbackRequest->SetVerb(TEXT("GET"));
+            FallbackRequest->ProcessRequest();
         }
     }
 }
