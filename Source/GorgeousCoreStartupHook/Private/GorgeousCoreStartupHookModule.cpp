@@ -258,6 +258,7 @@ public:
 
 	virtual void ShutdownModule() override
 	{
+		UE_LOG(LogTemp, Log, TEXT("Test"));
 	}
 };
 

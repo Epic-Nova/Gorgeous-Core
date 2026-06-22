@@ -118,10 +118,23 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
             {
                 System.Environment.SetEnvironmentVariable("GORGEOUS_ALREADY_BUILT_INSTALLER", "1");
                 var InstallerDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousInstaller"));
+                var GoFiles = Directory.GetFiles(InstallerDir, "*.go", SearchOption.AllDirectories);
+                var FilteredGoFiles = new System.Collections.Generic.List<string>();
+                foreach (var F in GoFiles)
+                {
+                    if (!F.Replace('\\', '/').EndsWith("/internal/buildinfo/buildinfo.go"))
+                    {
+                        FilteredGoFiles.Add(F);
+                        ExternalDependencies.Add(F);
+                    }
+                }
+
                 var BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", Target.Platform.ToString()));
                 var ExeName = Target.Platform == UnrealTargetPlatform.Win64 ? "gorgeous-installer.exe" : "gorgeous-installer";
                 var ExeSrc = Path.Combine(InstallerDir, "build", ExeName);
                 var ExeDst = Path.Combine(BinariesDir, ExeName);
+
+                RuntimeDependencies.Add(ExeDst);
 
                 if (!Directory.Exists(BinariesDir))
                 {
@@ -140,7 +153,7 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     ProcInfo.FileName = "bash";
                     ProcInfo.Arguments = "build.sh";
                 }
-                else 
+                else
                 {
                     ProcInfo = null;
                 }
@@ -152,8 +165,7 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     if (!bNeedsBuild)
                     {
                         System.DateTime ExeTime = File.GetLastWriteTimeUtc(ExeDst);
-                        var GoFiles = Directory.GetFiles(InstallerDir, "*.go", SearchOption.AllDirectories);
-                        foreach (var F in GoFiles)
+                        foreach (var F in FilteredGoFiles)
                         {
                             if (File.GetLastWriteTimeUtc(F) > ExeTime)
                             {

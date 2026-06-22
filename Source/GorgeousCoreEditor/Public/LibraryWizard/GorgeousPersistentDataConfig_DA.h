@@ -26,6 +26,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Validation")
 	bool bHasRunInitialValidation = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Developer")
+	bool bForceDevMode = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cache")
 	TArray<FGorgeousOfflineSystemCacheEntry> OfflineSystemCache;
 

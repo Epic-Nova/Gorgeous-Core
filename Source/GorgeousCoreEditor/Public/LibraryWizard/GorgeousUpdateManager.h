@@ -42,8 +42,19 @@ private:
     void OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
     void OnUpdateCheckResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+    void OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName);
     void OnFetchSystemsCatalogResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
     FString CalculatePluginModuleCoreHash(const FString& PluginName, const FString& PluginBaseDir);
+    
+    FString CalculatePluginChecksum(const FString& PluginName, const FString& PluginBaseDir);
+    
     FString HashDirectory(const FString& DirectoryPath);
+
+public:
+    /**
+     * Downloads a plugin update using the provided download token.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous|Updates")
+    void DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken);
 };

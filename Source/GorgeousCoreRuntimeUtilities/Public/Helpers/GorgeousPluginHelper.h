@@ -67,6 +67,7 @@ struct FGorgeousOfflineSystemCacheEntry
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString Description;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString Version;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadUrl;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
     UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> SourcePaths;
     UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> ContentPaths;
     UPROPERTY(VisibleAnywhere, Category = "Cache") bool bIsCoreSystem = false;
@@ -81,6 +82,7 @@ struct FGorgeousPluginUpdateCacheEntry
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString AvailableVersion;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString MinimumCoreVersion;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadToken;
 };
 
 UCLASS()
@@ -262,6 +264,11 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	TArray<FGorgeousOfflineSystemCacheEntry> GetOfflineSystemCache() const;
 
 	/**
+	 * Sets the offline cache of installable systems and saves it to disk.
+	 */
+	void SetOfflineSystemCache(const TArray<FGorgeousOfflineSystemCacheEntry>& NewCache);
+
+	/**
 	 * Retrieves the offline cache of plugin updates from persistent data.
 	 * Returns an array of parsed structs.
 	 */
@@ -283,6 +290,11 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	FString GetPluginUpdateChangelogUrl(const FName& PluginName) const;
 
 	/**
+	 * Gets the download token for a specific plugin if an update is available.
+	 */
+	FString GetPluginUpdateDownloadToken(const FName& PluginName) const;
+
+	/**
 	 * Checks if the initial system validation sweep has successfully completed.
 	 */
 	bool HasRunInitialValidation() const;
@@ -291,6 +303,16 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * Sets whether the initial system validation sweep has completed.
 	 */
 	void SetHasRunInitialValidation(bool bHasRun);
+
+	/**
+	 * Gets whether HTTP dev mode is forced.
+	 */
+	bool GetForceDevMode() const;
+
+	/**
+	 * Sets whether HTTP dev mode is forced.
+	 */
+	void SetForceDevMode(bool bForce);
 
 	/**
 	 * Gets the file path for storing persistent Gorgeous metadata.

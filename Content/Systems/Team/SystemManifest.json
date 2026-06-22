@@ -1,7 +1,8 @@
 {
-  "SystemId": "Team",
-  "Version": "Dev",
-  "PayloadPaths": [
-    "Content/Systems/Team"
-  ]
+    "SystemId": "Team",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Content/Systems/Team"
+    ],
+    "bIsCoreSystem": false
 }
