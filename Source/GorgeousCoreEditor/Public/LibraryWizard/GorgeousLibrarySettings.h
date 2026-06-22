@@ -23,6 +23,7 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = "Validation")
 	int32 ValidationCount;
 
+
 	/** Manually triggers the Gorgeous Installer to recompile the project. The editor will prompt to save and then close gracefully. */
 	UFUNCTION(CallInEditor, Category = "Recompilation")
 	void TriggerRecompilation();

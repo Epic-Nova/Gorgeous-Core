@@ -13,6 +13,7 @@ void UGorgeousPersistentDataConfig_DA::PostEditChangeProperty(struct FPropertyCh
 		Helper->SetSystemValidationCount(ValidationCount);
 		Helper->SetHasRunInitialValidation(bHasRunInitialValidation);
 		Helper->SetPluginUpdateCache(PluginUpdateCache);
+		Helper->SetForceDevMode(bForceDevMode);
 
 		// Instantly write the modifications to GorgeousPersistentData.json
 		Helper->SavePersistentData();

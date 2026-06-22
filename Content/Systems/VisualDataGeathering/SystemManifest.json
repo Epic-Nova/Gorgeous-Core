@@ -1,7 +1,8 @@
 {
-  "SystemId": "VisualDataGeathering",
-  "Version": "Dev",
-  "PayloadPaths": [
-    "Content/Systems/VisualDataGeathering"
-  ]
+    "SystemId": "VisualDataGeathering",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Content/Systems/VisualDataGeathering"
+    ],
+    "bIsCoreSystem": false
 }

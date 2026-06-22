@@ -1,8 +1,9 @@
 {
-  "SystemId": "SignalBridge",
-  "Version": "Dev",
-  "PayloadPaths": [
-    "Source/GorgeousCoreRuntime/Public/GeneralSystems/SignalBridge",
-    "Source/GorgeousCoreRuntime/Private/GeneralSystems/SignalBridge"
-  ]
+    "SystemId": "SignalBridge",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Source/GorgeousCoreRuntime/Public/GeneralSystems/SignalBridge",
+        "Source/GorgeousCoreRuntime/Private/SourceFiles/GeneralSystems/SignalBridge"
+    ],
+    "bIsCoreSystem": true
 }

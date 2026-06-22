@@ -13,8 +13,9 @@
 /**
  * Endpoint URL for the Gorgeous API.
  * @note Not used atm, planned to be introduced with upcoming new major version
+ * @note For not http as we are in dev @todo: Smart switching based on the force http mdoe in the library config
  */
-#define GORGEOUS_API_ENDPOINT "https://api.gorgeous.simsalabim.studio"
+#define GORGEOUS_API_ENDPOINT "http://api.gorgeous.simsalabim.studio"
 
 /**
  * Endpoint URL for the Gorgeous API V1.

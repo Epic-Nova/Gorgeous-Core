@@ -784,12 +784,50 @@ TArray<FGorgeousPluginUpdateCacheEntry> UGorgeousPluginHelper::GetPluginUpdateCa
 					Entry.AvailableVersion = Obj->GetStringField(TEXT("AvailableVersion"));
 					Entry.MinimumCoreVersion = Obj->GetStringField(TEXT("MinimumCoreVersion"));
 					Entry.ChangelogUrl = Obj->GetStringField(TEXT("ChangelogUrl"));
+					Entry.DownloadToken = Obj->GetStringField(TEXT("DownloadToken"));
 					CacheEntries.Add(Entry);
 				}
 			}
 		}
 	}
 	return CacheEntries;
+}
+
+void UGorgeousPluginHelper::SetOfflineSystemCache(const TArray<FGorgeousOfflineSystemCacheEntry>& NewCache)
+{
+	LoadPersistentData();
+
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (const FGorgeousOfflineSystemCacheEntry& Entry : NewCache)
+	{
+		TSharedPtr<FJsonObject> JsonObj = MakeShared<FJsonObject>();
+		JsonObj->SetStringField(TEXT("SystemId"), Entry.SystemId);
+		JsonObj->SetStringField(TEXT("TargetPluginName"), Entry.TargetPluginName);
+		JsonObj->SetStringField(TEXT("DisplayName"), Entry.DisplayName);
+		JsonObj->SetStringField(TEXT("Description"), Entry.Description);
+		JsonObj->SetStringField(TEXT("Version"), Entry.Version);
+		JsonObj->SetStringField(TEXT("DownloadUrl"), Entry.DownloadUrl);
+		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
+		JsonObj->SetBoolField(TEXT("bIsCoreSystem"), Entry.bIsCoreSystem);
+
+		TArray<TSharedPtr<FJsonValue>> SourcePathsArr;
+		for (const FString& Path : Entry.SourcePaths) { SourcePathsArr.Add(MakeShared<FJsonValueString>(Path)); }
+		JsonObj->SetArrayField(TEXT("SourcePaths"), SourcePathsArr);
+
+		TArray<TSharedPtr<FJsonValue>> ContentPathsArr;
+		for (const FString& Path : Entry.ContentPaths) { ContentPathsArr.Add(MakeShared<FJsonValueString>(Path)); }
+		JsonObj->SetArrayField(TEXT("ContentPaths"), ContentPathsArr);
+
+		JsonArray.Add(MakeShared<FJsonValueObject>(JsonObj));
+	}
+
+	PersistentDataObject->SetArrayField(TEXT("OfflineSystemCache"), JsonArray);
+	SavePersistentData();
 }
 
 void UGorgeousPluginHelper::SetPluginUpdateCache(const TArray<FGorgeousPluginUpdateCacheEntry>& NewCache)
@@ -809,6 +847,7 @@ void UGorgeousPluginHelper::SetPluginUpdateCache(const TArray<FGorgeousPluginUpd
 		JsonObj->SetStringField(TEXT("AvailableVersion"), Entry.AvailableVersion);
 		JsonObj->SetStringField(TEXT("MinimumCoreVersion"), Entry.MinimumCoreVersion);
 		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
+		JsonObj->SetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
 		JsonArray.Add(MakeShared<FJsonValueObject>(JsonObj));
 	}
 
@@ -837,6 +876,19 @@ FString UGorgeousPluginHelper::GetPluginUpdateChangelogUrl(const FName& PluginNa
 		if (Update.PluginName == PluginName.ToString())
 		{
 			return Update.ChangelogUrl;
+		}
+	}
+	return FString();
+}
+
+FString UGorgeousPluginHelper::GetPluginUpdateDownloadToken(const FName& PluginName) const
+{
+	TArray<FGorgeousPluginUpdateCacheEntry> Updates = GetPluginUpdateCache();
+	for (const FGorgeousPluginUpdateCacheEntry& Update : Updates)
+	{
+		if (Update.PluginName == PluginName.ToString())
+		{
+			return Update.DownloadToken;
 		}
 	}
 	return FString();
@@ -971,6 +1023,43 @@ void UGorgeousPluginHelper::SetSystemValidationInterval(int32 NewInterval)
 	}
 	
 	SystemValidation->SetNumberField(TEXT("ValidationInterval"), NewInterval);
+	
+	SavePersistentData();
+}
+
+bool UGorgeousPluginHelper::GetForceDevMode() const
+{
+	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
+	
+	if (PersistentDataObject.IsValid())
+	{
+		const TSharedPtr<FJsonObject> DevSettings = PersistentDataObject->GetObjectField(TEXT("DeveloperSettings"));
+		if (DevSettings.IsValid() && DevSettings->HasField(TEXT("ForceDevMode")))
+		{
+			return DevSettings->GetBoolField(TEXT("ForceDevMode"));
+		}
+	}
+	
+	return false; // Default
+}
+
+void UGorgeousPluginHelper::SetForceDevMode(bool bForce)
+{
+	LoadPersistentData();
+	
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+	
+	TSharedPtr<FJsonObject> DevSettings = PersistentDataObject->GetObjectField(TEXT("DeveloperSettings"));
+	if (!DevSettings.IsValid())
+	{
+		DevSettings = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("DeveloperSettings"), DevSettings);
+	}
+	
+	DevSettings->SetBoolField(TEXT("ForceDevMode"), bForce);
 	
 	SavePersistentData();
 }

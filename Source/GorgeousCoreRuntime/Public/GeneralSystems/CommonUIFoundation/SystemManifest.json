@@ -1,9 +1,11 @@
 {
-  "SystemId": "CommonUIFoundation",
-  "Version": "Dev",
-  "PayloadPaths": [
-    "Content/Systems/CommonUIFoundation",
-    "Source/GorgeousCoreRuntime/Public/GeneralSystems/CommonUIFoundation",
-    "Source/GorgeousCoreRuntime/Private/GeneralSystems/CommonUIFoundation"
-  ]
+    "SystemId": "CommonUIFoundation",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Content/Systems/CommonUIFoundation",
+        "Source/GorgeousCoreRuntime/Public/GeneralSystems/CommonUIFoundation",
+        "Source/GorgeousCoreRuntime/Private/SourceFiles/GeneralSystems/CommonUIFoundation",
+        "Source/GorgeousCoreEditor/Private/HeaderFiles/Factories/GeneralSystems/CommonUIFoundation"
+    ],
+    "bIsCoreSystem": false
 }

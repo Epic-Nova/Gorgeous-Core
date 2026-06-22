@@ -8,8 +8,9 @@
 
 #include "LibraryWizard/SGorgeousLibraryView.h"
 
-//<=====--- Includes ---=====>
-//<----- Engine Includes ----->
+ //<=====--- Includes ---=====>
+ //<----- Engine Includes ----->
+#include "Editor.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Widgets/Layout/SBox.h"
@@ -31,6 +32,7 @@
 #include "Widgets/Layout/SWrapBox.h"
 //<----- Module Includes ----->
 #include "LibraryWizard/IGorgeousLibraryParticipant.h"
+#include "LibraryWizard/GorgeousUpdateManager.h"
 #include "LibraryWizard/SGorgeousSetupWizard.h"
 #include "LibraryWizard/GorgeousSystemTemplate_DA.h"
 #include "LibraryWizard/GorgeousAssetFilters.h"
@@ -143,7 +145,7 @@ public:
 			IconBrush = Participant->GetAssetIcon(*Asset);
 		}
 
-		const FSlateBrush* FinalBrush = IconBrush.IsValid() ? IconBrush.Get() : FAppStyle::GetBrush("ContentBrowser.DefaultAssetIcon");
+		const FSlateBrush* FinalBrush = IconBrush.IsValid() ? IconBrush.Get() : FAppStyle::GetDefaultBrush();
 
 		ChildSlot
 		[
@@ -628,22 +630,22 @@ TSharedPtr<SWidget> SGorgeousLibraryView::OnParticipantContextMenuOpening()
 		{
 			if (Helper->HasPluginUpdateAvailable(SelectedParticipant->GetParticipantName()))
 			{
+				FName ParticipantName = SelectedParticipant->GetParticipantName();
+
 				MenuBuilder.AddMenuEntry(
 					NSLOCTEXT("GorgeousCore", "UpdatePlugin", "Update Plugin"),
 					NSLOCTEXT("GorgeousCore", "UpdatePluginTooltip", "Automatically download and compile the newest version of this plugin via the Gorgeous Installer."),
 					FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Download"),
-					FUIAction(FExecuteAction::CreateLambda([]()
+					FUIAction(FExecuteAction::CreateLambda([ParticipantName]()
 					{
-						FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
-#if PLATFORM_WINDOWS
-						InstallerPath += TEXT(".exe");
-#endif
-						FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
-						// In the future, this should pass --install-zip with the actual zip URL, but for now we pass a generic update flag or just use verify-compatibility to trigger the UI and recompile.
-						FString Params = FString::Printf(TEXT("--verify-compatibility --project \"%s\""), *ProjectPath);
-						
-						uint32 ProcessID = 0;
-						FPlatformProcess::CreateProc(*InstallerPath, *Params, true, false, false, &ProcessID, 0, nullptr, nullptr);
+						if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+						{
+							FString DownloadToken = Helper->GetPluginUpdateDownloadToken(ParticipantName);
+							if (UGorgeousUpdateManager* UpdateManager = GEditor->GetEditorSubsystem<UGorgeousUpdateManager>())
+							{
+								UpdateManager->DownloadPluginUpdate(ParticipantName.ToString(), DownloadToken);
+							}
+						}
 					}))
 				);
 

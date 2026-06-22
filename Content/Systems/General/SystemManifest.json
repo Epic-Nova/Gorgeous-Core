@@ -1,7 +1,8 @@
 {
-  "SystemId": "General",
-  "Version": "Dev",
-  "PayloadPaths": [
-    "Content/Systems/General"
-  ]
+    "SystemId": "General",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Content/Systems/General"
+    ],
+    "bIsCoreSystem": true
 }

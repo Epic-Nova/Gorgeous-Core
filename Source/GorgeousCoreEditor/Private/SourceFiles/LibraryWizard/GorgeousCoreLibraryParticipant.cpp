@@ -9,6 +9,9 @@
 #include "ISettingsModule.h"
 #include "LibraryWizard/GorgeousPersistentDataConfig_DA.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
+#include "PropertyEditorModule.h"
+#include "Widgets/SWindow.h"
+#include "Framework/Application/SlateApplication.h"
 
 FGorgeousCoreLibraryParticipant::FGorgeousCoreLibraryParticipant()
 {
@@ -148,7 +151,33 @@ void FGorgeousCoreLibraryParticipant::OnCategoryActionExecuted(FName CategoryId,
 	{
 		if (ActionId == "ConfigureSettings")
 		{
-			FModuleManager::LoadModuleChecked<ISettingsModule>("Settings").ShowViewer("Project", "Gorgeous", "Core");
+			UPackage* MemoryPackage = FindPackage(nullptr, TEXT("/Temp/GorgeousCore/OfflineSystems"));
+			if (MemoryPackage)
+			{
+				if (UGorgeousPersistentDataConfig_DA* SettingsAsset = FindObject<UGorgeousPersistentDataConfig_DA>(MemoryPackage, TEXT("GorgeousPersistentData")))
+				{
+					FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+					FDetailsViewArgs DetailsViewArgs;
+					DetailsViewArgs.bAllowSearch = true;
+					DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+					DetailsViewArgs.bHideSelectionTip = true;
+
+					TSharedRef<IDetailsView> DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+					DetailsView->SetObject(SettingsAsset);
+
+					TSharedRef<SWindow> SettingsWindow = SNew(SWindow)
+						.Title(NSLOCTEXT("GorgeousCore", "APIConfiguration", "Gorgeous API Configuration"))
+						.ClientSize(FVector2D(600, 400))
+						.SupportsMaximize(false)
+						.SupportsMinimize(false)
+						[
+							DetailsView
+						];
+
+					FSlateApplication::Get().AddWindow(SettingsWindow);
+				}
+			}
 		}
 		else if (ActionId == "Recompile")
 		{
@@ -171,9 +200,9 @@ void FGorgeousCoreLibraryParticipant::RefreshOfflineCache()
 		// We register a virtual mount point in /Memory so the Asset Registry indexes the items
 		// without throwing "Save Package" prompts when the editor closes!
 		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-		AssetRegistryModule.Get().AddPath(TEXT("/Memory/GorgeousCore/OfflineSystems"));
+		AssetRegistryModule.Get().AddPath(TEXT("/Temp/GorgeousCore/OfflineSystems"));
 
-		UPackage* MemoryPackage = CreatePackage(TEXT("/Memory/GorgeousCore/OfflineSystems"));
+		UPackage* MemoryPackage = CreatePackage(TEXT("/Temp/GorgeousCore/OfflineSystems"));
 
 		for (const FGorgeousOfflineSystemCacheEntry& Entry : CacheEntries)
 		{
@@ -203,6 +232,7 @@ void FGorgeousCoreLibraryParticipant::RefreshOfflineCache()
 		SettingsAsset->ValidationCount = Helper->GetSystemValidationCount();
 		SettingsAsset->ValidationInterval = Helper->GetSystemValidationInterval();
 		SettingsAsset->bHasRunInitialValidation = Helper->HasRunInitialValidation();
+		SettingsAsset->bForceDevMode = Helper->GetForceDevMode();
 		SettingsAsset->OfflineSystemCache = CacheEntries;
 		SettingsAsset->PluginUpdateCache = Helper->GetPluginUpdateCache();
 		
