@@ -8,6 +8,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGorgeousUpdateCheckCompleted, bool, bUpdatesAvailable);
 
 class SProgressBar;
+class STextBlock;
 class SWindow;
 
 /**
@@ -38,6 +39,12 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Gorgeous|Updates")
     FOnGorgeousUpdateCheckCompleted OnUpdateCheckCompleted;
 
+    /**
+     * Downloads a plugin update using the provided download token.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous|Updates")
+    void DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken);
+
 private:
     bool bIsDevMode = false;
     
@@ -47,21 +54,14 @@ private:
     void OnUpdateCheckResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
     void OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName);
     void OnFetchSystemsCatalogResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-
+    
+    FString HashDirectory(const FString& DirectoryPath);
+    
     FString CalculatePluginModuleCoreHash(const FString& PluginName, const FString& PluginBaseDir);
     
     FString CalculatePluginChecksum(const FString& PluginName, const FString& PluginBaseDir);
     
-    FString HashDirectory(const FString& DirectoryPath);
-
-public:
-    /**
-     * Downloads a plugin update using the provided download token.
-     */
-    UFUNCTION(BlueprintCallable, Category = "Gorgeous|Updates")
-    void DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken);
-
-private:
-    TWeakPtr<class SNotificationItem> ActiveDownloadNotification;
     TSharedPtr<class SWindow> ActiveProgressWindow;
+    TSharedPtr<class SProgressBar> ActiveProgressBar;
+    TSharedPtr<class STextBlock> ActiveProgressStatusText;
 };

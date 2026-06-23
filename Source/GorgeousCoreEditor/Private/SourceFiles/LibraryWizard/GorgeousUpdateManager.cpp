@@ -13,11 +13,17 @@
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Helpers/Macros/GorgeousConnectionHelperMacros.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/GorgeousLoggingHelper.h"
 #include "Helpers/GorgeousPluginHelper.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Widgets/Notifications/SProgressBar.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/Layout/SBox.h"
+#include "Widgets/SWindow.h"
 #include "openssl/sha.h"
 
 THIRD_PARTY_INCLUDES_START
@@ -98,22 +104,11 @@ void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, 
     }
 }
 
-void UGorgeousUpdateManager::Deinitialize()
-{
-    Super::Deinitialize();
-    if (ActiveDownloadNotification.IsValid())
-    {
-        ActiveDownloadNotification.Pin()->ExpireAndFadeout();
-        ActiveDownloadNotification.Reset();
-    }
-}
-
 FString UGorgeousUpdateManager::HashDirectory(const FString& DirectoryPath)
 {
     TArray<FString> Files;
     IFileManager::Get().FindFilesRecursive(Files, *DirectoryPath, TEXT("*.h"), true, false, false);
     
-    // Sort files to ensure deterministic hashing
     Files.Sort();
 
     FMD5 MD5Gen;
@@ -122,7 +117,6 @@ FString UGorgeousUpdateManager::HashDirectory(const FString& DirectoryPath)
         FString FileContent;
         if (FFileHelper::LoadFileToString(FileContent, *FilePath))
         {
-            // Normalize path for consistent hashing across platforms
             FString RelPath = FilePath.RightChop(DirectoryPath.Len() + 1);
             RelPath.ReplaceInline(TEXT("\\"), TEXT("/"));
             
@@ -141,7 +135,6 @@ FString UGorgeousUpdateManager::CalculatePluginModuleCoreHash(const FString& Plu
     FString SourceDir = FPaths::Combine(PluginBaseDir, TEXT("Source"));
     
     TArray<FString> ModuleDirs;
-    // Find all module directories inside Source/
     IFileManager::Get().FindFiles(ModuleDirs, *(SourceDir / TEXT("*")), false, true);
 
     for (const FString& ModuleDirName : ModuleDirs)
@@ -158,8 +151,6 @@ FString UGorgeousUpdateManager::CalculatePluginModuleCoreHash(const FString& Plu
 
 FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginName, const FString& PluginBaseDir)
 { 
-    // Calculate the plugin checksum as per api spec hashing the WHOLE plugin source, excpluding systems that are per SystemManifest.json not a core system
-    
     FString SourceDir = FPaths::Combine(PluginBaseDir, TEXT("Source"));
     TArray<FString> ModuleDirs;
     
@@ -227,8 +218,6 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
         
         FinalFilesToHash.Sort();
         
-    	
-        // Now SHA256 every FinalFilesToHash content
         for (const FString& File : FinalFilesToHash)
         {
             IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
@@ -242,35 +231,44 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
                 FileData.SetNumUninitialized(FileSize);
                 FileReader->Serialize(FileData.GetData(), FileSize);
                 
-            	// Use OpenSSL to compute the SHA-256 hash
-            	SHA256_CTX FileHash;
-            	SHA256_Init(&FileHash);
-            	SHA256_Update(&FileHash, FileData.GetData(), FileSize);
+                SHA256_CTX FileHash;
+                SHA256_Init(&FileHash);
+                SHA256_Update(&FileHash, FileData.GetData(), FileSize);
                 
-            	FSHA256Signature HashDigest;
-            	SHA256_Final(HashDigest.Signature, &FileHash); // Writes directly into the UE5 struct
-            	FinalFileHashes.Add(HashDigest.ToString().ToLower());
+                FSHA256Signature HashDigest;
+                SHA256_Final(HashDigest.Signature, &FileHash);
+                FinalFileHashes.Add(HashDigest.ToString().ToLower());
             }
         }
     }
     
-    // Now hash all hashes to a single hash
     FString CombinedHashes;
     for (const FString& Hash : FinalFileHashes)
     {
         CombinedHashes += Hash;
     }
     
-	FTCHARToUTF8 Utf8String(*CombinedHashes);
+    FTCHARToUTF8 Utf8String(*CombinedHashes);
     
-	SHA256_CTX FinalHash;
-	SHA256_Init(&FinalHash);
-	SHA256_Update(&FinalHash, (const uint8*)Utf8String.Get(), Utf8String.Length());
+    SHA256_CTX FinalHash;
+    SHA256_Init(&FinalHash);
+    SHA256_Update(&FinalHash, (const uint8*)Utf8String.Get(), Utf8String.Length());
     
-	FSHA256Signature FinalDigest;
-	SHA256_Final(FinalDigest.Signature, &FinalHash);
-	return FinalDigest.ToString().ToLower();
-        
+    FSHA256Signature FinalDigest;
+    SHA256_Final(FinalDigest.Signature, &FinalHash);
+    return FinalDigest.ToString().ToLower();
+}
+
+void UGorgeousUpdateManager::Deinitialize()
+{
+    Super::Deinitialize();
+    if (ActiveProgressWindow.IsValid())
+    {
+        ActiveProgressWindow->RequestDestroyWindow();
+        ActiveProgressWindow.Reset();
+    }
+    ActiveProgressBar.Reset();
+    ActiveProgressStatusText.Reset();
 }
 
 void UGorgeousUpdateManager::CheckForUpdates()
@@ -281,12 +279,12 @@ void UGorgeousUpdateManager::CheckForUpdates()
     for (const TSharedRef<IPlugin>& Plugin : EnabledPlugins)
     {
         FString PluginName = Plugin->GetName();
-        
-        // Include Gorgeous plugins
-        if (PluginName.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase))
+
+        // Include the plugin itself and all Gorgeous plugins
+        if (PluginName.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase) || PluginName == TEXT("GorgeousCore"))
         {
             FString Hash = CalculatePluginChecksum(PluginName, Plugin->GetBaseDir());
-            
+
             TSharedPtr<FJsonObject> PluginObj = MakeShareable(new FJsonObject());
             PluginObj->SetStringField(TEXT("PluginName"), PluginName);
             PluginObj->SetStringField(TEXT("Checksum"), Hash);
@@ -303,11 +301,11 @@ void UGorgeousUpdateManager::CheckForUpdates()
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
     FJsonSerializer::Serialize(PayloadObj.ToSharedRef(), Writer);
 
+    FString Endpoint = bIsDevMode ? FString(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/plugins/update-check")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/plugins/update-check"));
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnUpdateCheckResponse);
-    FString Endpoint = bIsDevMode ? FString(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/plugins/update-check")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/plugins/update-check"));
     Request->SetURL(Endpoint);
-    Request->SetVerb("POST");
+    Request->SetVerb(TEXT("POST"));
     Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
     Request->SetContentAsString(OutputString);
     Request->ProcessRequest();
@@ -315,211 +313,89 @@ void UGorgeousUpdateManager::CheckForUpdates()
 
 void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
-	bool bUpdatesAvailable = false;
+    bool bUpdatesAvailable = false;
 
-	if (bWasSuccessful && Response.IsValid())
-	{
-		if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-		{
-			GT_I_LOG("GT.Updates", TEXT("Successfully checked for Gorgeous Plugin updates."));
-			
-			FString CurrentCoreVersion = TEXT("0.0.0");
-			if (TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore")); CorePlugin.IsValid())
-			{
-				CurrentCoreVersion = CorePlugin->GetDescriptor().VersionName;
-			}
-			
-			TSharedPtr<FJsonObject> JsonObject;
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-			
-			if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-			{
-				// Core version check
-				TArray<FGorgeousPluginUpdateCacheEntry> PluginCache;
-				// Since it's a map of PluginName -> UpdateData
-				for (auto& Elem : JsonObject->Values)
-				{
-					TSharedPtr<FJsonObject> PluginData = Elem.Value->AsObject();
-					if (PluginData.IsValid())
-					{
-						bool bAvail = false;
-						if (PluginData->TryGetBoolField(TEXT("UpdateAvailable"), bAvail) && bAvail)
-						{
-							FString MinCoreVer;
-							if (PluginData->TryGetStringField(TEXT("MinimumCoreVersion"), MinCoreVer) && !MinCoreVer.IsEmpty())
-							{
-								// A simplistic version check. In a real scenario you'd compare segments.
-							if (MinCoreVer > CurrentCoreVersion)
-							{
-								// Block update
-								FString ToastMsg = FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer);
-								GT_W_LOG("GT.Updates", TEXT("%s"), *ToastMsg);
-								FNotificationInfo Info(FText::FromString(ToastMsg));
-								Info.ExpireDuration = 5.0f;
-								FSlateNotificationManager::Get().AddNotification(Info);
-								continue;
-							}
-							}
-							
-							bUpdatesAvailable = true;
-							
-							FGorgeousPluginUpdateCacheEntry Entry;
-							Entry.PluginName = Elem.Key;
-							
-							FString LatestVer, ChangelogUrlStr;
-							if (PluginData->TryGetStringField(TEXT("LatestVersion"), LatestVer))
-							{
-								Entry.AvailableVersion = LatestVer;
-							}
-							Entry.MinimumCoreVersion = MinCoreVer;
-							// Handle ChangelogUrl - filter out string "null" values which the API may return
-							if (PluginData->TryGetStringField(TEXT("ChangelogUrl"), ChangelogUrlStr) && ChangelogUrlStr != TEXT("null"))
-							{
-								Entry.ChangelogUrl = ChangelogUrlStr;
-							}
-							Entry.DownloadToken = PluginData->GetStringField(TEXT("DownloadToken"));
-							PluginCache.Add(Entry);
-							
-							GT_I_LOG("GT.Updates", TEXT("Update available for plugin '%s': latest=%s, minCore=%s"), 
-								*Elem.Key, *Entry.AvailableVersion, *Entry.MinimumCoreVersion);
-						}
-					}
-				}
+    if (bWasSuccessful && Response.IsValid())
+    {
+        if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+        {
+            GT_I_LOG("GT.Updates", TEXT("Successfully checked for Gorgeous Plugin updates."));
+            
+            FString CurrentCoreVersion = TEXT("0.0.0");
+            if (TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore")); CorePlugin.IsValid())
+            {
+                CurrentCoreVersion = CorePlugin->GetDescriptor().VersionName;
+            }
+            
+            TSharedPtr<FJsonObject> JsonObject;
+            TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+            
+            if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+            {
+                TArray<FGorgeousPluginUpdateCacheEntry> PluginCache;
+                for (auto& Elem : JsonObject->Values)
+                {
+                    TSharedPtr<FJsonObject> PluginData = Elem.Value->AsObject();
+                    if (PluginData.IsValid())
+                    {
+                        bool bAvail = false;
+                        if (PluginData->TryGetBoolField(TEXT("UpdateAvailable"), bAvail) && bAvail)
+                        {
+                            FString MinCoreVer;
+                            if (PluginData->TryGetStringField(TEXT("MinimumCoreVersion"), MinCoreVer) && !MinCoreVer.IsEmpty())
+                            {
+                                if (MinCoreVer > CurrentCoreVersion)
+                                {
+                                    FString ToastMsg = FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer);
+                                    GT_W_LOG("GT.Updates", TEXT("%s"), *ToastMsg);
+                                    FNotificationInfo Info(FText::FromString(ToastMsg));
+                                    Info.ExpireDuration = 5.0f;
+                                    FSlateNotificationManager::Get().AddNotification(Info);
+                                    continue;
+                                }
+                            }
+                            
+                            bUpdatesAvailable = true;
+                            
+                            FGorgeousPluginUpdateCacheEntry Entry;
+                            Entry.PluginName = Elem.Key;
+                            
+                            FString LatestVer, ChangelogUrlStr;
+                            if (PluginData->TryGetStringField(TEXT("LatestVersion"), LatestVer))
+                            {
+                                Entry.AvailableVersion = LatestVer;
+                            }
+                            Entry.MinimumCoreVersion = MinCoreVer;
+                            if (PluginData->TryGetStringField(TEXT("ChangelogUrl"), ChangelogUrlStr) && ChangelogUrlStr != TEXT("null"))
+                            {
+                                Entry.ChangelogUrl = ChangelogUrlStr;
+                            }
+                            Entry.DownloadToken = PluginData->GetStringField(TEXT("DownloadToken"));
+                            PluginCache.Add(Entry);
+                            
+                            GT_I_LOG("GT.Updates", TEXT("Update available for plugin '%s': latest=%s, minCore=%s"), 
+                                *Elem.Key, *Entry.AvailableVersion, *Entry.MinimumCoreVersion);
+                        }
+                    }
+                }
 
-				if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
-				{
-					Helper->SetPluginUpdateCache(PluginCache);
-				}
-			}
-		}
-		else
-		{
-			GT_W_LOG("GT.Updates", TEXT("Failed to check for updates. Response code: %d"), Response->GetResponseCode());
-		}
-	}
-	else
-	{
-		GT_E_LOG("GT.Updates", TEXT("Failed to connect to Gorgeous API."));
-	}
+                if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+                {
+                    Helper->SetPluginUpdateCache(PluginCache);
+                }
+            }
+        }
+        else
+        {
+            GT_W_LOG("GT.Updates", TEXT("Failed to check for updates. Response code: %d"), Response->GetResponseCode());
+        }
+    }
+    else
+    {
+        GT_E_LOG("GT.Updates", TEXT("Failed to connect to Gorgeous API."));
+    }
 
-	OnUpdateCheckCompleted.Broadcast(bUpdatesAvailable);
-}
-
-void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken)
-{
-	if (DownloadToken.IsEmpty())
-	{
-		GT_E_LOG("GT.Updates", TEXT("Download token is empty for plugin %s"), *PluginName);
-		return;
-	}
-
-	FString UpdateLabel = FString::Printf(TEXT("Downloading %s update..."), *PluginName);
-	FNotificationInfo ProgressInfo(FText::FromString(UpdateLabel));
-	ProgressInfo.ExpireDuration = 0.f;
-	TSharedPtr<SNotificationItem> DownloadNotification = FSlateNotificationManager::Get().AddNotification(ProgressInfo);
-	if (DownloadNotification.IsValid())
-	{
-		ActiveDownloadNotification = DownloadNotification;
-	}
-
-	FString Endpoint = bIsDevMode 
-		? FString::Printf(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/downloads/%s"), *DownloadToken)
-		: FString::Printf(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/%s"), *DownloadToken);
-
-	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnDownloadPluginUpdateResponse, PluginName);
-
-	int64 TotalBytes = 0;
-	{
-		FString ContentLengthHeader = Request->GetHeader(TEXT("Content-Length"));
-		if (!ContentLengthHeader.IsEmpty())
-		{
-			TotalBytes = FCString::Atoi64(*ContentLengthHeader);
-		}
-	}
-
-	Request->OnRequestProgress64().BindLambda([this, PluginName, TotalBytes](FHttpRequestPtr Request, int64 Sent, int64 Received)
-	{
-		if (ActiveDownloadNotification.IsValid())
-		{
-			TSharedPtr<SNotificationItem> Notification = ActiveDownloadNotification.Pin();
-			if (Notification.IsValid())
-			{
-				FString StatusText = TotalBytes > 0
-					? FString::Printf(TEXT("Downloading %s: %lld / %lld bytes (%.0f%%)"), *PluginName, Received, TotalBytes, TotalBytes > 0 ? (float)Received / (float)TotalBytes * 100.f : 0.f)
-					: FString::Printf(TEXT("Downloading %s: %lld bytes"), *PluginName, Received);
-				Notification->SetText(FText::FromString(StatusText));
-			}
-		}
-	});
-	Request->SetURL(Endpoint);
-	Request->SetVerb(TEXT("GET"));
-	Request->SetHeader(TEXT("Accept"), TEXT("application/zip"));
-	Request->ProcessRequest();
-}
-
-void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName)
-{
-	if (ActiveDownloadNotification.IsValid())
-	{
-		TSharedPtr<SNotificationItem> Notification = ActiveDownloadNotification.Pin();
-		if (Notification.IsValid())
-		{
-			bool bOk = bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode());
-			Notification->SetCompletionState(bOk ? SNotificationItem::CS_Success : SNotificationItem::CS_Fail);
-			Notification->ExpireAndFadeout();
-		}
-		ActiveDownloadNotification.Reset();
-	}
-
-	if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode()))
-	{
-		GT_E_LOG("GT.Updates", TEXT("Failed to download update for plugin %s. Response code: %d"), *PluginName, Response.IsValid() ? Response->GetResponseCode() : 0);
-		return;
-	}
-
-	// Save the zip payload to <ProjectDir>/Saved/Temp/Update_{PluginName}.zip
-	const FString ZipPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Temp") / FString::Printf(TEXT("Update_%s.zip"), *PluginName));
-	const FString Directory = FPaths::GetPath(ZipPath);
-	IFileManager::Get().MakeDirectory(*Directory, true);
-
-	const TArray<uint8>& Content = Response->GetContent();
-	if (!FFileHelper::SaveArrayToFile(Content, *ZipPath))
-	{
-		GT_E_LOG("GT.Updates", TEXT("Failed to save update zip to %s"), *ZipPath);
-		return;
-	}
-
-	GT_I_LOG("GT.Updates", TEXT("Saved plugin update zip to %s"), *ZipPath);
-	
-	FNotificationInfo DownloadCompleteInfo(FText::FromString(TEXT("Update downloaded successfully. Launching installer...")));
-	DownloadCompleteInfo.ExpireDuration = 3.0f;
-	FSlateNotificationManager::Get().AddNotification(DownloadCompleteInfo);
-
-	// Determine the gorgeous-installer executable path
-	const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
-	FString FullInstallerPath = InstallerPath;
-#if PLATFORM_WINDOWS
-	FullInstallerPath += TEXT(".exe");
-#endif
-
-	FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
-	uint32 EditorProcessID = FPlatformProcess::GetCurrentProcessId();
-
-	// Launch the installer detached using FPlatformProcess::CreateProc
-	uint32 InstallerProcessID = 0;
-	FString Params = FString::Printf(TEXT("--install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project"), *ZipPath, *ProjectPath, EditorProcessID);
-
-	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*FullInstallerPath, *Params, true, false, false, &InstallerProcessID, 0, nullptr, nullptr);
-	if (ProcHandle.IsValid())
-	{
-		GT_I_LOG("GT.Updates", TEXT("Launched gorgeous-installer with PID %u for plugin update"), InstallerProcessID);
-		FPlatformMisc::RequestExit(false);
-	}
-	else
-	{
-		GT_E_LOG("GT.Updates", TEXT("Failed to launch gorgeous-installer at %s"), *FullInstallerPath);
-	}
+    OnUpdateCheckCompleted.Broadcast(bUpdatesAvailable);
 }
 
 void UGorgeousUpdateManager::FetchSystemsCatalog()
@@ -616,5 +492,143 @@ void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Reque
     else
     {
         GT_E_LOG("GT.Updates", TEXT("Failed to fetch Gorgeous Systems Catalog."));
+    }
+}
+
+void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken)
+{
+    if (DownloadToken.IsEmpty())
+    {
+        GT_E_LOG("GT.Updates", TEXT("Download token is empty for plugin %s"), *PluginName);
+        return;
+    }
+
+    FString WindowTitle = FString::Printf(TEXT("Downloading %s Update"), *PluginName);
+
+    TSharedRef<SWindow> ProgressWindow = SNew(SWindow)
+        .Title(FText::FromString(WindowTitle))
+        .SizingRule(ESizingRule::FixedSize)
+        .ClientSize(FVector2D(420.f, 80.f))
+        .SupportsMinimize(false)
+        .SupportsMaximize(false)
+        [
+            SNew(SBorder)
+            .Padding(20.f)
+            [
+                SNew(SVerticalBox)
+                + SVerticalBox::Slot()
+                [
+                    SAssignNew(ActiveProgressStatusText, STextBlock)
+                    .Text(FText::FromString(TEXT("Initializing...")))
+                ]
+                + SVerticalBox::Slot()
+                [
+                    SAssignNew(ActiveProgressBar, SProgressBar)
+                    .Percent(0.f)
+                ]
+            ]
+        ];
+
+    ActiveProgressWindow = ProgressWindow;
+    FSlateApplication::Get().AddWindow(ProgressWindow);
+
+    FString Endpoint = bIsDevMode
+        ? FString::Printf(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/downloads/%s"), *DownloadToken)
+        : FString::Printf(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/%s"), *DownloadToken);
+
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+    Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnDownloadPluginUpdateResponse, PluginName);
+    Request->OnRequestProgress64().BindLambda([this, PluginName](FHttpRequestPtr Request, int64 Sent, int64 Received)
+    {
+        AsyncTask(ENamedThreads::GameThread, [this, PluginName, Received]()
+        {
+            if (ActiveProgressBar.IsValid() && ActiveProgressStatusText.IsValid())
+            {
+                ActiveProgressStatusText->SetText(FText::FromString(
+                    FString::Printf(TEXT("Downloading %s: %lld bytes received..."), *PluginName, Received)
+                ));
+            }
+        });
+    });
+    Request->SetURL(Endpoint);
+    Request->SetVerb(TEXT("GET"));
+    Request->SetHeader(TEXT("Accept"), TEXT("application/zip"));
+    Request->ProcessRequest();
+}
+
+void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName)
+{
+    if (ActiveProgressBar.IsValid())
+    {
+        ActiveProgressBar->SetPercent(1.0f);
+    }
+    if (ActiveProgressStatusText.IsValid())
+    {
+        bool bOk = bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode());
+        ActiveProgressStatusText->SetText(FText::FromString(
+            bOk ? TEXT("Download complete. Preparing installer...") : TEXT("Download failed.")
+        ));
+    }
+
+    if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    {
+        GT_E_LOG("GT.Updates", TEXT("Failed to download update for plugin %s. Response code: %d"), *PluginName, Response.IsValid() ? Response->GetResponseCode() : 0);
+        if (ActiveProgressWindow.IsValid())
+        {
+            ActiveProgressWindow->RequestDestroyWindow();
+            ActiveProgressWindow.Reset();
+        }
+        return;
+    }
+
+    const FString ZipPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Temp") / FString::Printf(TEXT("Update_%s.zip"), *PluginName));
+    const FString Directory = FPaths::GetPath(ZipPath);
+    IFileManager::Get().MakeDirectory(*Directory, true);
+
+    const TArray<uint8>& Content = Response->GetContent();
+    if (!FFileHelper::SaveArrayToFile(Content, *ZipPath))
+    {
+        GT_E_LOG("GT.Updates", TEXT("Failed to save update zip to %s"), *ZipPath);
+        if (ActiveProgressWindow.IsValid())
+        {
+            ActiveProgressWindow->RequestDestroyWindow();
+            ActiveProgressWindow.Reset();
+        }
+        return;
+    }
+
+    GT_I_LOG("GT.Updates", TEXT("Saved plugin update zip to %s"), *ZipPath);
+
+    const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
+    FString FullInstallerPath = InstallerPath;
+#if PLATFORM_WINDOWS
+    FullInstallerPath += TEXT(".exe");
+#endif
+
+    FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
+    uint32 EditorProcessID = FPlatformProcess::GetCurrentProcessId();
+
+    uint32 InstallerProcessID = 0;
+    FString Params = FString::Printf(TEXT("--install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project"), *ZipPath, *ProjectPath, EditorProcessID);
+
+    FProcHandle ProcHandle = FPlatformProcess::CreateProc(*FullInstallerPath, *Params, true, false, false, &InstallerProcessID, 0, nullptr, nullptr);
+    if (ProcHandle.IsValid())
+    {
+        GT_I_LOG("GT.Updates", TEXT("Launched gorgeous-installer with PID %u for plugin update"), InstallerProcessID);
+        if (ActiveProgressWindow.IsValid())
+        {
+            ActiveProgressWindow->RequestDestroyWindow();
+            ActiveProgressWindow.Reset();
+        }
+        FPlatformMisc::RequestExit(false);
+    }
+    else
+    {
+        GT_E_LOG("GT.Updates", TEXT("Failed to launch gorgeous-installer at %s"), *FullInstallerPath);
+        if (ActiveProgressWindow.IsValid())
+        {
+            ActiveProgressWindow->RequestDestroyWindow();
+            ActiveProgressWindow.Reset();
+        }
     }
 }
