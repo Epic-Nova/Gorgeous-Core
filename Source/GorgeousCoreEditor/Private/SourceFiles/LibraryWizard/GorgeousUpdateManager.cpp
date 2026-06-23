@@ -527,6 +527,7 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
                 [
                     SAssignNew(ActiveProgressBar, SProgressBar)
                     .Percent(0.f)
+                    .Indeterminate(true)
                 ]
             ]
         ];
@@ -548,19 +549,10 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
         {
             if (ActiveProgressBar.IsValid() && ActiveProgressStatusText.IsValid())
             {
-                if (TotalBytes > 0)
-                {
-                    ActiveProgressBar->SetPercent(FMath::Clamp((float)Received / (float)TotalBytes, 0.f, 1.f));
-                    ActiveProgressStatusText->SetText(FText::FromString(
-                        FString::Printf(TEXT("Downloading %s: %.1f / %.1f MB"), *PluginName, Received / (1024.0 * 1024.0), TotalBytes / (1024.0 * 1024.0))
-                    ));
-                }
-                else
-                {
-                    ActiveProgressStatusText->SetText(FText::FromString(
-                        FString::Printf(TEXT("Downloading %s: %.1f MB"), *PluginName, Received / (1024.0 * 1024.0))
-                    ));
-                }
+                FString StatusText = TotalBytes > 0
+                    ? FString::Printf(TEXT("Downloading %s: %.1f / %.1f MB"), *PluginName, Received / (1024.0 * 1024.0), TotalBytes / (1024.0 * 1024.0))
+                    : FString::Printf(TEXT("Downloading %s..."), *PluginName);
+                ActiveProgressStatusText->SetText(FText::FromString(StatusText));
             }
         });
     });
