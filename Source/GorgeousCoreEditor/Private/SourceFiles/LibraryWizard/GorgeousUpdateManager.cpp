@@ -511,6 +511,8 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
         .ClientSize(FVector2D(420.f, 80.f))
         .SupportsMinimize(false)
         .SupportsMaximize(false)
+        .IsTopmostWindow(true)
+        .AutoCenter(EAutoCenter::PreferredWorkArea)
         [
             SNew(SBorder)
             .Padding(20.f)
@@ -531,6 +533,7 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
 
     ActiveProgressWindow = ProgressWindow;
     FSlateApplication::Get().AddWindow(ProgressWindow);
+    ProgressWindow->SetWindowMode(EWindowMode::Windowed);
 
     FString Endpoint = bIsDevMode
         ? FString::Printf(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/downloads/%s"), *DownloadToken)
@@ -540,13 +543,24 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnDownloadPluginUpdateResponse, PluginName);
     Request->OnRequestProgress64().BindLambda([this, PluginName](FHttpRequestPtr Request, int64 Sent, int64 Received)
     {
-        AsyncTask(ENamedThreads::GameThread, [this, PluginName, Received]()
+        const int64 TotalBytes = Request->GetContentLength();
+        AsyncTask(ENamedThreads::GameThread, [this, PluginName, Received, TotalBytes]()
         {
             if (ActiveProgressBar.IsValid() && ActiveProgressStatusText.IsValid())
             {
-                ActiveProgressStatusText->SetText(FText::FromString(
-                    FString::Printf(TEXT("Downloading %s: %lld bytes received..."), *PluginName, Received)
-                ));
+                if (TotalBytes > 0)
+                {
+                    ActiveProgressBar->SetPercent(FMath::Clamp((float)Received / (float)TotalBytes, 0.f, 1.f));
+                    ActiveProgressStatusText->SetText(FText::FromString(
+                        FString::Printf(TEXT("Downloading %s: %.1f / %.1f MB"), *PluginName, Received / (1024.0 * 1024.0), TotalBytes / (1024.0 * 1024.0))
+                    ));
+                }
+                else
+                {
+                    ActiveProgressStatusText->SetText(FText::FromString(
+                        FString::Printf(TEXT("Downloading %s: %.1f MB"), *PluginName, Received / (1024.0 * 1024.0))
+                    ));
+                }
             }
         });
     });
@@ -598,6 +612,11 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
     }
 
     GT_I_LOG("GT.Updates", TEXT("Saved plugin update zip to %s"), *ZipPath);
+
+    if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+    {
+        Helper->InvalidatePersistedChecksum();
+    }
 
     const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
     FString FullInstallerPath = InstallerPath;
