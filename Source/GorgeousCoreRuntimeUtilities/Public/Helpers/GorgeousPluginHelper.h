@@ -315,6 +315,13 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	void SetForceDevMode(bool bForce);
 
 	/**
+	 * Invalidates the persisted binary checksum for GorgeousCore.
+	 * Clears VerifiedBinaryChecksums.GorgeousCore and PluginUpdateCache
+	 * so the startup hook treats binaries as dirty on next boot.
+	 */
+	void InvalidatePersistedChecksum();
+
+	/**
 	 * Gets the file path for storing persistent Gorgeous metadata.
 	 */
 	static FString GetGorgeousPersistentDataFilePath();

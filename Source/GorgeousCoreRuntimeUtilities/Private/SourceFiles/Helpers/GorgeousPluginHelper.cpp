@@ -1309,6 +1309,40 @@ void UGorgeousPluginHelper::GenerateAndSaveBinaryChecksum()
 	GT_I_LOG("GT.Core.PluginHelper", TEXT("Saved verified binary checksum to persistent data to bypass installer on next boot."));
 }
 
+void UGorgeousPluginHelper::InvalidatePersistedChecksum()
+{
+	LoadPersistentData();
+
+	if (!PersistentDataObject.IsValid())
+	{
+		PersistentDataObject = MakeShared<FJsonObject>();
+	}
+
+	const TSharedPtr<FJsonObject>* ChecksumsObjPtr = nullptr;
+	TSharedPtr<FJsonObject> ChecksumsObj;
+	
+	if (PersistentDataObject->TryGetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObjPtr) && ChecksumsObjPtr && ChecksumsObjPtr->IsValid())
+	{
+		ChecksumsObj = *ChecksumsObjPtr;
+	}
+	else
+	{
+		ChecksumsObj = MakeShared<FJsonObject>();
+		PersistentDataObject->SetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObj);
+	}
+
+	ChecksumsObj->SetStringField(TEXT("GorgeousCore"), TEXT(""));
+
+	const TArray<TSharedPtr<FJsonValue>>* CacheArrayPtr = nullptr;
+	if (PersistentDataObject->TryGetArrayField(TEXT("PluginUpdateCache"), CacheArrayPtr) && CacheArrayPtr)
+	{
+		PersistentDataObject->SetArrayField(TEXT("PluginUpdateCache"), TArray<TSharedPtr<FJsonValue>>());
+	}
+
+	SavePersistentData();
+	GT_I_LOG("GT.Core.PluginHelper", TEXT("Invalidated persisted binary checksum and plugin update cache."));
+}
+
 void UGorgeousPluginHelper::SavePersistentData()
 {
 	if (!PersistentDataObject.IsValid())
