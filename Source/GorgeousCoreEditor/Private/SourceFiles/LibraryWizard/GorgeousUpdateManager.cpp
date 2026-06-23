@@ -527,7 +527,7 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
                 [
                     SAssignNew(ActiveProgressBar, SProgressBar)
                     .Percent(0.f)
-                    .Indeterminate(true)
+                    .Percent(TOptional<float>())
                 ]
             ]
         ];
