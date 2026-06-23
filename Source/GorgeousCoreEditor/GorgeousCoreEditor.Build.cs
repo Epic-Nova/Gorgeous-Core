@@ -75,7 +75,8 @@ public class GorgeousCoreEditor : ModuleRules
                 "ToolWidgets",
                 "Settings",
                 "CommonUI",
-                "EditorSubsystem"
+                "EditorSubsystem", "PlatformCryptoOpenSSL", 
+                "OpenSSL"
             });
 
         PrivateDependencyModuleNames.AddRange(new[]

@@ -1,4 +1,5 @@
 #include "LibraryWizard/GorgeousUpdateManager.h"
+
 #include "LibraryWizard/GorgeousLibrarySettings.h"
 
 #include "HttpModule.h"
@@ -8,6 +9,7 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Misc/SecureHash.h"
+#include "EncryptionContextOpenSSL.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
@@ -16,6 +18,11 @@
 #include "Helpers/GorgeousLoggingHelper.h"
 #include "Helpers/GorgeousPluginHelper.h"
 #include "Interfaces/IHttpResponse.h"
+#include "openssl/sha.h"
+
+THIRD_PARTY_INCLUDES_START
+#include "openssl/sha.h"
+THIRD_PARTY_INCLUDES_END
 
 void UGorgeousUpdateManager::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -94,6 +101,11 @@ void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, 
 void UGorgeousUpdateManager::Deinitialize()
 {
     Super::Deinitialize();
+    if (ActiveDownloadNotification.IsValid())
+    {
+        ActiveDownloadNotification.Pin()->ExpireAndFadeout();
+        ActiveDownloadNotification.Reset();
+    }
 }
 
 FString UGorgeousUpdateManager::HashDirectory(const FString& DirectoryPath)
@@ -215,6 +227,7 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
         
         FinalFilesToHash.Sort();
         
+    	
         // Now SHA256 every FinalFilesToHash content
         for (const FString& File : FinalFilesToHash)
         {
@@ -228,12 +241,15 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
                 
                 FileData.SetNumUninitialized(FileSize);
                 FileReader->Serialize(FileData.GetData(), FileSize);
-
-                FSHA256Signature Signature;
-                if (FPlatformMisc::GetSHA256Signature(FileData.GetData(), FileSize, Signature))
-                {
-                    FinalFileHashes.Add(Signature.ToString().ToLower());
-                }
+                
+            	// Use OpenSSL to compute the SHA-256 hash
+            	SHA256_CTX FileHash;
+            	SHA256_Init(&FileHash);
+            	SHA256_Update(&FileHash, FileData.GetData(), FileSize);
+                
+            	FSHA256Signature HashDigest;
+            	SHA256_Final(HashDigest.Signature, &FileHash); // Writes directly into the UE5 struct
+            	FinalFileHashes.Add(HashDigest.ToString().ToLower());
             }
         }
     }
@@ -245,13 +261,15 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
         CombinedHashes += Hash;
     }
     
-    FTCHARToUTF8 Utf8String(*CombinedHashes);
-    FSHA256Signature FinalSignature;
-    if (FPlatformMisc::GetSHA256Signature(Utf8String.Get(), Utf8String.Length(), FinalSignature))
-    {
-        return FinalSignature.ToString().ToLower();
-    }
-    return TEXT("");
+	FTCHARToUTF8 Utf8String(*CombinedHashes);
+    
+	SHA256_CTX FinalHash;
+	SHA256_Init(&FinalHash);
+	SHA256_Update(&FinalHash, (const uint8*)Utf8String.Get(), Utf8String.Length());
+    
+	FSHA256Signature FinalDigest;
+	SHA256_Final(FinalDigest.Signature, &FinalHash);
+	return FinalDigest.ToString().ToLower();
         
 }
 
@@ -305,13 +323,18 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
 		{
 			GT_I_LOG("GT.Updates", TEXT("Successfully checked for Gorgeous Plugin updates."));
 			
+			FString CurrentCoreVersion = TEXT("0.0.0");
+			if (TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore")); CorePlugin.IsValid())
+			{
+				CurrentCoreVersion = CorePlugin->GetDescriptor().VersionName;
+			}
+			
 			TSharedPtr<FJsonObject> JsonObject;
 			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
 			
 			if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 			{
 				// Core version check
-				FString CurrentCoreVersion = TEXT("0.0.0"); // Fallback
 				TArray<FGorgeousPluginUpdateCacheEntry> PluginCache;
 				// Since it's a map of PluginName -> UpdateData
 				for (auto& Elem : JsonObject->Values)
@@ -326,25 +349,39 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
 							if (PluginData->TryGetStringField(TEXT("MinimumCoreVersion"), MinCoreVer) && !MinCoreVer.IsEmpty())
 							{
 								// A simplistic version check. In a real scenario you'd compare segments.
-								if (MinCoreVer > CurrentCoreVersion)
-								{
-									// Block update
-									FNotificationInfo Info(FText::FromString(FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer)));
-									Info.ExpireDuration = 5.0f;
-									FSlateNotificationManager::Get().AddNotification(Info);
-									continue;
-								}
+							if (MinCoreVer > CurrentCoreVersion)
+							{
+								// Block update
+								FString ToastMsg = FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer);
+								GT_W_LOG("GT.Updates", TEXT("%s"), *ToastMsg);
+								FNotificationInfo Info(FText::FromString(ToastMsg));
+								Info.ExpireDuration = 5.0f;
+								FSlateNotificationManager::Get().AddNotification(Info);
+								continue;
+							}
 							}
 							
 							bUpdatesAvailable = true;
 							
 							FGorgeousPluginUpdateCacheEntry Entry;
 							Entry.PluginName = Elem.Key;
-							Entry.AvailableVersion = PluginData->GetStringField(TEXT("LatestVersion"));
+							
+							FString LatestVer, ChangelogUrlStr;
+							if (PluginData->TryGetStringField(TEXT("LatestVersion"), LatestVer))
+							{
+								Entry.AvailableVersion = LatestVer;
+							}
 							Entry.MinimumCoreVersion = MinCoreVer;
-							Entry.ChangelogUrl = PluginData->GetStringField(TEXT("ChangelogUrl"));
+							// Handle ChangelogUrl - filter out string "null" values which the API may return
+							if (PluginData->TryGetStringField(TEXT("ChangelogUrl"), ChangelogUrlStr) && ChangelogUrlStr != TEXT("null"))
+							{
+								Entry.ChangelogUrl = ChangelogUrlStr;
+							}
 							Entry.DownloadToken = PluginData->GetStringField(TEXT("DownloadToken"));
 							PluginCache.Add(Entry);
+							
+							GT_I_LOG("GT.Updates", TEXT("Update available for plugin '%s': latest=%s, minCore=%s"), 
+								*Elem.Key, *Entry.AvailableVersion, *Entry.MinimumCoreVersion);
 						}
 					}
 				}
@@ -376,20 +413,65 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
 		return;
 	}
 
+	FString UpdateLabel = FString::Printf(TEXT("Downloading %s update..."), *PluginName);
+	FNotificationInfo ProgressInfo(FText::FromString(UpdateLabel));
+	ProgressInfo.ExpireDuration = 0.f;
+	TSharedPtr<SNotificationItem> DownloadNotification = FSlateNotificationManager::Get().AddNotification(ProgressInfo);
+	if (DownloadNotification.IsValid())
+	{
+		ActiveDownloadNotification = DownloadNotification;
+	}
+
 	FString Endpoint = bIsDevMode 
 		? FString::Printf(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/downloads/%s"), *DownloadToken)
 		: FString::Printf(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/%s"), *DownloadToken);
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 	Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnDownloadPluginUpdateResponse, PluginName);
+
+	int64 TotalBytes = 0;
+	{
+		FString ContentLengthHeader = Request->GetHeader(TEXT("Content-Length"));
+		if (!ContentLengthHeader.IsEmpty())
+		{
+			TotalBytes = FCString::Atoi64(*ContentLengthHeader);
+		}
+	}
+
+	Request->OnRequestProgress64().BindLambda([this, PluginName, TotalBytes](FHttpRequestPtr Request, int64 Sent, int64 Received)
+	{
+		if (ActiveDownloadNotification.IsValid())
+		{
+			TSharedPtr<SNotificationItem> Notification = ActiveDownloadNotification.Pin();
+			if (Notification.IsValid())
+			{
+				FString StatusText = TotalBytes > 0
+					? FString::Printf(TEXT("Downloading %s: %lld / %lld bytes (%.0f%%)"), *PluginName, Received, TotalBytes, TotalBytes > 0 ? (float)Received / (float)TotalBytes * 100.f : 0.f)
+					: FString::Printf(TEXT("Downloading %s: %lld bytes"), *PluginName, Received);
+				Notification->SetText(FText::FromString(StatusText));
+			}
+		}
+	});
 	Request->SetURL(Endpoint);
-	Request->SetVerb("GET");
+	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Accept"), TEXT("application/zip"));
 	Request->ProcessRequest();
 }
 
 void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName)
 {
+	if (ActiveDownloadNotification.IsValid())
+	{
+		TSharedPtr<SNotificationItem> Notification = ActiveDownloadNotification.Pin();
+		if (Notification.IsValid())
+		{
+			bool bOk = bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode());
+			Notification->SetCompletionState(bOk ? SNotificationItem::CS_Success : SNotificationItem::CS_Fail);
+			Notification->ExpireAndFadeout();
+		}
+		ActiveDownloadNotification.Reset();
+	}
+
 	if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 	{
 		GT_E_LOG("GT.Updates", TEXT("Failed to download update for plugin %s. Response code: %d"), *PluginName, Response.IsValid() ? Response->GetResponseCode() : 0);
@@ -409,6 +491,10 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
 	}
 
 	GT_I_LOG("GT.Updates", TEXT("Saved plugin update zip to %s"), *ZipPath);
+	
+	FNotificationInfo DownloadCompleteInfo(FText::FromString(TEXT("Update downloaded successfully. Launching installer...")));
+	DownloadCompleteInfo.ExpireDuration = 3.0f;
+	FSlateNotificationManager::Get().AddNotification(DownloadCompleteInfo);
 
 	// Determine the gorgeous-installer executable path
 	const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
@@ -422,7 +508,7 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
 
 	// Launch the installer detached using FPlatformProcess::CreateProc
 	uint32 InstallerProcessID = 0;
-	FString Params = FString::Printf(TEXT("--cli --install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project"), *ZipPath, *ProjectPath, EditorProcessID);
+	FString Params = FString::Printf(TEXT("--install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project"), *ZipPath, *ProjectPath, EditorProcessID);
 
 	FProcHandle ProcHandle = FPlatformProcess::CreateProc(*FullInstallerPath, *Params, true, false, false, &InstallerProcessID, 0, nullptr, nullptr);
 	if (ProcHandle.IsValid())

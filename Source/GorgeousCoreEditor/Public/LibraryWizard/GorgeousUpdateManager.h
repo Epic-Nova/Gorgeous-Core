@@ -7,6 +7,9 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGorgeousUpdateCheckCompleted, bool, bUpdatesAvailable);
 
+class SProgressBar;
+class SWindow;
+
 /**
  * Subsystem responsible for communicating with the Gorgeous API
  * to verify plugin version hashes and detect available updates.
@@ -57,4 +60,8 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous|Updates")
     void DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken);
+
+private:
+    TWeakPtr<class SNotificationItem> ActiveDownloadNotification;
+    TSharedPtr<class SWindow> ActiveProgressWindow;
 };
