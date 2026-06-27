@@ -11,6 +11,8 @@
 #include "HAL/PlatformSplash.h"
 #include "Logging/LogMacros.h"
 #include "Misc/SecureHash.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Internationalization/Internationalization.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousStartupHook, Log, All);
 
@@ -25,7 +27,53 @@ public:
 		// so the binary swap can happen before any Gorgeous module loads.
 		// ================================================================
 
-		// --- 0. Allow explicit bypass ---
+		// --- 0. Resolve GorgeousCore dynamically via IPluginManager ---
+		// Never hardcode the folder name, the plugin directory can be named anything.
+		TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+		if (!CorePlugin.IsValid())
+		{
+			UE_LOG(LogGorgeousStartupHook, Warning, TEXT("GorgeousCore not found via IPluginManager, skipping mismatch check."));
+			return;
+		}
+
+		// --- 0b. Handle --RegenerateProjectFiles flag (check before bypass) ---
+		if (FParse::Param(FCommandLine::Get(), TEXT("RegenerateProjectFiles")))
+		{
+			UE_LOG(LogGorgeousStartupHook, Log, TEXT("RegenerateProjectFiles flag detected. Launching installer for project regeneration..."));
+			const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(
+				CorePlugin->GetBaseDir(),
+				TEXT("Binaries"),
+				FPlatformProcess::GetBinariesSubdirectory(),
+#if PLATFORM_WINDOWS
+				TEXT("gorgeous-installer.exe")
+#else
+				TEXT("gorgeous-installer")
+#endif
+			));
+
+			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Looking for installer at: %s"), *InstallerPath);
+
+			if (!FPaths::FileExists(InstallerPath))
+			{
+				UE_LOG(LogGorgeousStartupHook, Error, TEXT("Installer not found at: %s"), *InstallerPath);
+				return;
+			}
+
+			const FString ProjectFilePath = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(
+				*FPaths::GetProjectFilePath()
+			);
+
+			const FString Params = FString::Printf(
+				TEXT("--regenerate-project --project \"%s\""),
+				*ProjectFilePath
+			);
+
+			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Launching installer with params: %s"), *Params);
+			FPlatformProcess::CreateProc(*InstallerPath, *Params, true, false, false, nullptr, 0, nullptr, nullptr);
+			return;
+		}
+
+		// --- 1. Allow explicit bypass (after installation handling) ---
 		if (FParse::Param(FCommandLine::Get(), TEXT("BypassGorgeousHook")))
 		{
 			UE_LOG(LogGorgeousStartupHook, Log, TEXT("BypassGorgeousHook flag detected. Skipping mismatch checks."));
@@ -36,13 +84,7 @@ public:
 			TEXT("Cross-checking minimum required core version against Gorgeous Plugins..."));
 
 		// --- 1. Resolve GorgeousCore dynamically via IPluginManager ---
-		// Never hardcode the folder name, the plugin directory can be named anything.
-		TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-		if (!CorePlugin.IsValid())
-		{
-			UE_LOG(LogGorgeousStartupHook, Warning, TEXT("GorgeousCore not found via IPluginManager, skipping mismatch check."));
-			return;
-		}
+		// (Already done in step 0, this is just for clarity)
 
 		const FString CurrentCoreVersion = CorePlugin->GetDescriptor().VersionName;
 		UE_LOG(LogGorgeousStartupHook, Log, TEXT("GorgeousCore installed version: %s"), *CurrentCoreVersion);
@@ -239,9 +281,16 @@ public:
 			
 			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Installer exited with code %d."), ReturnCode);
 			
-			if (ReturnCode != 0)
+			if (ReturnCode != 0 && !IsRunningCommandlet())
 			{
-				UE_LOG(LogGorgeousStartupHook, Fatal, TEXT("Gorgeous Installer failed with return code %d. Aborting engine startup to prevent running with mismatched binaries."), ReturnCode);
+				FText ErrorTitle = NSLOCTEXT("GorgeousStartupHook", "InstallerFailedTitle", "Gorgeous Installer Failed");
+				FText ErrorMessage = FText::Format(
+					NSLOCTEXT("GorgeousStartupHook", "InstallerFailedMessage", "Gorgeous Installer failed with return code {0}.\nAborting engine startup to prevent running with mismatched binaries."),
+					FText::AsNumber(ReturnCode)
+				);
+				FMessageDialog::Open(EAppMsgType::Ok, ErrorTitle, ErrorMessage);
+				FPlatformMisc::RequestExit(true);
+				exit(ReturnCode);
 			}
 			else
 			{

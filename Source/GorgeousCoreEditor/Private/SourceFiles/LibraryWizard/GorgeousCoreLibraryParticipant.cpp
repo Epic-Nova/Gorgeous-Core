@@ -117,7 +117,7 @@ void FGorgeousCoreLibraryParticipant::OnBuildContextMenu(class FMenuBuilder& Men
 								FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
 								uint32 PID = FPlatformProcess::GetCurrentProcessId();
 								// Pass the zip URL to the installer!
-								FString Args = FString::Printf(TEXT("-cli -project \"%s\" --install-zip \"%s\" --wait-for-pid %d"), *ProjectPath, *System->DownloadUrl, PID);
+								FString Args = FString::Printf(TEXT("-cli -project \"%s\" --install-zip \"%s\" --wait-for-pid %d --reopen-project"), *ProjectPath, *System->DownloadUrl, PID);
 
 								FPlatformProcess::CreateProc(*InstallerPath, *Args, true, false, false, nullptr, 0, nullptr, nullptr);
 								FGenericPlatformMisc::RequestExit(false);
