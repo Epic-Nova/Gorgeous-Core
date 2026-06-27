@@ -142,17 +142,17 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                 }
 
                 var ProcInfo = new System.Diagnostics.ProcessStartInfo();
-                ProcInfo.WorkingDirectory = InstallerDir;
-                if (Target.Platform == UnrealTargetPlatform.Win64)
-                {
-                    ProcInfo.FileName = "powershell.exe";
-                    ProcInfo.Arguments = "-ExecutionPolicy Bypass -File build.ps1";
-                }
-                else if (Target.Platform == UnrealTargetPlatform.Linux)
-                {
-                    ProcInfo.FileName = "bash";
-                    ProcInfo.Arguments = "build.sh";
-                }
+				ProcInfo.WorkingDirectory = InstallerDir;
+				if (Target.Platform == UnrealTargetPlatform.Win64)
+				{
+					ProcInfo.FileName = "powershell.exe";
+					ProcInfo.Arguments = "-ExecutionPolicy Bypass -File build.ps1 -SkipUPX";
+				}
+				else if (Target.Platform == UnrealTargetPlatform.Linux)
+				{
+					ProcInfo.FileName = "bash";
+					ProcInfo.Arguments = "build.sh --skip-upx";
+				}
                 else
                 {
                     ProcInfo = null;
