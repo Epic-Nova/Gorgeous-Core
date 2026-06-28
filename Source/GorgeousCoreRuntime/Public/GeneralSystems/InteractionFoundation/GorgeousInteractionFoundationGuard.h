@@ -56,7 +56,7 @@
 	#define GORGEOUS_CLASS_INTERACTION_PROMPT_WIDGET() \
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionPromtWidget_AC.BP_InteractionPromtWidget_AC_C"))
 #else
-	class GORGEOUSCORERUNTIME_API IGorgeousEmptyInteractionInterface
+	class IGorgeousEmptyInteractionInterface
 	{
 	public:
 		virtual ~IGorgeousEmptyInteractionInterface() = default;
