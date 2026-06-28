@@ -146,12 +146,12 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
 				if (Target.Platform == UnrealTargetPlatform.Win64)
 				{
 					ProcInfo.FileName = "powershell.exe";
-					ProcInfo.Arguments = "-ExecutionPolicy Bypass -File build.ps1 -SkipUPX";
+					ProcInfo.Arguments = $"-ExecutionPolicy Bypass -File \"{Path.Combine(InstallerDir, "build.ps1")}\" -SkipUPX";
 				}
 				else if (Target.Platform == UnrealTargetPlatform.Linux)
 				{
 					ProcInfo.FileName = "bash";
-					ProcInfo.Arguments = "build.sh --skip-upx";
+					ProcInfo.Arguments = $"\"{Path.Combine(InstallerDir, "build.sh")}\" --skip-upx";
 				}
                 else
                 {
@@ -182,18 +182,42 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     var Proc = System.Diagnostics.Process.Start(ProcInfo);
                     Proc.WaitForExit();
 
+                    if (Proc.ExitCode != 0)
+                    {
+                        System.Console.WriteLine($"[Gorgeous] Installer build process exited with non-zero code: {Proc.ExitCode}");
+                    }
+
                     if (File.Exists(ExeSrc))
                     {
-                        File.Copy(ExeSrc, ExeDst, true);
+                        try
+                        {
+                            File.Copy(ExeSrc, ExeDst, true);
+                        }
+                        catch (System.Exception CopyEx)
+                        {
+                            System.Console.WriteLine($"[Gorgeous] Failed to copy installer binary from {ExeSrc} to {ExeDst}: {CopyEx.Message}");
+                        }
+
                         if (Target.Platform == UnrealTargetPlatform.Linux)
                         {
                             var DesktopSrc = Path.Combine(InstallerDir, "build", "gorgeous-installer.desktop");
                             var DesktopDst = Path.Combine(BinariesDir, "gorgeous-installer.desktop");
                             if (File.Exists(DesktopSrc))
                             {
-                                File.Copy(DesktopSrc, DesktopDst, true);
+                                try
+                                {
+                                    File.Copy(DesktopSrc, DesktopDst, true);
+                                }
+                                catch (System.Exception CopyEx)
+                                {
+                                    System.Console.WriteLine($"[Gorgeous] Failed to copy desktop entry: {CopyEx.Message}");
+                                }
                             }
                         }
+                    }
+                    else
+                    {
+                        System.Console.WriteLine($"[Gorgeous] Installer source binary not found at expected path: {ExeSrc}");
                     }
                 }
             }
