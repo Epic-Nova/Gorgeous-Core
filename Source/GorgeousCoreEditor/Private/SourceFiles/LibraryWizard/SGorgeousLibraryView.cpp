@@ -704,7 +704,7 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetTile(
 				.Padding(0.0f, 4.0f, 0.0f, 0.0f)
 				[
 					SNew(STextBlock)
-					.Text(InAsset.IsValid() ? FText::FromName(InAsset->AssetName) : FText::GetEmpty())
+					.Text(InAsset.IsValid() && SelectedParticipant.IsValid() ? SelectedParticipant->GetAssetDisplayName(*InAsset) : FText::GetEmpty())
 					.Font(FCoreStyle::GetDefaultFontStyle("Regular", 9))
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(true)
@@ -749,7 +749,7 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateAssetRow(
 				.AutoHeight()
 				[
 					SNew(STextBlock)
-					.Text(InAsset.IsValid() ? FText::FromName(InAsset->AssetName) : FText::GetEmpty())
+					.Text(InAsset.IsValid() && SelectedParticipant.IsValid() ? SelectedParticipant->GetAssetDisplayName(*InAsset) : FText::GetEmpty())
 					.Font(FCoreStyle::GetDefaultFontStyle("Bold", 10))
 				]
 				+ SVerticalBox::Slot()

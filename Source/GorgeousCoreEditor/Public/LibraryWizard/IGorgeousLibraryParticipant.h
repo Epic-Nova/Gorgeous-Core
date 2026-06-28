@@ -112,6 +112,12 @@ public:
 	}
 
 	/**
+	 * Returns the display name for the given asset (used in Grid and List views).
+	 * Default implementation falls back to the asset's object name.
+	 */
+	virtual FText GetAssetDisplayName(const FAssetData& Asset) { return FText::FromName(Asset.AssetName); }
+
+	/**
 	 * Returns a human-readable description for the given asset (used in List view).
 	 */
 	virtual FText GetAssetDescription(const FAssetData& Asset) { return FText::GetEmpty(); }
