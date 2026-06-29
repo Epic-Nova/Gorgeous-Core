@@ -47,6 +47,7 @@ enum class EGorgeousStatCategory : uint8
 
 /**
  * Access rules for a Gorgeous Stat, determining who can read or modify it.
+ * @TODO Replace with permission syst
  */
 USTRUCT(BlueprintType)
 struct FGorgeousStatAccessRules_S

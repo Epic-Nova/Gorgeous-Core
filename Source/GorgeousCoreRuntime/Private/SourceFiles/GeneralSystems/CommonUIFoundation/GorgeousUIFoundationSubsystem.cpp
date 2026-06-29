@@ -330,8 +330,14 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 		{
 			if (Pair.Value.Action == Action)
 			{
+				FGameplayTag DispatchedTag = Pair.Key;
+				if (const FGameplayTag* RedirectedTag = ActiveInputRedirects.Find(DispatchedTag))
+				{
+					DispatchedTag = *RedirectedTag;
+				}
+
 				// Pass the custom bConsumeInput rule down to the HUD dispatcher
-				bool bHandled = HUD->DispatchGorgeousInput(Pair.Key, Instance, Pair.Value.bConsumeInput);
+				bool bHandled = HUD->DispatchGorgeousInput(DispatchedTag, Instance, Pair.Value.bConsumeInput);
 				
 				// If a consumer handled the action AND it's configured to consume, we kill further routing
 				if (bHandled && Pair.Value.bConsumeInput)
@@ -1049,6 +1055,12 @@ UGorgeousUIProcessor* UGorgeousUIFoundationSubsystem::GetSharedProcessorForWidge
 		}
 		CurrentClass = CurrentClass->GetSuperClass();
 	}
+	
+	// 1.5: Check and early return if the processor class is abstract
+	if (TargetProcessorClass.GetDefaultObject()->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject) || TargetProcessorClass->HasAnyClassFlags(CLASS_Abstract))
+	{
+		return nullptr;
+	}
 
 	// 2. Find or create the shared instance
 	TObjectPtr<UGorgeousUIProcessor>& SharedInstance = SharedProcessors.FindOrAdd(TargetProcessorClass);
@@ -1058,4 +1070,18 @@ UGorgeousUIProcessor* UGorgeousUIFoundationSubsystem::GetSharedProcessorForWidge
 	}
 
 	return SharedInstance;
+}
+
+void UGorgeousUIFoundationSubsystem::SetInputRedirect(FGameplayTag HardwareTag, FGameplayTag SimulatedTag)
+{
+	if (!HardwareTag.IsValid() || !SimulatedTag.IsValid()) return;
+	
+	ActiveInputRedirects.Add(HardwareTag, SimulatedTag);
+}
+
+void UGorgeousUIFoundationSubsystem::ClearInputRedirect(FGameplayTag HardwareTag)
+{
+	if (!HardwareTag.IsValid()) return;
+	
+	ActiveInputRedirects.Remove(HardwareTag);
 }

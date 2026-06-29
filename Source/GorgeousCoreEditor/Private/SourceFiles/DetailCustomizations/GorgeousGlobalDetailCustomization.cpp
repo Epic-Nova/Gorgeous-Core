@@ -1,76 +1,60 @@
-// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
-
 #include "DetailCustomizations/GorgeousGlobalDetailCustomization.h"
 #include "DetailExtensions/GorgeousDetailExtension.h"
 #include "DetailLayoutBuilder.h"
 #include "DetailCategoryBuilder.h"
 #include "IDetailPropertyRow.h"
 #include "PropertyHandle.h"
-#include "UObject/StrongObjectPtr.h"
 #include "UObject/UObjectIterator.h"
 
 TMap<FName, TStrongObjectPtr<UGorgeousDetailExtension>> FGorgeousGlobalDetailCustomization::ExtensionRegistry;
 
-TSharedRef<IDetailCustomization> FGorgeousGlobalDetailCustomization::MakeInstance()
-{
-	return MakeShareable(new FGorgeousGlobalDetailCustomization);
-}
+TSharedRef<IDetailCustomization> FGorgeousGlobalDetailCustomization::MakeInstance() { return MakeShareable(new FGorgeousGlobalDetailCustomization); }
 
 void FGorgeousGlobalDetailCustomization::RegisterExtension(UGorgeousDetailExtension* Extension)
 {
-	if (!Extension) return;
-	ExtensionRegistry.Add(Extension->GetExtensionName(), TStrongObjectPtr<UGorgeousDetailExtension>(Extension));
+    if (!Extension) return;
+    ExtensionRegistry.Add(Extension->GetExtensionName(), TStrongObjectPtr<UGorgeousDetailExtension>(Extension));
 }
 
-void FGorgeousGlobalDetailCustomization::UnregisterExtension(FName ExtensionName)
-{
-	ExtensionRegistry.Remove(ExtensionName);
-}
-
-void FGorgeousGlobalDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder)
-{
-	ProcessProperties(DetailBuilder);
-}
+void FGorgeousGlobalDetailCustomization::UnregisterExtension(FName ExtensionName) { ExtensionRegistry.Remove(ExtensionName); }
+void FGorgeousGlobalDetailCustomization::CustomizeDetails(IDetailLayoutBuilder& DetailBuilder) { ProcessProperties(DetailBuilder); }
 
 void FGorgeousGlobalDetailCustomization::ProcessProperties(IDetailLayoutBuilder& DetailBuilder)
 {
-	TArray<TWeakObjectPtr<UObject>> Objects;
-	DetailBuilder.GetObjectsBeingCustomized(Objects);
+    TArray<TWeakObjectPtr<UObject>> Objects;
+    DetailBuilder.GetObjectsBeingCustomized(Objects);
 
-	if (Objects.Num() == 0) return;
+    if (Objects.Num() == 0 || !Objects[0].IsValid()) return;
 
-	UClass* ObjectClass = Objects[0]->GetClass();
-	if (!ObjectClass) return;
+    // This gets the ACTUAL instanced class (the Adapter), not the base class!
+    UClass* ObjectClass = Objects[0]->GetClass();
+    if (!ObjectClass) return;
 
-	static const FName MetaDataTag = TEXT("GorgeousDetailExtension");
+    static const FName MetaDataTag = TEXT("GorgeousDetailExtension");
 
-	// Iterate through all properties of the class
-	for (TFieldIterator<FProperty> It(ObjectClass); It; ++It)
-	{
-		FProperty* Property = *It;
-		if (Property->HasMetaData(MetaDataTag))
-		{
-			FString ExtensionNameStr = Property->GetMetaData(MetaDataTag);
-			FName ExtensionName = *ExtensionNameStr;
+    for (TFieldIterator<FProperty> It(ObjectClass); It; ++It)
+    {
+       FProperty* Property = *It;
+       if (Property->HasMetaData(MetaDataTag))
+       {
+          FName ExtensionName = *Property->GetMetaData(MetaDataTag);
 
-			if (TStrongObjectPtr<UGorgeousDetailExtension>* ExtensionPtr = ExtensionRegistry.Find(ExtensionName))
-			{
-				UGorgeousDetailExtension* Extension = ExtensionPtr->Get();
-				TSharedRef<IPropertyHandle> PropertyHandle = DetailBuilder.GetProperty(Property->GetFName());
-				
-				if (PropertyHandle->IsValidHandle())
-				{
-					// Get the category this property belongs to
-					FName CategoryName = Property->GetMetaData(TEXT("Category")).IsEmpty() ? TEXT("Default") : *Property->GetMetaData(TEXT("Category"));
-					IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(CategoryName);
+          if (TStrongObjectPtr<UGorgeousDetailExtension>* ExtensionPtr = ExtensionRegistry.Find(ExtensionName))
+          {
+             // THE CRITICAL FIX: By passing ObjectClass as the second parameter, 
+             // Unreal can successfully find the property inside the polymorphic array!
+             TSharedRef<IPropertyHandle> PropertyHandle = DetailBuilder.GetProperty(Property->GetFName(), ObjectClass);
+             
+             if (PropertyHandle->IsValidHandle())
+             {
+                FName CategoryName = Property->GetMetaData(TEXT("Category")).IsEmpty() ? TEXT("Default") : *Property->GetMetaData(TEXT("Category"));
+                IDetailCategoryBuilder& Category = DetailBuilder.EditCategory(CategoryName);
 
-					// Hide the default row and replace it with a meta-driven custom row so extensions can
-					// reliably inject buttons/widgets even for container properties like arrays and maps.
-					DetailBuilder.HideProperty(PropertyHandle);
-					FDetailWidgetRow& CustomRow = Category.AddCustomRow(Property->GetDisplayNameText());
-					Extension->CustomizeHeader(PropertyHandle, CustomRow);
-				}
-			}
-		}
-	}
+                DetailBuilder.HideProperty(PropertyHandle);
+                FDetailWidgetRow& CustomRow = Category.AddCustomRow(Property->GetDisplayNameText());
+                ExtensionPtr->Get()->CustomizeHeader(PropertyHandle, CustomRow);
+             }
+          }
+       }
+    }
 }

@@ -7,7 +7,7 @@
 #include "InputActionValue.h"
 #include "GorgeousInputConsumer_I.generated.h"
 
-UINTERFACE(MinimalAPI, BlueprintType)
+UINTERFACE(MinimalAPI, BlueprintType, DisplayName = "Gorgeous Input Consumer Interface")
 class UGorgeousInputConsumer_I : public UInterface
 {
 	GENERATED_BODY()
