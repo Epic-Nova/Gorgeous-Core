@@ -27,6 +27,7 @@
 #include "UObject/UnrealTypePrivate.h"
 
 #include "Engine/DataAsset.h"
+#include "Engine/Texture2D.h"
 
 #include "Misc/MonolithicHeaderBoilerplate.h"
 

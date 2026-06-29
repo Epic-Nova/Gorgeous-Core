@@ -9,7 +9,7 @@
 
 class UGorgeousUITheme_DA;
 
-UINTERFACE(MinimalAPI, BlueprintType)
+UINTERFACE(MinimalAPI, BlueprintType, DisplayName = "Gorgeous UI Widget Interface")
 class UGorgeousUIWidget_I : public UInterface
 {
 	GENERATED_BODY()

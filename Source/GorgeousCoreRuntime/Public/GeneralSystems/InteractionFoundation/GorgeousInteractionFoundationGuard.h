@@ -6,9 +6,10 @@
 #include "GameplayTagContainer.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+#include "Components/SceneComponent.h"
 
 #ifndef WITH_INTERACTION_FOUNDATION
-#define WITH_INTERACTION_FOUNDATION 1
+#define WITH_INTERACTION_FOUNDATION 0
 #endif
 
 #if WITH_INTERACTION_FOUNDATION
@@ -28,15 +29,16 @@
 		virtual void InteractRelease_Implementation(AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult) override; \
 		virtual void InteractCancel_Implementation(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult) override;
 
-	#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS() \
+#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS() \
 		do { \
 			UClass* WidgetCompClass = GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET(); \
 			if (WidgetCompClass) \
 			{ \
-				UActorComponent* NewComp = NewObject<UActorComponent>(this, WidgetCompClass, TEXT("InteractionFoundationPromptWidget")); \
+				USceneComponent* NewComp = NewObject<USceneComponent>(this, WidgetCompClass, TEXT("InteractionFoundationPromptWidget")); \
 				if (NewComp) \
 				{ \
 					NewComp->RegisterComponent(); \
+					NewComp->AttachToComponent(this->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform); \
 				} \
 			} \
 		} while(0)

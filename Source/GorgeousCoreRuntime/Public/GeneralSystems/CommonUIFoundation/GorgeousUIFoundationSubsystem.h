@@ -122,6 +122,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
 	void SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings);
 
+	/** Sets an active redirect for input mapping, simulating a hardware press as another action. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Input")
+	void SetInputRedirect(FGameplayTag HardwareTag, FGameplayTag SimulatedTag);
+
+	/** Clears an active redirect for input mapping. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Input")
+	void ClearInputRedirect(FGameplayTag HardwareTag);
+
 protected:
 	/** Internal handler invoked by tag forwarders to process a payload for a specific tag. */
 	void HandlePayloadForTag(FGameplayTag Tag, const FInstancedStruct& Payload);
@@ -195,6 +203,10 @@ protected:
 	/** The currently active input-to-tag mapping. */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UGorgeousInputBinding_DA>> ActiveInputBindings;
+
+	/** Active redirects for hardware inputs to simulate different tags. */
+	UPROPERTY(Transient)
+	TMap<FGameplayTag, FGameplayTag> ActiveInputRedirects;
 
 	/** Active Enhanced Input action binding handles. Used to clean up previously bound actions on the HUD player controller. */
 	TArray<uint32> BridgedBindingHandles;
