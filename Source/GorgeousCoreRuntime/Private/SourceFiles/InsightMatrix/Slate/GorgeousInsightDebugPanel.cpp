@@ -1586,10 +1586,7 @@ FReply SGorgeousInsightDebugPanel::OnRunTestClicked(TSharedPtr<FTestRow> RowData
 		RowData->bHasRun = true;
 		if (TestsListView.IsValid())
 		{
-			// Deferred refresh (matches every other list refresh in this panel). RebuildList()
-			// regenerates rows synchronously from inside a row button's click handler, which is
-			// needlessly re-entrant; RequestListRefresh() re-generates on the next tick instead.
-			TestsListView->RequestListRefresh();
+			TestsListView->RebuildList();
 		}
 	}
 
@@ -1637,10 +1634,7 @@ FReply SGorgeousInsightDebugPanel::OnRunQueuedTestsClicked()
 		}
 		if (TestsListView.IsValid())
 		{
-			// Deferred refresh (matches every other list refresh in this panel). RebuildList()
-			// regenerates rows synchronously from inside a row button's click handler, which is
-			// needlessly re-entrant; RequestListRefresh() re-generates on the next tick instead.
-			TestsListView->RequestListRefresh();
+			TestsListView->RebuildList();
 		}
 	}
 
