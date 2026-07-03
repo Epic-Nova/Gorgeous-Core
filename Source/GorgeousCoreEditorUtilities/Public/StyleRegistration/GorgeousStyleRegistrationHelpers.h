@@ -12,6 +12,7 @@
 
 #include "Fonts/CompositeFont.h"
 #include "Fonts/SlateFontInfo.h"
+#include "Styling/SlateStyle.h"
 
 namespace GorgeousStyleRegistration
 {

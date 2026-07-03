@@ -46,6 +46,11 @@ UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 	{
 		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
 	}
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
 )
 
 UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)
