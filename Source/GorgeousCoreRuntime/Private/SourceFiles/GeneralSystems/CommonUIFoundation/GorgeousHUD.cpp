@@ -253,68 +253,70 @@ void AGorgeousHUD::RefreshActionBar()
 
 bool AGorgeousHUD::DispatchGorgeousInput(FGameplayTag ActionTag, const FInputActionInstance& Instance, bool bConsumeInput)
 {
-	bool bHandled = false;
-	
-	struct FFrameHandlerTracker
-	{
-		FGameplayTag Context;
-		int32 Priority;
-		UObject* Consumer;
-	};
-	TArray<FFrameHandlerTracker> HandlersThisFrame;
+    bool bHandled = false;
+    
+    // Create a local copy to iterate over so the live array can be modified safely
+    TArray<FInputConsumerEntry> ActiveConsumersCopy = ActiveConsumers;
 
-	for (const auto& Entry : ActiveConsumers)
-	{
-		// Conditional Pass-Through: If a higher priority layer already handled this input,
-		// and the binding rules specify consumption, skip lower priority layers entirely.
-		if (bHandled && bConsumeInput)
-		{
-			break;
-		}
+    struct FFrameHandlerTracker
+    {
+       FGameplayTag Context;
+       int32 Priority;
+       UObject* Consumer;
+    };
+    TArray<FFrameHandlerTracker> HandlersThisFrame;
 
-		UObject* ConsumerObj = Entry.Consumer.GetObject();
-		if (!IsValid(ConsumerObj)) continue;
+    // Use the COPY here
+    for (const auto& Entry : ActiveConsumersCopy)
+    {
+       if (bHandled && bConsumeInput)
+       {
+          break;
+       }
 
-		// 1. Try Advanced Interface
-		bool bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInputAdvanced(ConsumerObj, ActionTag, Instance);
+       UObject* ConsumerObj = Entry.Consumer.GetObject();
+       if (!IsValid(ConsumerObj)) continue;
 
-		// 2. Fallback to Simple Interface
-		if (!bConsumerHandled)
-		{
-			ETriggerEvent TriggerEvent = Instance.GetTriggerEvent();
-			if (TriggerEvent == ETriggerEvent::Triggered)
-			{
-				bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInput(ConsumerObj, ActionTag, Instance.GetValue());
-			}
-		}
+       // 1. Try Advanced Interface
+       bool bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInputAdvanced(ConsumerObj, ActionTag, Instance);
 
-		// 3. Priority-Aware Conflict Detection
-		if (bConsumerHandled)
-		{
-			bHandled = true;
+       // 2. Fallback to Simple Interface
+       if (!bConsumerHandled)
+       {
+          ETriggerEvent TriggerEvent = Instance.GetTriggerEvent();
+          if (TriggerEvent == ETriggerEvent::Triggered)
+          {
+             bConsumerHandled = Entry.Consumer->Execute_HandleGorgeousInput(ConsumerObj, ActionTag, Instance.GetValue());
+          }
+       }
 
-			UObject* ConflictingConsumer = nullptr;
-			for (const auto& Tracked : HandlersThisFrame)
-			{
-				if (Tracked.Context == Entry.Context && Tracked.Priority == Entry.Priority)
-				{
-					ConflictingConsumer = Tracked.Consumer;
-					break;
-				}
-			}
+       // 3. Priority-Aware Conflict Detection
+       if (bConsumerHandled)
+       {
+          bHandled = true;
 
-			if (ConflictingConsumer)
-			{
-				CheckForInputConflicts(ActionTag, Entry.Context, Entry.Priority, ConflictingConsumer, ConsumerObj);
-			}
-			else
-			{
-				HandlersThisFrame.Add({ Entry.Context, Entry.Priority, ConsumerObj });
-			}
-		}
-	}
+          UObject* ConflictingConsumer = nullptr;
+          for (const auto& Tracked : HandlersThisFrame)
+          {
+             if (Tracked.Context == Entry.Context && Tracked.Priority == Entry.Priority)
+             {
+                ConflictingConsumer = Tracked.Consumer;
+                break;
+             }
+          }
 
-	return bHandled;
+          if (ConflictingConsumer)
+          {
+             CheckForInputConflicts(ActionTag, Entry.Context, Entry.Priority, ConflictingConsumer, ConsumerObj);
+          }
+          else
+          {
+             HandlersThisFrame.Add({ Entry.Context, Entry.Priority, ConsumerObj });
+          }
+       }
+    }
+
+    return bHandled;
 }
 
 void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag Context, int32 Priority, UObject* FirstConsumer, UObject* SecondConsumer) const

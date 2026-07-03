@@ -163,7 +163,7 @@ void UGorgeousGameInstance::Init()
 	{
 		RootRegistryChangedHandle = UGorgeousRootObjectVariable::OnRootRegistryChanged.AddUObject(this, &UGorgeousGameInstance::HandleRootRegistryChanged);
 	}
-
+	
 	Super::Init();
 }
 
