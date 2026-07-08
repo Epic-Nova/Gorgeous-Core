@@ -81,3 +81,7 @@ UE_DEFINE_GAMEPLAY_TAG_COMMENT(TAG_Gorgeous_UI_Layout_PushWidget, "GT.UI.Layer.S
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_Signal_Carousel_Next, "UI.Action.Signal.Carousel.Next");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_UI_Signal_Carousel_Prev, "UI.Action.Signal.Carousel.Prev");
 
+// Test Signals
+UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Test_SignalBridge_Perf, "GT.Test.SignalBridge.Perf");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Gorgeous_Test_SignalBridge_PerfResult, "GT.Test.SignalBridge.PerfResult");
+

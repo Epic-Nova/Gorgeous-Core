@@ -386,8 +386,8 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		NSLOCTEXT("GorgeousCore", "HUD", "Gorgeous HUD"),
 		UGorgeousHUDBlueprint::StaticClass(),
 		FColor::Blue,
-		ModuleStyleSet->GetBrush(TEXT("ClassIcon.HUD")),
-		ModuleStyleSet->GetBrush(TEXT("ClassThumbnail.HUD")),
+		ModuleStyleSet->GetBrush(TEXT("ClassIcon.Blueprint")),
+		ModuleStyleSet->GetBrush(TEXT("ClassThumbnail.Blueprint")),
 		CoreMenu, Menu_QualityOfLife));
 
 	// --- Common UI Foundation assets ---

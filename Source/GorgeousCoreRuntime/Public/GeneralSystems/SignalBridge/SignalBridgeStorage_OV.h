@@ -21,6 +21,9 @@ class GORGEOUSCORERUNTIME_API USignalBridgeStorage_OV : public UGorgeousObjectVa
 	GENERATED_BODY()
 
 public:
+	// Friend access for Insight Matrix unit tests
+	friend struct FGorgeousSignalBridgeTestAccess;
+
 	USignalBridgeStorage_OV();
 
 	/**
@@ -73,6 +76,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge")
 	void RemoveAllowedController(FGameplayTag Tag, AGorgeousPlayerController* Controller);
+
+	/** Gets the total number of local signals fired since boot. */
+	static int64 GetTotalLocalSignalsFired();
+
+	/** Gets the total number of local signals that had no listeners since boot. */
+	static int64 GetTotalNoListenersFound();
 
 protected:
 	//~ Begin UGorgeousObjectVariable Interface

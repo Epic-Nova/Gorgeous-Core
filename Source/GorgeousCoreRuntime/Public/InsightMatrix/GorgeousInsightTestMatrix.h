@@ -12,6 +12,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Misc/AutomationTest.h"
+#include "InsightMatrix/GorgeousInsightMatrixTypes.h"
 #include "Templates/Function.h"
 
 class FAutomationTestBase;
@@ -167,6 +169,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScenarioDescriptor
 	int32 Priority = 0;
 	bool bEnabledByDefault = true;
 	FGorgeousInsightScenarioRunner Runner;
+
+	/** UI inputs for parametrized tests */
+	TArray<FGorgeousInsightTest::FGorgeousInsightTestInput> Inputs;
 
 	FString GetDisplayName() const
 	{

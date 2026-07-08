@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -571,6 +571,68 @@ bool UGorgeousRootObjectVariable::IsVariableRegistered(UGorgeousObjectVariable* 
 	return false;
 }
 
+
+void UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded)
+{
+	if (!DyingWorld)
+	{
+		return;
+	}
+
+	// Walk all root registries and remove any OV whose world matches the dying world.
+	// This breaks the strong reference chain (Root → TObjectPtr → OV → Outer → World)
+	// BEFORE CheckForWorldGCLeaks runs, preventing the "2 leaked objects" fatal error.
+	TFunction<void(TMap<FName, TObjectPtr<UGorgeousObjectVariable>>&)> PurgeFromRegistry;
+	PurgeFromRegistry = [&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry)
+	{
+		TArray<FName> KeysToRemove;
+		for (auto& [Key, OVPtr] : Registry)
+		{
+			UGorgeousObjectVariable* Entry = OVPtr.Get();
+			if (!Entry)
+			{
+				KeysToRemove.Add(Key);
+				continue;
+			}
+
+			// Check if this entry belongs to the dying world
+			if (Entry->GetWorld() == DyingWorld)
+			{
+				Entry->SetFallbackOwner(nullptr);
+				KeysToRemove.Add(Key);
+			}
+			else
+			{
+				// Recurse into children
+				PurgeFromRegistry(Entry->VariableRegistry);
+			}
+		}
+
+		for (const FName& Key : KeysToRemove)
+		{
+			if (const TObjectPtr<UGorgeousObjectVariable>* Found = Registry.Find(Key))
+			{
+				RemoveVariableFromRegistry(Found->Get());
+			}
+		}
+	};
+
+	GorgeousRootObjectVariable_Private::ForEachRootRegistry(
+		[&](TMap<FName, TObjectPtr<UGorgeousObjectVariable>>& Registry, UGorgeousRootObjectVariable*)
+		{
+			PurgeFromRegistry(Registry);
+		});
+
+	// Also clear FallbackOwner on root OVs whose world is the dying world, so the
+	// weak-pointer based GetWorld() fallback doesn't keep anything reachable.
+	for (auto& [RootName, Root] : NamedRootInstances)
+	{
+		if (Root && Root->GetWorld() == DyingWorld)
+		{
+			Root->SetFallbackOwner(nullptr);
+		}
+	}
+}
 
 void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 {

@@ -1431,6 +1431,8 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildTestsList()
 		];
 }
 
+#include "Widgets/Input/SComboBox.h"
+
 TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildTestInputsWidget(const TSharedPtr<FTestRow>& RowData)
 {
 	if (!RowData.IsValid() || RowData->Test.Inputs.IsEmpty())
@@ -1491,6 +1493,54 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildTestInputsWidget(const TSha
 					SetTestInputValue(TestId, InputId, NewText.ToString());
 				});
 #endif
+		}
+		else if (Input.Type == FGorgeousInsightTest::FGorgeousInsightTestInput::EGorgeousInsightTestInputType::Dropdown)
+		{
+			// Ensure pointers array is populated
+			TArray<TSharedPtr<FString>>* PtrsArray = const_cast<TArray<TSharedPtr<FString>>*>(&Input.DropdownOptionPtrs);
+			if (PtrsArray->Num() != Input.DropdownOptions.Num())
+			{
+				PtrsArray->Empty();
+				for (const FString& Option : Input.DropdownOptions)
+				{
+					PtrsArray->Add(MakeShared<FString>(Option));
+				}
+			}
+
+			TSharedPtr<FString> InitiallySelected;
+			for (const TSharedPtr<FString>& Ptr : *PtrsArray)
+			{
+				if (Ptr.IsValid() && *Ptr == CurrentValue)
+				{
+					InitiallySelected = Ptr;
+					break;
+				}
+			}
+			if (!InitiallySelected.IsValid() && PtrsArray->Num() > 0)
+			{
+				InitiallySelected = (*PtrsArray)[0];
+			}
+
+			InputWidget = SNew(SComboBox<TSharedPtr<FString>>)
+				.OptionsSource(PtrsArray)
+				.InitiallySelectedItem(InitiallySelected)
+				.OnGenerateWidget_Lambda([](TSharedPtr<FString> Item)
+				{
+					return SNew(STextBlock).Text(FText::FromString(Item.IsValid() ? *Item : FString()));
+				})
+				.OnSelectionChanged_Lambda([this, TestId, InputId](TSharedPtr<FString> SelectedItem, ESelectInfo::Type SelectInfo)
+				{
+					if (SelectedItem.IsValid())
+					{
+						SetTestInputValue(TestId, InputId, *SelectedItem);
+					}
+				})
+				[
+					SNew(STextBlock).Text_Lambda([this, TestId, InputId, PtrsArray]()
+					{
+						return FText::FromString(GetTestInputValue(TestId, InputId, PtrsArray->Num() > 0 ? *(*PtrsArray)[0] : FString()));
+					})
+				];
 		}
 		else
 		{

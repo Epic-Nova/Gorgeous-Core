@@ -87,14 +87,14 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInteractionActionPayload_S
     
     // Required hold time for this promt to fire
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-    float RequiredInteractionTime;
+    float RequiredInteractionTime = 0.0f;
     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	TSubclassOf<UObject> ActionClass;
 	
     // Refresh flag to indicate bypass of the refresh system to forcefully redraw the promt widget
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-    bool bNeedsRefresh;
+    bool bNeedsRefresh = false;
     
 };
 

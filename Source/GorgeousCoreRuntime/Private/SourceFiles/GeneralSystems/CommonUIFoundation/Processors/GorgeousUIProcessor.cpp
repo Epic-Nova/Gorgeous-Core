@@ -41,7 +41,7 @@ bool UGorgeousUIProcessor::ApplyPropertyToTarget(UObject* Target, FName Property
 	if (FProperty* Prop = TargetClass->FindPropertyByName(PropertyName))
 	{
 		// Guard: only copy if the sizes match to avoid memory corruption.
-		if (Prop->ElementSize == ValueStruct->GetStructureSize())
+		if (Prop->GetElementSize() == ValueStruct->GetStructureSize())
 		{
 			Prop->CopyCompleteValue(Prop->ContainerPtrToValuePtr<void>(Target), ValueMemory);
 			return true;

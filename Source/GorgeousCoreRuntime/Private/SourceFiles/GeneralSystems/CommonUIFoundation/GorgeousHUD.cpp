@@ -16,6 +16,8 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSettings.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "InputMappingContext.h"
+#include "TimerManager.h"
+#include "Framework/Application/SlateApplication.h"
 
 AGorgeousHUD::AGorgeousHUD()
 {
@@ -79,7 +81,8 @@ void AGorgeousHUD::BeginPlay()
 		}	
 	}
 	
-	LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()->SetActiveInputBindings(FoundationSettings->DefaultInputBindings.Get());
+	LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()->PushInputBinding(FoundationSettings->DefaultInputBindings.Get());
+	ResetFocusToGame();
 }
 
 void AGorgeousHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -397,5 +400,31 @@ void AGorgeousHUD::OnLayoutCreated(ULocalPlayer* LocalPlayer, UGorgeousPrimaryGa
 			// Force a refresh now that the widget exists
 			RefreshActionBar();
 		}
+		ResetFocusToGame();
+	}
+}
+
+void AGorgeousHUD::ResetFocusToGame()
+{
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (APlayerController* PC = GetOwningPlayerController())
+			{
+				PC->ResetIgnoreInputFlags();
+				
+				FInputModeGameAndUI InputMode;
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetHideCursorDuringCapture(false);
+				PC->SetInputMode(InputMode);
+				PC->bShowMouseCursor = true;
+			}
+			
+			if (FSlateApplication::IsInitialized())
+			{
+				FSlateApplication::Get().SetAllUserFocusToGameViewport();
+			}
+		}));
 	}
 }
