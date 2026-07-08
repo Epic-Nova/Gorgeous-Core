@@ -66,13 +66,20 @@ struct FGorgeousInsightTest
 			String,
 			Number,
 			Bool,
-			Class
+			Class,
+			Dropdown
 		} Type = EGorgeousInsightTestInputType::String;
 
 		FString DefaultValue;
 		bool bRequired = false;
 		/** Optional allowed base class path for Class inputs. */
 		FString AllowedClassPath;
+		
+		/** Options for Dropdown inputs. */
+		TArray<FString> DropdownOptions;
+		
+		/** Internal array of pointers required by SComboBox. */
+		TArray<TSharedPtr<FString>> DropdownOptionPtrs;
 	};
 
 	TArray<FGorgeousInsightTestInput> Inputs;

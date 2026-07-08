@@ -33,6 +33,47 @@
 
 void UGorgeousUIFoundationSubsystem::Tick(float DeltaTime)
 {
+	// Lazy signal registration for system-wide Signal Bridge routing
+	if (!bSignalsRegistered)
+	{
+		if (ULocalPlayer* LP = GetLocalPlayer())
+		{
+			if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
+			{
+				FGorgeousSignalBridgeAccessRules_S Rules;
+
+				// Focus Routing
+				const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
+				FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
+
+				// Input Action Routing
+				const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
+				InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
+
+				// Message Routing
+				const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
+				const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
+				MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
+
+				bSignalsRegistered = true;
+				GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer via Tick lazy-init."));
+			}
+		}
+	}
+
+	// Self-healing check for input bridge setup (in case PlayerController/InputComponent was null on first call)
+	if (BridgedBindingHandles.IsEmpty() && !ActiveInputBindings.IsEmpty())
+	{
+		SetupInputBridgeOnHUD();
+	}
+
 	// Process Juicy interpolation for all registered widgets
 	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
 	{
@@ -84,37 +125,9 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 		}
 	}
 
-	// 2. Register system-wide signals
-	FGorgeousSignalBridgeAccessRules_S Rules;
-
-	if (ULocalPlayer* LP = GetLocalPlayer())
-	{
-		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
-		{
-			// Focus Routing
-			const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
-			FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
-
-			// Input Action Routing
-			const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
-			InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
-
-			// Message Routing
-			const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
-			const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
-			MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
-
-			GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer."));
-		}
-	}
+	// 2. Register system-wide signals (moved to OnPlayerControllerAdded)
 }
+
 
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
@@ -206,40 +219,122 @@ void UGorgeousUIFoundationSubsystem::OnInputMethodChanged(ECommonInputType NewIn
 	}
 }
 
-void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings)
+void UGorgeousUIFoundationSubsystem::PushInputBinding(UGorgeousInputBinding_DA* NewBindings)
 {
+	if (!NewBindings) return;
+
 	if (const UGorgeousInputBinding_DA* AffectedBinding = ActiveInputBindings.IsValidIndex(ActiveInputBindings.Num() - 1) ? ActiveInputBindings.Last() : nullptr; 
 		AffectedBinding == NewBindings) return;
 	
-	const UGorgeousUIState_DA* RecentState = GetMostRecentUIState();
-	if (RecentState && RecentState->bAdditiveToCurrentState)
+	ActiveInputBindings.Push(NewBindings);
+
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Pushed Input Bindings '%s'"), *NewBindings->GetName());
+
+	// Add the IMCs associated with this binding
+	if (ULocalPlayer* LP = GetLocalPlayer())
 	{
-		ActiveInputBindings.Push(NewBindings);
-	}
-	else
-	{
-		ActiveInputBindings.Empty();
-		
-		// Always keep default settings-based input bindings at the base of the active stack (index 0)
-		const auto FoundationSettings = GetDefault<UGorgeousUIFoundationSettings>();
-		if (FoundationSettings)
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
 		{
-			if (UGorgeousInputBinding_DA* DefaultBindings = FoundationSettings->DefaultInputBindings.LoadSynchronous())
+			for (const FGorgeousInputMappingConfig_S& Config : NewBindings->InputMappingContexts)
 			{
-				if (NewBindings != DefaultBindings)
+				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 				{
-					ActiveInputBindings.Push(DefaultBindings);
+					InputSubsystem->AddMappingContext(IMC, Config.Priority);
 				}
 			}
 		}
+	}
 
-		if (NewBindings)
+	SetupInputBridgeOnHUD();
+
+	// Trigger HUD refresh
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (APlayerController* PC = LP->GetPlayerController(GetWorld()))
 		{
-			ActiveInputBindings.Push(NewBindings);
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::PopInputBinding()
+{
+	if (ActiveInputBindings.IsEmpty())
+	{
+		return;
+	}
+
+	UGorgeousInputBinding_DA* PoppedBinding = ActiveInputBindings.Pop();
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Popped Input Bindings '%s'"), PoppedBinding ? *PoppedBinding->GetName() : TEXT("None"));
+
+	if (PoppedBinding)
+	{
+		if (ULocalPlayer* LP = GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				for (const FGorgeousInputMappingConfig_S& Config : PoppedBinding->InputMappingContexts)
+				{
+					if (Config.bIsDefaultMapping)
+					{
+						continue;
+					}
+
+					if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
+					{
+						InputSubsystem->RemoveMappingContext(IMC);
+					}
+				}
+			}
 		}
 	}
 
-	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Input Bindings '%s'"), NewBindings ? *NewBindings->GetName() : TEXT("None"));
+	SetupInputBridgeOnHUD();
+
+	// Trigger HUD refresh
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (APlayerController* PC = LP->GetPlayerController(GetWorld()))
+		{
+			if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+			{
+				HUD->RefreshActionBar();
+			}
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::RemoveInputBinding(UGorgeousInputBinding_DA* BindingToRemove)
+{
+	if (!BindingToRemove || !ActiveInputBindings.Contains(BindingToRemove))
+	{
+		return;
+	}
+
+	ActiveInputBindings.Remove(BindingToRemove);
+	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removed Input Bindings '%s'"), *BindingToRemove->GetName());
+
+	if (ULocalPlayer* LP = GetLocalPlayer())
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+		{
+			for (const FGorgeousInputMappingConfig_S& Config : BindingToRemove->InputMappingContexts)
+			{
+				if (Config.bIsDefaultMapping)
+				{
+					continue;
+				}
+
+				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
+				{
+					InputSubsystem->RemoveMappingContext(IMC);
+				}
+			}
+		}
+	}
 
 	SetupInputBridgeOnHUD();
 
@@ -258,14 +353,30 @@ void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBindin
 
 void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 {
+	if (ActiveInputBindings.IsEmpty()) return;
+
 	ULocalPlayer* LP = GetLocalPlayer();
 	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
 	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
 
-	if (!HUD || ActiveInputBindings.IsEmpty()) return;
+	if (!HUD || !PC) 
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
+		}
+		return;
+	}
 
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
-	if (!EIC) return;
+	if (!EIC) 
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
+		}
+		return;
+	}
 
 	// Clear previously bridged action bindings using stored handles to prevent duplicate callbacks
 	for (uint32 Handle : BridgedBindingHandles)
@@ -796,29 +907,14 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 
 	TransitioningWidgets.Empty();
 
-	ULocalPlayer* LP = GetLocalPlayer();
-	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP ? LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
-
 	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
 	
-	// 1. Remove old IMCs
-	if (AffectedState && InputSubsystem && !NewState->bAdditiveToCurrentState)
+	// 1. Remove old Input Bindings
+	if (AffectedState && !NewState->bAdditiveToCurrentState)
 	{
 		if (AffectedState->InputBindings)
 		{
-			for (const FGorgeousInputMappingConfig_S& Config : AffectedState->InputBindings->InputMappingContexts)
-			{
-				// Skip removing default mappings, as they should remain active globally
-				if (Config.bIsDefaultMapping)
-				{
-					continue;
-				}
-
-				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
-				{
-					InputSubsystem->RemoveMappingContext(IMC);
-				}
-			}
+			RemoveInputBinding(AffectedState->InputBindings);
 		}
 	}
 
@@ -847,19 +943,7 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 
 	if (CurrentStates.Last())
 	{
-		// 2. Add new IMCs
-		if (InputSubsystem)
-		{
-			for (const FGorgeousInputMappingConfig_S& Config : CurrentStates.Last()->InputBindings->InputMappingContexts)
-			{
-				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
-				{
-					InputSubsystem->AddMappingContext(IMC, Config.Priority);
-				}
-			}
-		}
-
-		// 3. Apply Theme
+		// 2. Apply Theme
 		if (GetMostRecentUIState()->Theme)
 		{
 			SetCurrentTheme(GetMostRecentUIState()->Theme);
@@ -868,7 +952,7 @@ void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 		// 4. Apply Input Bindings
 		if (CurrentStates.Last()->InputBindings)
 		{
-			SetActiveInputBindings(CurrentStates.Last()->InputBindings);
+			PushInputBinding(CurrentStates.Last()->InputBindings);
 		}
 
 		// 5. Notify all registered widgets of the state change

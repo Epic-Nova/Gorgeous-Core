@@ -241,6 +241,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	friend class FGorgeousAutoReplicationMixin;
 	friend class UGorgeousRootNetworkStackSubsystem;
 	friend class FGorgeousObjectVariablePropertyTypeCustomization;
+	friend class UGorgeousRootObjectVariable;
 #if WITH_AUTOMATION_TESTS
 	friend struct FGorgeousObjectVariablePerfTestAccess;
 #endif
@@ -378,6 +379,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables")
 	void SetParent(UGorgeousObjectVariable* NewParent);
+
+	/**
+	 * Sets the parent of the object variable without changing its Outer (no Rename).
+	 * Useful for self-reference variables that must retain their GameInstance/PlayerController Outer for proper garbage collection.
+	 *
+	 * @param NewParent The new parent of the object variable.
+	 */
+	void SetParentRefOnly(UGorgeousObjectVariable* NewParent);
 
 
 	/** Returns the parent in the hierarchy, or null for root. */

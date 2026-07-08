@@ -51,3 +51,7 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Signal_Carousel_Prev);
 // Layout & Layer Signals
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Layout_PushWidget);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_UI_Layout_RegisterLayer);
+
+// Test Signals
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_Test_SignalBridge_Perf);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Gorgeous_Test_SignalBridge_PerfResult);
