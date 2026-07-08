@@ -284,23 +284,33 @@ bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* World
     const FGameplayTag InteractionTag)
 {
     AActor* TargetActor = HitResult.GetActor();
-    if (!TargetActor || !GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    if (!TargetActor)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: HitResult has no Actor."));
+        return false;
+    }
+    
+    if (!GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TargetActor %s does not support tag %s."), *TargetActor->GetName(), *InteractionTag.ToString());
         return false;
     }
 
     AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject);
     if (!InteractingActor)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: Could not resolve InteractingActor."));
         return false;
     }
 
     bool bCanInteract = false;
     if (!TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TryCanInteract returned false for TargetActor %s."), *TargetActor->GetName());
         return false;
     }
 
+    GT_I_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract success: Calling TryInteract on %s."), *TargetActor->GetName());
     return TryInteract(TargetActor, InteractingActor, HitResult);
 }
 

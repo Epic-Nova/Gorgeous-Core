@@ -268,7 +268,7 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 		}
 	}
 
-	//@TODO: Somehow leads to a crash without any log & crash context
+	//@TODO: Somehow leads to a crash without any log & crash context, but i think this is needed for the qol references
 	/*for (const FName& RootName : RootsToInitialize)
 	{
 		const bool bSupportsSharedOwnership = UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName);

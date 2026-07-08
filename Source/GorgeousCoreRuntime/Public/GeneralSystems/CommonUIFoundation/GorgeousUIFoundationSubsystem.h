@@ -211,6 +211,8 @@ protected:
 	/** Active Enhanced Input action binding handles. Used to clean up previously bound actions on the HUD player controller. */
 	TArray<uint32> BridgedBindingHandles;
 
+	bool bSignalsRegistered = false;
+
 	/** Internal helper to setup the input bridge on the HUD. */
 	void SetupInputBridgeOnHUD();
 

@@ -33,6 +33,47 @@
 
 void UGorgeousUIFoundationSubsystem::Tick(float DeltaTime)
 {
+	// Lazy signal registration for system-wide Signal Bridge routing
+	if (!bSignalsRegistered)
+	{
+		if (ULocalPlayer* LP = GetLocalPlayer())
+		{
+			if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
+			{
+				FGorgeousSignalBridgeAccessRules_S Rules;
+
+				// Focus Routing
+				const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
+				FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
+
+				// Input Action Routing
+				const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
+				InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
+
+				// Message Routing
+				const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
+				const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
+				MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
+
+				bSignalsRegistered = true;
+				GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer via Tick lazy-init."));
+			}
+		}
+	}
+
+	// Self-healing check for input bridge setup (in case PlayerController/InputComponent was null on first call)
+	if (BridgedBindingHandles.IsEmpty() && !ActiveInputBindings.IsEmpty())
+	{
+		SetupInputBridgeOnHUD();
+	}
+
 	// Process Juicy interpolation for all registered widgets
 	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
 	{
@@ -84,37 +125,9 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 		}
 	}
 
-	// 2. Register system-wide signals
-	FGorgeousSignalBridgeAccessRules_S Rules;
-
-	if (ULocalPlayer* LP = GetLocalPlayer())
-	{
-		if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
-		{
-			// Focus Routing
-			const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
-			FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
-
-			// Input Action Routing
-			const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
-			InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
-
-			// Message Routing
-			const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
-			const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
-			MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
-
-			GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer."));
-		}
-	}
+	// 2. Register system-wide signals (moved to OnPlayerControllerAdded)
 }
+
 
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIMessageConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
@@ -258,14 +271,30 @@ void UGorgeousUIFoundationSubsystem::SetActiveInputBindings(UGorgeousInputBindin
 
 void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 {
+	if (ActiveInputBindings.IsEmpty()) return;
+
 	ULocalPlayer* LP = GetLocalPlayer();
 	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
 	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
 
-	if (!HUD || ActiveInputBindings.IsEmpty()) return;
+	if (!HUD || !PC) 
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
+		}
+		return;
+	}
 
 	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
-	if (!EIC) return;
+	if (!EIC) 
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
+		}
+		return;
+	}
 
 	// Clear previously bridged action bindings using stored handles to prevent duplicate callbacks
 	for (uint32 Handle : BridgedBindingHandles)

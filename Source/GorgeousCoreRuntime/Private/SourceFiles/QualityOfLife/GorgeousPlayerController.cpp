@@ -24,6 +24,7 @@
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/CheatManager.h"
+#include "Framework/Application/SlateApplication.h"
 //<-------------------------------------------------------------------------->
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousPlayerController, Log, All);
@@ -46,11 +47,30 @@ UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 	{
 		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
 	}
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	InputMode.SetHideCursorDuringCapture(false);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
+	// temp for debugging so that the mouse pointer gets not stuck (linux issue)
+	// Delay input mode setup and reset any early suspension to frame 1.
+	// This ensures the Slate viewport is fully initialized and can capture keyboard/mouse focus correctly,
+	// and clears any desynchronized ignore-input flags caused by startup widget transitions.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (IsValid(this))
+			{
+				ResetIgnoreInputFlags();
+				
+				FInputModeGameAndUI InputMode;
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetHideCursorDuringCapture(false);
+				SetInputMode(InputMode);
+				bShowMouseCursor = true;
+				// Ensure game captures focus without needing a click
+				FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
+				
+				UE_LOG(LogGorgeousPlayerController, Log, TEXT("PlayerController: Next-tick input initialization complete. Viewport focused and input ignore flags reset."));
+			}
+		}));
+	}
 )
 
 UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)
