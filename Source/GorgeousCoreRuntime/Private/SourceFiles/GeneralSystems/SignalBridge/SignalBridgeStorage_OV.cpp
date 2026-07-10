@@ -9,6 +9,13 @@
 
 static const FName SignalBridgeEntryKey = TEXT("SignalBridge");
 
+DECLARE_STATS_GROUP(TEXT("Gorgeous Signal Bridge"), STATGROUP_GorgeousSignalBridge, STATCAT_Advanced);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Local Signals Fired"), STAT_SignalBridge_LocalFired, STATGROUP_GorgeousSignalBridge);
+DECLARE_DWORD_COUNTER_STAT(TEXT("No Local Listeners"), STAT_SignalBridge_NoListeners, STATGROUP_GorgeousSignalBridge);
+
+static int64 GSignalBridgeLocalFiredCount = 0;
+static int64 GSignalBridgeNoListenersCount = 0;
+
 USignalBridgeStorage_OV::USignalBridgeStorage_OV()
 {
 	bSupportsNetworking = true;
@@ -109,8 +116,8 @@ void USignalBridgeStorage_OV::Dispatch(FGameplayTag Tag, const FInstancedStruct&
 	// 1. Fire local bindings first
 	FireLocalSignal(Tag, Payload);
 
-	// 2. Relay to server if we are a client
-	if (!HasAuthority())
+	// 2. Relay to server if we are a client and this bridge is replicated
+	if (!HasAuthority() && IsReplicationActive())
 	{
 		if (UWorld* World = GetWorld())
 		{
@@ -198,13 +205,25 @@ void USignalBridgeStorage_OV::FireLocalSignal(FGameplayTag Tag, const FInstanced
 {
 	if (FSignalBridgeEventMulticastDelegate* Delegate = LocalBindings.Find(Tag))
 	{
-		GT_I_LOG("GT.SignalBridge", TEXT("[%s] Firing local signal for tag %s."), *GetName(), *Tag.ToString());
+		INC_DWORD_STAT(STAT_SignalBridge_LocalFired);
+		FPlatformAtomics::InterlockedIncrement(&GSignalBridgeLocalFiredCount);
 		Delegate->Broadcast(Tag, Payload);
 	}
 	else
 	{
-		GT_I_LOG("GT.SignalBridge", TEXT("[%s] No local listeners found for tag %s."), *GetName(), *Tag.ToString());
+		INC_DWORD_STAT(STAT_SignalBridge_NoListeners);
+		FPlatformAtomics::InterlockedIncrement(&GSignalBridgeNoListenersCount);
 	}
+}
+
+int64 USignalBridgeStorage_OV::GetTotalLocalSignalsFired()
+{
+	return FPlatformAtomics::AtomicRead(&GSignalBridgeLocalFiredCount);
+}
+
+int64 USignalBridgeStorage_OV::GetTotalNoListenersFound()
+{
+	return FPlatformAtomics::AtomicRead(&GSignalBridgeNoListenersCount);
 }
 
 void USignalBridgeStorage_OV::AddAllowedController(FGameplayTag Tag, AGorgeousPlayerController* Controller)

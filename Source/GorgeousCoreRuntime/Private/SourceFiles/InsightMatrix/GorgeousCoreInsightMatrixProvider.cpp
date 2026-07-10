@@ -12,7 +12,9 @@
 #include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 
 #include "InsightMatrix/GorgeousInsightHarness.h"
+#include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "InsightMatrix/Slate/GorgeousObjectVariableBrowserWindow.h"
 #include "InsightMatrix/Slate/SGorgeousNetworkTrafficInspectorWindow.h"
@@ -313,6 +315,14 @@ void FGorgeousCoreInsightMatrixProvider::GatherStats(TArray<FGorgeousInsightStat
 				*FString::Printf(TEXT("OV Class [%s]"), *ClassEntry.Key.ToString()), OVCategory,
 				EGorgeousInsightStatValueType::Number, static_cast<double>(ClassEntry.Value));
 		}
+	}
+
+	{
+		const FName SignalCategory(TEXT("SignalBridge"));
+		AddStat(OutStats, FName(TEXT("Core.SignalBridge.LocalFired")), TEXT("Local Signals Fired"), SignalCategory,
+			EGorgeousInsightStatValueType::Number, static_cast<double>(USignalBridgeStorage_OV::GetTotalLocalSignalsFired()));
+		AddStat(OutStats, FName(TEXT("Core.SignalBridge.NoListeners")), TEXT("Local Signals Missed (No Listeners)"), SignalCategory,
+			EGorgeousInsightStatValueType::Number, static_cast<double>(USignalBridgeStorage_OV::GetTotalNoListenersFound()));
 	}
 
 	// Scenario registry stats
@@ -887,6 +897,7 @@ void FGorgeousCoreInsightMatrixProvider::GetTests(TArray<FGorgeousInsightTest>& 
 		Test.Description = FText::FromString(Descriptor.Description);
 		Test.Category = IsARScenario(Descriptor) ? FName(TEXT("AutoReplication")) : FName(TEXT("Tests"));
 		Test.Tags = Descriptor.Tags;
+		Test.Inputs = Descriptor.Inputs;
 		OutTests.Add(Test);
 	}
 }

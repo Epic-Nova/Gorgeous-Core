@@ -17,6 +17,14 @@
 #include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "Interfaces/IPluginManager.h"
+#include "CoreMinimal.h"
+
+// Set to 1 to enable experimental memory leak fixes for PIE teardown and replication crashes.
+#ifndef GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+#define GORGEOUS_EXPERIMENTAL_MEMORY_FIXES 0
+#endif
+
+#include "GameplayTagsManager.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/Paths.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
@@ -63,6 +71,17 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 	GT_REGISTER_TAG_SOURCE("GorgeousCore")
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
+
+	// Register a world-cleanup hook that removes all registry entries belonging to a dying world
+	// from the immortal Root OV registries. This MUST fire before UEditorEngine::CheckForWorldGCLeaks
+	// to break the strong reference chain (Root → TObjectPtr → OV → Outer → World) that would
+	// otherwise cause a "World Memory Leaks: 2 leaked objects" fatal error at editor startup and PIE teardown.
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+	FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool bSessionEnded, bool /*bCleanupResources*/)
+	{
+		UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(World, bSessionEnded);
+	});
+#endif
 	
 	InsightProvider = new FGorgeousCoreInsightMatrixProvider();
 

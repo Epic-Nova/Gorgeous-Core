@@ -27,6 +27,11 @@ namespace FGorgeousQualityOfLifeStatics
 	 * whose owning PlayerController is registered under that ID is returned.
 	 * WorldContextObject is used to filter out OV entries that belong to other worlds
 	 * (prevents cross-world bleeding in PIE where multiple worlds share the same process).
+	 * 
+	 * @warning PERFORMANCE NOTE: While resolution is extremely fast (e.g. ~3ms for 5000 objects),
+	 * calling this function every frame (on Tick) for heavily populated classes can consume a 
+	 * noticeable percentage of your frame budget. For large object pools, prefer event-driven 
+	 * logic (Signal Bridge) or caching the array at BeginPlay.
 	 */
 	GORGEOUSCORERUNTIME_API TArray<UObject*> ResolveSelfReferences(const UObject* WorldContextObject, TSubclassOf<UObject> QualityOfLifeClass, const FString& StablePlayerId = FString());
 

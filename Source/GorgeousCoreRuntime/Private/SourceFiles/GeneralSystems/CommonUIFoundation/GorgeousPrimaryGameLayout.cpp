@@ -242,6 +242,35 @@ void UGorgeousPrimaryGameLayout::RegisterLayer(FGameplayTag LayerTag, UCommonAct
 
 void UGorgeousPrimaryGameLayout::OnWidgetStackTransitioning(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
 {
+	FGameplayTag LayerTag;
+	for (const auto& Pair : Layers)
+	{
+		if (Pair.Value == Widget)
+		{
+			LayerTag = Pair.Key;
+			break;
+		}
+	}
+
+	// Do not suspend gameplay input for HUD, Action Bar, or Message/Notification layers
+	if (LayerTag == TAG_Gorgeous_UI_Layer_HUD || 
+		LayerTag == TAG_Gorgeous_UI_Layer_ActionBar || 
+		LayerTag == TAG_Gorgeous_UI_Layer_Message)
+	{
+		// Refresh action bar when transition completes
+		if (!bIsTransitioning)
+		{
+			if (APlayerController* PC = GetOwningPlayer())
+			{
+				if (AGorgeousHUD* HUD = Cast<AGorgeousHUD>(PC->GetHUD()))
+				{
+					HUD->RefreshActionBar();
+				}
+			}
+		}
+		return;
+	}
+
 	if (bIsTransitioning)
 	{
 		static FName NAME_Transition(TEXT("StackTransition"));

@@ -279,28 +279,82 @@ bool UGorgeousInteractionFoundation::TryInteract(AActor* TargetActor, AActor* In
     return true;
 }
 
+bool UGorgeousInteractionFoundation::TryInteractSecondaryButton(AActor* TargetActor, AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult)
+{
+	if (!TargetActor || !TargetActor->Implements<UInteractionFoundation_I>())
+	{
+		return false;
+	}
+
+	IInteractionFoundation_I::Execute_InteractSecondaryButton(TargetActor, InteractingActor, KeyTag, HitResult);
+	return true;
+}
+
+bool UGorgeousInteractionFoundation::TryInteractHold(AActor* TargetActor, AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult)
+{
+	if (!TargetActor || !TargetActor->Implements<UInteractionFoundation_I>())
+	{
+		return false;
+	}
+
+	IInteractionFoundation_I::Execute_InteractHold(TargetActor, InteractingActor, HoldDuration, RemainingDuration, KeyTag, HitResult);
+	return true;
+}
+
+bool UGorgeousInteractionFoundation::TryInteractRelease(AActor* TargetActor, AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult)
+{
+	if (!TargetActor || !TargetActor->Implements<UInteractionFoundation_I>())
+	{
+		return false;
+	}
+
+	IInteractionFoundation_I::Execute_InteractRelease(TargetActor, InteractingActor, KeyTag, HitResult);
+	return true;
+}
+
+bool UGorgeousInteractionFoundation::TryInteractCancel(AActor* TargetActor, AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult)
+{
+	if (!TargetActor || !TargetActor->Implements<UInteractionFoundation_I>())
+	{
+		return false;
+	}
+
+	IInteractionFoundation_I::Execute_InteractCancel(TargetActor, InteractingActor, HoldDuration, RemainingDuration, KeyTag, HitResult);
+	return true;
+}
+
 bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* WorldContextObject,
     const FHitResult& HitResult,
     const FGameplayTag InteractionTag)
 {
     AActor* TargetActor = HitResult.GetActor();
-    if (!TargetActor || !GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    if (!TargetActor)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: HitResult has no Actor."));
+        return false;
+    }
+    
+    if (!GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
+    {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TargetActor %s does not support tag %s."), *TargetActor->GetName(), *InteractionTag.ToString());
         return false;
     }
 
     AActor* InteractingActor = GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject);
     if (!InteractingActor)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: Could not resolve InteractingActor."));
         return false;
     }
 
     bool bCanInteract = false;
     if (!TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
     {
+        GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TryCanInteract returned false for TargetActor %s."), *TargetActor->GetName());
         return false;
     }
 
+    GT_I_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract success: Calling TryInteract on %s."), *TargetActor->GetName());
     return TryInteract(TargetActor, InteractingActor, HitResult);
 }
 

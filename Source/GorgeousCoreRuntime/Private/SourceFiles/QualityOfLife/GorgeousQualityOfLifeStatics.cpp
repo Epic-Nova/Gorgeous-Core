@@ -1,6 +1,11 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 
+// Set to 1 to enable experimental memory leak fixes for PIE teardown and replication crashes.
+#ifndef GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+#define GORGEOUS_EXPERIMENTAL_MEMORY_FIXES 0
+#endif
+
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
@@ -48,7 +53,11 @@ namespace
 
 	FName MakeSubobjectName(const UObject* Owner)
 	{
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+		return FName(*FString::Printf(TEXT("%s_SelfReferenceOV_%s"), *Owner->GetName(), *FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+#else
 		return FName(*FString::Printf(TEXT("%s_SelfReferenceOV"), *Owner->GetClass()->GetName()));
+#endif
 	}
 
 }
@@ -184,7 +193,26 @@ namespace FGorgeousQualityOfLifeStatics
 		{
 			if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(PreferredRoot))
 			{
-				// SelfVariable->SetParent(Root); @TODO
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+				SelfVariable->SetParentRefOnly(Root);
+				// We add to VariableRegistry + TrackRegisteredVariable so the SelfVariable is discoverable
+				// and properly cleaned up. We do NOT call SetParent() because that would Rename the Outer
+				// to the Root, making the SelfVariable immortal.
+				// The strong TObjectPtr in VariableRegistry is safe because PurgeWorldOwnedRegistryEntries
+				// (registered on FWorldDelegates::OnWorldCleanup) removes these entries BEFORE
+				// CheckForWorldGCLeaks runs, preventing the "2 leaked objects" fatal.
+				Root->VariableRegistry.Add(SelfVariable->GetFName(), SelfVariable);
+				UGorgeousRootObjectVariable::TrackRegisteredVariable(SelfVariable);
+#else
+				// @TODO: Cannot add SelfVariable to Root->VariableRegistry here.
+				// The Root is immortal (AddToRoot) and VariableRegistry uses TObjectPtr (strong ref).
+				// This creates a strong reference chain: Root → SelfVariable → GameInstance/World.
+				// Unreal's CheckForWorldGCLeaks runs BEFORE BeginDestroy/GC, so the cleanup in
+				// EnsureRemovedFromRegistry never gets a chance to fire, causing "2 leaked objects" fatal.
+				// Needs a proper pre-world-destroy cleanup hook (e.g. FWorldDelegates::OnPreWorldFinishDestroy)
+				// to remove the SelfVariable from the registry before the leak check runs.
+				// SelfVariable->SetParent(Root);
+#endif
 			}
 		}
 
@@ -194,7 +222,15 @@ namespace FGorgeousQualityOfLifeStatics
 			if (int32 UnderscoreIndex; ContextName.FindLastChar('_', UnderscoreIndex)) { ContextName = ContextName.Left(UnderscoreIndex); }
 			SelfVariable->SetDisplayName(ContextName);
 		}
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+		// CRITICAL: A shared SelfReference OV is owned by the GameInstance.
+		// It MUST NEVER be registered as a replicated subobject on the Actor (Entry.bReplicate = true),
+		// because replicating a subobject whose Outer is not the Actor completely breaks Unreal's 
+		// replication layout and causes fatal Realloc memory corruption crashes in PIE with multiple clients.
+		Entry.bReplicate = false;
+#else
 		Entry.bReplicate = bExposeThroughNetworkStack;
+#endif
 
 		if (bIsClassDefaultObject || !Entry.bOverrideStreamConfig)
 		{

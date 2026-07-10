@@ -103,4 +103,6 @@ protected:
 private:
 	UFUNCTION()
 	void OnLayoutCreated(ULocalPlayer* LocalPlayer, UGorgeousPrimaryGameLayout* Layout);
+
+	void ResetFocusToGame();
 };
