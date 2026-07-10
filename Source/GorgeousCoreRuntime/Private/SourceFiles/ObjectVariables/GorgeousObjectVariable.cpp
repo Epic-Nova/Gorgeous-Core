@@ -1181,6 +1181,11 @@ void UGorgeousObjectVariable::SetParent(UGorgeousObjectVariable* NewParent)
 	Rename(*UniqueName.ToString(), Parent, REN_DontCreateRedirectors);
 }
 
+void UGorgeousObjectVariable::SetParentRefOnly(UGorgeousObjectVariable* NewParent)
+{
+	Parent = NewParent;
+}
+
 void UGorgeousObjectVariable::SetSharedNetworkStackEnabled(const bool bEnable)
 {
 	SetSharedNetworkStackEnabledInternal(bEnable, true);

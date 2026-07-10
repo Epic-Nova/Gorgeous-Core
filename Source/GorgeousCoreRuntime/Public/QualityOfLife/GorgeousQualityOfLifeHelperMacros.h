@@ -36,7 +36,8 @@ class AGorgeousGameState;
 		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
 	}
 
-#define UE_QOL_INITIALIZE_ADDITIONAL_DATA()
+#define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
+	AutoReplicationMixin.Bind(this, &AdditionalGorgeousData, &ReplicatedAutoReplicationVariables);
 
 /** Declares a standard QoL constructor that wires the networking default and self-reference bootstrap. */
 #define UE_QOL_DEFINE_CONSTRUCTOR(Class, bDefaultNetworking) \

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -13,6 +13,12 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+
+// Set to 1 to enable experimental memory leak fixes for PIE teardown and replication crashes.
+#ifndef GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+#define GORGEOUS_EXPERIMENTAL_MEMORY_FIXES 0
+#endif
+
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
 #include "Containers/Set.h"
@@ -248,10 +254,17 @@ void UGorgeousGameInstance::Shutdown()
 
 void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 {
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+	if (bIsEnsuringRootFallback || IsEngineExitRequested() || HasAnyFlags(RF_BeginDestroyed))
+	{
+		return;
+	}
+#else
 	if (bIsEnsuringRootFallback)
 	{
 		return;
 	}
+#endif
 
 	TGuardValue<bool> ReentrancyGuard(bIsEnsuringRootFallback, true);
 
@@ -259,6 +272,7 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 	const FName DefaultRootName = UGorgeousRootObjectVariable::GetDefaultRootName();
 	RootsToInitialize.Add(DefaultRootName.IsNone() ? NAME_None : DefaultRootName);
 
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
 	const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
 	for (const FName& RootName : RegisteredRootNames)
 	{
@@ -267,21 +281,27 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 			RootsToInitialize.Add(RootName);
 		}
 	}
+#else
+	// @TODO
+	//const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
+	//for (const FName& RootName : RegisteredRootNames)
+	//{
+	//	if (!RootName.IsNone())
+	//	{
+	//		RootsToInitialize.Add(RootName);
+	//	}
+	//}
+#endif
 
-	//@TODO: Somehow leads to a crash without any log & crash context
-	/*for (const FName& RootName : RootsToInitialize)
+	// This loop sets up FallbackOwner and shared network stack ownership for all roots.
+	// Safe because PurgeWorldOwnedRegistryEntries (registered on FWorldDelegates::OnWorldCleanup)
+	// breaks the strong reference chains BEFORE CheckForWorldGCLeaks runs.
+	for (const FName& RootName : RootsToInitialize)
 	{
 		const bool bSupportsSharedOwnership = UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName);
 		if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(RootName))
 		{
 			Root->SetFallbackOwner(this);
-
-			// Re-outer roots that were created before any world existed
-			// (still on GetTransientPackage) so UObject::GetWorld() works.
-			if (Root->GetOuter() == GetTransientPackage())
-			{
-				Root->Rename(nullptr, this);
-			}
 
 			if (bSupportsSharedOwnership)
 			{
@@ -294,7 +314,7 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 			const FString Label = RootName.IsNone() ? TEXT("<DefaultRoot>") : RootName.ToString();
 			UE_LOG(LogGorgeousGameInstance, Warning, TEXT("Failed to assign cached owner for root object variable '%s'."), *Label);
 		}
-	}*/
+	}
 
 	for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 	{

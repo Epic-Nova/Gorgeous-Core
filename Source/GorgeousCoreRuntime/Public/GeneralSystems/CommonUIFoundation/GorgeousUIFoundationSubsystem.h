@@ -118,9 +118,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation")	
 	UGorgeousInputBinding_DA* GetMostRecentInputBindings() const { return ActiveInputBindings.Last(); }
 
-	/** Manually sets the active input bindings. */
+	/** Pushes a new input binding to the active stack. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
-	void SetActiveInputBindings(UGorgeousInputBinding_DA* NewBindings);
+	void PushInputBinding(UGorgeousInputBinding_DA* NewBindings);
+
+	/** Pops the most recent input binding from the active stack. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
+	void PopInputBinding();
+
+	/** Removes a specific active input binding from the stack. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
+	void RemoveInputBinding(UGorgeousInputBinding_DA* BindingToRemove);
 
 	/** Sets an active redirect for input mapping, simulating a hardware press as another action. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Input")
@@ -210,6 +218,8 @@ protected:
 
 	/** Active Enhanced Input action binding handles. Used to clean up previously bound actions on the HUD player controller. */
 	TArray<uint32> BridgedBindingHandles;
+
+	bool bSignalsRegistered = false;
 
 	/** Internal helper to setup the input bridge on the HUD. */
 	void SetupInputBridgeOnHUD();

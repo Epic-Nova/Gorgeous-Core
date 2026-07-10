@@ -93,6 +93,30 @@ public:
     static bool TryInteract(AActor* TargetActor, AActor* InteractingActor, const FHitResult& HitResult);
 
     /** 
+     * Tries to execute a secondary interaction with the target actor.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+    static bool TryInteractSecondaryButton(AActor* TargetActor, AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+
+    /** 
+     * Tries to execute a hold interaction with the target actor.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+    static bool TryInteractHold(AActor* TargetActor, AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+
+    /** 
+     * Tries to execute a release interaction with the target actor.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+    static bool TryInteractRelease(AActor* TargetActor, AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+
+    /** 
+     * Tries to execute a cancel interaction with the target actor.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+    static bool TryInteractCancel(AActor* TargetActor, AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+
+    /** 
      * Tries to perform a sphere trace interaction based on the provided trace parameters and interaction tag. Returns false if the trace did not hit any valid interactable target or if the interaction failed for any reason.
      * 
      * @param WorldContextObject The world context object for locating the world in which to perform the trace.
