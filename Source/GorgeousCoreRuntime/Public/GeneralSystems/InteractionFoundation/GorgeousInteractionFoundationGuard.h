@@ -38,7 +38,7 @@
 				if (NewComp) \
 				{ \
 					NewComp->RegisterComponent(); \
-					NewComp->AttachToComponent(this->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform); \
+					NewComp->AttachToComponent(Cast<USceneComponent>(GetComponentByClass(UBillboardComponent::StaticClass())), FAttachmentTransformRules::KeepRelativeTransform); \
 				} \
 			} \
 		} while(0)
