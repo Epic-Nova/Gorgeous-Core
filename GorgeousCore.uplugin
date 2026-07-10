@@ -37,12 +37,12 @@
 		{
 			"Name": "GorgeousCoreEditor",
 			"Type": "Editor",
-			"LoadingPhase": "PostDefault"
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "GorgeousCoreStartupHook",
