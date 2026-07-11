@@ -13,6 +13,7 @@
 #include "Misc/SecureHash.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Internationalization/Internationalization.h"
+#include "Misc/CoreDelegates.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousStartupHook, Log, All);
 
@@ -303,6 +304,13 @@ public:
 				TEXT("CreateProc failed for gorgeous-installer.\nPath: %s\nParams: %s"),
 				*InstallerPath, *Params);
 		}
+
+		// Unload this module once the engine is fully initialized
+		FCoreDelegates::OnPostEngineInit.AddLambda([]()
+		{
+			FModuleManager::Get().UnloadModule(TEXT("GorgeousCoreStartupHook"));
+			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Unloaded GorgeousCoreStartupHook to free memory."));
+		});
 	}
 
 	virtual void ShutdownModule() override

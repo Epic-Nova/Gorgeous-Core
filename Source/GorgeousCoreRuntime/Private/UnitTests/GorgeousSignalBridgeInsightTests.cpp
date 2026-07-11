@@ -2,12 +2,12 @@
 
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
-#include "StructUtils/InstancedStruct.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "HAL/PlatformTime.h"
-#include "UnitTests/Helpers/GorgeousSignalBridgeInsightHelper.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "Engine/NetDriver.h"
+#include "SharedTests/GorgeousSignalBridgeInsightHelper.h"
 
 struct FGorgeousSignalBridgeTestAccess
 {

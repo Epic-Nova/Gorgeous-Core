@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
-#include "UnitTests/Helpers/GorgeousSignalBridgeInsightHelper.h"
+#include "SharedTests/GorgeousSignalBridgeInsightHelper.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 
 void UGorgeousSignalBridgeInsightHelper::HandleTestSignal(FGameplayTag SignalTag, const FInstancedStruct& Payload)

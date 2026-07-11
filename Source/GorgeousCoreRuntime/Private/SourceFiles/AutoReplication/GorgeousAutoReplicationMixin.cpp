@@ -15,7 +15,7 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-#include "InsightMatrix/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"

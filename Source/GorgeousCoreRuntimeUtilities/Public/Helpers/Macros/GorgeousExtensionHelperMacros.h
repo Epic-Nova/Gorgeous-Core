@@ -16,7 +16,7 @@
  * @param PluginName The name of the plugin that should be checked for its existence.
  * @note Not used atm, planned to be introduced with upcoming new major version
  */
-#define GORGEOUS_PLUGIN_INSTALLED(PluginName) (GORGEOUSTHINGS_WITH_##PluginName)
+#define GORGEOUS_PLUGIN_INSTALLED(PluginName) (GORGEOUS_WITH_##PluginName)
 
 /**
  * Checks if the specified Gorgeous General System is installed within the Core module.

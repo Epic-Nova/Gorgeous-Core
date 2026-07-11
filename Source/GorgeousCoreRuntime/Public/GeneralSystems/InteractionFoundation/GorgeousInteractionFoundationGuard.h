@@ -8,11 +8,7 @@
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "Components/SceneComponent.h"
 
-#ifndef WITH_INTERACTION_FOUNDATION
-#define WITH_INTERACTION_FOUNDATION 0
-#endif
-
-#if WITH_INTERACTION_FOUNDATION
+#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 	#define GORGEOUS_INTERACTION_FOUNDATION_INTERFACE IInteractionFoundation_I
 	

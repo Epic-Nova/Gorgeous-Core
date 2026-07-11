@@ -20,8 +20,9 @@ public:
 	static FName ProviderName();
 
 	virtual FName GetProviderName() const override { return ProviderName(); }
+	virtual FString GetPluginName() const override { return TEXT("Gorgeous-Core"); }
 	virtual FText GetProviderDisplayName() const override;
-	virtual void GatherStats(TArray<FGorgeousInsightStat>& OutStats) const override;
+	virtual void GatherStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const override;
 	virtual void GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const override;
 	virtual void GetActions(TArray<FGorgeousInsightAction>& OutActions) const override;
 	virtual void ExecuteAction(FName ActionId, const FGorgeousInsightActionContext& Context) override;
