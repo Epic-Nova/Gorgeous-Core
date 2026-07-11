@@ -12,12 +12,14 @@
 using System.IO;
 using UnrealBuildTool;
 
-public class GorgeousCoreEditor : ModuleRules
+public class GorgeousCoreEditor : GorgeousModuleRules
 {
     public GorgeousCoreEditor(ReadOnlyTargetRules Target) : base(Target)
     {
-        var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
-        var privateIncludePath = Path.Combine(ModuleDirectory, "Private", "HeaderFiles");
+        ApplyGorgeousBuildSettings(new GorgeousBuildSettings {
+            TargetModuleType = GorgeousModuleType.Editor,
+            ModulesToExclude = new[] { "GorgeousCoreEditor" }
+        });
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
@@ -26,70 +28,16 @@ public class GorgeousCoreEditor : ModuleRules
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
 
-        PublicIncludePaths.AddRange(new string[]
-        {
-            publicIncludePath,
-            Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(publicIncludePath, "LibraryWizard"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
-        });
-        
-        PrivateIncludePaths.AddRange(new string[]
-        {
-            Path.Combine(privateIncludePath),
-            Path.Combine(privateIncludePath, "CodeGenerators"),
-            Path.Combine(privateIncludePath, "Factories"),
-            Path.Combine(privateIncludePath, "K2Nodes"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
-        });
-        
-        PublicDependencyModuleNames.AddRange(new[]
-        {
-            "Core", 
-            "PropertyEditor",
-            "DataValidation"
-        });
-        
-        PrivateDependencyModuleNames.AddRange(
-            new[] 
-            {
-                "Engine",
-                "CoreUObject",
-                "InputCore", 
-                "GameplayTags",
-                "MessageLog",
-                "Slate", 
-                "ToolMenus",
-                "SlateCore", 
-                "Projects",
-                "UnrealEd", 
-                "AssetTools",
-                "DataRegistry", 
-                "EditorScriptingUtilities",
-                "BlueprintGraph",
-                "AssetTools",
-                "AssetRegistry",
-                "ContentBrowser",
-                "EditorWidgets",
-                "AssetDefinition",
-                "ToolWidgets",
-                "Settings",
-                "CommonUI",
-                "EditorSubsystem", "PlatformCryptoOpenSSL", 
-                "OpenSSL"
-            });
-
+        // The base class handles core Unreal dependencies automatically based on headers.
+        // We explicitly include non-header dependencies or third-party crypto here:
         PrivateDependencyModuleNames.AddRange(new[]
         {
+            "PlatformCryptoOpenSSL", 
+            "OpenSSL",
             "HTTP",
-            "Json",
-            "JsonUtilities"
-        });
-        PrivateDependencyModuleNames.AddRange(new[]
-        {
-            "GorgeousCoreRuntime", 
-            "GorgeousCoreRuntimeUtilities",
-            "GorgeousCoreEditorUtilities"
+            "ToolWidgets",
+            "InputCore",
+            "GameplayTags"
         });
     }
 }

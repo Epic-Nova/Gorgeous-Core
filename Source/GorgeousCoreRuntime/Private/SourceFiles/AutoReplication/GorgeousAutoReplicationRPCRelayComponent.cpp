@@ -21,7 +21,7 @@
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "UObject/UnrealType.h"
-#include "InsightMatrix/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationRelay, Log, All);
 

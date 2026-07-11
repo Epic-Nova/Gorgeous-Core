@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "StructUtils/InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 #include "GorgeousSignalBridgeInsightHelper.generated.h"

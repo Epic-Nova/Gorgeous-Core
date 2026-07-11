@@ -12,10 +12,15 @@
 using System.IO;
 using UnrealBuildTool;
 
-public class GorgeousCoreRuntimeUtilities : ModuleRules
+public class GorgeousCoreRuntimeUtilities : GorgeousModuleRules
 {
     public GorgeousCoreRuntimeUtilities(ReadOnlyTargetRules Target) : base(Target)
     {
+        ApplyGorgeousBuildSettings(new GorgeousBuildSettings {
+            TargetModuleType = GorgeousModuleType.Game,
+            ModulesToExclude = new[] { "GorgeousCoreRuntimeUtilities" }
+        });
+
         var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
         
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
@@ -24,14 +29,6 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
         
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
-
-        PublicIncludePaths.AddRange(new string[]
-        {
-            publicIncludePath,
-            Path.Combine(publicIncludePath, "ModuleCore"),
-            Path.Combine(publicIncludePath, "Libraries"),
-            Path.Combine(publicIncludePath, "Templates"),
-        });
 	
         PublicDependencyModuleNames.AddRange(new string[]
             {
@@ -46,7 +43,10 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
 
         PublicDefinitions.Add("CSV_PROFILER=1");
         PrivateDefinitions.Add("CSV_PROFILER=1");
+        
+        //@TODO: Also remove this one here as the build pipeline handles this way better now
 
+        /*
         // Dynamic Gorgeous General System definitions (C++)
         var GeneralSystemsPath = Path.Combine(ModuleDirectory, "..", "GorgeousCoreRuntime", "Public", "GeneralSystems");
         if (Directory.Exists(GeneralSystemsPath))
@@ -72,10 +72,11 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     PublicDefinitions.Add(MacroName);
                 }
             }
-        }
+        }*/
 
+        //@TODO: Remove this, the new build pipeline module handles this way better, but still take a look if we can recycle some snippets here
         // Dynamic Gorgeous Plugin definitions
-        var PluginsDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", ".."));
+        /*var PluginsDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", ".."));
         if (Directory.Exists(PluginsDir))
         {
             var AllUPlugins = Directory.GetFiles(PluginsDir, "*.uplugin", SearchOption.AllDirectories);
@@ -108,7 +109,7 @@ public class GorgeousCoreRuntimeUtilities : ModuleRules
                     }
                 }
             }
-        }
+        }*/
 
         // Auto-Build Gorgeous Installer (Skip if invoked by the installer itself or already built in this UBT run)
         if (System.Environment.GetEnvironmentVariable("GORGEOUS_SKIP_INSTALLER_BUILD") != "1" &&
