@@ -19,9 +19,17 @@
 UCLASS()
 class GORGEOUSCORERUNTIME_API UGorgeousDebugAssistBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
+	/** Track total active debug beacons for Insight Matrix */
+	static int32 GetTotalActiveDebugBeacons();
+	static void IncrementActiveDebugBeacons();
+	static void DecrementActiveDebugBeacons();
+
+	/** Track total render overhead MS for Insight Matrix */
+	static double GetDebugAssistRenderOverheadMS();
+	static void SetDebugAssistRenderOverheadMS(double InOverhead);
     /**
      * Draws a debug line between Start and End with the specified Color, Duration, Thickness, and persistence.
      * 

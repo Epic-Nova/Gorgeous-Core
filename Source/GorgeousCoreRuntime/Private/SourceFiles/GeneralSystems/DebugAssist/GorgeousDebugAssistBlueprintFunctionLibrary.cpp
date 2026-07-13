@@ -18,6 +18,34 @@
 #include "Engine/GameViewportClient.h"
 #include "HAL/IConsoleManager.h"
 //<-------------------------------------------------------------------------->
+static int32 GActiveDebugBeaconsCount = 0;
+static double GDebugAssistRenderOverheadMS = 0.0;
+
+int32 UGorgeousDebugAssistBlueprintFunctionLibrary::GetTotalActiveDebugBeacons()
+{
+	return GActiveDebugBeaconsCount;
+}
+
+void UGorgeousDebugAssistBlueprintFunctionLibrary::IncrementActiveDebugBeacons()
+{
+	GActiveDebugBeaconsCount++;
+}
+
+void UGorgeousDebugAssistBlueprintFunctionLibrary::DecrementActiveDebugBeacons()
+{
+	GActiveDebugBeaconsCount--;
+}
+
+double UGorgeousDebugAssistBlueprintFunctionLibrary::GetDebugAssistRenderOverheadMS()
+{
+	return GDebugAssistRenderOverheadMS;
+}
+
+void UGorgeousDebugAssistBlueprintFunctionLibrary::SetDebugAssistRenderOverheadMS(double InOverhead)
+{
+	GDebugAssistRenderOverheadMS = InOverhead;
+}
+
 struct FGhostBox
 {
     FVector Origin;

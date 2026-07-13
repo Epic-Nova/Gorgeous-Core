@@ -42,6 +42,17 @@ class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
 
 public:
 
+    /** Total successful interactions executed through the foundation. */
+    static int32 GetTotalSuccessfulInteractions();
+    static int32 GetTotalRejectedInteractions();
+    static int32 GetTotalPermissionDeniedInteractions();
+    static void IncrementSuccessfulInteractions();
+    static void IncrementRejectedInteractions();
+    static void IncrementPermissionDeniedInteractions();
+
+    /** Number of actors currently being actively tracked for interaction focus. */
+    static int32 GetActiveTrackedInteractionActors();
+
     /**
      * Tries to request the interaction tags from the target actor. Returns false if the target actor does not implement the interaction interface or if the request failed for any reason.
      * 

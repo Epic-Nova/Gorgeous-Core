@@ -315,7 +315,7 @@ public:
 
 	virtual void ShutdownModule() override
 	{
-		UE_LOG(LogTemp, Log, TEXT("Test"));
+		UE_LOG(LogGorgeousStartupHook, Log, TEXT("Shutting down GorgeousCoreStartupHook module, Goodbye!"));
 	}
 };
 

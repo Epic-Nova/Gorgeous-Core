@@ -3798,3 +3798,22 @@ void UGorgeousObjectVariable::PostEditChangeProperty(FPropertyChangedEvent& Prop
 }
 #endif // WITH_EDITOR
 
+
+void UGorgeousObjectVariable::BeginDestroy()
+{
+	UObject::BeginDestroy();
+
+	GObjectVariableAliveCounter.Decrement();
+	INC_DWORD_STAT(STAT_GOV_Destroyed);
+	DEC_DWORD_STAT(STAT_GOV_Alive);
+
+	{
+		FScopeLock Lock(&ThreadSafety_CoreState);
+		bIsVariableTreeBound = false;
+	}
+}
+
+int32 UGorgeousObjectVariable::GetTotalAliveObjectVariables()
+{
+	return GObjectVariableAliveCounter.GetValue();
+}

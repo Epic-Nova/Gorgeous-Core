@@ -13,11 +13,49 @@
 #include "GameFramework/Pawn.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+#include "Stats/Stats.h"
+
+DECLARE_STATS_GROUP(TEXT("Gorgeous Stats Foundation"), STATGROUP_GorgeousStatsFoundation, STATCAT_Advanced);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Active Components"), STAT_GStats_ActiveComps, STATGROUP_GorgeousStatsFoundation);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Modifiers Applied"), STAT_GStats_ModifiersApplied, STATGROUP_GorgeousStatsFoundation);
+DECLARE_CYCLE_STAT(TEXT("Process Stat Signal"), STAT_GStats_ProcessSignal, STATGROUP_GorgeousStatsFoundation);
+static int32 GStatComponentActiveCount = 0;
+static int32 GStatComponentTotalModifiersApplied = 0;
+
+int32 UGorgeousStatComponent_AC::GetTotalActiveComponents()
+{
+	return GStatComponentActiveCount;
+}
+
+int32 UGorgeousStatComponent_AC::GetTotalModifiersApplied()
+{
+	return GStatComponentTotalModifiersApplied;
+}
 
 UGorgeousStatComponent_AC::UGorgeousStatComponent_AC()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	SetIsReplicatedByDefault(true);
+}
+
+void UGorgeousStatComponent_AC::OnRegister()
+{
+	Super::OnRegister();
+	if (GetWorld() && GetWorld()->IsGameWorld())
+	{
+		GStatComponentActiveCount++;
+		INC_DWORD_STAT(STAT_GStats_ActiveComps);
+	}
+}
+
+void UGorgeousStatComponent_AC::OnUnregister()
+{
+	if (GetWorld() && GetWorld()->IsGameWorld())
+	{
+		GStatComponentActiveCount--;
+		DEC_DWORD_STAT(STAT_GStats_ActiveComps);
+	}
+	Super::OnUnregister();
 }
 
 void UGorgeousStatComponent_AC::BeginPlay()
@@ -135,6 +173,7 @@ void UGorgeousStatComponent_AC::HandleStatChanged(FGameplayTag Tag, float NewVal
 
 void UGorgeousStatComponent_AC::OnSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
+	SCOPE_CYCLE_COUNTER(STAT_GStats_ProcessSignal);
 	if (!GetOwner()->HasAuthority()) return;
 
 	// Find which stat this signal belongs to
@@ -148,10 +187,14 @@ void UGorgeousStatComponent_AC::OnSignalReceived(FGameplayTag SignalTag, const F
 				if (Pair.Value.bSignalIsDelta)
 				{
 					ModifyStat(Pair.Key, StatPayload->Value);
+					GStatComponentTotalModifiersApplied++;
+					INC_DWORD_STAT(STAT_GStats_ModifiersApplied);
 				}
 				else
 				{
 					SetStat(Pair.Key, StatPayload->Value);
+					GStatComponentTotalModifiersApplied++;
+					INC_DWORD_STAT(STAT_GStats_ModifiersApplied);
 				}
 			}
 			break;

@@ -14,6 +14,11 @@
 #include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
+#include "Stats/Stats.h"
+
+DECLARE_STATS_GROUP(TEXT("Gorgeous Interaction Foundation"), STATGROUP_GorgeousInteractionFoundation, STATCAT_Advanced);
+DECLARE_CYCLE_STAT(TEXT("Sphere Trace Interact"), STAT_GInteract_SphereTraceInteract, STATGROUP_GorgeousInteractionFoundation);
+DECLARE_CYCLE_STAT(TEXT("Sphere Trace Focus"), STAT_GInteract_SphereTraceFocus, STATGROUP_GorgeousInteractionFoundation);
 //<-------------------------------------------------------------------------->
 
 TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundation::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
@@ -192,6 +197,45 @@ namespace GorgeousInteractionFoundation
 // UGorgeousInteractionFoundationBlueprintFunctionLibrary Implementation
 //=============================================================================
 
+static int32 GInteractionTotalSuccessful = 0;
+static int32 GInteractionTotalRejected = 0;
+static int32 GInteractionTotalPermissionDenied = 0;
+
+int32 UGorgeousInteractionFoundation::GetTotalSuccessfulInteractions()
+{
+    return GInteractionTotalSuccessful;
+}
+
+int32 UGorgeousInteractionFoundation::GetTotalRejectedInteractions()
+{
+    return GInteractionTotalRejected;
+}
+
+int32 UGorgeousInteractionFoundation::GetTotalPermissionDeniedInteractions()
+{
+    return GInteractionTotalPermissionDenied;
+}
+
+void UGorgeousInteractionFoundation::IncrementSuccessfulInteractions()
+{
+    GInteractionTotalSuccessful++;
+}
+
+void UGorgeousInteractionFoundation::IncrementRejectedInteractions()
+{
+    GInteractionTotalRejected++;
+}
+
+void UGorgeousInteractionFoundation::IncrementPermissionDeniedInteractions()
+{
+    GInteractionTotalPermissionDenied++;
+}
+
+int32 UGorgeousInteractionFoundation::GetActiveTrackedInteractionActors()
+{
+	return InteractionActors.Num();
+}
+
 bool UGorgeousInteractionFoundation::TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags)
 {
     if (!GorgeousInteractionFoundation::IsValidInteractionTarget(TargetActor))
@@ -276,6 +320,7 @@ bool UGorgeousInteractionFoundation::TryInteract(AActor* TargetActor, AActor* In
     }
 
     IInteractionFoundation_I::Execute_Interact(TargetActor, InteractingActor, HitResult);
+    IncrementSuccessfulInteractions();
     return true;
 }
 
@@ -287,6 +332,7 @@ bool UGorgeousInteractionFoundation::TryInteractSecondaryButton(AActor* TargetAc
 	}
 
 	IInteractionFoundation_I::Execute_InteractSecondaryButton(TargetActor, InteractingActor, KeyTag, HitResult);
+	IncrementSuccessfulInteractions();
 	return true;
 }
 
@@ -298,6 +344,7 @@ bool UGorgeousInteractionFoundation::TryInteractHold(AActor* TargetActor, AActor
 	}
 
 	IInteractionFoundation_I::Execute_InteractHold(TargetActor, InteractingActor, HoldDuration, RemainingDuration, KeyTag, HitResult);
+	IncrementSuccessfulInteractions();
 	return true;
 }
 
@@ -309,6 +356,7 @@ bool UGorgeousInteractionFoundation::TryInteractRelease(AActor* TargetActor, AAc
 	}
 
 	IInteractionFoundation_I::Execute_InteractRelease(TargetActor, InteractingActor, KeyTag, HitResult);
+	IncrementSuccessfulInteractions();
 	return true;
 }
 
@@ -320,6 +368,7 @@ bool UGorgeousInteractionFoundation::TryInteractCancel(AActor* TargetActor, AAct
 	}
 
 	IInteractionFoundation_I::Execute_InteractCancel(TargetActor, InteractingActor, HoldDuration, RemainingDuration, KeyTag, HitResult);
+	IncrementSuccessfulInteractions();
 	return true;
 }
 
@@ -327,6 +376,7 @@ bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* World
     const FHitResult& HitResult,
     const FGameplayTag InteractionTag)
 {
+    SCOPE_CYCLE_COUNTER(STAT_GInteract_SphereTraceInteract);
     AActor* TargetActor = HitResult.GetActor();
     if (!TargetActor)
     {
@@ -336,6 +386,7 @@ bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* World
     
     if (!GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
     {
+        IncrementRejectedInteractions();
         GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TargetActor %s does not support tag %s."), *TargetActor->GetName(), *InteractionTag.ToString());
         return false;
     }
@@ -350,6 +401,7 @@ bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* World
     bool bCanInteract = false;
     if (!TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
     {
+        IncrementPermissionDeniedInteractions();
         GT_W_LOG("GT.InteractionFoundation.Trace", TEXT("TrySphereTraceInteract failed: TryCanInteract returned false for TargetActor %s."), *TargetActor->GetName());
         return false;
     }
@@ -367,6 +419,8 @@ bool UGorgeousInteractionFoundation::TrySphereTraceFocus(const UObject* WorldCon
     bool& bOutWasUnfocus,
     FHitResult& OutHitResult)
 {
+    SCOPE_CYCLE_COUNTER(STAT_GInteract_SphereTraceFocus);
+
 // Explicitly initialize out booleans at the root function call boundary
     bOutWasRefreshRequest = false;
     bOutWasUnfocus = false;
@@ -456,6 +510,7 @@ bool UGorgeousInteractionFoundation::TrySphereTraceFocus(const UObject* WorldCon
 
     if (bool bCanInteract = false; !TryCanInteract(TargetActor, InteractingActor, bCanInteract) || !bCanInteract)
     {
+        IncrementPermissionDeniedInteractions();
         return HandleFailedFocus();
     }
 
