@@ -32,7 +32,7 @@ public class GorgeousCoreEditor : GorgeousModuleRules
         // We explicitly include non-header dependencies or third-party crypto here:
         PrivateDependencyModuleNames.AddRange(new[]
         {
-            "PlatformCryptoOpenSSL", 
+            "PlatformCryptoContext", 
             "OpenSSL",
             "HTTP",
             "ToolWidgets",

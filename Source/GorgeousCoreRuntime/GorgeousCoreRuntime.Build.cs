@@ -30,8 +30,7 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
 
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
-
-
+        
         // The base class will auto-inject dependencies like Core, Engine, Slate, UMG, Json, etc.
         // We explicitly add things the auto-scanner might miss or that are critical third-party dependencies:
         PrivateDependencyModuleNames.AddRange(new[]
@@ -49,6 +48,16 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
 
         // Automatically inject system macros dynamically via Reflection
         InjectForeignPluginMacros();
+
+        if (Target.bBuildEditor)
+        {
+            PrivateDependencyModuleNames.AddRange(new[] {
+                "UnrealEd",
+                "Blutility",
+                "UMGEditor",
+                "WorkspaceMenuStructure"
+            });
+        }
 
         // Gauntlet is only available for non-Editor program builds
         bool bWithGauntlet = Target.Type == TargetType.Program && !Target.bBuildEditor;

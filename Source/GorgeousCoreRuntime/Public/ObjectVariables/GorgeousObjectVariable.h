@@ -338,6 +338,10 @@ public:
 
 	virtual void BeginDestroy() override;
 
+	/** Gets the total number of Object Variables currently alive in memory */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Object Variable|Stats")
+	static int32 GetTotalAliveObjectVariables();
+
     /**
      * Registers the object variable with the registry.
      *

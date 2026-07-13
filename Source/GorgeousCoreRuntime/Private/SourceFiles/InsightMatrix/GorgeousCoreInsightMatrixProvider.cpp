@@ -15,12 +15,35 @@
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "InsightMatrix/GorgeousInsightStatBuilder.h"
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
+#include "InsightMatrix/GorgeousInsightBlueprintStats_OV.h"
+#include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "ObjectVariables/Slate/GorgeousObjectVariableBrowserWindow.h"
 #include "AutoReplication/Slate/SGorgeousNetworkTrafficInspectorWindow.h"
 #include "AutoReplication/Slate/SGorgeousRPCInspectorWindow.h"
+#include "InsightMatrix/GorgeousInsightActionConfig_DA.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+
+// Tab Spawning support
+#include "WorkspaceMenuStructure.h"
+#include "WorkspaceMenuStructureModule.h"
+#include "Widgets/Docking/SDockTab.h"
+#include "Widgets/SWindow.h"
+#include "Framework/Application/SlateApplication.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#include "EditorUtilityWidget.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#include "EditorUtilitySubsystem.h"
+#endif
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
@@ -118,11 +141,209 @@ void FGorgeousCoreInsightMatrixProvider::GatherStats(const FGorgeousInsightGathe
 			}
 		}
 	}
+
+#if GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+	// Stats now displayed as a Bar Chart
+#endif // GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
+	{
+		FGorgeousInsightStat ActiveInteractions;
+		ActiveInteractions.Id = TEXT("Core.InteractionFoundation.ActiveTrackedActors");
+		ActiveInteractions.DisplayName = FText::FromString(TEXT("Active Tracked Interaction Actors"));
+		ActiveInteractions.Category = FName(TEXT("Interaction Foundation"));
+		ActiveInteractions.NumericValue = static_cast<double>(UGorgeousInteractionFoundation::GetActiveTrackedInteractionActors());
+		OutStats.Add(ActiveInteractions);
+	}
+#endif // GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+	// Stats now displayed as a Bar Chart
+#endif // GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+	{
+		FGorgeousInsightStat ActiveBeacons;
+		ActiveBeacons.Id = TEXT("Core.DebugAssist.ActiveBeacons");
+		ActiveBeacons.DisplayName = FText::FromString(TEXT("Active Debug Beacons"));
+		ActiveBeacons.Category = FName(TEXT("Debug Assist"));
+		ActiveBeacons.NumericValue = static_cast<double>(UGorgeousDebugAssistBlueprintFunctionLibrary::GetTotalActiveDebugBeacons());
+		OutStats.Add(ActiveBeacons);
+
+		FGorgeousInsightStat RenderOverhead;
+		RenderOverhead.Id = TEXT("Core.DebugAssist.RenderOverheadMS");
+		RenderOverhead.DisplayName = FText::FromString(TEXT("Render Overhead (MS)"));
+		RenderOverhead.Category = FName(TEXT("Debug Assist"));
+		RenderOverhead.ValueType = EGorgeousInsightStatValueType::TimeSeconds;
+		RenderOverhead.NumericValue = UGorgeousDebugAssistBlueprintFunctionLibrary::GetDebugAssistRenderOverheadMS() / 1000.0;
+		OutStats.Add(RenderOverhead);
+	}
+#endif // GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+
+	{
+		FGorgeousInsightStat AliveOVs;
+		AliveOVs.Id = TEXT("Core.ObjectVariables.AliveCount");
+		AliveOVs.DisplayName = FText::FromString(TEXT("Active Object Variables (Memory)"));
+		AliveOVs.Category = FName(TEXT("Object Variables"));
+		AliveOVs.NumericValue = static_cast<double>(UGorgeousObjectVariable::GetTotalAliveObjectVariables());
+		OutStats.Add(AliveOVs);
+	}
+
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
+			{
+				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
+				if (FoundOVs.Num() > 0)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					{
+						for (const auto& Pair : StatsOV->SystemStatsMap)
+						{
+							FName CategoryName = Pair.Key;
+							for (const auto& StatPair : Pair.Value.NumericStats)
+							{
+								FGorgeousInsightStat BPStat;
+								BPStat.Id = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *StatPair.Key));
+								BPStat.DisplayName = FText::FromString(StatPair.Key);
+								BPStat.Category = CategoryName;
+								BPStat.NumericValue = StatPair.Value;
+								OutStats.Add(BPStat);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const
 {
-	// Purged. Will pull published charts instead.
+	// 1. Interaction Foundation (Pie Chart)
+#if GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
+	{
+		FGorgeousInsightChartDefinition InterChart;
+		InterChart.Id = TEXT("Core.Charts.Interactions");
+		InterChart.Type = EGorgeousInsightChartType::Pie;
+		InterChart.Title = FText::FromString(TEXT("Interaction Results"));
+		InterChart.bPieDonut = false;
+		
+		FGorgeousInsightPieSlice SuccessSlice;
+		SuccessSlice.Label = FText::FromString(TEXT("Successful"));
+		SuccessSlice.Value = UGorgeousInteractionFoundation::GetTotalSuccessfulInteractions();
+		SuccessSlice.Color = FLinearColor::Green;
+		InterChart.PieSlices.Add(SuccessSlice);
+
+		FGorgeousInsightPieSlice RejectedSlice;
+		RejectedSlice.Label = FText::FromString(TEXT("Rejected"));
+		RejectedSlice.Value = UGorgeousInteractionFoundation::GetTotalRejectedInteractions();
+		RejectedSlice.Color = FLinearColor::Yellow;
+		InterChart.PieSlices.Add(RejectedSlice);
+
+		FGorgeousInsightPieSlice DeniedSlice;
+		DeniedSlice.Label = FText::FromString(TEXT("Permission Denied"));
+		DeniedSlice.Value = UGorgeousInteractionFoundation::GetTotalPermissionDeniedInteractions();
+		DeniedSlice.Color = FLinearColor::Red;
+		InterChart.PieSlices.Add(DeniedSlice);
+
+		OutCharts.Add(InterChart);
+	}
+#endif
+
+	// 2. Object Variables (Donut Chart)
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
+			{
+				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousObjectVariable::StaticClass(), true);
+				
+				TMap<FString, int32> ClassCounts;
+				for (UGorgeousObjectVariable* OV : FoundOVs)
+				{
+					if (OV)
+					{
+						FString ClassName = OV->GetClass()->GetName();
+						ClassName.RemoveFromEnd(TEXT("_OV"));
+						ClassName.RemoveFromEnd(TEXT("_C"));
+						int32& Count = ClassCounts.FindOrAdd(ClassName);
+						Count++;
+					}
+				}
+
+				if (ClassCounts.Num() > 0)
+				{
+					FGorgeousInsightChartDefinition OVChart;
+					OVChart.Id = TEXT("Core.Charts.ObjectVariables");
+					OVChart.Type = EGorgeousInsightChartType::Pie;
+					OVChart.Title = FText::FromString(TEXT("Object Variables Distribution"));
+					OVChart.bPieDonut = true;
+
+					int32 ColorIndex = 0;
+					TArray<FLinearColor> Palette = { FLinearColor::Blue, FLinearColor::Red, FLinearColor::Green, FLinearColor::Yellow, FLinearColor::Magenta, FLinearColor::Cyan };
+
+					for (const auto& Pair : ClassCounts)
+					{
+						FGorgeousInsightPieSlice Slice;
+						Slice.Label = FText::FromString(Pair.Key);
+						Slice.Value = Pair.Value;
+						Slice.Color = Palette[ColorIndex % Palette.Num()];
+						OVChart.PieSlices.Add(Slice);
+						ColorIndex++;
+					}
+					OutCharts.Add(OVChart);
+				}
+			}
+		}
+	}
+
+#if GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+	{
+		FGorgeousInsightChartDefinition StatsChart;
+		StatsChart.Id = TEXT("Core.Charts.StatsFoundation");
+		StatsChart.Type = EGorgeousInsightChartType::Bar;
+		StatsChart.Title = FText::FromString(TEXT("Stat Component Activity"));
+
+		FGorgeousInsightBarValue ActiveComps;
+		ActiveComps.Label = FText::FromString(TEXT("Active Components"));
+		ActiveComps.Value = UGorgeousStatComponent_AC::GetTotalActiveComponents();
+		StatsChart.Bars.Add(ActiveComps);
+
+		FGorgeousInsightBarValue Modifiers;
+		Modifiers.Label = FText::FromString(TEXT("Total Modifiers Applied"));
+		Modifiers.Value = UGorgeousStatComponent_AC::GetTotalModifiersApplied();
+		StatsChart.Bars.Add(Modifiers);
+
+		OutCharts.Add(StatsChart);
+	}
+#endif
+
+#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+	{
+		FGorgeousInsightChartDefinition UIChart;
+		UIChart.Id = TEXT("Core.Charts.UIFoundation");
+		UIChart.Type = EGorgeousInsightChartType::Bar;
+		UIChart.Title = FText::FromString(TEXT("UI Foundation Activity"));
+
+		FGorgeousInsightBarValue Overlays;
+		Overlays.Label = FText::FromString(TEXT("Active UI Overlays"));
+		Overlays.Value = UGorgeousPrimaryGameLayout::GetTotalActiveOverlays();
+		UIChart.Bars.Add(Overlays);
+
+		FGorgeousInsightBarValue ThemeSwaps;
+		ThemeSwaps.Label = FText::FromString(TEXT("Total Theme Swaps"));
+		ThemeSwaps.Value = UGorgeousUIFoundationSubsystem::GetTotalThemeSwapsTriggered();
+		UIChart.Bars.Add(ThemeSwaps);
+
+		OutCharts.Add(UIChart);
+	}
+#endif
+
+	// Will pull published blueprint charts as well.
 	UGorgeousInsightStatBuilder::GatherPublishedCharts(ProviderName(), OutCharts);
 }
 
@@ -152,6 +373,66 @@ void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightActio
 		Action.Category = FName(TEXT("Windows"));
 		OutActions.Add(Action);
 	}
+
+	// ── DataAsset Actions ──────────────────────────────────────────────────
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> AssetData;
+	AssetRegistryModule.Get().GetAssetsByClass(UGorgeousInsightActionConfig_DA::StaticClass()->GetClassPathName(), AssetData);
+
+	for (const FAssetData& Asset : AssetData)
+	{
+		if (UGorgeousInsightActionConfig_DA* Config = Cast<UGorgeousInsightActionConfig_DA>(Asset.GetAsset()))
+		{
+			// Only load actions for this provider or globally?
+			// Since this is the Core provider, we can load ALL of them and pipe them in, or 
+			// let each provider do it. Wait, the Insight Matrix gathers from all providers.
+			// Let's filter by ProviderName if we want, but since Core is the main one, we can 
+			// just append all of them to Core for now, or match ProviderName.
+			if (Config->ProviderName == ProviderName() || Config->ProviderName.IsNone())
+			{
+				for (const FGorgeousBlueprintInsightAction& BlueprintAction : Config->Actions)
+				{
+					FGorgeousInsightAction Action;
+					Action.Id = BlueprintAction.ActionId;
+					Action.DisplayName = BlueprintAction.DisplayName;
+					Action.Description = BlueprintAction.Description;
+					Action.Category = BlueprintAction.Category;
+					OutActions.Add(Action);
+				}
+			}
+		}
+	}
+
+	// ── Blueprint Actions ──────────────────────────────────────────────────
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
+			{
+				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
+				if (FoundOVs.Num() > 0)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					{
+						for (const auto& Pair : StatsOV->SystemStatsMap)
+						{
+							FName CategoryName = Pair.Key;
+							for (const FGorgeousBlueprintInsightAction& BPAction : Pair.Value.Actions)
+							{
+								FGorgeousInsightAction Action;
+								Action.Id = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
+								Action.DisplayName = FText::FromName(BPAction.ActionName);
+								Action.Description = FText::FromString(FString::Printf(TEXT("Triggers Action via Signal Bridge: %s"), *BPAction.SignalBridgeTag.ToString()));
+								Action.Category = CategoryName;
+								OutActions.Add(Action);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGorgeousInsightActionContext& Context)
@@ -160,6 +441,45 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 	{
 		SGorgeousObjectVariableBrowserWindow::Open();
 		return;
+	}
+
+	// ── Blueprint Actions ──────────────────────────────────────────────────
+	if (ActionId.ToString().StartsWith(TEXT("Blueprint.")))
+	{
+		UObject* ContextObj = Context.WorldContextObject;
+		if (!ContextObj && GEngine && GEngine->GetWorldContexts().Num() > 0)
+		{
+			ContextObj = GEngine->GetWorldContexts()[0].World();
+		}
+
+		if (ContextObj)
+		{
+			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(ContextObj))
+			{
+				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
+				if (FoundOVs.Num() > 0)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					{
+						for (const auto& Pair : StatsOV->SystemStatsMap)
+						{
+							FName CategoryName = Pair.Key;
+							for (const FGorgeousBlueprintInsightAction& BPAction : Pair.Value.Actions)
+							{
+								FName FormattedActionId = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
+								if (FormattedActionId == ActionId)
+								{
+									// Dispatch via Signal Bridge
+									FInstancedStruct EmptyPayload;
+									USignalBridgeBlueprintFunctionLibrary::DispatchLocal(ContextObj, BPAction.SignalBridgeTag, EmptyPayload);
+									return;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// ── AutoReplication merged action handlers ───────────────────────────
@@ -173,6 +493,83 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 	{
 		SGorgeousRPCInspectorWindow::Open();
 		return;
+	}
+
+	// ── DataAsset Actions ──────────────────────────────────────────────────
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> AssetData;
+	AssetRegistryModule.Get().GetAssetsByClass(UGorgeousInsightActionConfig_DA::StaticClass()->GetClassPathName(), AssetData);
+
+	for (const FAssetData& Asset : AssetData)
+	{
+		if (UGorgeousInsightActionConfig_DA* Config = Cast<UGorgeousInsightActionConfig_DA>(Asset.GetAsset()))
+		{
+			for (const FGorgeousBlueprintInsightAction& BlueprintAction : Config->Actions)
+			{
+				if (BlueprintAction.ActionId == ActionId)
+				{
+					// Action Found!
+#if WITH_EDITOR
+					if (BlueprintAction.EditorWidgetClass.IsValid() || !BlueprintAction.EditorWidgetClass.IsNull())
+					{
+						UClass* LoadedClass = BlueprintAction.EditorWidgetClass.LoadSynchronous();
+						if (LoadedClass && LoadedClass->IsChildOf(UEditorUtilityWidget::StaticClass()))
+						{
+							if (UEditorUtilitySubsystem* EditorUtilitySubsystem = GEditor->GetEditorSubsystem<UEditorUtilitySubsystem>())
+							{
+								if (UEditorUtilityWidgetBlueprint* WidgetBP = Cast<UEditorUtilityWidgetBlueprint>(LoadedClass->ClassGeneratedBy))
+								{
+									EditorUtilitySubsystem->SpawnAndRegisterTab(WidgetBP);
+								}
+								else
+								{
+									// It might be a native class or already compiled. Fallback:
+									FName TabID = FName(*(FString(TEXT("BlueprintActionTab_")) + ActionId.ToString()));
+									if (!FGlobalTabmanager::Get()->HasTabSpawner(TabID))
+									{
+										FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+											TabID,
+											FOnSpawnTab::CreateLambda([LoadedClass](const FSpawnTabArgs& Args)
+											{
+												UWorld* World = GEditor->GetEditorWorldContext().World();
+												UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(World, LoadedClass);
+												
+												return SNew(SDockTab)
+													.TabRole(ETabRole::NomadTab)
+													[
+														WidgetInstance->TakeWidget()
+													];
+											}))
+											.SetDisplayName(BlueprintAction.DisplayName)
+											.SetMenuType(ETabSpawnerMenuType::Hidden);
+									}
+									FGlobalTabmanager::Get()->TryInvokeTab(TabID);
+								}
+							}
+						}
+					}
+#endif
+					// Also handle RuntimeWidgetClass if playing in PIE / Game
+					if (Context.WorldContextObject && Context.WorldContextObject->GetWorld())
+					{
+						if (BlueprintAction.RuntimeWidgetClass.IsValid() || !BlueprintAction.RuntimeWidgetClass.IsNull())
+						{
+							UClass* LoadedRuntimeClass = BlueprintAction.RuntimeWidgetClass.LoadSynchronous();
+							if (LoadedRuntimeClass)
+							{
+								UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(Context.WorldContextObject->GetWorld(), LoadedRuntimeClass);
+								if (WidgetInstance)
+								{
+									WidgetInstance->AddToViewport();
+								}
+							}
+						}
+					}
+
+					return; // Done executing
+				}
+			}
+		}
 	}
 }
 

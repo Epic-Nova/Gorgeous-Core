@@ -26,7 +26,10 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/UObjectIterator.h"
 #include "Misc/FileHelper.h"
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/ConfigCacheIni.h"
 #include "HAL/PlatformTime.h"
@@ -1575,6 +1578,26 @@ FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByNam
 
 	FGorgeousInsightHarness::SaveScenarioResult(Descriptor, ScenarioResult, TEXT("Runtime"));
 
+#if GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+	if (WorldContextObject && WorldContextObject->GetWorld())
+	{
+		const FLinearColor BeaconColor = ScenarioResult.bSuccess ? FLinearColor::Green : FLinearColor::Red;
+		const FVector DefaultLocation(0.0f, 0.0f, 100.0f); 
+		// If there is an instigator or target, we would draw it there. For now, draw a central beacon.
+		
+		FGorgeousDebugAssistVisualParameters DebugParams;
+		DebugParams.Duration = 10.0f;
+		DebugParams.bEnabled = true;
+		
+		UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPointWithState(
+			WorldContextObject, 
+			DefaultLocation, 
+			ScenarioResult.bSuccess ? EGorgeousDebugAssistPointState::InBounds : EGorgeousDebugAssistPointState::OutOfBounds, 
+			DebugParams
+		);
+	}
+#endif
+
 	return ScenarioResult;
 }
 
@@ -2170,7 +2193,8 @@ void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldC
 			AGorgeousInsightFunctionalTest* TestActor = *It;
 			if (TestActor)
 			{
-				// TODO: Hook into FFunctionalTestingManager for execution
+				// Triggers the functional test logic, allowing the beacon to process state.
+				TestActor->RunTest(TArray<FString>());
 			}
 		}
 	}
