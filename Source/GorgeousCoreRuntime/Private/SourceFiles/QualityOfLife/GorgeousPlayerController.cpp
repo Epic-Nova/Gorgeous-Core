@@ -51,7 +51,7 @@ UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 	// Delay input mode setup and reset any early suspension to frame 1.
 	// This ensures the Slate viewport is fully initialized and can capture keyboard/mouse focus correctly,
 	// and clears any desynchronized ignore-input flags caused by startup widget transitions.
-	if (UWorld* World = GetWorld())
+	/*if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
@@ -70,7 +70,7 @@ UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 				UE_LOG(LogGorgeousPlayerController, Log, TEXT("PlayerController: Next-tick input initialization complete. Viewport focused and input ignore flags reset."));
 			}
 		}));
-	}
+	}*/
 )
 
 UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)

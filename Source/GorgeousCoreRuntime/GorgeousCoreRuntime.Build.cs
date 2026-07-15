@@ -36,7 +36,8 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
         PrivateDependencyModuleNames.AddRange(new[]
         {
             "GorgeousVault",
-            "FunctionalTesting"
+            "FunctionalTesting", 
+            "Niagara"
         });
 
         // Include the VaultLoader source files

@@ -193,12 +193,12 @@ void FGorgeousCoreInsightMatrixProvider::GatherStats(const FGorgeousInsightGathe
 	{
 		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
 			{
-				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
-				if (FoundOVs.Num() > 0)
+				for (UGorgeousObjectVariable* OV : FoundOVs)
 				{
-					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 					{
 						for (const auto& Pair : StatsOV->SystemStatsMap)
 						{
@@ -258,9 +258,7 @@ void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightCha
 	{
 		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
-			{
-				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousObjectVariable::StaticClass(), true);
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
 				
 				TMap<FString, int32> ClassCounts;
 				for (UGorgeousObjectVariable* OV : FoundOVs)
@@ -284,7 +282,7 @@ void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightCha
 					OVChart.bPieDonut = true;
 
 					int32 ColorIndex = 0;
-					TArray<FLinearColor> Palette = { FLinearColor::Blue, FLinearColor::Red, FLinearColor::Green, FLinearColor::Yellow, FLinearColor::Magenta, FLinearColor::Cyan };
+					TArray<FLinearColor> Palette = { FLinearColor::Blue, FLinearColor::Red, FLinearColor::Green, FLinearColor::Yellow, FLinearColor(1.f, 0.f, 1.f, 1.f), FLinearColor(0.f, 1.f, 1.f, 1.f) };
 
 					for (const auto& Pair : ClassCounts)
 					{
@@ -297,7 +295,6 @@ void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightCha
 					}
 					OutCharts.Add(OVChart);
 				}
-			}
 		}
 	}
 
@@ -408,17 +405,17 @@ void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightActio
 	{
 		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(World))
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
 			{
-				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
-				if (FoundOVs.Num() > 0)
+				for (UGorgeousObjectVariable* OV : FoundOVs)
 				{
-					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 					{
 						for (const auto& Pair : StatsOV->SystemStatsMap)
 						{
 							FName CategoryName = Pair.Key;
-							for (const FGorgeousBlueprintInsightAction& BPAction : Pair.Value.Actions)
+							for (const FGorgeousBlueprintStatsInsightAction& BPAction : Pair.Value.Actions)
 							{
 								FGorgeousInsightAction Action;
 								Action.Id = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
@@ -454,17 +451,17 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 
 		if (ContextObj)
 		{
-			if (UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(ContextObj))
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
 			{
-				TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
-				if (FoundOVs.Num() > 0)
+				for (UGorgeousObjectVariable* OV : FoundOVs)
 				{
-					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]))
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 					{
 						for (const auto& Pair : StatsOV->SystemStatsMap)
 						{
 							FName CategoryName = Pair.Key;
-							for (const FGorgeousBlueprintInsightAction& BPAction : Pair.Value.Actions)
+							for (const FGorgeousBlueprintStatsInsightAction& BPAction : Pair.Value.Actions)
 							{
 								FName FormattedActionId = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
 								if (FormattedActionId == ActionId)

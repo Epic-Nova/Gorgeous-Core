@@ -9,6 +9,8 @@
 #include "Components/SceneComponent.h"
 
 #if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+	#include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
+	#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 	#define GORGEOUS_INTERACTION_FOUNDATION_INTERFACE IInteractionFoundation_I
 	
@@ -43,7 +45,7 @@
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionCharacterHandler_AC.BP_InteractionCharacterHandler_AC_C"))
 
 	#define GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET() \
-		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionFoundationPromtWidget_AC.BP_InteractionFoundationPromtWidget_AC_C"))
+		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionFoundationPromptWidget_AC.BP_InteractionFoundationPromptWidget_AC_C"))
 
 	#define GORGEOUS_CLASS_INTERACTION_BASE_HANDLER() \
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionBaseHandler_AC.BP_InteractionBaseHandler_AC_C"))
@@ -52,7 +54,7 @@
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionActionWidget_AC.BP_InteractionActionWidget_AC_C"))
 
 	#define GORGEOUS_CLASS_INTERACTION_PROMPT_WIDGET() \
-		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionPromtWidget_AC.BP_InteractionPromtWidget_AC_C"))
+		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionPromptWidget_AC.BP_InteractionPromptWidget_AC_C"))
 #else
 	class IGorgeousEmptyInteractionInterface
 	{

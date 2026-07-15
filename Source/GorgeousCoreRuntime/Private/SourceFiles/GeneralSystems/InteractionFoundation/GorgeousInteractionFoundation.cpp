@@ -13,6 +13,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "GorgeousCoreRuntimeGlobals.h"
+#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "Stats/Stats.h"
 

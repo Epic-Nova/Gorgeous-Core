@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
-#include "GeneralSystems/Admin/GorgeousAdminDebugWidget.h"
+#include "GeneralSystems/GorgeousAdminDebugWidget.h"
 #include "GeneralSystems/GorgeousPermissionProvider.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 
 bool UGorgeousAdminDebugWidget::HasPermission(const FString& PermissionKey, AActor* TargetActor) const
 {

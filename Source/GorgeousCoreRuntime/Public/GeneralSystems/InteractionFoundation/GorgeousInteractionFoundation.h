@@ -12,14 +12,11 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 #include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
-#include "GeneralSystems/DebugAssist/DebugAssistStructures.h"
-#include "GameplayTagContainer.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 #include "GorgeousInteractionFoundation.generated.h"
 //<-------------------------------------------------------------------------->
-//@TODO: Make it a UGorgeous
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
