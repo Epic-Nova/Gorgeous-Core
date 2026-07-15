@@ -60,7 +60,7 @@ public:
 	 * @param OnVoiceLineAudioReady A delegate that will be executed when the audio component is spawned.
 	 * @param WorldContextObject The world context object for locating the world in which to play the sound.
 	 * 
-	 * @TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function)
+	 * @TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function) providers could also stream stuff from the www
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Audio", meta = (WorldContext = "WorldContextObject"))
 	static void PlayVoiceLineAtActorLocation(

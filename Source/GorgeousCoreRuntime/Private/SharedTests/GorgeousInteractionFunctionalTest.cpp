@@ -53,15 +53,7 @@ bool AGorgeousInteractionFunctionalTest::CanInteract_Implementation(AActor* Inte
 	return bTestActive;
 }
 
-FGorgeousInteractionPayload_S AGorgeousInteractionFunctionalTest::GetInteractionPayload_Implementation(AActor* Interactor) const
-{
-	FGorgeousInteractionPayload_S Payload;
-	Payload.ActionName = FText::FromString(TEXT("Complete Functional Test"));
-	Payload.InteractionDuration = 0.0f; // Instant interaction
-	return Payload;
-}
-
-void AGorgeousInteractionFunctionalTest::OnInteractionReceived_Implementation(AActor* Interactor, const FGorgeousInteractionPayload_S& Payload)
+void AGorgeousInteractionFunctionalTest::Interact_Implementation(AActor* Interactor, const FHitResult& HitResult)
 {
 	if (bTestActive)
 	{
@@ -70,6 +62,6 @@ void AGorgeousInteractionFunctionalTest::OnInteractionReceived_Implementation(AA
 		// Interaction received! The signal bridge payload routing worked and the sphere trace hit our component.
 		UpdateBeaconColor(FLinearColor::Green);
 		
-		FinishTest(EFunctionalTestResult::Passed, TEXT("Interaction successfully routed! The tester triggered the interactive beacon."));
+		FinishTest(EFunctionalTestResult::Succeeded, TEXT("Interaction successfully routed! The tester triggered the interactive beacon."));
 	}
 }

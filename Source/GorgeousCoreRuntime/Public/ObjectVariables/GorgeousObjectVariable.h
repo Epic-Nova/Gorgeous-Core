@@ -248,6 +248,8 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	//<------------------------------------------------------>
 
 public:
+	virtual void PostInitProperties() override;
+
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRPCPayloadEvent, const FGorgeousQueuedRPC&, QueuedRPC, UGorgeousObjectVariable*, TargetVariable);
 
 

@@ -16,7 +16,7 @@
 #include "GorgeousInsightBlueprintStats_OV.generated.h"
 
 USTRUCT(BlueprintType)
-struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintInsightAction
+struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintStatsInsightAction
 {
 	GENERATED_BODY()
 
@@ -38,7 +38,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintSystemStatsData
 
 	/** List of clickable UI actions registered by this Blueprint system */
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Insight Stats")
-	TArray<FGorgeousBlueprintInsightAction> Actions;
+	TArray<FGorgeousBlueprintStatsInsightAction> Actions;
 };
 
 /**

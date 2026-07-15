@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
+#include "Engine/LocalPlayer.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
@@ -20,7 +21,14 @@ struct FGorgeousCommonUIInsightTests
 		}
 
 		// Use the UI Foundation Subsystem
-		UGorgeousUIFoundationSubsystem* UISubsystem = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UGorgeousUIFoundationSubsystem>() : nullptr;
+		UGorgeousUIFoundationSubsystem* UISubsystem = nullptr;
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (ULocalPlayer* LocalPlayer = GI->GetFirstGamePlayer())
+			{
+				UISubsystem = LocalPlayer->GetSubsystem<UGorgeousUIFoundationSubsystem>();
+			}
+		}
 		
 		if (!UISubsystem)
 		{

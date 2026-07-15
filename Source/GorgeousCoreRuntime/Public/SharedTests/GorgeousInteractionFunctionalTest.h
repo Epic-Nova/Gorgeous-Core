@@ -8,7 +8,7 @@
 #include "GorgeousInteractionFunctionalTest.generated.h"
 
 class UBoxComponent;
-
+class AActor;
 /**
  * Functional Test Actor to physically test the Interaction Foundation using Sphere Traces.
  * Requires a tester to physically interact with it within a timeframe to pass the test.
@@ -26,8 +26,7 @@ public:
 
 	//~ Begin IInteractionFoundation_I Interface
 	virtual bool CanInteract_Implementation(AActor* Interactor) const override;
-	virtual FGorgeousInteractionPayload_S GetInteractionPayload_Implementation(AActor* Interactor) const override;
-	virtual void OnInteractionReceived_Implementation(AActor* Interactor, const FGorgeousInteractionPayload_S& Payload) override;
+	virtual void Interact_Implementation(AActor* Interactor, const FHitResult& HitResult) override;
 	//~ End IInteractionFoundation_I Interface
 
 protected:

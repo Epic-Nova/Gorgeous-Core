@@ -10,32 +10,38 @@
 <==========================================================================*/
 
 #include "InsightMatrix/GorgeousInsightBlueprintStats_OV.h"
+
+#include "GorgeousInsightActionConfig_DA.h"
 #include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
+#include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "Kismet/GameplayStatics.h"
 
 FGuid UGorgeousInsightBlueprintStats_OV::RegisterBlueprintSystemStats(UObject* WorldContextObject, FName SystemName)
 {
-	UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(WorldContextObject);
-	if (!Registry)
-	{
-		return FGuid();
-	}
-
 	// Try to find an existing registry OV globally
-	TArray<UGorgeousObjectVariable*> FoundOVs = Registry->GetAllObjectVariablesOfClass(UGorgeousInsightBlueprintStats_OV::StaticClass(), true);
+	TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
 	
 	UGorgeousInsightBlueprintStats_OV* StatsRegistry = nullptr;
-	if (FoundOVs.Num() > 0)
+	for (UGorgeousObjectVariable* OV : FoundOVs)
 	{
-		StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(FoundOVs[0]);
+		if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+		{
+			StatsRegistry = StatsOV;
+			break;
+		}
 	}
-	else
+
+	if (!StatsRegistry)
 	{
 		// Create it if it doesn't exist
-		StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(Registry->ConstructNewObjectVariable(UGorgeousInsightBlueprintStats_OV::StaticClass()));
-		if (StatsRegistry)
+		UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable();
+		if (Root)
 		{
-			// Make it a global object variable
-			Registry->RegisterGlobalObjectVariable(StatsRegistry);
+			StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(Root->InstantiateTransactionalObjectVariable(UGorgeousInsightBlueprintStats_OV::StaticClass(), Root));
+			if (StatsRegistry)
+			{
+				Root->RegisterWithRegistry(StatsRegistry);
+			}
 		}
 	}
 
@@ -45,10 +51,10 @@ FGuid UGorgeousInsightBlueprintStats_OV::RegisterBlueprintSystemStats(UObject* W
 		if (!StatsRegistry->SystemStatsMap.Contains(SystemName))
 		{
 			StatsRegistry->SystemStatsMap.Add(SystemName, FGorgeousBlueprintSystemStatsData());
-			StatsRegistry->MarkDirty();
+			StatsRegistry->MarkPackageDirty();
 		}
 		
-		return StatsRegistry->GetObjectVariableIdentifier();
+		return StatsRegistry->UniqueIdentifier;
 	}
 
 	return FGuid();
@@ -61,34 +67,30 @@ void UGorgeousInsightBlueprintStats_OV::RegisterBlueprintSystemAction(UObject* W
 		return;
 	}
 
-	UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(WorldContextObject);
-	if (Registry)
+	if (UGorgeousObjectVariable* OV = UGorgeousRootObjectVariable::FindVariableByIdentifier(RegistryGuid))
 	{
-		if (UGorgeousObjectVariable* OV = Registry->GetObjectVariableByIdentifier(RegistryGuid))
+		if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 		{
-			if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+			FGorgeousBlueprintSystemStatsData& Data = StatsRegistry->SystemStatsMap.FindOrAdd(SystemName);
+			
+			// Check if action already exists
+			bool bExists = false;
+			for (const FGorgeousBlueprintStatsInsightAction& Action : Data.Actions)
 			{
-				FGorgeousBlueprintSystemStatsData& Data = StatsRegistry->SystemStatsMap.FindOrAdd(SystemName);
-				
-				// Check if action already exists
-				bool bExists = false;
-				for (const FGorgeousBlueprintInsightAction& Action : Data.Actions)
+				if (Action.ActionName == ActionName)
 				{
-					if (Action.ActionName == ActionName)
-					{
-						bExists = true;
-						break;
-					}
+					bExists = true;
+					break;
 				}
+			}
 
-				if (!bExists)
-				{
-					FGorgeousBlueprintInsightAction NewAction;
-					NewAction.ActionName = ActionName;
-					NewAction.SignalBridgeTag = SignalBridgeTag;
-					Data.Actions.Add(NewAction);
-					StatsRegistry->MarkDirty();
-				}
+			if (!bExists)
+			{
+				FGorgeousBlueprintStatsInsightAction NewAction;
+				NewAction.ActionName = ActionName;
+				NewAction.SignalBridgeTag = SignalBridgeTag;
+				Data.Actions.Add(NewAction);
+				StatsRegistry->MarkPackageDirty();
 			}
 		}
 	}
@@ -101,23 +103,19 @@ void UGorgeousInsightBlueprintStats_OV::UnregisterBlueprintSystemAction(UObject*
 		return;
 	}
 
-	UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(WorldContextObject);
-	if (Registry)
+	if (UGorgeousObjectVariable* OV = UGorgeousRootObjectVariable::FindVariableByIdentifier(RegistryGuid))
 	{
-		if (UGorgeousObjectVariable* OV = Registry->GetObjectVariableByIdentifier(RegistryGuid))
+		if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 		{
-			if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+			if (FGorgeousBlueprintSystemStatsData* Data = StatsRegistry->SystemStatsMap.Find(SystemName))
 			{
-				if (FGorgeousBlueprintSystemStatsData* Data = StatsRegistry->SystemStatsMap.Find(SystemName))
+				for (int32 i = Data->Actions.Num() - 1; i >= 0; --i)
 				{
-					for (int32 i = Data->Actions.Num() - 1; i >= 0; --i)
+					if (Data->Actions[i].ActionName == ActionName)
 					{
-						if (Data->Actions[i].ActionName == ActionName)
-						{
-							Data->Actions.RemoveAt(i);
-							StatsRegistry->MarkDirty();
-							break;
-						}
+						Data->Actions.RemoveAt(i);
+						StatsRegistry->MarkPackageDirty();
+						break;
 					}
 				}
 			}
@@ -132,17 +130,13 @@ void UGorgeousInsightBlueprintStats_OV::UnregisterBlueprintSystemStats(UObject* 
 		return;
 	}
 
-	UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(WorldContextObject);
-	if (Registry)
+	if (UGorgeousObjectVariable* OV = UGorgeousRootObjectVariable::FindVariableByIdentifier(RegistryGuid))
 	{
-		if (UGorgeousObjectVariable* OV = Registry->GetObjectVariableByIdentifier(RegistryGuid))
+		if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 		{
-			if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+			if (StatsRegistry->SystemStatsMap.Remove(SystemName) > 0)
 			{
-				if (StatsRegistry->SystemStatsMap.Remove(SystemName) > 0)
-				{
-					StatsRegistry->MarkDirty();
-				}
+				StatsRegistry->MarkPackageDirty();
 			}
 		}
 	}
@@ -164,40 +158,36 @@ DEFINE_FUNCTION(UGorgeousInsightBlueprintStats_OV::execSetBlueprintSystemStat)
 	
 	if (RegistryGuid.IsValid() && ValueProperty && ValueAddr)
 	{
-		UGorgeousObjectVariableRegistry_GIS* Registry = UGorgeousObjectVariableRegistry_GIS::Get(Stack.Object);
-		if (Registry)
+		if (UGorgeousObjectVariable* OV = UGorgeousRootObjectVariable::FindVariableByIdentifier(RegistryGuid))
 		{
-			if (UGorgeousObjectVariable* OV = Registry->GetObjectVariableByIdentifier(RegistryGuid))
+			if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 			{
-				if (UGorgeousInsightBlueprintStats_OV* StatsRegistry = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+				double NumericValue = 0.0;
+				bool bValidNumber = false;
+
+				if (const FNumericProperty* NumericProp = CastField<FNumericProperty>(ValueProperty))
 				{
-					double NumericValue = 0.0;
-					bool bValidNumber = false;
+					if (NumericProp->IsFloatingPoint())
+					{
+						NumericValue = NumericProp->GetFloatingPointPropertyValue(ValueAddr);
+					}
+					else if (NumericProp->IsInteger())
+					{
+						NumericValue = static_cast<double>(NumericProp->GetSignedIntPropertyValue(ValueAddr));
+					}
+					bValidNumber = true;
+				}
+				else if (const FBoolProperty* BoolProp = CastField<FBoolProperty>(ValueProperty))
+				{
+					NumericValue = BoolProp->GetPropertyValue(ValueAddr) ? 1.0 : 0.0;
+					bValidNumber = true;
+				}
 
-					if (const FNumericProperty* NumericProp = CastField<FNumericProperty>(ValueProperty))
-					{
-						if (NumericProp->IsFloatingPoint())
-						{
-							NumericValue = NumericProp->GetFloatingPointPropertyValue(ValueAddr);
-						}
-						else if (NumericProp->IsInteger())
-						{
-							NumericValue = static_cast<double>(NumericProp->GetSignedIntPropertyValue(ValueAddr));
-						}
-						bValidNumber = true;
-					}
-					else if (const FBoolProperty* BoolProp = CastField<FBoolProperty>(ValueProperty))
-					{
-						NumericValue = BoolProp->GetPropertyValue(ValueAddr) ? 1.0 : 0.0;
-						bValidNumber = true;
-					}
-
-					if (bValidNumber)
-					{
-						FGorgeousBlueprintSystemStatsData& Data = StatsRegistry->SystemStatsMap.FindOrAdd(SystemName);
-						Data.NumericStats.Add(StatName, NumericValue);
-						StatsRegistry->MarkDirty();
-					}
+				if (bValidNumber)
+				{
+					FGorgeousBlueprintSystemStatsData& Data = StatsRegistry->SystemStatsMap.FindOrAdd(SystemName);
+					Data.NumericStats.Add(StatName, NumericValue);
+					StatsRegistry->MarkPackageDirty();
 				}
 			}
 		}

@@ -35,6 +35,7 @@
 
 // Note: STATGROUP_GorgeousUIFoundation is declared in GorgeousPrimaryGameLayout.cpp, but for linking ease across translation units, we can just declare the counter here.
 extern TStatId GetStatId_STATGROUP_GorgeousUIFoundation();
+DECLARE_STATS_GROUP(TEXT("Gorgeous UI Foundation"), STATGROUP_GorgeousUIFoundation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Set UI Theme"), STAT_GUI_SetTheme, STATGROUP_GorgeousUIFoundation);
 DECLARE_DWORD_COUNTER_STAT(TEXT("Total Theme Swaps"), STAT_GUI_ThemeSwaps, STATGROUP_GorgeousUIFoundation);
 
