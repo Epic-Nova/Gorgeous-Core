@@ -12,12 +12,14 @@
 using System.IO;
 using UnrealBuildTool;
 
-public class GorgeousCoreEditorUtilities : ModuleRules
+public class GorgeousCoreEditorUtilities : GorgeousModuleRules
 {
     public GorgeousCoreEditorUtilities(ReadOnlyTargetRules Target) : base(Target)
     {
-        var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
-        var privateIncludePath = Path.Combine(ModuleDirectory, "Private");
+        ApplyGorgeousBuildSettings(new GorgeousBuildSettings {
+            TargetModuleType = GorgeousModuleType.Editor,
+            ModulesToExclude = new[] { "GorgeousCoreEditorUtilities" }
+        });
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
@@ -26,55 +28,11 @@ public class GorgeousCoreEditorUtilities : ModuleRules
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
         
-        PublicIncludePaths.AddRange(new string[]
-        {
-            publicIncludePath,
-            Path.Combine(publicIncludePath, "ModuleCore")
-        });
-
-        PrivateIncludePaths.AddRange(new[]
-        {
-            Path.Combine(privateIncludePath, "HeaderFiles")
-        });
-        
-        PublicDependencyModuleNames.AddRange(new[]
-        {
-            "Core", 
-            "CoreUObject", 
-            "Engine", 
-            "Slate", 
-            "SlateCore", 
-            "InputCore", 
-            "EditorSubsystem",
-            "DeveloperToolSettings",
-            "DataValidation",
-            "AssetRegistry",
-            "AssetTools",
-        });
-        
-        PrivateDependencyModuleNames.AddRange(
-            new[] 
-            {
-                "Projects",
-                "EditorStyle",
-                "UnrealEd",
-                "BlueprintGraph",
-                "Kismet",
-                "PropertyEditor", 
-                "EditorFramework",
-                "MessageLog",
-                "UMG", 
-                "ContentBrowser",
-                "DeveloperSettings",
-                "GameplayTags", 
-                "Blutility"
-            });
-    
-        
+        // The base class will auto-inject dependencies like Core, Engine, Slate, UMG, Json, etc.
+        // We explicitly add things the auto-scanner might miss or that are critical third-party dependencies:
         PrivateDependencyModuleNames.AddRange(new[]
         {
-            "GorgeousCoreRuntime", 
-            "GorgeousCoreRuntimeUtilities"
+            "DeveloperSettings"
         });
     }
 }

@@ -16,6 +16,31 @@
 #include "Engine/LocalPlayer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
+#include "Stats/Stats.h"
+
+DECLARE_STATS_GROUP(TEXT("Gorgeous UI Foundation"), STATGROUP_GorgeousUIFoundation, STATCAT_Advanced);
+DECLARE_DWORD_COUNTER_STAT(TEXT("Active UI Overlays"), STAT_GUI_ActiveOverlays, STATGROUP_GorgeousUIFoundation);
+DECLARE_CYCLE_STAT(TEXT("Push Widget To Layer"), STAT_GUI_PushWidget, STATGROUP_GorgeousUIFoundation);
+DECLARE_CYCLE_STAT(TEXT("Register UI Layer"), STAT_GUI_RegisterLayer, STATGROUP_GorgeousUIFoundation);
+
+static int32 GActiveUIOverlaysCount = 0;
+
+int32 UGorgeousPrimaryGameLayout::GetTotalActiveOverlays()
+{
+	return GActiveUIOverlaysCount;
+}
+
+void UGorgeousPrimaryGameLayout::IncrementActiveOverlays()
+{
+	GActiveUIOverlaysCount++;
+	INC_DWORD_STAT(STAT_GUI_ActiveOverlays);
+}
+
+void UGorgeousPrimaryGameLayout::DecrementActiveOverlays()
+{
+	GActiveUIOverlaysCount--;
+	DEC_DWORD_STAT(STAT_GUI_ActiveOverlays);
+}
 
 UGorgeousPrimaryGameLayout::UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -112,6 +137,7 @@ void UGorgeousPrimaryGameLayout::OnIsDormantChanged_Implementation()
 
 UCommonActivatableWidget* UGorgeousPrimaryGameLayout::PushWidgetToLayerStack(FGameplayTag LayerName, UClass* ActivatableWidgetClass)
 {
+	SCOPE_CYCLE_COUNTER(STAT_GUI_PushWidget);
 	if (UCommonActivatableWidgetContainerBase* Layer = GetLayerWidget(LayerName))
 	{
 		return Layer->AddWidget(ActivatableWidgetClass);
@@ -230,6 +256,7 @@ bool UGorgeousPrimaryGameLayout::IsLayerVisible(FGameplayTag LayerName) const
 
 void UGorgeousPrimaryGameLayout::RegisterLayer(FGameplayTag LayerTag, UCommonActivatableWidgetContainerBase* LayerWidget)
 {
+	SCOPE_CYCLE_COUNTER(STAT_GUI_RegisterLayer);
 	if (!LayerTag.IsValid() || !LayerWidget) return;
 	if (IsDesignTime()) return;
 

@@ -112,6 +112,19 @@ UGorgeousObjectVariable::FReplicatedPropertyDeclaration::FReplicatedPropertyDecl
 {
 }
 
+void UGorgeousObjectVariable::PostInitProperties()
+{
+	Super::PostInitProperties();
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		INC_DWORD_STAT(STAT_GOV_Created);
+		INC_DWORD_STAT(STAT_GOV_Alive);
+		const int32 AliveCount = GObjectVariableAliveCounter.Increment();
+		GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
+		GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
+	}
+}
+
 UGorgeousObjectVariable::FReplicatedPropertyDeclaration::~FReplicatedPropertyDeclaration()
 {
 	ResetShadowState();
@@ -935,8 +948,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
 	NewObjectVariable->SetFallbackOwner(InParent);
 	
-	INC_DWORD_STAT(STAT_GOV_Created);
-	INC_DWORD_STAT(STAT_GOV_Alive);
 	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
 	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
 	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
@@ -990,10 +1001,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	NewInstance->UniqueIdentifier = FGuid::NewGuid();
 	NewInstance->Parent = InParent;
 	NewInstance->SetDisplayName(Class ? Class->GetName() : FString());
-	INC_DWORD_STAT(STAT_GOV_Created);
-	INC_DWORD_STAT(STAT_GOV_Alive);
-	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
-	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
 	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
 	
 	if (NewInstance)
@@ -3798,3 +3805,10 @@ void UGorgeousObjectVariable::PostEditChangeProperty(FPropertyChangedEvent& Prop
 }
 #endif // WITH_EDITOR
 
+
+
+
+int32 UGorgeousObjectVariable::GetTotalAliveObjectVariables()
+{
+	return GObjectVariableAliveCounter.GetValue();
+}

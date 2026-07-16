@@ -29,10 +29,14 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
-
+	virtual ~SGorgeousInsightDebugPanel();
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	struct FInsightPanelState
 	{
 		FName SelectedProvider = NAME_None;
+		FGorgeousInsightGatherContext Context;
+		TMap<FName, double> LastToastTimes;
+		FName SelectedStatCategory = NAME_None;
 		FString ProviderFilter;
 		bool bRunWithHarness = false;
 		TMap<FName, TMap<FName, FString>> TestInputValues;
@@ -40,10 +44,11 @@ public:
 		TMap<FName, double> StatCriticalThresholds;
 	};
 
-	DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightPanelStateChanged, const FInsightPanelState&);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightPanelStateChanged, const FInsightPanelState&);
 
 	FInsightPanelState ExportState() const;
 	void ImportState(const FInsightPanelState& State);
+	TSharedPtr<SWidget> OnStatContextMenuOpening();
 	FOnGorgeousInsightPanelStateChanged& OnStateChanged() { return StateChanged; }
 
 	/** Rebuild provider list and refresh stats/actions for the selected provider. */
@@ -89,16 +94,20 @@ private:
 	void RefreshProviderData();
 	void RebuildActions();
 
+	void OpenBaselineTestResultPopup(const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result);
+
+	TSharedRef<SWidget> BuildContextSwitcher();
+	TSharedRef<SWidget> BuildToolbar();
 	TSharedRef<SWidget> BuildProviderList();
 	TSharedRef<SWidget> BuildStatsList();
 	TSharedRef<SWidget> BuildChartsPanel();
 	TSharedRef<SWidget> BuildActionsPanel();
 	TSharedRef<SWidget> BuildTestsList();
-	TSharedRef<SWidget> BuildToolbar();
 	void RebuildCharts();
 
 	void OnProviderSelectionChanged(TSharedPtr<FProviderEntry> Item, ESelectInfo::Type SelectInfo);
 	FReply OnRefreshClicked();
+	void OnStatCategoryChanged(FName NewCategory);
 	FReply OnActionClicked(FName ActionId);
 
 	FReply OnRunQueuedTestsClicked();
@@ -128,6 +137,8 @@ private:
 
 	TArray<TSharedPtr<FStatRow>> StatItems;
 	TSharedPtr<SListView<TSharedPtr<FStatRow>>> StatsListView;
+	TSharedPtr<SHorizontalBox> StatCategoriesBox;
+	TArray<FGorgeousInsightStat> RawProviderStats;
 	TSharedPtr<SUniformGridPanel> ChartsGrid;
 
 	TArray<FGorgeousInsightAction> ActionItems;
@@ -139,6 +150,9 @@ private:
 	FString ProviderFilter;
 
 	FName SelectedProvider = NAME_None;
+	FGorgeousInsightGatherContext CurrentContext;
+	FName SelectedStatCategory = NAME_None;
+	TMap<FName, double> LastToastTimes;
 	bool bRunWithHarness = false;
 	TMap<FName, TMap<FName, FString>> TestInputValues;
 	TMap<FName, double> StatWarningThresholds;
@@ -146,4 +160,7 @@ private:
 	FOnGorgeousInsightPanelStateChanged StateChanged;
 	bool bSuppressStateBroadcast = false;
 	bool bRefreshingProviderSelection = false;
+#if WITH_EDITOR
+	FDelegateHandle EndPieDelegateHandle;
+#endif
 };

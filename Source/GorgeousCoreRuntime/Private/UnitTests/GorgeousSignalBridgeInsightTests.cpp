@@ -2,12 +2,12 @@
 
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
-#include "StructUtils/InstancedStruct.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "HAL/PlatformTime.h"
-#include "UnitTests/Helpers/GorgeousSignalBridgeInsightHelper.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "Engine/NetDriver.h"
+#include "SharedTests/GorgeousSignalBridgeInsightHelper.h"
 
 struct FGorgeousSignalBridgeTestAccess
 {
@@ -32,6 +32,77 @@ struct FGorgeousSignalBridgeTestAccess
 
 struct FGorgeousSignalBridgeInsightTests
 {
+	static FGorgeousInsightScenarioResult RunAnonymousRoutingTest(const FGorgeousInsightScenarioContext& Ctx)
+	{
+		FGorgeousInsightScenarioResult Result;
+		Result.bSuccess = true;
+		
+		USignalBridgeStorage_OV* Bridge = NewObject<USignalBridgeStorage_OV>();
+		UGorgeousSignalBridgeInsightHelper* SystemA = NewObject<UGorgeousSignalBridgeInsightHelper>();
+		SystemA->BridgeRef = Bridge;
+		
+		FSignalBridgeEventDelegate DelegateA;
+		DelegateA.BindDynamic(SystemA, &UGorgeousSignalBridgeInsightHelper::HandleTestSignal);
+		Bridge->Listen(TAG_Gorgeous_Test_SignalBridge_Perf, nullptr, DelegateA);
+		
+		FGorgeousTestSignalPayload PayloadData;
+		PayloadData.PrimeResult = 42;
+		FInstancedStruct TestPayload = FInstancedStruct::Make(PayloadData);
+		
+		Bridge->Dispatch(TAG_Gorgeous_Test_SignalBridge_Perf, TestPayload);
+		
+		if (SystemA->HitCount == 1)
+		{
+			Result.AddNote(TEXT("Anonymous routing successful. Payload received perfectly without tight coupling."));
+		}
+		else
+		{
+			Result.bSuccess = false;
+			Result.AddError(TEXT("System A did not receive the payload correctly."));
+		}
+		return Result;
+	}
+
+	static FGorgeousInsightScenarioDescriptor MakeAnonymousRoutingScenario()
+	{
+		FGorgeousInsightScenarioDescriptor D;
+		D.ScenarioName = TEXT("Core.SignalBridge.Functional.AnonymousRouting");
+		D.DisplayName  = TEXT("Signal Bridge: Anonymous Routing Test");
+		D.Description  = TEXT("System A registers a listener. System B fires a message. Verify System A receives the payload without knowing about System B.");
+		D.Tags         = { TEXT("signal-bridge"), TEXT("functional"), TEXT("GorgeousCore") };
+		D.Priority     = 50;
+		D.Runner = [](const FGorgeousInsightScenarioContext& Ctx) { return RunAnonymousRoutingTest(Ctx); };
+		return D;
+	}
+
+	static FGorgeousInsightScenarioResult RunGracefulFailureTest(const FGorgeousInsightScenarioContext& Ctx)
+	{
+		FGorgeousInsightScenarioResult Result;
+		Result.bSuccess = true;
+		
+		USignalBridgeStorage_OV* Bridge = NewObject<USignalBridgeStorage_OV>();
+		
+		// Dispatching a signal that nobody is listening to, and which hasn't been registered.
+		// If it reaches the end without hitting an assert/check, it succeeds gracefully.
+		FInstancedStruct EmptyPayload;
+		Bridge->Dispatch(TAG_Gorgeous_Test_SignalBridge_PerfResult, EmptyPayload);
+
+		Result.AddNote(TEXT("Graceful failure successful. Unregistered/unlistened signal disappeared silently without crashing the system."));
+		return Result;
+	}
+
+	static FGorgeousInsightScenarioDescriptor MakeGracefulFailureScenario()
+	{
+		FGorgeousInsightScenarioDescriptor D;
+		D.ScenarioName = TEXT("Core.SignalBridge.Functional.GracefulFailure");
+		D.DisplayName  = TEXT("Signal Bridge: Graceful Failure Test");
+		D.Description  = TEXT("Unload System A entirely. System B fires a message. Verify the Signal Bridge handles the dead end silently.");
+		D.Tags         = { TEXT("signal-bridge"), TEXT("functional"), TEXT("GorgeousCore") };
+		D.Priority     = 60;
+		D.Runner = [](const FGorgeousInsightScenarioContext& Ctx) { return RunGracefulFailureTest(Ctx); };
+		return D;
+	}
+
 	static FGorgeousInsightScenarioResult RunPerformanceTest(const FGorgeousInsightScenarioContext& Ctx)
 	{
 		FGorgeousInsightScenarioResult Result;
@@ -302,5 +373,7 @@ struct FGorgeousSignalBridgeInsightTests
 	}
 };
 
+REGISTER_GORGEOUS_INSIGHT_SCENARIO(FGorgeousSignalBridgeInsightTests::MakeAnonymousRoutingScenario());
+REGISTER_GORGEOUS_INSIGHT_SCENARIO(FGorgeousSignalBridgeInsightTests::MakeGracefulFailureScenario());
 REGISTER_GORGEOUS_INSIGHT_SCENARIO(FGorgeousSignalBridgeInsightTests::MakeSignalBridgePerformanceScenario());
 REGISTER_GORGEOUS_INSIGHT_SCENARIO(FGorgeousSignalBridgeInsightTests::MakeParametrizedScenario());
