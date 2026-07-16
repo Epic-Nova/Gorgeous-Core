@@ -6,7 +6,8 @@
 
 class APlayerController;
 
-
+// @TODO: UI Feedback type, hook with interaction foundation
+// @TODO: Hook with debug assist?
 
 /**
  * Abstract base class for all feedback effects.
@@ -87,6 +88,16 @@ public:
 protected:
 
     /**
+     * Runs the actual effect. Subclasses implement this instead of Execute_Implementation; the
+     * base Execute_Implementation applies scheduling (chance, delay, repeat) and then calls this.
+     *
+     * @param Context The feedback context describing the current situation.
+     */
+    virtual void PerformExecute(const FGorgeousFeedbackContext& Context)
+    {
+    }
+
+    /**
      * Resolves the most appropriate player controller from the feedback context.
      * Player-centric effects (force feedback, haptics, camera shakes) are routed to the
      * instigator/target if they are a player, otherwise to the first local player controller.
@@ -152,6 +163,17 @@ protected:
     virtual void StopPreview_Internal();
 
 #endif
+
+private:
+
+    /**
+     * Applies the configured execution scheduling (chance, delay, repeat) around a single
+     * invocation of Execute_Implementation. The first play happens after Delay (+ random), and
+     * RepeatCount - 1 additional plays follow every RepeatInterval.
+     *
+     * @param Context The feedback context to forward to the underlying implementation.
+     */
+    void ExecuteWithScheduling(const FGorgeousFeedbackContext& Context);
 };
 
 /**

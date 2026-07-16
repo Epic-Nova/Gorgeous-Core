@@ -11,7 +11,7 @@ void UGorgeousConditionalFeedbackEffect::Execute_Implementation(const FGorgeousF
 
 bool UGorgeousConditionalFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	if (!bEnabled || !Effect)
+	if (!Super::CanExecute_Implementation(Context) || !Effect)
 	{
 		return false;
 	}

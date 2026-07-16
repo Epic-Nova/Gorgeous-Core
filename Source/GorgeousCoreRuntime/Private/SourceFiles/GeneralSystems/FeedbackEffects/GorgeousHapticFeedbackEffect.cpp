@@ -2,7 +2,7 @@
 
 #include "Engine/World.h"
 
-void UGorgeousHapticFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousHapticFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !HapticEffect)
 	{
@@ -17,5 +17,5 @@ void UGorgeousHapticFeedbackEffect::Execute_Implementation(const FGorgeousFeedba
 
 bool UGorgeousHapticFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && HapticEffect != nullptr;
+	return Super::CanExecute_Implementation(Context) && HapticEffect != nullptr;
 }

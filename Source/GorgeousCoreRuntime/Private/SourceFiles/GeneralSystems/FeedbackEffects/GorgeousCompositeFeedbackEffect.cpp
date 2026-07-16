@@ -15,7 +15,12 @@ void UGorgeousCompositeFeedbackEffect::Execute_Implementation(const FGorgeousFee
 
 bool UGorgeousCompositeFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	if (!bEnabled || Children.Num() == 0)
+	if (!Super::CanExecute_Implementation(Context))
+	{
+		return false;
+	}
+
+	if (Children.Num() == 0)
 	{
 		return false;
 	}

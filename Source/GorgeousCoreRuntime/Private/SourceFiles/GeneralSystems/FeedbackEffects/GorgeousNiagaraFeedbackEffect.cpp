@@ -3,7 +3,7 @@
 #include "Engine/World.h"
 #include "NiagaraFunctionLibrary.h"
 
-void UGorgeousNiagaraFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousNiagaraFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !System)
 	{
@@ -39,5 +39,5 @@ void UGorgeousNiagaraFeedbackEffect::Execute_Implementation(const FGorgeousFeedb
 
 bool UGorgeousNiagaraFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && System != nullptr;
+	return Super::CanExecute_Implementation(Context) && System != nullptr;
 }

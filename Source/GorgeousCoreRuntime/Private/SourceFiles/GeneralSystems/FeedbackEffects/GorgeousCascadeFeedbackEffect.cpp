@@ -4,7 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 
-void UGorgeousCascadeFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousCascadeFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !ParticleSystem)
 	{
@@ -41,5 +41,5 @@ void UGorgeousCascadeFeedbackEffect::Execute_Implementation(const FGorgeousFeedb
 
 bool UGorgeousCascadeFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && ParticleSystem != nullptr;
+	return Super::CanExecute_Implementation(Context) && ParticleSystem != nullptr;
 }

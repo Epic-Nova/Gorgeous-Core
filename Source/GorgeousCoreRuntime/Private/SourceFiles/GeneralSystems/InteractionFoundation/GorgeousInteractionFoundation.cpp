@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
+
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
@@ -16,13 +17,17 @@
 #include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "Stats/Stats.h"
+//<-------------------------------------------------------------------------->
+
+TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundation::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
+
+//=============================================================================
+// Helpers
+//=============================================================================
 
 DECLARE_STATS_GROUP(TEXT("Gorgeous Interaction Foundation"), STATGROUP_GorgeousInteractionFoundation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Sphere Trace Interact"), STAT_GInteract_SphereTraceInteract, STATGROUP_GorgeousInteractionFoundation);
 DECLARE_CYCLE_STAT(TEXT("Sphere Trace Focus"), STAT_GInteract_SphereTraceFocus, STATGROUP_GorgeousInteractionFoundation);
-//<-------------------------------------------------------------------------->
-
-TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundation::InteractionActors = TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>>();
 
 namespace GorgeousInteractionFoundation
 {
@@ -195,7 +200,7 @@ namespace GorgeousInteractionFoundation
 }
 
 //=============================================================================
-// UGorgeousInteractionFoundationBlueprintFunctionLibrary Implementation
+// UGorgeousInteractionFoundation Implementation
 //=============================================================================
 
 static int32 GInteractionTotalSuccessful = 0;

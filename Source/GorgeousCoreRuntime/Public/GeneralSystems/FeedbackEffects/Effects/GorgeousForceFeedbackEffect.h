@@ -35,7 +35,7 @@ public:
 public:
 
 	/** Plays the force feedback effect on the player controller or at the world location. */
-	virtual void Execute_Implementation(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
 
 	/** Returns true when the effect is enabled and a force feedback asset is set. */
 	virtual bool CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const override;

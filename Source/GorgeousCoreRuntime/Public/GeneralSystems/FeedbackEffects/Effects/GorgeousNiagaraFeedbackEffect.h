@@ -41,7 +41,7 @@ public:
 public:
 
 	/** Spawns the Niagara system at the feedback location or attached to the target. */
-	virtual void Execute_Implementation(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
 
 	/** Returns true when the effect is enabled and a Niagara system is set. */
 	virtual bool CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const override;

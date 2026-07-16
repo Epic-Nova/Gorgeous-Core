@@ -1,18 +1,107 @@
-﻿#include "FeedbackEffects/GorgeousFeedbackEffect.h"
+#include "FeedbackEffects/GorgeousFeedbackEffect.h"
 
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "FeedbackEffects/GorgeousFeedbackProvider.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 void UGorgeousFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
 {
+	ExecuteWithScheduling(Context);
+}
+
+void UGorgeousFeedbackEffect::ExecuteWithScheduling(const FGorgeousFeedbackContext& Context)
+{
+	// Probability gate: roll against Chance and bail out if it does not pass.
+	if (Chance < 1.f && FMath::FRand() > Chance)
+	{
+		return;
+	}
+
+	// Resolve the total initial delay (fixed delay plus an optional random component).
+	const float InitialDelay = Delay + (RandomDelay > 0.f ? FMath::FRandRange(0.f, RandomDelay) : 0.f);
+
+	const int32 Plays = FMath::Max(1, RepeatCount);
+	const bool bNeedsTimer = InitialDelay > 0.f || (Plays > 1 && RepeatInterval > 0.f);
+
+	if (!bNeedsTimer)
+	{
+		// Simple immediate case: run all plays back-to-back without a timer.
+		for (int32 PlayIndex = 0; PlayIndex < Plays; ++PlayIndex)
+		{
+			PerformExecute(Context);
+		}
+		return;
+	}
+
+	// Deferred path: schedule the first play, then chain repeats on an interval timer.
+	FTimerDelegate FirstPlay;
+	FirstPlay.BindLambda([this, Context, Plays]()
+	{
+		PerformExecute(Context);
+
+		if (Plays > 1 && RepeatInterval > 0.f)
+		{
+			FTimerDelegate RepeatPlay;
+			RepeatPlay.BindLambda([this, Context]()
+			{
+				PerformExecute(Context);
+			});
+
+			if (UWorld* World = GetWorld())
+			{
+				FTimerHandle RepeatHandle;
+				World->GetTimerManager().SetTimer(RepeatHandle, RepeatPlay, RepeatInterval, true);
+			}
+		}
+	});
+
+	if (UWorld* World = GetWorld())
+	{
+		FTimerHandle FirstPlayHandle;
+		if (InitialDelay > 0.f)
+		{
+			World->GetTimerManager().SetTimer(FirstPlayHandle, FirstPlay, InitialDelay, false);
+		}
+		else
+		{
+			World->GetTimerManager().SetTimerForNextTick(FirstPlay);
+		}
+	}
 }
 
 bool UGorgeousFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return false;
+	// Universal gating shared by every effect:
+	// disabled effects, missing required tags and present blocked tags never run.
+	const FString EffectName = DisplayName.IsEmpty() ? GetName() : DisplayName.ToString();
+
+	if (!bEnabled)
+	{
+		GT_W_LOG("GT.FeedbackEffects.CanExecute", TEXT("Effect '%s' skipped: disabled."), *EffectName);
+		return false;
+	}
+
+	if (!Context.ContextTags.HasAll(RequiredTags))
+	{
+		GT_W_LOG("GT.FeedbackEffects.CanExecute",
+			TEXT("Effect '%s' skipped: missing required tags. Has [%s], needs [%s]."),
+			*EffectName, *Context.ContextTags.ToString(), *RequiredTags.ToString());
+		return false;
+	}
+
+	if (Context.ContextTags.HasAny(BlockedTags))
+	{
+		GT_W_LOG("GT.FeedbackEffects.CanExecute",
+			TEXT("Effect '%s' skipped: blocked by tag. Context tags [%s], blocked by [%s]."),
+			*EffectName, *Context.ContextTags.ToString(), *BlockedTags.ToString());
+		return false;
+	}
+
+	GT_I_LOG("GT.FeedbackEffects.CanExecute", TEXT("Effect '%s' passed gating."), *EffectName);
+	return true;
 }
 
 APlayerController* UGorgeousFeedbackEffect::ResolvePlayerController(const FGorgeousFeedbackContext& Context) const
@@ -76,6 +165,14 @@ FTransform UGorgeousFeedbackEffect::ResolveEffectTransform(const FGorgeousFeedba
 	{
 		Transform.SetLocation(Context.AttachComponent->GetComponentLocation());
 		Transform.SetRotation(FQuat(Context.AttachComponent->GetComponentRotation()));
+	}
+	// OwnerActor acts as an explicit, editor-authored fallback reference. If both the explicit
+	// world location and an attach component are missing we still want a stable anchor, so we
+	// derive it from the owner when present (GetWorld already covers the general case).
+	else if (Context.OwnerActor)
+	{
+		Transform.SetLocation(Context.OwnerActor->GetActorLocation());
+		Transform.SetRotation(FQuat(Context.OwnerActor->GetActorRotation()));
 	}
 
 	return Transform;

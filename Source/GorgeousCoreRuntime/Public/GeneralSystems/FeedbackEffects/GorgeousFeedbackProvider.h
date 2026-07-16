@@ -27,5 +27,5 @@ public:
 	 * @return True if a feedback definition was provided, false otherwise.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category="Feedback")
-	bool ProvideFeedback(const FGorgeousFeedbackContext& Context,FGorgeousFeedbackDefinition& OutFeedback) const;
+	bool ProvideFeedback(const FGorgeousFeedbackContext& Context, FGorgeousFeedbackDefinition& OutFeedback) const;
 };
