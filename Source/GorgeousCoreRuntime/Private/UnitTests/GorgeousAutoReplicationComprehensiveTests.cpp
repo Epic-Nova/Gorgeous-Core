@@ -72,9 +72,6 @@
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "UnitTests/GorgeousAutoReplicationTransporterProbe.h"
-#include "UnitTests/Helpers/GorgeousObjectVariablePerfTestTypes.h"
-#include "UnitTests/Helpers/GorgeousAsyncActionTestHelper.h"
-#include "UnitTests/Helpers/GorgeousAutoReplicationRPCTestOV.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -83,6 +80,9 @@
 #include "Containers/Ticker.h"
 #include "HAL/PlatformProcess.h"
 #include "Math/UnrealMathUtility.h"
+#include "SharedTests/GorgeousAsyncActionTestHelper.h"
+#include "SharedTests/GorgeousAutoReplicationRPCTestOV.h"
+#include "SharedTests/GorgeousObjectVariablePerfTestTypes.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

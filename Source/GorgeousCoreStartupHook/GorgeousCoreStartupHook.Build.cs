@@ -1,28 +1,24 @@
 using UnrealBuildTool;
 
-public class GorgeousCoreStartupHook : ModuleRules
+public class GorgeousCoreStartupHook : GorgeousModuleRules
 {
 	public GorgeousCoreStartupHook(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+        ApplyGorgeousBuildSettings(new GorgeousBuildSettings {
+            TargetModuleType = GorgeousModuleType.Editor,
+            ModulesToExclude = new[] { "GorgeousCoreStartupHook" }
+        });
 
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-			}
-			);
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
 				"Json",
 				"JsonUtilities",
 				"Projects",
 				"ApplicationCore"
 			}
-			);
+		);
 	}
 }

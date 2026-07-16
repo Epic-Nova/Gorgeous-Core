@@ -39,6 +39,11 @@ public:
 	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(const APlayerController* PlayerController);
 	static UGorgeousPrimaryGameLayout* GetPrimaryGameLayout(const ULocalPlayer* LocalPlayer);
 
+	/** Track active UI Overlays for the Insight Matrix. */
+	static int32 GetTotalActiveOverlays();
+	static void IncrementActiveOverlays();
+	static void DecrementActiveOverlays();
+
 	UGorgeousPrimaryGameLayout(const FObjectInitializer& ObjectInitializer);
 
 	virtual void NativeConstruct();

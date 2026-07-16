@@ -82,7 +82,7 @@ void AGorgeousHUD::BeginPlay()
 	}
 	
 	LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()->PushInputBinding(FoundationSettings->DefaultInputBindings.Get());
-	ResetFocusToGame();
+	//ResetFocusToGame();
 }
 
 void AGorgeousHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -400,10 +400,11 @@ void AGorgeousHUD::OnLayoutCreated(ULocalPlayer* LocalPlayer, UGorgeousPrimaryGa
 			// Force a refresh now that the widget exists
 			RefreshActionBar();
 		}
-		ResetFocusToGame();
+		//ResetFocusToGame(); 
 	}
 }
 
+//@TODO: I assume that calling this invokes a issue with the interaction system
 void AGorgeousHUD::ResetFocusToGame()
 {
 	if (UWorld* World = GetWorld())

@@ -28,11 +28,14 @@ public:
 	/** Stable provider key (typically plugin name). */
 	virtual FName GetProviderName() const = 0;
 
+	/** Returns the exact plugin name (from the .uplugin) this provider belongs to, used for locating Configs. */
+	virtual FString GetPluginName() const = 0;
+
 	/** Describes the provider for display. */
 	virtual FText GetProviderDisplayName() const { return FText::FromName(GetProviderName()); }
 
-	/** Gather current stat snapshots. */
-	virtual void GatherStats(TArray<FGorgeousInsightStat>& OutStats) const {}
+	/** Gather current stat snapshots based on the given context. */
+	virtual void GatherStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const {}
 
 	/** Gather provider-defined charts. */
 	virtual void GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const {}

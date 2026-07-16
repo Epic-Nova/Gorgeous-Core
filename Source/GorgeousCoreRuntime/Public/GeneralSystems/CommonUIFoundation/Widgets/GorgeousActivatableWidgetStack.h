@@ -1,40 +1,67 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "GameplayTagContainer.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousActivatableWidgetStack.generated.h"
+//<-------------------------------------------------------------------------->
 
-/**
- * A CommonActivatableWidgetStack that auto-registers itself as a layout layer.
- *
- * --- SETUP ---
- * 1. Place this widget in your UGorgeousPrimaryGameLayout Blueprint.
- * 2. Set the LayerTag property (e.g. UI.Layer.Game).
- * 3. Done. When the layout constructs, this stack registers itself automatically.
- *    No C++ required, no manual RegisterLayer calls.
- *
- * --- EXAMPLE LAYER HIERARCHY ---
- *   [Background] UGorgeousActivatableWidgetStack  (tag: UI.Layer.Background)
- *   [Game]       UGorgeousActivatableWidgetStack  (tag: UI.Layer.Game)
- *   [Modal]      UGorgeousActivatableWidgetStack  (tag: UI.Layer.Modal)
- *   [Loading]    UGorgeousActivatableWidgetStack  (tag: UI.Layer.Loading)
- */
-UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Gorgeous Activatable Widget Stack"))
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Activatable Widget Stack
+| Functional Name: UGorgeousActivatableWidgetStack
+| Parent Class: UCommonActivatableWidgetStack
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A CommonActivatableWidgetStack that auto-registers itself as a layout layer.
+<--------------------------------------------------------------------------->
+<===========================================================================>
+*/
+
+UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Gorgeous Activatable Widget Stack",
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousActivatableWidgetStack",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
+		))
 class GORGEOUSCORERUNTIME_API UGorgeousActivatableWidgetStack : public UCommonActivatableWidgetStack
 {
 	GENERATED_BODY()
 
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	#pragma region UAT/UBT Exposed Variables
 public:
-	/**
-	 * The layer tag this stack registers as.
-	 * Must be under the UI.Layer parent tag.
-	 * Set this in the Blueprint defaults.
-	 */
+
+	// The layer tag this stack registers as. Must be under the UI.Layer parent tag.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI", meta = (Categories = "UI.Layer"))
 	FGameplayTag LayerTag;
+	//<------------------------------------------------------------------------->
+	#pragma endregion UAT/UBT Exposed Variables
 
+
+	//<============================--- Overrides ---============================>
+	#pragma region Overrides
 protected:
+
+	// Re-initializes styling bindings when the underlying widget is rebuilt.
 	virtual void OnWidgetRebuilt() override;
+	//<------------------------------------------------------------------------->
+	#pragma endregion Overrides
 };

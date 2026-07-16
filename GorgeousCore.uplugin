@@ -17,6 +17,11 @@
 	"Installed": true,
 	"Modules": [
 		{
+			"Name": "GorgeousBuildPipeline",
+			"Type": "Runtime",
+			"LoadingPhase": "None"
+		},
+		{
 			"Name": "GorgeousCoreRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "PreDefault",
@@ -89,6 +94,10 @@
 		},
 		{
 			"Name": "OnlineSubsystemUtils",
+			"Enabled": true
+		},
+		{
+			"Name": "PlatformCrypto",
 			"Enabled": true
 		}
 	]

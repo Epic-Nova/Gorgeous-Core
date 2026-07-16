@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
 #include "GeneralSystems/GorgeousPermissionProvider.h"
+#include "GeneralSystems/GorgeousPermissionManagerSubsystem.h"
 #include "GameFramework/Actor.h"
+#include "Engine/World.h"
+#include "Engine/GameInstance.h"
 
 TMap<FString, TWeakObjectPtr<UGorgeousPermissionProvider>> UGorgeousPermissionProvider::RegisteredProviders;
 
@@ -21,6 +24,23 @@ bool UGorgeousPermissionProvider::EvaluatePermission_Implementation(AActor* Inte
 	{
 		return bCheatOverrideValue;
 	}
+
+	if (Interactor && Interactor->GetWorld())
+	{
+		if (UGameInstance* GI = Interactor->GetWorld()->GetGameInstance())
+		{
+			if (UGorgeousPermissionManagerSubsystem* Subsystem = GI->GetSubsystem<UGorgeousPermissionManagerSubsystem>())
+			{
+				bool bHandled = false;
+				bool bResult = Subsystem->EvaluatePlayerPermission(Interactor, PermissionName, bHandled);
+				if (bHandled)
+				{
+					return bResult;
+				}
+			}
+		}
+	}
+
 	return bDefaultAllowed;
 }
 
