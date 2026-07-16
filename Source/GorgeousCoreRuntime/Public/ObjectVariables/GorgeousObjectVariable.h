@@ -248,6 +248,8 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	//<------------------------------------------------------>
 
 public:
+	virtual void PostInitProperties() override;
+
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRPCPayloadEvent, const FGorgeousQueuedRPC&, QueuedRPC, UGorgeousObjectVariable*, TargetVariable);
 
 
@@ -337,6 +339,10 @@ public:
 	void ApplyReplicatedIdentifier(const FGuid& InIdentifier);
 
 	virtual void BeginDestroy() override;
+
+	/** Gets the total number of Object Variables currently alive in memory */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Object Variable|Stats")
+	static int32 GetTotalAliveObjectVariables();
 
     /**
      * Registers the object variable with the registry.

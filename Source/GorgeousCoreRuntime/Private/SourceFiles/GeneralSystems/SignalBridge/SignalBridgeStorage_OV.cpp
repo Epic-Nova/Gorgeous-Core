@@ -226,6 +226,11 @@ int64 USignalBridgeStorage_OV::GetTotalNoListenersFound()
 	return FPlatformAtomics::AtomicRead(&GSignalBridgeNoListenersCount);
 }
 
+int32 USignalBridgeStorage_OV::GetTotalActiveListeners() const
+{
+	return DictionaryAssociations.Num() + LocalBindings.Num();
+}
+
 void USignalBridgeStorage_OV::AddAllowedController(FGameplayTag Tag, AGorgeousPlayerController* Controller)
 {
 	if (HasAuthority() && Controller)

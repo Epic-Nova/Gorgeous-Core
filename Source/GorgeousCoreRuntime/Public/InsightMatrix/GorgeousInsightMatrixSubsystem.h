@@ -105,8 +105,8 @@ public:
 	TArray<IGorgeousInsightMatrixProvider*> GetProviders() const;
 	IGorgeousInsightMatrixProvider* FindProvider(FName ProviderName) const;
 
-	void GatherAllStats(TArray<FGorgeousInsightStat>& OutStats) const;
-	void GatherProviderStats(FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const;
+	void GatherAllStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const;
+	void GatherProviderStats(const FGorgeousInsightGatherContext& Context, FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const;
 	void GatherProviderCharts(FName ProviderName, TArray<FGorgeousInsightChartDefinition>& OutCharts) const;
 
 	void GatherAllActions(TArray<FGorgeousInsightAction>& OutActions) const;
@@ -138,6 +138,9 @@ public:
 	/** Returns the number of queued scenarios. */
 	int32 GetQueuedScenarioCount() const;
 
+	/** Manually inject stats into the persistent Baseline context. */
+	void AddBaselineStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats);
+	void RemoveBaselineStat(FName ProviderName, FName StatId);
 	/** Run the filtered scenario matrix in one call. */
 	TArray<FGorgeousInsightScenarioRunResult> RunMatrix(const FString& Parameters = TEXT(""), UObject* WorldContextObject = nullptr);
 
@@ -168,6 +171,18 @@ private:
 	void ApplyPanelStateToAll(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
 	void HandlePanelStateChanged(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
 	void UpdateLastRunStats(FName ProviderName, FName TestId, const FGorgeousInsightTestResult& Result, double DurationSeconds);
+public:
+	struct FGorgeousInsightEditorSnapshot
+	{
+		FDateTime Timestamp;
+		TMap<FName, TArray<FGorgeousInsightStat>> ProviderStats;
+	};
+	
+	const TArray<FGorgeousInsightEditorSnapshot>& GetEditorHistory() const { return EditorHistory; }
+	int32 GetActiveHistoryIndex() const { return ActiveHistoryIndex; }
+	void SetActiveHistoryIndex(int32 Index) { ActiveHistoryIndex = Index; }
+	void ApplyHistorySnapshot(int32 Index);
+
 	void LoadCachedStats();
 	void SaveCachedStats() const;
 	void CacheProviderStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats) const;
@@ -199,7 +214,10 @@ private:
 	TMap<FString, FGorgeousInsightTestResult> BaselineResultsCache;
 	FGorgeousInsightLastRunStats LastRunStats;
 	TMap<FName, TMap<FName, FGorgeousInsightLastActionStats>> LastActionStats;
+	mutable TMap<FName, TArray<FGorgeousInsightStat>> ProviderBaselineStats;
 	mutable FCriticalSection StatsCacheMutex;
+	mutable TArray<FGorgeousInsightEditorSnapshot> EditorHistory;
+	mutable int32 ActiveHistoryIndex = -1;
 	mutable TMap<FName, TArray<FGorgeousInsightStat>> CachedProviderStats;
 	mutable bool bStatsCacheLoaded = false;
 	mutable bool bStatsCacheDirty = false;

@@ -10,6 +10,12 @@
 <==========================================================================*/
 
 #include "InsightMatrix/Slate/GorgeousInsightDebugPanel.h"
+#include "InsightMatrix/GorgeousInsightChartRegistry.h"
+#include "InsightMatrix/GorgeousInsightChartWidgetInterface.h"
+#include "Blueprint/UserWidget.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Slate/SObjectWidget.h"
+#include "Framework/MultiBox/MultiBoxBuilder.h"
 
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "InsightMatrix/Slate/Charts/GorgeousInsightMiniBarChart.h"
@@ -29,6 +35,7 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/Input/SSlider.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSplitter.h"
@@ -47,6 +54,7 @@
 #include "DesktopPlatformModule.h"
 #include "Framework/Application/SlateApplication.h"
 #include "IDesktopPlatform.h"
+#include "Editor.h"
 #endif
 
 #if WITH_EDITOR
@@ -415,6 +423,64 @@ private:
 	bool bIsHovered_Custom = false;
 };
 
+void SGorgeousInsightDebugPanel::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
+{
+	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
+
+	// Threshold Monitoring
+	for (const TSharedPtr<FStatRow>& Row : StatItems)
+	{
+		if (Row->Stat.ValueType != EGorgeousInsightStatValueType::Number) continue;
+
+		FName StatKey = MakeStatThresholdKey(Row->Stat);
+		double CurrentValue = Row->Stat.NumericValue;
+		
+		bool bBreachedCritical = false;
+		bool bBreachedWarning = false;
+		double ThresholdVal = 0.0;
+
+		if (double* Crit = StatCriticalThresholds.Find(StatKey))
+		{
+			if (CurrentValue > *Crit) { bBreachedCritical = true; ThresholdVal = *Crit; }
+		}
+		
+		if (!bBreachedCritical)
+		{
+			if (double* Warn = StatWarningThresholds.Find(StatKey))
+			{
+				if (CurrentValue > *Warn) { bBreachedWarning = true; ThresholdVal = *Warn; }
+			}
+		}
+
+		if (bBreachedCritical || bBreachedWarning)
+		{
+			double LastToast = LastToastTimes.FindRef(StatKey);
+			if (InCurrentTime - LastToast > 5.0) // 5 second debounce
+			{
+				LastToastTimes.Add(StatKey, InCurrentTime);
+				if (bBreachedCritical)
+				{
+					GT_E_LOG_FULL_EX(TEXT("MatrixThreshold"), TEXT("Critical Threshold Breached! %s is %.1f (Limit: %.1f)"), 4.0f, true, true, false, true, nullptr, nullptr, *Row->Stat.DisplayName.ToString(), CurrentValue, ThresholdVal);
+				}
+				else
+				{
+					GT_W_LOG_FULL_EX(TEXT("MatrixThreshold"), TEXT("Warning Threshold Exceeded! %s is %.1f (Limit: %.1f)"), 4.0f, true, true, false, true, nullptr, nullptr, *Row->Stat.DisplayName.ToString(), CurrentValue, ThresholdVal);
+				}
+			}
+		}
+	}
+}
+
+SGorgeousInsightDebugPanel::~SGorgeousInsightDebugPanel()
+{
+#if WITH_EDITOR
+	if (EndPieDelegateHandle.IsValid() && FEditorDelegates::BeginPIE.IsBoundToObject(this))
+	{
+		FEditorDelegates::BeginPIE.Remove(EndPieDelegateHandle);
+	}
+#endif
+}
+
 void SGorgeousInsightDebugPanel::Construct(const FArguments& InArgs)
 {
 	ChildSlot
@@ -423,22 +489,32 @@ void SGorgeousInsightDebugPanel::Construct(const FArguments& InArgs)
 		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
 		.Padding(8.f)
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.Padding(0.f, 0.f, 0.f, 6.f)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.f, 0.f, 6.f, 0.f)
 			[
-				BuildToolbar()
+				BuildContextSwitcher()
 			]
-			+ SVerticalBox::Slot()
-			.FillHeight(1.f)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
 			[
-				SNew(SSplitter)
-				+ SSplitter::Slot()
-				.Value(0.25f)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 6.f)
 				[
-					BuildProviderList()
+					BuildToolbar()
 				]
+				+ SVerticalBox::Slot()
+				.FillHeight(1.f)
+				[
+					SNew(SSplitter)
+					+ SSplitter::Slot()
+					.Value(0.25f)
+					[
+						BuildProviderList()
+					]
 				+ SSplitter::Slot()
 				.Value(0.75f)
 				[
@@ -472,16 +548,33 @@ void SGorgeousInsightDebugPanel::Construct(const FArguments& InArgs)
 					]
 				]
 			]
+			]
 		]
 	];
 
 	RefreshFromSubsystem();
+	
+#if WITH_EDITOR
+	EndPieDelegateHandle = FEditorDelegates::BeginPIE.AddLambda([this](bool bIsSimulating) {
+		// User requested: "when we start a new pie we clear the live"
+		// If we switch to Live automatically on BeginPIE, we can do that here.
+		if (CurrentContext.Mode != EGorgeousInsightContextMode::Live) {
+			CurrentContext.Mode = EGorgeousInsightContextMode::Live;
+			CurrentContext.WorldContext = nullptr; // Will be set next tick
+			CurrentContext.InstanceName.Empty();
+			RefreshProviderData();
+			BroadcastStateChanged();
+		}
+	});
+#endif
 }
 
 SGorgeousInsightDebugPanel::FInsightPanelState SGorgeousInsightDebugPanel::ExportState() const
 {
 	FInsightPanelState State;
 	State.SelectedProvider = SelectedProvider;
+	State.Context = CurrentContext;
+	State.SelectedStatCategory = SelectedStatCategory;
 	State.ProviderFilter = ProviderFilter;
 	State.bRunWithHarness = bRunWithHarness;
 	State.TestInputValues = TestInputValues;
@@ -494,6 +587,8 @@ void SGorgeousInsightDebugPanel::ImportState(const FInsightPanelState& State)
 {
 	TGuardValue<bool> Guard(bSuppressStateBroadcast, true);
 	SelectedProvider = State.SelectedProvider;
+	CurrentContext = State.Context;
+	SelectedStatCategory = State.SelectedStatCategory;
 	ProviderFilter = State.ProviderFilter;
 	bRunWithHarness = State.bRunWithHarness;
 	TestInputValues = State.TestInputValues;
@@ -530,7 +625,7 @@ void SGorgeousInsightDebugPanel::RefreshProviders()
 			TArray<FGorgeousInsightStat> Stats;
 			TArray<FGorgeousInsightAction> Actions;
 			TArray<FGorgeousInsightTest> Tests;
-			Subsystem->GatherProviderStats(Entry->ProviderName, Stats);
+			Subsystem->GatherProviderStats(CurrentContext, Entry->ProviderName, Stats);
 			Subsystem->GatherProviderActions(Entry->ProviderName, Actions);
 			Subsystem->GatherProviderTests(Entry->ProviderName, Tests);
 			Entry->StatCount = Stats.Num();
@@ -591,18 +686,90 @@ void SGorgeousInsightDebugPanel::RefreshProviders()
 
 void SGorgeousInsightDebugPanel::RefreshProviderData()
 {
-	StatItems.Reset();
-	ActionItems.Reset();
-	TestItems.Reset();
+	StatItems.Empty();
+	TestItems.Empty();
+	ActionItems.Empty();
+	RawProviderStats.Empty();
+
+	if (StatCategoriesBox.IsValid())
+	{
+		StatCategoriesBox->ClearChildren();
+	}
 
 	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
 	{
-		TArray<FGorgeousInsightStat> Stats;
-		if (!SelectedProvider.IsNone())
+		if (SelectedProvider != NAME_None)
 		{
-			Subsystem->GatherProviderStats(SelectedProvider, Stats);
+			Subsystem->GatherProviderStats(CurrentContext, SelectedProvider, RawProviderStats);
+			Subsystem->GatherProviderActions(SelectedProvider, ActionItems);
+
+			TArray<FGorgeousInsightTest> TempTests;
+			Subsystem->GatherProviderTests(SelectedProvider, TempTests);
+
+			for (const FGorgeousInsightTest& Test : TempTests)
+			{
+				TSharedPtr<FTestRow> Row = MakeShared<FTestRow>();
+				Row->Test = Test;
+				if (const FGorgeousInsightTestResult* Baseline = GetBaselineResult(SelectedProvider, Test.Id))
+				{
+					Row->LastResult = *Baseline;
+					Row->bHasRun = true;
+				}
+				TestItems.Add(Row);
+			}
 		}
-		for (const FGorgeousInsightStat& Stat : Stats)
+	}
+
+	// Build Categories
+	TSet<FName> UniqueCategories;
+	for (const FGorgeousInsightStat& Stat : RawProviderStats)
+	{
+		if (!Stat.Category.IsNone())
+		{
+			UniqueCategories.Add(Stat.Category);
+		}
+	}
+
+	TArray<FName> SortedCategories = UniqueCategories.Array();
+	SortedCategories.Sort([](const FName& A, const FName& B) { return A.LexicalLess(B); });
+
+	if (StatCategoriesBox.IsValid())
+	{
+		// "All" Tab
+		StatCategoriesBox->AddSlot()
+			.AutoWidth()
+			.Padding(0.f, 0.f, 4.f, 0.f)
+			[
+				SNew(SCheckBox)
+				.Style(FCoreStyle::Get(), "ToggleButtonCheckbox")
+				.IsChecked_Lambda([this]() { return SelectedStatCategory == NAME_None ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+				.OnCheckStateChanged_Lambda([this](ECheckBoxState State) { if (State == ECheckBoxState::Checked) OnStatCategoryChanged(NAME_None); })
+				[
+					SNew(STextBlock).Text(FText::FromString(TEXT("All")))
+				]
+			];
+
+		for (FName Cat : SortedCategories)
+		{
+			StatCategoriesBox->AddSlot()
+				.AutoWidth()
+				.Padding(0.f, 0.f, 4.f, 0.f)
+				[
+					SNew(SCheckBox)
+					.Style(FCoreStyle::Get(), "ToggleButtonCheckbox")
+					.IsChecked_Lambda([this, Cat]() { return SelectedStatCategory == Cat ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+					.OnCheckStateChanged_Lambda([this, Cat](ECheckBoxState State) { if (State == ECheckBoxState::Checked) OnStatCategoryChanged(Cat); })
+					[
+						SNew(STextBlock).Text(FText::FromName(Cat))
+					]
+				];
+		}
+	}
+
+	// Filter Stats
+	for (const FGorgeousInsightStat& Stat : RawProviderStats)
+	{
+		if (SelectedStatCategory == NAME_None || Stat.Category == SelectedStatCategory)
 		{
 			TSharedPtr<FStatRow> Row = MakeShared<FStatRow>();
 			Row->Stat = Stat;
@@ -610,40 +777,16 @@ void SGorgeousInsightDebugPanel::RefreshProviderData()
 		}
 	}
 
-	if (SelectedProvider.IsNone())
+	// Sort Stats Alphabetically
+	StatItems.Sort([](const TSharedPtr<FStatRow>& A, const TSharedPtr<FStatRow>& B)
 	{
-		if (StatsListView.IsValid())
-		{
-			StatsListView->RequestListRefresh();
-		}
-		if (TestsListView.IsValid())
-		{
-			TestsListView->RequestListRefresh();
-		}
-		RebuildActions();
-		RebuildCharts();
-		return;
-	}
-
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		Subsystem->GatherProviderActions(SelectedProvider, ActionItems);
-
-		TArray<FGorgeousInsightTest> Tests;
-		Subsystem->GatherProviderTests(SelectedProvider, Tests);
-		for (const FGorgeousInsightTest& Test : Tests)
-		{
-			TSharedPtr<FTestRow> Row = MakeShared<FTestRow>();
-			Row->Test = Test;
-			TestItems.Add(Row);
-		}
-	}
+		return A->Stat.DisplayName.ToString() < B->Stat.DisplayName.ToString();
+	});
 
 	if (StatsListView.IsValid())
 	{
 		StatsListView->RequestListRefresh();
 	}
-
 	if (TestsListView.IsValid())
 	{
 		TestsListView->RequestListRefresh();
@@ -653,6 +796,12 @@ void SGorgeousInsightDebugPanel::RefreshProviderData()
 	RebuildCharts();
 }
 
+void SGorgeousInsightDebugPanel::OnStatCategoryChanged(FName NewCategory)
+{
+	SelectedStatCategory = NewCategory;
+	RefreshProviderData();
+	BroadcastStateChanged();
+}
 void SGorgeousInsightDebugPanel::RebuildActions()
 {
 	if (!ActionsGrid.IsValid())
@@ -867,6 +1016,47 @@ void SGorgeousInsightDebugPanel::RebuildCharts()
 	for (const FGorgeousInsightChartDefinition& Chart : Charts)
 	{
 		TSharedRef<SWidget> ChartWidget = SNew(STextBlock).Text(NSLOCTEXT("GorgeousInsightDebugPanel", "ChartUnsupported", "Unsupported chart"));
+		bool bIsCustomRendered = false;
+		if (!Chart.CustomChartType.IsNone())
+		{
+			if (const UGorgeousInsightChartRegistry* Registry = GetDefault<UGorgeousInsightChartRegistry>())
+			{
+				if (const TSoftClassPtr<UUserWidget>* WidgetClassPtr = Registry->RegisteredUMGCharts.Find(Chart.CustomChartType))
+				{
+					if (UClass* WidgetClass = WidgetClassPtr->LoadSynchronous())
+					{
+						UWorld* World = nullptr;
+						if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+						{
+							World = GEngine->GetWorldContexts()[0].World();
+						}
+						
+						if (World)
+						{
+							if (UUserWidget* Widget = CreateWidget<UUserWidget>(World, WidgetClass))
+							{
+								if (Widget->Implements<UGorgeousInsightChartWidgetInterface>())
+								{
+									if (Chart.InstancedPayload.IsValid())
+									{
+										IGorgeousInsightChartWidgetInterface::Execute_ReceiveInstancedChartData(Widget, Chart.Title, Chart.Subtitle, Chart.InstancedPayload);
+									}
+									else
+									{
+										IGorgeousInsightChartWidgetInterface::Execute_ReceiveChartData(Widget, Chart.Title, Chart.Subtitle, Chart.Payload);
+									}
+								}
+								ChartWidget = SNew(SObjectWidget, Widget);
+								bIsCustomRendered = true;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (!bIsCustomRendered)
+		{
 		switch (Chart.Type)
 		{
 		case EGorgeousInsightChartType::Bar:
@@ -936,6 +1126,7 @@ void SGorgeousInsightDebugPanel::RebuildCharts()
 			break;
 		}
 
+	}
 	const int32 Column = ChartIndex % ColumnsPerRow;
 	const int32 Row = ChartIndex / ColumnsPerRow;
 	ChartsGrid->AddSlot(Column, Row)
@@ -1122,6 +1313,43 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildToolbar()
 		];
 }
 
+
+TSharedPtr<SWidget> SGorgeousInsightDebugPanel::OnStatContextMenuOpening()
+{
+	if (CurrentContext.Mode != EGorgeousInsightContextMode::Baseline)
+	{
+		return nullptr;
+	}
+
+	TArray<TSharedPtr<FStatRow>> SelectedItems = StatsListView->GetSelectedItems();
+	if (SelectedItems.Num() == 0)
+	{
+		return nullptr;
+	}
+
+	FMenuBuilder MenuBuilder(true, nullptr);
+
+	MenuBuilder.AddMenuEntry(
+		NSLOCTEXT("GorgeousInsightDebugPanel", "RemoveBaselineStat", "Remove Baseline Stat"),
+		NSLOCTEXT("GorgeousInsightDebugPanel", "RemoveBaselineStatTooltip", "Removes this stat from the saved baseline."),
+		FSlateIcon(),
+		FUIAction(
+			FExecuteAction::CreateLambda([this, SelectedItems]() {
+				if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+				{
+					for (TSharedPtr<FStatRow> Item : SelectedItems)
+					{
+						Subsystem->RemoveBaselineStat(SelectedProvider, Item->Stat.Id);
+					}
+					RefreshProviderData();
+				}
+			})
+		)
+	);
+
+	return MenuBuilder.MakeWidget();
+}
+
 TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildProviderList()
 {
 	return SNew(SBorder)
@@ -1177,6 +1405,109 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildStatsList()
 		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
 		[
 			SNew(SVerticalBox)
+			
+			// Baseline Info Banner (Only visible in Baseline context)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				SNew(SBorder)
+				.Visibility_Lambda([this]() { return CurrentContext.Mode == EGorgeousInsightContextMode::Baseline ? EVisibility::Visible : EVisibility::Collapsed; })
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+				.BorderBackgroundColor(FLinearColor(0.2f, 0.6f, 0.9f, 0.3f))
+				.Padding(FMargin(8.f, 8.f))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.VAlign(VAlign_Center)
+					.Padding(0.f, 0.f, 8.f, 0.f)
+					[
+						SNew(SImage)
+						.Image(FCoreStyle::Get().GetBrush("Icons.Info"))
+					]
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.0f)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "BaselineInfoBanner", "Baseline view represents the reference stats stored on disk. You can view saved baselines here. Developers typically do not need to interact with this view unless explicitly committing new baselines."))
+						.AutoWrapText(true)
+						.ColorAndOpacity(FSlateColor::UseForeground())
+					]
+				]
+			]
+			
+			// Timeline Scrubber (Only visible in Editor context)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 8.f)
+			[
+				SNew(SBorder)
+				.Visibility_Lambda([this]() { return CurrentContext.Mode == EGorgeousInsightContextMode::Editor ? EVisibility::Visible : EVisibility::Collapsed; })
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+				.Padding(FMargin(8.f, 4.f))
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.f, 0.f, 0.f, 4.f)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "TimelineHistory", "Editor Timeline History"))
+							.Font(FCoreStyle::Get().GetFontStyle("BoldFont"))
+							.ColorAndOpacity(FLinearColor(0.7f, 0.7f, 0.7f))
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0f)
+						.HAlign(HAlign_Right)
+						[
+							SNew(STextBlock)
+							.Text_Lambda([]() {
+								if (auto Subsystem = UGorgeousInsightMatrixSubsystem::Get()) {
+									int32 Idx = Subsystem->GetActiveHistoryIndex();
+									if (Subsystem->GetEditorHistory().IsValidIndex(Idx)) {
+										return FText::FromString(Subsystem->GetEditorHistory()[Idx].Timestamp.ToString());
+									}
+								}
+								return FText::FromString(TEXT("Live"));
+							})
+							.ColorAndOpacity(FLinearColor(0.4f, 0.8f, 1.0f))
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SSlider)
+						.Value_Lambda([]() {
+							if (auto Subsystem = UGorgeousInsightMatrixSubsystem::Get()) {
+								int32 Count = Subsystem->GetEditorHistory().Num();
+								if (Count <= 1) return 1.0f;
+								return (float)Subsystem->GetActiveHistoryIndex() / (Count - 1);
+							}
+							return 1.0f;
+						})
+						.OnValueChanged_Lambda([this](float Val) {
+							if (auto Subsystem = UGorgeousInsightMatrixSubsystem::Get()) {
+								int32 Count = Subsystem->GetEditorHistory().Num();
+								if (Count > 0) {
+									int32 Idx = FMath::Clamp(FMath::RoundToInt(Val * (Count - 1)), 0, Count - 1);
+									if (Idx != Subsystem->GetActiveHistoryIndex()) {
+										Subsystem->ApplyHistorySnapshot(Idx);
+										RefreshProviderData();
+									}
+								}
+							}
+						})
+					]
+				]
+			]
+			
+			// Stats Header
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 6.f)
@@ -1189,9 +1520,16 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildStatsList()
 			.AutoHeight()
 			.MaxHeight(220.f)
 			[
+				SAssignNew(StatCategoriesBox, SHorizontalBox)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.MaxHeight(220.f)
+			[
 				SAssignNew(StatsListView, SListView<TSharedPtr<FStatRow>>)
 				.ListItemsSource(&StatItems)
-				.SelectionMode(ESelectionMode::None)
+				.SelectionMode(ESelectionMode::Single)
+				.OnContextMenuOpening(this, &SGorgeousInsightDebugPanel::OnStatContextMenuOpening)
 				.HeaderRow(
 					SNew(SHeaderRow)
 					+ SHeaderRow::Column(ColumnStatName)
@@ -1231,6 +1569,11 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildStatsList()
 
 TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildStatThresholdWidget(const FGorgeousInsightStat& Stat)
 {
+	if (Stat.ValueType != EGorgeousInsightStatValueType::Number)
+	{
+		return SNullWidget::NullWidget;
+	}
+
 	return SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
@@ -1399,7 +1742,8 @@ TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildTestsList()
 			[
 				SAssignNew(TestsListView, SListView<TSharedPtr<FTestRow>>)
 				.ListItemsSource(&TestItems)
-				.SelectionMode(ESelectionMode::None)
+				.SelectionMode(ESelectionMode::Single)
+				.OnContextMenuOpening(this, &SGorgeousInsightDebugPanel::OnStatContextMenuOpening)
 				.HeaderRow(
 					SNew(SHeaderRow)
 					+ SHeaderRow::Column(ColumnTestName)
@@ -1637,6 +1981,11 @@ FReply SGorgeousInsightDebugPanel::OnRunTestClicked(TSharedPtr<FTestRow> RowData
 		if (TestsListView.IsValid())
 		{
 			TestsListView->RebuildList();
+		}
+		
+		if (CurrentContext.Mode == EGorgeousInsightContextMode::Baseline && !RowData->LastResult.Metrics.IsEmpty())
+		{
+			OpenBaselineTestResultPopup(RowData->Test, RowData->LastResult);
 		}
 	}
 
@@ -2055,4 +2404,345 @@ FText SGorgeousInsightDebugPanel::FormatProviderBadgeText(const FProviderEntry& 
 		FText::AsNumber(Entry.StatCount),
 		FText::AsNumber(Entry.ActionCount),
 		FText::AsNumber(Entry.TestCount));
+}
+
+TSharedRef<SWidget> SGorgeousInsightDebugPanel::BuildContextSwitcher()
+{
+	auto MakeContextButton = [this](const FText& Text, EGorgeousInsightContextMode Mode) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SCheckBox> CheckBox = SNew(SCheckBox)
+			.Style(FCoreStyle::Get(), "ToggleButtonCheckbox")
+			.Padding(FMargin(12.f, 16.f))
+			.IsChecked_Lambda([this, Mode]() { return CurrentContext.Mode == Mode ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+			.OnCheckStateChanged_Lambda([this, Mode](ECheckBoxState State) {
+				if (State == ECheckBoxState::Checked) {
+					CurrentContext.Mode = Mode;
+					
+					if (Mode == EGorgeousInsightContextMode::Live)
+					{
+						if (GEngine)
+						{
+							for (const FWorldContext& Context : GEngine->GetWorldContexts())
+							{
+								if (Context.WorldType == EWorldType::PIE)
+								{
+									CurrentContext.WorldContext = Context.World();
+									CurrentContext.InstanceName = Context.ContextHandle.ToString();
+									break;
+								}
+							}
+						}
+					}
+					else
+					{
+						CurrentContext.WorldContext = nullptr;
+						CurrentContext.InstanceName.Empty();
+					}
+					
+					RefreshProviderData();
+					BroadcastStateChanged();
+				}
+			})
+			[
+				SNew(STextBlock)
+				.Text(Text)
+				.Font(FCoreStyle::Get().GetFontStyle("BoldFont"))
+				.Justification(ETextJustify::Center)
+			];
+			
+		if (Mode == EGorgeousInsightContextMode::Live)
+		{
+			CheckBox->SetEnabled(TAttribute<bool>::CreateLambda([]() {
+				if (GEngine) {
+					for (const FWorldContext& Context : GEngine->GetWorldContexts()) {
+						if (Context.WorldType == EWorldType::PIE) return true;
+					}
+				}
+				return false;
+			}));
+			
+			CheckBox->SetToolTipText(TAttribute<FText>::CreateLambda([]() {
+				bool bHasPIE = false;
+				if (GEngine) {
+					for (const FWorldContext& Context : GEngine->GetWorldContexts()) {
+						if (Context.WorldType == EWorldType::PIE) { bHasPIE = true; break; }
+					}
+				}
+				return bHasPIE ? FText::GetEmpty() : NSLOCTEXT("GorgeousInsightDebugPanel", "LiveDisabledTooltip", "Only in PIE we can receive data from this source");
+			}));
+		}
+		
+		return CheckBox;
+	};
+
+	return SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
+		.Padding(FMargin(4.f))
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakeContextButton(FText::FromString(TEXT("Live")), EGorgeousInsightContextMode::Live)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				MakeContextButton(FText::FromString(TEXT("Editor")), EGorgeousInsightContextMode::Editor)
+			]
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			[
+				MakeContextButton(FText::FromString(TEXT("Baseline")), EGorgeousInsightContextMode::Baseline)
+			]
+		];
+}
+
+void SGorgeousInsightDebugPanel::OpenBaselineTestResultPopup(const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result)
+{
+	TSharedPtr<SWindow> PopupWindow = SNew(SWindow)
+		.Title(FText::Format(NSLOCTEXT("GorgeousInsightDebugPanel", "BaselineResultsTitle", "Baseline Results: {0}"), Test.DisplayName))
+		.ClientSize(FVector2D(450, 400))
+		.SupportsMaximize(false)
+		.SupportsMinimize(false)
+		.IsPopupWindow(false)
+		.SizingRule(ESizingRule::UserSized);
+
+	TSharedPtr<SVerticalBox> MetricsBox;
+	
+	// Keep track of which metrics the user checks
+	TSharedRef<TArray<TSharedPtr<bool>>> SelectionState = MakeShared<TArray<TSharedPtr<bool>>>();
+	
+	for (int32 i = 0; i < Result.Metrics.Num(); ++i)
+	{
+		SelectionState->Add(MakeShared<bool>(true));
+	}
+
+	TSharedPtr<bool> bJunctionSelected = MakeShared<bool>(false);
+	TSharedPtr<FText> JunctionName = MakeShared<FText>(FText::FromString(TEXT("Performance Summary")));
+
+	TSharedRef<SWidget> WindowContent = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
+		.Padding(16.f)
+		[
+			SNew(SVerticalBox)
+			
+			// Header
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0, 0, 0, 12)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "SelectBaselineStats", "Select the metrics to commit to Baseline Stats:"))
+				.Font(FCoreStyle::Get().GetFontStyle("BoldFont"))
+				.ColorAndOpacity(FLinearColor(0.8f, 0.8f, 0.8f))
+			]
+			
+			// Metrics List
+			+ SVerticalBox::Slot()
+			.FillHeight(1.0f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
+				.Padding(4.f)
+				[
+					SNew(SScrollBox)
+					+ SScrollBox::Slot()
+					[
+						SAssignNew(MetricsBox, SVerticalBox)
+					]
+				]
+			]
+			
+			// Junction Options
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0, 12, 0, 0)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
+				.Padding(8.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0, 0, 0, 8)
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.Padding(0, 0, 8, 0)
+						[
+							SNew(SCheckBox)
+							.IsChecked_Lambda([bJunctionSelected]() { return *bJunctionSelected ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+							.OnCheckStateChanged_Lambda([bJunctionSelected](ECheckBoxState State) { *bJunctionSelected = (State == ECheckBoxState::Checked); })
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0f)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "JunctionSelected", "Junction Selected Metrics"))
+							.Font(FCoreStyle::Get().GetFontStyle("BoldFont"))
+						]
+					]
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(0, 0, 8, 0)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "JunctionName", "Junction Name:"))
+							.IsEnabled_Lambda([bJunctionSelected]() { return *bJunctionSelected; })
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.0f)
+						[
+							SNew(SEditableTextBox)
+							.Text_Lambda([JunctionName]() { return *JunctionName; })
+							.OnTextChanged_Lambda([JunctionName](const FText& InText) { *JunctionName = InText; })
+							.IsEnabled_Lambda([bJunctionSelected]() { return *bJunctionSelected; })
+						]
+					]
+				]
+			]
+			
+			// Commit Button
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0, 12, 0, 0)
+			.HAlign(HAlign_Right)
+			[
+				SNew(SButton)
+				.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "Commit", "Commit to Baseline"))
+				.ContentPadding(FMargin(16.f, 4.f))
+				.ButtonStyle(FCoreStyle::Get(), "PrimaryButton")
+				.TextStyle(FCoreStyle::Get(), "PrimaryButtonText")
+				.OnClicked_Lambda([this, Test, Result, PopupWindow, SelectionState, bJunctionSelected, JunctionName]() {
+					if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+					{
+						TArray<FGorgeousInsightStat> NewStats;
+						
+						if (*bJunctionSelected)
+						{
+							FString JunctionedText;
+							int32 Idx = 0;
+							bool bFirst = true;
+							for (const auto& Pair : Result.Metrics)
+							{
+								if (*(*SelectionState)[Idx])
+								{
+									if (!bFirst)
+									{
+										JunctionedText += TEXT("; ");
+									}
+									JunctionedText += FString::Printf(TEXT("%s: %s"), *Pair.Key, *Pair.Value);
+									bFirst = false;
+								}
+								Idx++;
+							}
+							
+							if (!JunctionedText.IsEmpty())
+							{
+								FGorgeousInsightStat JunctionStat;
+								FString SafeId = JunctionName->ToString().Replace(TEXT(" "), TEXT(""));
+								JunctionStat.Id = FName(*FString::Printf(TEXT("%s.%s"), *Test.Id.ToString(), *SafeId));
+								JunctionStat.DisplayName = *JunctionName;
+								JunctionStat.Category = Test.Category;
+								JunctionStat.ValueType = EGorgeousInsightStatValueType::Text;
+								JunctionStat.TextValue = FText::FromString(JunctionedText);
+								
+								NewStats.Add(JunctionStat);
+							}
+						}
+						else
+						{
+							int32 Idx = 0;
+							for (const auto& Pair : Result.Metrics)
+							{
+								if (*(*SelectionState)[Idx])
+								{
+									FGorgeousInsightStat NewStat;
+									NewStat.Id = FName(*FString::Printf(TEXT("%s.%s"), *Test.Id.ToString(), *Pair.Key));
+									NewStat.DisplayName = FText::FromString(Pair.Key);
+									NewStat.Category = Test.Category;
+									NewStat.ValueType = EGorgeousInsightStatValueType::Number;
+									
+									// Try to parse the value
+									FString ValStr = Pair.Value;
+									ValStr.ReplaceInline(TEXT("ops/sec"), TEXT(""));
+									ValStr.ReplaceInline(TEXT("ms"), TEXT(""));
+									ValStr.ReplaceInline(TEXT(" "), TEXT(""));
+									
+									if (ValStr.IsNumeric()) {
+										NewStat.NumericValue = FCString::Atod(*ValStr);
+									} else {
+										NewStat.ValueType = EGorgeousInsightStatValueType::Text;
+										NewStat.TextValue = FText::FromString(Pair.Value);
+									}
+									
+									NewStats.Add(NewStat);
+								}
+								Idx++;
+							}
+						}
+						
+						if (NewStats.Num() > 0)
+						{
+							Subsystem->AddBaselineStats(SelectedProvider, NewStats);
+							RefreshProviderData();
+						}
+					}
+					PopupWindow->RequestDestroyWindow();
+					return FReply::Handled();
+				})
+			]
+		];
+
+	int32 RowIdx = 0;
+	for (const auto& Pair : Result.Metrics)
+	{
+		TSharedPtr<bool> bSelected = (*SelectionState)[RowIdx];
+		
+		const FSlateColor RowColor = (RowIdx % 2 == 0) ? FSlateColor(FLinearColor(0.05f, 0.05f, 0.05f, 0.5f)) : FSlateColor(FLinearColor(0.02f, 0.02f, 0.02f, 0.5f));
+		
+		MetricsBox->AddSlot()
+		.AutoHeight()
+		[
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(RowColor)
+			.Padding(FMargin(8.f, 6.f))
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0, 0, 12, 0)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SCheckBox)
+					.IsChecked_Lambda([bSelected]() { return *bSelected ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; })
+					.OnCheckStateChanged_Lambda([bSelected](ECheckBoxState State) { *bSelected = (State == ECheckBoxState::Checked); })
+				]
+				+ SHorizontalBox::Slot()
+				.FillWidth(1.0f)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(FString::Printf(TEXT("%s: %s"), *Pair.Key, *Pair.Value)))
+				]
+			]
+		];
+		
+		RowIdx++;
+	}
+
+	PopupWindow->SetContent(WindowContent);
+	FSlateApplication::Get().AddWindow(PopupWindow.ToSharedRef());
 }
