@@ -32,7 +32,7 @@ public:
 public:
 
 	/** Starts the camera shake on the resolved player controller's camera. */
-	virtual void Execute_Implementation(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
 
 	/** Returns true when the effect is enabled and a camera shake class is set. */
 	virtual bool CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const override;

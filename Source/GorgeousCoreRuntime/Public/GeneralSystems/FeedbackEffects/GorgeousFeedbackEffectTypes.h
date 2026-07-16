@@ -30,6 +30,8 @@ enum class EGorgeousFeedbackAttachmentMode : uint8
 /**
  * A reusable container of feedback effects.
  * Wraps an array of UGorgeousFeedbackEffect instances that should play together for a given event.
+ * The SelectionMode controls how the contained effects are chosen at play time, consuming the
+ * per-effect Weight and Tags properties; FilterTags further narrows the candidate set.
  */
 USTRUCT(BlueprintType, meta = (ShowOnlyInnerProperties))
 struct FGorgeousFeedbackDefinition
@@ -39,6 +41,22 @@ struct FGorgeousFeedbackDefinition
 	/** The feedback effects that make up this definition. Each effect runs according to its own rules. */
 	UPROPERTY(EditAnywhere, Instanced, Category="Feedback")
 	TArray<TObjectPtr<class UGorgeousFeedbackEffect>> Effects;
+
+	/** How the definition chooses which of its effects to play. Consumes the per-effect Weight and Tags. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Feedback")
+	EGorgeousFeedbackSelectionMode SelectionMode = EGorgeousFeedbackSelectionMode::EAll;
+
+	/** Optional tag filter. Effects whose Tags do not contain any of these are excluded before selection. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Feedback")
+	FGameplayTagContainer FilterTags;
+
+	/**
+	 * Custom selection policy, only consulted when SelectionMode is ECustom. Receives the
+	 * filter-passed candidates and returns the final, ordered set to play (absolute freedom:
+	 * drop, reorder, duplicate or synthesize effects). Ignored for all other modes.
+	 */
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category="Feedback", meta=(EditCondition="SelectionMode == EGorgeousFeedbackSelectionMode::ECustom"))
+	TObjectPtr<class UGorgeousFeedbackSelector> Selector;
 
 };
 
@@ -82,4 +100,11 @@ struct FGorgeousFeedbackContext
 	/** Optional arbitrary user data forwarded alongside the feedback for custom effects. */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects") 
 	TObjectPtr<UObject> UserData;
+
+	/** Returns the user data cast to the requested type, or nullptr when unset or mismatched. */
+	template<typename T>
+	T* GetUserData() const
+	{
+		return Cast<T>(UserData);
+	}
 };

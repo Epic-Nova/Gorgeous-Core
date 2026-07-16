@@ -4,7 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 
-void UGorgeousSoundFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousSoundFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !Sound)
 	{
@@ -47,7 +47,7 @@ void UGorgeousSoundFeedbackEffect::Execute_Implementation(const FGorgeousFeedbac
 
 bool UGorgeousSoundFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && Sound != nullptr;
+	return Super::CanExecute_Implementation(Context) && Sound != nullptr;
 }
 
 #if WITH_EDITOR

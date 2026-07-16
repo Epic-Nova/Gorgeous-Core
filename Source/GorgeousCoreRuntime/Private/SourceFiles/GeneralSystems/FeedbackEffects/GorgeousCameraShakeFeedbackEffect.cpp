@@ -3,7 +3,7 @@
 #include "Camera/CameraShakeBase.h"
 #include "Engine/World.h"
 
-void UGorgeousCameraShakeFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousCameraShakeFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !CameraShake)
 	{
@@ -18,5 +18,5 @@ void UGorgeousCameraShakeFeedbackEffect::Execute_Implementation(const FGorgeousF
 
 bool UGorgeousCameraShakeFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && CameraShake != nullptr;
+	return Super::CanExecute_Implementation(Context) && CameraShake != nullptr;
 }

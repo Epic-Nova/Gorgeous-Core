@@ -20,6 +20,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
 #include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
 #include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
+#include "GeneralSystems/FeedbackEffects/GorgeousFeedbackDispatcher.h"
 #include "InsightMatrix/GorgeousInsightBlueprintStats_OV.h"
 #include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
@@ -52,6 +53,7 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 
 namespace
@@ -187,6 +189,74 @@ void FGorgeousCoreInsightMatrixProvider::GatherStats(const FGorgeousInsightGathe
 		AliveOVs.Category = FName(TEXT("Object Variables"));
 		AliveOVs.NumericValue = static_cast<double>(UGorgeousObjectVariable::GetTotalAliveObjectVariables());
 		OutStats.Add(AliveOVs);
+	}
+
+	// ── FEEDBACK EFFECTS STATS ───────────────────────────────────────────
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			if (UGameInstance* GameInstance = World->GetGameInstance())
+			{
+				if (UGorgeousFeedbackDispatcher* Dispatcher = GameInstance->GetSubsystem<UGorgeousFeedbackDispatcher>())
+				{
+					FGorgeousInsightStat RegisteredProviders;
+					RegisteredProviders.Id = TEXT("Core.Feedback.RegisteredProviders");
+					RegisteredProviders.DisplayName = FText::FromString(TEXT("Registered Providers"));
+					RegisteredProviders.Description = FText::FromString(TEXT("Number of feedback providers currently registered with the dispatcher."));
+					RegisteredProviders.Category = FName(TEXT("Feedback Effects"));
+					RegisteredProviders.NumericValue = static_cast<double>(Dispatcher->GetRegisteredProviderCount());
+					OutStats.Add(RegisteredProviders);
+
+					FGorgeousInsightStat TotalTriggers;
+					TotalTriggers.Id = TEXT("Core.Feedback.TotalTriggers");
+					TotalTriggers.DisplayName = FText::FromString(TEXT("Total Triggers"));
+					TotalTriggers.Description = FText::FromString(TEXT("Total TriggerFeedback calls since the dispatcher was created."));
+					TotalTriggers.Category = FName(TEXT("Feedback Effects"));
+					TotalTriggers.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggers());
+					OutStats.Add(TotalTriggers);
+
+					FGorgeousInsightStat TriggersResolved;
+					TriggersResolved.Id = TEXT("Core.Feedback.TriggersResolved");
+					TriggersResolved.DisplayName = FText::FromString(TEXT("Triggers Resolved"));
+					TriggersResolved.Description = FText::FromString(TEXT("TriggerFeedback calls that resolved a non-empty definition via a provider."));
+					TriggersResolved.Category = FName(TEXT("Feedback Effects"));
+					TriggersResolved.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggersResolved());
+					OutStats.Add(TriggersResolved);
+
+					FGorgeousInsightStat TriggersUnresolved;
+					TriggersUnresolved.Id = TEXT("Core.Feedback.TriggersUnresolved");
+					TriggersUnresolved.DisplayName = FText::FromString(TEXT("Triggers Unresolved"));
+					TriggersUnresolved.Description = FText::FromString(TEXT("TriggerFeedback calls that found no provider able to resolve a definition."));
+					TriggersUnresolved.Category = FName(TEXT("Feedback Effects"));
+					TriggersUnresolved.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggersUnresolved());
+					OutStats.Add(TriggersUnresolved);
+
+					FGorgeousInsightStat EffectsExecuted;
+					EffectsExecuted.Id = TEXT("Core.Feedback.EffectsExecuted");
+					EffectsExecuted.DisplayName = FText::FromString(TEXT("Effects Executed"));
+					EffectsExecuted.Description = FText::FromString(TEXT("Total individual effects executed across all definitions played."));
+					EffectsExecuted.Category = FName(TEXT("Feedback Effects"));
+					EffectsExecuted.NumericValue = static_cast<double>(Dispatcher->GetTotalEffectsExecuted());
+					OutStats.Add(EffectsExecuted);
+
+					// Recent executed effects (DisplayName + Description) surfaced as the feedback
+					// debug feed for designers.
+					const TArray<FString>& RecentEffects = Dispatcher->GetRecentEffects();
+					for (int32 Index = 0; Index < RecentEffects.Num(); ++Index)
+					{
+						FGorgeousInsightStat RecentStat;
+						RecentStat.Id = FName(*FString::Printf(TEXT("Core.Feedback.Recent.%d"), Index));
+						RecentStat.DisplayName = FText::FromString(FString::Printf(TEXT("Recent Effect %d"), Index + 1));
+						RecentStat.Description = FText::FromString(TEXT("Most recently executed feedback effect (newest last)."));
+						RecentStat.Category = FName(TEXT("Feedback Effects"));
+						RecentStat.ValueType = EGorgeousInsightStatValueType::Text;
+						RecentStat.TextValue = FText::FromString(RecentEffects[Index]);
+						OutStats.Add(RecentStat);
+					}
+				}
+			}
+		}
 	}
 
 	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
@@ -339,6 +409,51 @@ void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightCha
 		OutCharts.Add(UIChart);
 	}
 #endif
+
+	// 3. Feedback Effects (Bar Chart)
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			if (UGameInstance* GameInstance = World->GetGameInstance())
+			{
+				if (UGorgeousFeedbackDispatcher* Dispatcher = GameInstance->GetSubsystem<UGorgeousFeedbackDispatcher>())
+				{
+					FGorgeousInsightChartDefinition FeedbackChart;
+					FeedbackChart.Id = TEXT("Core.Charts.FeedbackEffects");
+					FeedbackChart.Type = EGorgeousInsightChartType::Bar;
+					FeedbackChart.Title = FText::FromString(TEXT("Feedback Effects Activity"));
+
+					FGorgeousInsightBarValue ProvidersBar;
+					ProvidersBar.Label = FText::FromString(TEXT("Registered Providers"));
+					ProvidersBar.Value = Dispatcher->GetRegisteredProviderCount();
+					FeedbackChart.Bars.Add(ProvidersBar);
+
+					FGorgeousInsightBarValue TriggersBar;
+					TriggersBar.Label = FText::FromString(TEXT("Total Triggers"));
+					TriggersBar.Value = Dispatcher->GetTotalTriggers();
+					FeedbackChart.Bars.Add(TriggersBar);
+
+					FGorgeousInsightBarValue ResolvedBar;
+					ResolvedBar.Label = FText::FromString(TEXT("Triggers Resolved"));
+					ResolvedBar.Value = Dispatcher->GetTotalTriggersResolved();
+					FeedbackChart.Bars.Add(ResolvedBar);
+
+					FGorgeousInsightBarValue UnresolvedBar;
+					UnresolvedBar.Label = FText::FromString(TEXT("Triggers Unresolved"));
+					UnresolvedBar.Value = Dispatcher->GetTotalTriggersUnresolved();
+					FeedbackChart.Bars.Add(UnresolvedBar);
+
+					FGorgeousInsightBarValue EffectsBar;
+					EffectsBar.Label = FText::FromString(TEXT("Effects Executed"));
+					EffectsBar.Value = Dispatcher->GetTotalEffectsExecuted();
+					FeedbackChart.Bars.Add(EffectsBar);
+
+					OutCharts.Add(FeedbackChart);
+				}
+			}
+		}
+	}
 
 	// Will pull published blueprint charts as well.
 	UGorgeousInsightStatBuilder::GatherPublishedCharts(ProviderName(), OutCharts);

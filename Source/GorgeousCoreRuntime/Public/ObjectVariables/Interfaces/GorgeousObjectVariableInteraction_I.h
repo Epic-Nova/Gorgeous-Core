@@ -50,7 +50,7 @@ public:
 
 
 	/**
-	 * @TODO: Try to replace the interfaces with these two functions. When it works, we can drop the planned code generators
+	 * @TODO: Try to replace the interfaces with these two functions. When it works, we can drop the planned code generators and drop the othe rinterface (this would be soo much cleaner)
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
 	void GetObjectVariableParameter(int32& OutValue, const FName OptionalVariableName);

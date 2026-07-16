@@ -4,7 +4,7 @@
 #include "GameFramework/ForceFeedbackEffect.h"
 #include "Kismet/GameplayStatics.h"
 
-void UGorgeousForceFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousForceFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	if (!bEnabled || !ForceFeedback)
 	{
@@ -42,5 +42,5 @@ void UGorgeousForceFeedbackEffect::Execute_Implementation(const FGorgeousFeedbac
 
 bool UGorgeousForceFeedbackEffect::CanExecute_Implementation(const FGorgeousFeedbackContext& Context) const
 {
-	return bEnabled && ForceFeedback != nullptr;
+	return Super::CanExecute_Implementation(Context) && ForceFeedback != nullptr;
 }
