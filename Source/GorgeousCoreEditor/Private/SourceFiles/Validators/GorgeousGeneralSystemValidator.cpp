@@ -871,24 +871,36 @@ bool UGorgeousGeneralSystemValidator::IsSystemComponent(const FString Name, cons
 
 UClass* UGorgeousGeneralSystemValidator::FindSystemDefaultComponent(const FString& PDA_SystemRoot, const bool bIsManager)
 {
-	FAssetRegistryModule& AssetRegistry =
+	FAssetRegistryModule& AssetRegistryModule =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
 	// Stage 1: collect classes that live inside this system folder
 	TArray<FAssetData> LocalAssets;
-	AssetRegistry.Get().GetAssetsByPath(FName(*PDA_SystemRoot), LocalAssets, true);
+	AssetRegistry.GetAssetsByPath(FName(*PDA_SystemRoot), LocalAssets, true);
 
 	TArray<UClass*> SystemClasses;
 	TArray<UClass*> LocalRoleMatches;
+
+	TSet<FTopLevelAssetPath> DerivedFromGeneralSystem;
+	{
+		TArray<FTopLevelAssetPath> BaseClassNames;
+		BaseClassNames.Add(UGeneralSystem_AC::StaticClass()->GetClassPathName());
+		TSet<FTopLevelAssetPath> ExcludedClassNames;
+		AssetRegistry.GetDerivedClassNames(BaseClassNames, ExcludedClassNames, DerivedFromGeneralSystem);
+	}
 
 	for (const FAssetData& Asset : LocalAssets)
 	{
 		if (Asset.AssetClassPath != UBlueprint::StaticClass()->GetClassPathName())
 			continue;
 
-		const FString GeneratedClassPath = Asset.GetTagValueRef<FString>("GeneratedClass");
-		UClass* GeneratedClass = nullptr;
+		FTopLevelAssetPath BlueprintClassPath(Asset.PackageName, FName(*(Asset.AssetName.ToString() + TEXT("_C"))));
+		if (!DerivedFromGeneralSystem.Contains(BlueprintClassPath))
+			continue;
 
+		UClass* GeneratedClass = nullptr;
+		const FString GeneratedClassPath = Asset.GetTagValueRef<FString>("GeneratedClass");
 		if (!GeneratedClassPath.IsEmpty())
 		{
 			GeneratedClass = LoadObject<UClass>(nullptr, *GeneratedClassPath);
@@ -903,14 +915,10 @@ UClass* UGorgeousGeneralSystemValidator::FindSystemDefaultComponent(const FStrin
 		if (!GeneratedClass)
 			continue;
 
-		if (!GeneratedClass->IsChildOf(UGeneralSystem_AC::StaticClass()))
-			continue;
-
 		SystemClasses.AddUnique(GeneratedClass);
 
 		const FString FullClassName = GeneratedClass->GetName();
 		FString ClassName = FullClassName;
-		// Remove _C suffix from blueprint class names for keyword matching
 		ClassName.RemoveFromEnd(TEXT("_C"));
 
 		const bool bMatchesRole =
@@ -950,57 +958,55 @@ UClass* UGorgeousGeneralSystemValidator::FindSystemDefaultComponent(const FStrin
 	// derive from one of the system classes discovered above.
 	if (SystemClasses.Num() > 0)
 	{
-		TArray<FAssetData> AllBlueprints;
-		AssetRegistry.Get().GetAssetsByClass(UBlueprint::StaticClass()->GetClassPathName(), AllBlueprints, true);
-
 		TArray<UClass*> DerivedMatches;
 
-		for (const FAssetData& Asset : AllBlueprints)
+		for (UClass* SysCls : SystemClasses)
 		{
-			if (Asset.AssetClassPath != UBlueprint::StaticClass()->GetClassPathName())
-				continue;
+			TSet<FTopLevelAssetPath> DerivedClassNamesForSystemClass;
+			TArray<FTopLevelAssetPath> BaseClassNames;
+			BaseClassNames.Add(SysCls->GetClassPathName());
+			TSet<FTopLevelAssetPath> ExcludedClassNames;
+			AssetRegistry.GetDerivedClassNames(BaseClassNames, ExcludedClassNames, DerivedClassNamesForSystemClass);
 
-			const FString GeneratedClassPath = Asset.GetTagValueRef<FString>("GeneratedClass");
-			UClass* CandidateClass = nullptr;
-
-			if (!GeneratedClassPath.IsEmpty())
+			for (const FTopLevelAssetPath& ClassPath : DerivedClassNamesForSystemClass)
 			{
-				CandidateClass = LoadObject<UClass>(nullptr, *GeneratedClassPath);
-			}
-			else
-			{
-				UBlueprint* BP = Cast<UBlueprint>(Asset.GetAsset());
-				if (BP && BP->GeneratedClass)
-					CandidateClass = BP->GeneratedClass;
-			}
-
-			if (!CandidateClass)
-				continue;
-
-			if (!CandidateClass->IsChildOf(UGeneralSystem_AC::StaticClass()))
-				continue;
-
-			bool bChildOfSystem = false;
-			for (UClass* SysCls : SystemClasses)
-			{
-				if (CandidateClass->IsChildOf(SysCls))
+				FString ClassNameStr = ClassPath.GetAssetName().ToString();
+				if (ClassNameStr.EndsWith(TEXT("_C")))
 				{
-					bChildOfSystem = true;
-					break;
+					ClassNameStr.RemoveFromEnd(TEXT("_C"));
 				}
-			}
+				
+				FSoftObjectPath BlueprintAssetPath(FString::Printf(TEXT("%s.%s"), *ClassPath.GetPackageName().ToString(), *ClassNameStr));
+				FAssetData Asset = AssetRegistry.GetAssetByObjectPath(BlueprintAssetPath);
 
-			if (!bChildOfSystem)
-				continue;
+				if (Asset.IsValid())
+				{
+					FString ClassName = Asset.AssetName.ToString();
+					const bool bMatchesRole =
+						(bIsManager && IsSystemComponent(ClassName, 1)) ||
+						(!bIsManager && IsSystemComponent(ClassName, 2));
 
-			const FString Name = CandidateClass->GetName();
-			const bool bMatchesRole =
-				(bIsManager && IsSystemComponent(Name, 1)) ||
-				(!bIsManager && IsSystemComponent(Name, 2));
+					if (bMatchesRole)
+					{
+						UClass* GeneratedClass = nullptr;
+						const FString GeneratedClassPath = Asset.GetTagValueRef<FString>("GeneratedClass");
+						if (!GeneratedClassPath.IsEmpty())
+						{
+							GeneratedClass = LoadObject<UClass>(nullptr, *GeneratedClassPath);
+						}
+						else
+						{
+							UBlueprint* BP = Cast<UBlueprint>(Asset.GetAsset());
+							if (BP && BP->GeneratedClass)
+								GeneratedClass = BP->GeneratedClass;
+						}
 
-			if (bMatchesRole)
-			{
-				DerivedMatches.AddUnique(CandidateClass);
+						if (GeneratedClass)
+						{
+							DerivedMatches.AddUnique(GeneratedClass);
+						}
+					}
+				}
 			}
 		}
 
@@ -1034,7 +1040,16 @@ void UGorgeousGeneralSystemValidator::HandleAssetAdded(const FAssetData& AssetDa
 
 	ProcessedAssets.Add(AssetData.PackageName);
 
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	if (AssetRegistryModule.Get().IsLoadingAssets())
+	{
+		return;
+	}
+
 	if (AssetData.AssetClassPath != UBlueprint::StaticClass()->GetClassPathName())
+		return;
+
+	if (!IsGeneralSystemBlueprint(AssetData))
 		return;
 
 	FTSTicker::GetCoreTicker().AddTicker(
@@ -1046,6 +1061,26 @@ void UGorgeousGeneralSystemValidator::HandleAssetAdded(const FAssetData& AssetDa
 		WeakThis->OnSafeProcessAsset(nullptr, AssetData);
 		return false;
 	}),0.5f);
+}
+
+bool UGorgeousGeneralSystemValidator::IsGeneralSystemBlueprint(const FAssetData& AssetData) const
+{
+	if (AssetData.AssetClassPath != UBlueprint::StaticClass()->GetClassPathName())
+	{
+		return false;
+	}
+
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+	TSet<FTopLevelAssetPath> DerivedClassNames;
+	TArray<FTopLevelAssetPath> BaseClassNames;
+	BaseClassNames.Add(UGeneralSystem_AC::StaticClass()->GetClassPathName());
+	TSet<FTopLevelAssetPath> ExcludedClassNames;
+	AssetRegistry.GetDerivedClassNames(BaseClassNames, ExcludedClassNames, DerivedClassNames);
+
+	FTopLevelAssetPath BlueprintClassPath(AssetData.PackageName, FName(*(AssetData.AssetName.ToString() + TEXT("_C"))));
+	return DerivedClassNames.Contains(BlueprintClassPath);
 }
 
 void UGorgeousGeneralSystemValidator::OnSafeProcessAsset(UWorld* World, FAssetData AssetData)

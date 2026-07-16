@@ -10,6 +10,7 @@
 <==========================================================================*/
 #pragma once
 
+#include "Styling/SlateStyle.h"
 #include "Fonts/CompositeFont.h"
 #include "Fonts/SlateFontInfo.h"
 #include "Styling/SlateStyle.h"
@@ -35,9 +36,9 @@ namespace GorgeousStyleRegistration
 	 */
 	FORCEINLINE void SetBrushes(const TSharedPtr<FSlateStyleSet>& Style, const FString& Key, const FString& FileName, const FString& ClassName)
 	{
-		Style->Set(*FString::Printf(TEXT("GorgeousCore.%s.Icon"), *Key),
+		Style->Set(*FString::Printf(TEXT("Gorgeous.%s.Icon"), *Key),
 			new FSlateImageBrush(Style->RootToContentDir(FileName, TEXT(".png")), Icon16));
-		Style->Set(*FString::Printf(TEXT("GorgeousCore.%s.Thumbnail"), *Key),
+		Style->Set(*FString::Printf(TEXT("Gorgeous.%s.Thumbnail"), *Key),
 			new FSlateImageBrush(Style->RootToContentDir(FileName, TEXT(".png")), Thumb128));
 
 		Style->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),
