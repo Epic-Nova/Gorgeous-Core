@@ -83,6 +83,10 @@ public:
 	/** Gets the total number of local signals that had no listeners since boot. */
 	static int64 GetTotalNoListenersFound();
 
+	/** Returns the total number of registered tags with active listeners. */
+	int32 GetTotalActiveListeners() const;
+
+
 protected:
 	//~ Begin UGorgeousObjectVariable Interface
 	virtual void OnReplicationActivated_Implementation(const FGorgeousAutoReplicationContext& Context) override;

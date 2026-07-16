@@ -21,7 +21,7 @@
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
-#include "InsightMatrix/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 #include "Algo/Sort.h"
 #include "Engine/World.h"
 

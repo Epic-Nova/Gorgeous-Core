@@ -39,6 +39,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Stats")
 	float GetStat(FGameplayTag Tag) const;
 
+	/** Total active Stat Components currently alive in the world. */
+	static int32 GetTotalActiveComponents();
+
+	/** Total modifiers applied across all components since boot. */
+	static int32 GetTotalModifiersApplied();
+
 protected:
 	/** Internal storage object, managed by Gorgeous Auto Replication. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
@@ -59,4 +65,6 @@ protected:
 	void RegisterSignalListeners();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void OnRegister() override;
+	virtual void OnUnregister() override;
 };

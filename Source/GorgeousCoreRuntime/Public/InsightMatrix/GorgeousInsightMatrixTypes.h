@@ -12,6 +12,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InstancedStruct.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+#include "GorgeousInsightMatrixTypes.generated.h"
+
+class UWorld;
+
+UENUM(BlueprintType)
+enum class EGorgeousInsightContextMode : uint8
+{
+	Live,
+	Editor,
+	Baseline
+};
+
+USTRUCT(BlueprintType)
+struct FGorgeousInsightGatherContext
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	EGorgeousInsightContextMode Mode = EGorgeousInsightContextMode::Editor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	UWorld* WorldContext = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	FString InstanceName;
+};
 
 /** Basic stat value type hints for the UI layer. */
 enum class EGorgeousInsightStatValueType : uint8
@@ -161,6 +190,22 @@ struct FGorgeousInsightTableRow
 	FText Category;
 };
 
+
+USTRUCT(BlueprintType)
+struct FGorgeousInsightChartPayload
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, FString> Labels;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, float> Values;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, FLinearColor> Colors;
+};
+
 enum class EGorgeousInsightChartType : uint8
 {
 	Bar,
@@ -174,9 +219,15 @@ enum class EGorgeousInsightChartType : uint8
 	Table
 };
 
+USTRUCT(BlueprintType)
 struct FGorgeousInsightChartDefinition
 {
+	GENERATED_BODY()
+
 	FName Id = NAME_None;
+	FName CustomChartType = NAME_None;
+	FGorgeousInsightChartPayload Payload;
+	FInstancedStruct InstancedPayload;
 	EGorgeousInsightChartType Type = EGorgeousInsightChartType::Bar;
 	FText Title;
 	FText Subtitle;

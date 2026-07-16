@@ -14,11 +14,37 @@
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "InsightMatrix/GorgeousInsightStatBuilder.h"
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
+#include "GeneralSystems/FeedbackEffects/GorgeousFeedbackDispatcher.h"
+#include "InsightMatrix/GorgeousInsightBlueprintStats_OV.h"
+#include "ObjectVariables/GorgeousObjectVariableRegistry_GIS.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
-#include "InsightMatrix/Slate/GorgeousObjectVariableBrowserWindow.h"
-#include "InsightMatrix/Slate/SGorgeousNetworkTrafficInspectorWindow.h"
-#include "InsightMatrix/Slate/SGorgeousRPCInspectorWindow.h"
+#include "ObjectVariables/Slate/GorgeousObjectVariableBrowserWindow.h"
+#include "AutoReplication/Slate/SGorgeousNetworkTrafficInspectorWindow.h"
+#include "AutoReplication/Slate/SGorgeousRPCInspectorWindow.h"
+#include "InsightMatrix/GorgeousInsightActionConfig_DA.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+
+// Tab Spawning support
+#include "WorkspaceMenuStructure.h"
+#include "WorkspaceMenuStructureModule.h"
+#include "Widgets/Docking/SDockTab.h"
+#include "Widgets/SWindow.h"
+#include "Framework/Application/SlateApplication.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#include "EditorUtilityWidget.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#include "EditorUtilitySubsystem.h"
+#endif
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
@@ -27,123 +53,45 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 
 namespace
 {
 	const FName ActionOpenOVBrowser(TEXT("Core.OV.Browser"));
-
-	// ── AutoReplication merged actions ────────────────────────────────────
 	const FName ActionOpenTrafficInspector(TEXT("AR.Window.TrafficInspector"));
 	const FName ActionOpenRPCInspector(TEXT("AR.Window.RPCInspector"));
 
-	FString BuildParameterString(const TMap<FString, FString>& Parameters)
-	{
-		if (Parameters.Num() == 0)
-		{
-			return FString();
-		}
-
-		TArray<FString> Segments;
-		Segments.Reserve(Parameters.Num());
-		for (const TPair<FString, FString>& Pair : Parameters)
-		{
-			Segments.Add(FString::Printf(TEXT("%s=%s"), *Pair.Key, *Pair.Value));
-		}
-		return FString::Join(Segments, TEXT(" "));
-	}
-
-	void AddStat(TArray<FGorgeousInsightStat>& OutStats, const FName Id, const FString& Label, const FName Category,
-		EGorgeousInsightStatValueType ValueType, double NumericValue, const FString& Unit = FString())
-	{
-		FGorgeousInsightStat Stat;
-		Stat.Id = Id;
-		Stat.DisplayName = FText::FromString(Label);
-		Stat.Category = Category;
-		Stat.ValueType = ValueType;
-		Stat.NumericValue = NumericValue;
-		Stat.Unit = FText::FromString(Unit);
-		OutStats.Add(Stat);
-	}
-
-	void AddTextStat(TArray<FGorgeousInsightStat>& OutStats, const FName Id, const FString& Label, const FName Category, const FString& Value)
-	{
-		FGorgeousInsightStat Stat;
-		Stat.Id = Id;
-		Stat.DisplayName = FText::FromString(Label);
-		Stat.Category = Category;
-		Stat.ValueType = EGorgeousInsightStatValueType::Text;
-		Stat.TextValue = FText::FromString(Value);
-		OutStats.Add(Stat);
-	}
-
-	bool HasForeignProviderTag(const FGorgeousInsightScenarioDescriptor& Descriptor, const FName ProviderName)
-	{
-		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-		{
-			for (IGorgeousInsightMatrixProvider* Provider : Subsystem->GetProviders())
-			{
-				if (!Provider)
-				{
-					continue;
-				}
-				const FName OtherName = Provider->GetProviderName();
-				if (OtherName != ProviderName && Descriptor.Tags.Contains(OtherName))
-				{
-					return true;
-				}
-			}
-		}
-
-		return false;
-	}
-
 	bool IsCoreScenario(const FGorgeousInsightScenarioDescriptor& Descriptor)
 	{
-		const FName ProviderName = FGorgeousCoreInsightMatrixProvider::ProviderName();
-		if (Descriptor.Tags.Contains(ProviderName))
-		{
-			return true;
-		}
-		return !HasForeignProviderTag(Descriptor, ProviderName);
-	}
-
-	FGorgeousInsightTestResult ConvertScenarioResult(const FGorgeousInsightScenarioResult& ScenarioResult)
-	{
-		FGorgeousInsightTestResult Result;
-		Result.bSuccess = ScenarioResult.bSuccess;
-		Result.Errors = ScenarioResult.Errors;
-		Result.Warnings = ScenarioResult.Warnings;
-		Result.Notes = ScenarioResult.Notes;
-		Result.Metrics = ScenarioResult.Metrics;
-		return Result;
+		return Descriptor.Tags.Contains(FName(TEXT("GorgeousCore"))) || Descriptor.Tags.Contains(FName(TEXT("System.Core")));
 	}
 
 	bool IsARScenario(const FGorgeousInsightScenarioDescriptor& Descriptor)
 	{
-		return Descriptor.Tags.Contains(FName(TEXT("AutoReplication")))
-			|| Descriptor.Tags.Contains(FName(TEXT("AR")))
-			|| Descriptor.Tags.Contains(FName(TEXT("Networking")));
+		return Descriptor.Tags.Contains(FName(TEXT("System.AutoReplication")));
 	}
 
-	UWorld* FindActiveGameWorld()
+	FString BuildParameterString(const TMap<FString, FString>& Parameters)
 	{
-		if (!GEngine)
+		FString Result;
+		for (const auto& Pair : Parameters)
 		{
-			return nullptr;
+			Result += FString::Printf(TEXT("%s=%s "), *Pair.Key, *Pair.Value);
 		}
+		return Result;
+	}
 
-		for (const FWorldContext& Context : GEngine->GetWorldContexts())
-		{
-			if (Context.WorldType == EWorldType::Game || Context.WorldType == EWorldType::PIE)
-			{
-				if (UWorld* World = Context.World())
-				{
-					return World;
-				}
-			}
-		}
-		return nullptr;
+	FGorgeousInsightTestResult ConvertScenarioResult(const FGorgeousInsightScenarioResult& Result)
+	{
+		FGorgeousInsightTestResult OutResult;
+		OutResult.bSuccess = Result.bSuccess;
+		OutResult.Errors = Result.Errors;
+		OutResult.Warnings = Result.Warnings;
+		OutResult.Notes = Result.Notes;
+		OutResult.Metrics = Result.Metrics;
+		OutResult.LogCapture = Result.LogCapture;
+		return OutResult;
 	}
 }
 
@@ -157,677 +105,358 @@ FText FGorgeousCoreInsightMatrixProvider::GetProviderDisplayName() const
 	return FText::FromString(TEXT("Gorgeous Core"));
 }
 
-void FGorgeousCoreInsightMatrixProvider::GatherStats(TArray<FGorgeousInsightStat>& OutStats) const
+void FGorgeousCoreInsightMatrixProvider::GatherStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const
 {
-	const FGorgeousInsightHarnessStatus Status = FGorgeousInsightHarness::GetStatus();
-	const FName Category(TEXT("Harness"));
+	// Purged. Will pull published stats instead.
+	UGorgeousInsightStatBuilder::GatherPublishedStats(ProviderName(), OutStats);
 
-	AddStat(OutStats, FName(TEXT("Core.Harness.Active")), TEXT("Harness Active"), Category,
-		EGorgeousInsightStatValueType::Number, Status.bHarnessActive ? 1.0 : 0.0);
-	AddStat(OutStats, FName(TEXT("Core.Harness.Gauntlet")), TEXT("Gauntlet Active"), Category,
-		EGorgeousInsightStatValueType::Number, Status.bUsingGauntlet ? 1.0 : 0.0);
-	AddTextStat(OutStats, FName(TEXT("Core.Gauntlet.State")), TEXT("Gauntlet State"), Category, Status.GauntletState.ToString());
-	AddStat(OutStats, FName(TEXT("Core.Gauntlet.StateSeconds")), TEXT("Gauntlet State Seconds"), Category,
-		EGorgeousInsightStatValueType::TimeSeconds, Status.GauntletStateSeconds, TEXT("s"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.Connection")), TEXT("Has Connection"), Category,
-		EGorgeousInsightStatValueType::Number, Status.bHasConnection ? 1.0 : 0.0);
-	AddStat(OutStats, FName(TEXT("Core.Harness.ServerPort")), TEXT("Server Port"), Category,
-		EGorgeousInsightStatValueType::Number, static_cast<double>(Status.ServerPort));
+	// --- 1.2 SIGNAL BRIDGE STATS ---
+	FGorgeousInsightStat DispatchedStat;
+	DispatchedStat.Id = TEXT("Core.SignalBridge.Dispatched");
+	DispatchedStat.DisplayName = FText::FromString(TEXT("Signals Dispatched"));
+	DispatchedStat.Description = FText::FromString(TEXT("Total local signals fired since boot."));
+	DispatchedStat.Category = FName(TEXT("Signal Bridge"));
+	DispatchedStat.NumericValue = (USignalBridgeStorage_OV::GetTotalLocalSignalsFired());
+	OutStats.Add(DispatchedStat);
 
-	AddTextStat(OutStats, FName(TEXT("Core.Harness.Map")), TEXT("Harness Map"), Category, Status.HarnessMapPath);
-	AddTextStat(OutStats, FName(TEXT("Core.Harness.Address")), TEXT("Listen Address"), Category, Status.ListenAddress);
+	FGorgeousInsightStat DroppedStat;
+	DroppedStat.Id = TEXT("Core.SignalBridge.Dropped");
+	DroppedStat.DisplayName = FText::FromString(TEXT("Dropped Signals"));
+	DroppedStat.Description = FText::FromString(TEXT("Signals fired with zero active listeners."));
+	DroppedStat.Category = FName(TEXT("Signal Bridge"));
+	DroppedStat.NumericValue = (USignalBridgeStorage_OV::GetTotalNoListenersFound());
+	OutStats.Add(DroppedStat);
 
-	AddStat(OutStats, FName(TEXT("Core.Harness.OutBytes")), TEXT("Outgoing Bytes"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.OutgoingBytes, TEXT("B"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.InBytes")), TEXT("Incoming Bytes"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.IncomingBytes, TEXT("B"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.ServerOutRate")), TEXT("Server Out Rate"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.ServerOutRateBytesPerSecond, TEXT("B/s"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.ServerInRate")), TEXT("Server In Rate"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.ServerInRateBytesPerSecond, TEXT("B/s"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.ClientOutRate")), TEXT("Client Out Rate"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.ClientOutRateBytesPerSecond, TEXT("B/s"));
-	AddStat(OutStats, FName(TEXT("Core.Harness.ClientInRate")), TEXT("Client In Rate"), Category,
-		EGorgeousInsightStatValueType::Bytes, Status.Stats.ClientInRateBytesPerSecond, TEXT("B/s"));
-
-	if (Status.NetworkMetricLines.Num() > 0)
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
 	{
-		int32 Index = 0;
-		for (const FString& Line : Status.NetworkMetricLines)
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			AddTextStat(OutStats, FName(*FString::Printf(TEXT("Core.Harness.Metric.%d"), Index++)), TEXT("Network Metric"), Category, Line);
+			if (USignalBridgeStorage_OV* Bridge = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(World, false))
+			{
+				FGorgeousInsightStat ListenersStat;
+				ListenersStat.Id = TEXT("Core.SignalBridge.Listeners");
+				ListenersStat.DisplayName = FText::FromString(TEXT("Active Tag Listeners"));
+				ListenersStat.Description = FText::FromString(TEXT("Number of unique gameplay tags currently being listened to."));
+				ListenersStat.Category = FName(TEXT("Signal Bridge"));
+				ListenersStat.NumericValue = (Bridge->GetTotalActiveListeners());
+				OutStats.Add(ListenersStat);
+			}
 		}
 	}
 
-	const UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get();
-	if (Subsystem)
+#if GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+	// Stats now displayed as a Bar Chart
+#endif // GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
 	{
-		const UGorgeousInsightMatrixSubsystem::FGorgeousInsightLastRunStats& LastRun = Subsystem->GetLastRunStats();
-		const FName LastRunCategory(TEXT("LastRun"));
-		if (LastRun.bHasRun)
-		{
-			AddTextStat(OutStats, FName(TEXT("Core.LastRun.Provider")), TEXT("Last Run Provider"), LastRunCategory, LastRun.ProviderName.ToString());
-			AddTextStat(OutStats, FName(TEXT("Core.LastRun.Test")), TEXT("Last Run Test"), LastRunCategory, LastRun.TestId.ToString());
-			AddTextStat(OutStats, FName(TEXT("Core.LastRun.Timestamp")), TEXT("Last Run Timestamp"), LastRunCategory, LastRun.Timestamp.ToString());
-			AddStat(OutStats, FName(TEXT("Core.LastRun.Duration")), TEXT("Last Run Duration"), LastRunCategory,
-				EGorgeousInsightStatValueType::TimeSeconds, LastRun.DurationSeconds, TEXT("s"));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.Errors")), TEXT("Last Run Errors"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(LastRun.ErrorCount));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.Warnings")), TEXT("Last Run Warnings"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(LastRun.WarningCount));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.Notes")), TEXT("Last Run Notes"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(LastRun.NoteCount));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.OVOverhead")), TEXT("OV Overhead"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, LastRun.ObjectVariableOverheadMs, TEXT("ms"));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.OVRegistered")), TEXT("Object Variables Registered (Last Run)"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(LastRun.ObjectVariablesRegistered));
-		}
-		else
-		{
-			AddTextStat(OutStats, FName(TEXT("Core.LastRun.Timestamp")), TEXT("Last Run Timestamp"), LastRunCategory, TEXT("Never"));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.OVOverhead")), TEXT("OV Overhead"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, 0.0, TEXT("ms"));
-			AddStat(OutStats, FName(TEXT("Core.LastRun.OVRegistered")), TEXT("Object Variables Registered (Last Run)"), LastRunCategory,
-				EGorgeousInsightStatValueType::Number, 0.0);
-		}
+		FGorgeousInsightStat ActiveInteractions;
+		ActiveInteractions.Id = TEXT("Core.InteractionFoundation.ActiveTrackedActors");
+		ActiveInteractions.DisplayName = FText::FromString(TEXT("Active Tracked Interaction Actors"));
+		ActiveInteractions.Category = FName(TEXT("Interaction Foundation"));
+		ActiveInteractions.NumericValue = static_cast<double>(UGorgeousInteractionFoundation::GetActiveTrackedInteractionActors());
+		OutStats.Add(ActiveInteractions);
+	}
+#endif // GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+	// Stats now displayed as a Bar Chart
+#endif // GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+
+#if GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+	{
+		FGorgeousInsightStat ActiveBeacons;
+		ActiveBeacons.Id = TEXT("Core.DebugAssist.ActiveBeacons");
+		ActiveBeacons.DisplayName = FText::FromString(TEXT("Active Debug Beacons"));
+		ActiveBeacons.Category = FName(TEXT("Debug Assist"));
+		ActiveBeacons.NumericValue = static_cast<double>(UGorgeousDebugAssistBlueprintFunctionLibrary::GetTotalActiveDebugBeacons());
+		OutStats.Add(ActiveBeacons);
+
+		FGorgeousInsightStat RenderOverhead;
+		RenderOverhead.Id = TEXT("Core.DebugAssist.RenderOverheadMS");
+		RenderOverhead.DisplayName = FText::FromString(TEXT("Render Overhead (MS)"));
+		RenderOverhead.Category = FName(TEXT("Debug Assist"));
+		RenderOverhead.ValueType = EGorgeousInsightStatValueType::TimeSeconds;
+		RenderOverhead.NumericValue = UGorgeousDebugAssistBlueprintFunctionLibrary::GetDebugAssistRenderOverheadMS() / 1000.0;
+		OutStats.Add(RenderOverhead);
+	}
+#endif // GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+
+	{
+		FGorgeousInsightStat AliveOVs;
+		AliveOVs.Id = TEXT("Core.ObjectVariables.AliveCount");
+		AliveOVs.DisplayName = FText::FromString(TEXT("Active Object Variables (Memory)"));
+		AliveOVs.Category = FName(TEXT("Object Variables"));
+		AliveOVs.NumericValue = static_cast<double>(UGorgeousObjectVariable::GetTotalAliveObjectVariables());
+		OutStats.Add(AliveOVs);
 	}
 
+	// ── FEEDBACK EFFECTS STATS ───────────────────────────────────────────
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
 	{
-		const FName OVCategory(TEXT("ObjectVariables"));
-		const TArray<FName> RootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-		const TArray<UGorgeousObjectVariable*> AllVariables = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(NAME_None);
-		const TArray<UGorgeousObjectVariable*> RootVariables = UGorgeousRootObjectVariable::GetRootVariableRegistry(NAME_None);
-		int32 SharedRoots = 0;
-		int32 EnforcedRoots = 0;
-		for (const FName RootName : RootNames)
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			SharedRoots += UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName) ? 1 : 0;
-			EnforcedRoots += UGorgeousRootObjectVariable::IsEnforcedNetworkingRoot(RootName) ? 1 : 0;
-		}
-
-		AddStat(OutStats, FName(TEXT("Core.OV.RootCount")), TEXT("OV Root Count"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(RootNames.Num()));
-		AddStat(OutStats, FName(TEXT("Core.OV.RootVariableCount")), TEXT("OV Root Variables"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(RootVariables.Num()));
-		AddStat(OutStats, FName(TEXT("Core.OV.TotalVariables")), TEXT("OV Total Variables"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(AllVariables.Num()));
-		AddStat(OutStats, FName(TEXT("Core.OV.SharedRoots")), TEXT("OV Shared Roots"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(SharedRoots));
-		AddStat(OutStats, FName(TEXT("Core.OV.EnforcedRoots")), TEXT("OV Enforced Roots"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(EnforcedRoots));
-
-		// Per-root variable counts
-		for (const FName RootName : RootNames)
-		{
-			const TArray<UGorgeousObjectVariable*> RootVars = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(RootName);
-			AddStat(OutStats, FName(*FString::Printf(TEXT("Core.OV.Root.%s.Count"), *RootName.ToString())),
-				*FString::Printf(TEXT("OV [%s] Variable Count"), *RootName.ToString()), OVCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(RootVars.Num()));
-		}
-
-		// Networking breakdown across all variables
-		int32 ReplicatingCount = 0;
-		int32 NetworkCapableCount = 0;
-		int32 MaxDepth = 0;
-		TMap<FName, int32> ClassDistribution;
-		for (const UGorgeousObjectVariable* Variable : AllVariables)
-		{
-			if (!IsValid(Variable))
+			if (UGameInstance* GameInstance = World->GetGameInstance())
 			{
-				continue;
-			}
-
-			if (Variable->IsReplicationActive())
-			{
-				++ReplicatingCount;
-			}
-			if (static_cast<const UObject*>(Variable)->IsSupportedForNetworking())
-			{
-				++NetworkCapableCount;
-			}
-
-			// Class distribution
-			const FName ClassName = Variable->GetClass()->GetFName();
-			ClassDistribution.FindOrAdd(ClassName, 0)++;
-
-			// Hierarchy depth
-			int32 Depth = 0;
-			const UGorgeousObjectVariable* Walker = Variable;
-			while (Walker->GetParent() != nullptr)
-			{
-				Walker = Walker->GetParent();
-				++Depth;
-			}
-			MaxDepth = FMath::Max(MaxDepth, Depth);
-		}
-
-		AddStat(OutStats, FName(TEXT("Core.OV.Replicating")), TEXT("OV Replicating"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(ReplicatingCount));
-		AddStat(OutStats, FName(TEXT("Core.OV.NetworkCapable")), TEXT("OV Network Capable"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(NetworkCapableCount));
-		AddStat(OutStats, FName(TEXT("Core.OV.MaxDepth")), TEXT("OV Max Hierarchy Depth"), OVCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(MaxDepth));
-
-		// Top class types
-		for (const TPair<FName, int32>& ClassEntry : ClassDistribution)
-		{
-			AddStat(OutStats, FName(*FString::Printf(TEXT("Core.OV.Class.%s"), *ClassEntry.Key.ToString())),
-				*FString::Printf(TEXT("OV Class [%s]"), *ClassEntry.Key.ToString()), OVCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(ClassEntry.Value));
-		}
-	}
-
-	{
-		const FName SignalCategory(TEXT("SignalBridge"));
-		AddStat(OutStats, FName(TEXT("Core.SignalBridge.LocalFired")), TEXT("Local Signals Fired"), SignalCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(USignalBridgeStorage_OV::GetTotalLocalSignalsFired()));
-		AddStat(OutStats, FName(TEXT("Core.SignalBridge.NoListeners")), TEXT("Local Signals Missed (No Listeners)"), SignalCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(USignalBridgeStorage_OV::GetTotalNoListenersFound()));
-	}
-
-	// Scenario registry stats
-	{
-		const FName ScenarioCategory(TEXT("Scenarios"));
-		const TArray<FGorgeousInsightScenarioDescriptor> Scenarios = FGorgeousInsightTestMatrix::GetRegisteredScenarios();
-		int32 LocalTests = 0;
-		int32 GauntletTests = 0;
-		int32 CoreTests = 0;
-		for (const FGorgeousInsightScenarioDescriptor& Descriptor : Scenarios)
-		{
-			if (Descriptor.Tags.Contains(FName(TEXT("gauntlet"))))
-			{
-				++GauntletTests;
-			}
-			else
-			{
-				++LocalTests;
-			}
-			if (IsCoreScenario(Descriptor))
-			{
-				++CoreTests;
-			}
-		}
-
-		AddStat(OutStats, FName(TEXT("Core.Scenarios.Total")), TEXT("Registered Scenarios"), ScenarioCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(Scenarios.Num()));
-		AddStat(OutStats, FName(TEXT("Core.Scenarios.Local")), TEXT("Local Scenarios"), ScenarioCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(LocalTests));
-		AddStat(OutStats, FName(TEXT("Core.Scenarios.Gauntlet")), TEXT("Gauntlet Scenarios"), ScenarioCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(GauntletTests));
-		AddStat(OutStats, FName(TEXT("Core.Scenarios.Core")), TEXT("Core Provider Scenarios"), ScenarioCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(CoreTests));
-	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	//  AutoReplication stats (merged from AR provider)
-	// ════════════════════════════════════════════════════════════════════════
-	{
-		const FName ARCategory(TEXT("AutoReplication"));
-		const TArray<UGorgeousObjectVariable*> AllVars = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(NAME_None);
-
-		int32 ARReplicating = 0, ARNetCapable = 0, ARWithBinding = 0, ARShared = 0;
-		int32 ModeAuto = 0, ModeHybrid = 0, ModeManual = 0;
-		int32 BackendNative = 0, BackendIris = 0, BackendRepGraph = 0;
-		double BandwidthTotal = 0.0;
-		float FreqMin = FLT_MAX, FreqMax = 0.f;
-		double FreqSum = 0.0;
-		int32 FreqCount = 0;
-
-		for (const UGorgeousObjectVariable* Var : AllVars)
-		{
-			if (!IsValid(Var))
-			{
-				continue;
-			}
-			if (Var->bSupportsNetworking)
-			{
-				++ARNetCapable;
-			}
-			if (Var->IsReplicationActive())
-			{
-				++ARReplicating;
-			}
-			if (Var->HasAutoReplicationBinding())
-			{
-				++ARWithBinding;
-			}
-			if (Var->bUseSharedNetworkStack)
-			{
-				++ARShared;
-			}
-
-			switch (Var->ReplicationMode)
-			{
-			case EGorgeousObjectVariableReplicationMode::EFullAutoReplication: ++ModeAuto; break;
-			case EGorgeousObjectVariableReplicationMode::EHybrid:             ++ModeHybrid; break;
-			case EGorgeousObjectVariableReplicationMode::EManual:             ++ModeManual; break;
-			default: break;
-			}
-
-			if (Var->bSupportsNetworking)
-			{
-				switch (Var->AutoReplicationConfig.Backend)
+				if (UGorgeousFeedbackDispatcher* Dispatcher = GameInstance->GetSubsystem<UGorgeousFeedbackDispatcher>())
 				{
-				case EGorgeousAutoReplicationBackend::Native:           ++BackendNative; break;
-				case EGorgeousAutoReplicationBackend::Iris:             ++BackendIris; break;
-				case EGorgeousAutoReplicationBackend::ReplicationGraph: ++BackendRepGraph; break;
-				default: break;
-				}
+					FGorgeousInsightStat RegisteredProviders;
+					RegisteredProviders.Id = TEXT("Core.Feedback.RegisteredProviders");
+					RegisteredProviders.DisplayName = FText::FromString(TEXT("Registered Providers"));
+					RegisteredProviders.Description = FText::FromString(TEXT("Number of feedback providers currently registered with the dispatcher."));
+					RegisteredProviders.Category = FName(TEXT("Feedback Effects"));
+					RegisteredProviders.NumericValue = static_cast<double>(Dispatcher->GetRegisteredProviderCount());
+					OutStats.Add(RegisteredProviders);
 
-				if (Var->IsReplicationActive())
-				{
-					BandwidthTotal += Var->AutoReplicationConfig.BandwidthBudgetKB;
-					const float Freq = Var->AutoReplicationConfig.GetEffectiveUpdateFrequency();
-					FreqMin = FMath::Min(FreqMin, Freq);
-					FreqMax = FMath::Max(FreqMax, Freq);
-					FreqSum += Freq;
-					++FreqCount;
-				}
-			}
-		}
+					FGorgeousInsightStat TotalTriggers;
+					TotalTriggers.Id = TEXT("Core.Feedback.TotalTriggers");
+					TotalTriggers.DisplayName = FText::FromString(TEXT("Total Triggers"));
+					TotalTriggers.Description = FText::FromString(TEXT("Total TriggerFeedback calls since the dispatcher was created."));
+					TotalTriggers.Category = FName(TEXT("Feedback Effects"));
+					TotalTriggers.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggers());
+					OutStats.Add(TotalTriggers);
 
-		if (FreqMin == FLT_MAX)
-		{
-			FreqMin = 0.f;
-		}
+					FGorgeousInsightStat TriggersResolved;
+					TriggersResolved.Id = TEXT("Core.Feedback.TriggersResolved");
+					TriggersResolved.DisplayName = FText::FromString(TEXT("Triggers Resolved"));
+					TriggersResolved.Description = FText::FromString(TEXT("TriggerFeedback calls that resolved a non-empty definition via a provider."));
+					TriggersResolved.Category = FName(TEXT("Feedback Effects"));
+					TriggersResolved.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggersResolved());
+					OutStats.Add(TriggersResolved);
 
-		AddStat(OutStats, FName(TEXT("Core.AR.Replicating")), TEXT("AR Replicating"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(ARReplicating));
-		AddStat(OutStats, FName(TEXT("Core.AR.NetCapable")), TEXT("AR Net Capable"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(ARNetCapable));
-		AddStat(OutStats, FName(TEXT("Core.AR.WithBinding")), TEXT("AR With Binding"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(ARWithBinding));
-		AddStat(OutStats, FName(TEXT("Core.AR.SharedStack")), TEXT("AR Shared Net Stack"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(ARShared));
+					FGorgeousInsightStat TriggersUnresolved;
+					TriggersUnresolved.Id = TEXT("Core.Feedback.TriggersUnresolved");
+					TriggersUnresolved.DisplayName = FText::FromString(TEXT("Triggers Unresolved"));
+					TriggersUnresolved.Description = FText::FromString(TEXT("TriggerFeedback calls that found no provider able to resolve a definition."));
+					TriggersUnresolved.Category = FName(TEXT("Feedback Effects"));
+					TriggersUnresolved.NumericValue = static_cast<double>(Dispatcher->GetTotalTriggersUnresolved());
+					OutStats.Add(TriggersUnresolved);
 
-		AddTextStat(OutStats, FName(TEXT("Core.AR.Mode")), TEXT("AR Dominant Mode"), ARCategory,
-			(ModeAuto >= ModeHybrid && ModeAuto >= ModeManual) ? TEXT("Full Auto")
-			: (ModeHybrid >= ModeManual) ? TEXT("Hybrid") : TEXT("Manual"));
+					FGorgeousInsightStat EffectsExecuted;
+					EffectsExecuted.Id = TEXT("Core.Feedback.EffectsExecuted");
+					EffectsExecuted.DisplayName = FText::FromString(TEXT("Effects Executed"));
+					EffectsExecuted.Description = FText::FromString(TEXT("Total individual effects executed across all definitions played."));
+					EffectsExecuted.Category = FName(TEXT("Feedback Effects"));
+					EffectsExecuted.NumericValue = static_cast<double>(Dispatcher->GetTotalEffectsExecuted());
+					OutStats.Add(EffectsExecuted);
 
-		AddTextStat(OutStats, FName(TEXT("Core.AR.Backend")), TEXT("AR Dominant Backend"), ARCategory,
-			(BackendNative >= BackendIris && BackendNative >= BackendRepGraph) ? TEXT("Native")
-			: (BackendIris >= BackendRepGraph) ? TEXT("Iris") : TEXT("RepGraph"));
-
-		AddStat(OutStats, FName(TEXT("Core.AR.Bandwidth")), TEXT("AR Total Bandwidth Budget"), ARCategory,
-			EGorgeousInsightStatValueType::Number, BandwidthTotal, TEXT("KB"));
-
-		AddStat(OutStats, FName(TEXT("Core.AR.FreqMin")), TEXT("AR Min Frequency"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(FreqMin), TEXT("Hz"));
-		AddStat(OutStats, FName(TEXT("Core.AR.FreqMax")), TEXT("AR Max Frequency"), ARCategory,
-			EGorgeousInsightStatValueType::Number, static_cast<double>(FreqMax), TEXT("Hz"));
-		AddStat(OutStats, FName(TEXT("Core.AR.FreqAvg")), TEXT("AR Avg Frequency"), ARCategory,
-			EGorgeousInsightStatValueType::Number, FreqCount > 0 ? FreqSum / FreqCount : 0.0, TEXT("Hz"));
-
-		// Root Network Stack stats
-		if (UWorld* World = FindActiveGameWorld())
-		{
-			if (UGorgeousRootNetworkStackSubsystem* StackSub = World->GetSubsystem<UGorgeousRootNetworkStackSubsystem>())
-			{
-				int32 ExposedCount = 0;
-				int32 ChannelCount = 0;
-				int32 PolicyEveryoneCount = 0;
-				int32 PolicyOwnerCount = 0;
-				int32 PolicyCustomCount = 0;
-
-				for (const UGorgeousObjectVariable* Var : AllVars)
-				{
-					if (!IsValid(Var) || !Var->bSupportsNetworking)
+					// Recent executed effects (DisplayName + Description) surfaced as the feedback
+					// debug feed for designers.
+					const TArray<FString>& RecentEffects = Dispatcher->GetRecentEffects();
+					for (int32 Index = 0; Index < RecentEffects.Num(); ++Index)
 					{
-						continue;
+						FGorgeousInsightStat RecentStat;
+						RecentStat.Id = FName(*FString::Printf(TEXT("Core.Feedback.Recent.%d"), Index));
+						RecentStat.DisplayName = FText::FromString(FString::Printf(TEXT("Recent Effect %d"), Index + 1));
+						RecentStat.Description = FText::FromString(TEXT("Most recently executed feedback effect (newest last)."));
+						RecentStat.Category = FName(TEXT("Feedback Effects"));
+						RecentStat.ValueType = EGorgeousInsightStatValueType::Text;
+						RecentStat.TextValue = FText::FromString(RecentEffects[Index]);
+						OutStats.Add(RecentStat);
 					}
-					if (Var->RootNetworkConfig.bExposeThroughRootNetworkStack)
+				}
+			}
+		}
+	}
+
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
+			{
+				for (UGorgeousObjectVariable* OV : FoundOVs)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
 					{
-						++ExposedCount;
-						if (!Var->RootNetworkConfig.ReplicationChannel.IsNone())
+						for (const auto& Pair : StatsOV->SystemStatsMap)
 						{
-							++ChannelCount;
-						}
-						switch (Var->RootNetworkConfig.AccessPolicy)
-						{
-						case EGorgeousObjectVariableAccessPolicy::Everyone:              ++PolicyEveryoneCount; break;
-						case EGorgeousObjectVariableAccessPolicy::OwningControllerOnly: ++PolicyOwnerCount; break;
-						case EGorgeousObjectVariableAccessPolicy::Custom:               ++PolicyCustomCount; break;
-						default: break;
+							FName CategoryName = Pair.Key;
+							for (const auto& StatPair : Pair.Value.NumericStats)
+							{
+								FGorgeousInsightStat BPStat;
+								BPStat.Id = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *StatPair.Key));
+								BPStat.DisplayName = FText::FromString(StatPair.Key);
+								BPStat.Category = CategoryName;
+								BPStat.NumericValue = StatPair.Value;
+								OutStats.Add(BPStat);
+							}
 						}
 					}
 				}
-
-				AddStat(OutStats, FName(TEXT("Core.AR.Stack.Exposed")), TEXT("AR Stack Exposed"), ARCategory,
-					EGorgeousInsightStatValueType::Number, static_cast<double>(ExposedCount));
-				AddStat(OutStats, FName(TEXT("Core.AR.Stack.Channels")), TEXT("AR Stack Channels"), ARCategory,
-					EGorgeousInsightStatValueType::Number, static_cast<double>(ChannelCount));
 			}
-		}
-
-		// Connection info
-		if (UWorld* World = FindActiveGameWorld())
-		{
-			const ENetMode NetMode = World->GetNetMode();
-			const TCHAR* NetModeStr = TEXT("Standalone");
-			switch (NetMode)
-			{
-			case NM_DedicatedServer: NetModeStr = TEXT("Dedicated Server"); break;
-			case NM_ListenServer:    NetModeStr = TEXT("Listen Server"); break;
-			case NM_Client:          NetModeStr = TEXT("Client"); break;
-			default: break;
-			}
-			AddTextStat(OutStats, FName(TEXT("Core.AR.NetMode")), TEXT("AR Net Mode"), ARCategory, NetModeStr);
-
-			int32 ControllerCount = 0;
-			for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
-			{
-				++ControllerCount;
-			}
-			AddStat(OutStats, FName(TEXT("Core.AR.Controllers")), TEXT("AR Player Controllers"), ARCategory,
-				EGorgeousInsightStatValueType::Number, static_cast<double>(ControllerCount));
 		}
 	}
-
-	// TODO [Insight Matrix]: Feature 4 - Smart Debug HUD Overlay integration.
-	// This marker notes the future integration of screen-space debug information 
-	// from the Gorgeous Debug Assist system into the Insight Matrix overview.
 }
 
 void FGorgeousCoreInsightMatrixProvider::GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const
 {
-	const FGorgeousInsightHarnessStatus Status = FGorgeousInsightHarness::GetStatus();
-
-	TArray<FGorgeousInsightBarValue> RateBars;
-	RateBars.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "ServerOut", "Server Out"), Status.Stats.ServerOutRateBytesPerSecond });
-	RateBars.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "ServerIn", "Server In"), Status.Stats.ServerInRateBytesPerSecond });
-	RateBars.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "ClientOut", "Client Out"), Status.Stats.ClientOutRateBytesPerSecond });
-	RateBars.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "ClientIn", "Client In"), Status.Stats.ClientInRateBytesPerSecond });
-	OutCharts.Add(FGorgeousInsightChartDefinition::MakeBarChart(
-		FName(TEXT("Core.Harness.Rates")),
-		NSLOCTEXT("GorgeousInsightCoreCharts", "HarnessRatesTitle", "Harness Throughput"),
-		NSLOCTEXT("GorgeousInsightCoreCharts", "HarnessRatesSubtitle", "Bytes per second"),
-		RateBars));
-
+	// 1. Interaction Foundation (Pie Chart)
+#if GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
 	{
-		const TArray<FName> RootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-		int32 SharedRoots = 0;
-		int32 EnforcedRoots = 0;
-		for (const FName RootName : RootNames)
-		{
-			SharedRoots += UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName) ? 1 : 0;
-			EnforcedRoots += UGorgeousRootObjectVariable::IsEnforcedNetworkingRoot(RootName) ? 1 : 0;
-		}
-		const int32 OtherRoots = FMath::Max(0, RootNames.Num() - SharedRoots - EnforcedRoots);
-		TArray<FGorgeousInsightPieSlice> RootSlices;
-		RootSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "SharedRoots", "Shared"), static_cast<double>(SharedRoots), FLinearColor(0.35f, 0.85f, 0.45f, 1.f) });
-		RootSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "EnforcedRoots", "Enforced"), static_cast<double>(EnforcedRoots), FLinearColor(0.9f, 0.55f, 0.25f, 1.f) });
-		RootSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "OtherRoots", "Other"), static_cast<double>(OtherRoots), FLinearColor(0.4f, 0.6f, 1.f, 1.f) });
-		OutCharts.Add(FGorgeousInsightChartDefinition::MakePieChart(
-			FName(TEXT("Core.OV.Roots")),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "OVRootsTitle", "OV Roots"),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "OVRootsSubtitle", "Shared vs enforced"),
-			RootSlices,
-			true));
+		FGorgeousInsightChartDefinition InterChart;
+		InterChart.Id = TEXT("Core.Charts.Interactions");
+		InterChart.Type = EGorgeousInsightChartType::Pie;
+		InterChart.Title = FText::FromString(TEXT("Interaction Results"));
+		InterChart.bPieDonut = false;
+		
+		FGorgeousInsightPieSlice SuccessSlice;
+		SuccessSlice.Label = FText::FromString(TEXT("Successful"));
+		SuccessSlice.Value = UGorgeousInteractionFoundation::GetTotalSuccessfulInteractions();
+		SuccessSlice.Color = FLinearColor::Green;
+		InterChart.PieSlices.Add(SuccessSlice);
+
+		FGorgeousInsightPieSlice RejectedSlice;
+		RejectedSlice.Label = FText::FromString(TEXT("Rejected"));
+		RejectedSlice.Value = UGorgeousInteractionFoundation::GetTotalRejectedInteractions();
+		RejectedSlice.Color = FLinearColor::Yellow;
+		InterChart.PieSlices.Add(RejectedSlice);
+
+		FGorgeousInsightPieSlice DeniedSlice;
+		DeniedSlice.Label = FText::FromString(TEXT("Permission Denied"));
+		DeniedSlice.Value = UGorgeousInteractionFoundation::GetTotalPermissionDeniedInteractions();
+		DeniedSlice.Color = FLinearColor::Red;
+		InterChart.PieSlices.Add(DeniedSlice);
+
+		OutCharts.Add(InterChart);
 	}
+#endif
 
-	if (const UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+	// 2. Object Variables (Donut Chart)
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
 	{
-		const UGorgeousInsightMatrixSubsystem::FGorgeousInsightLastRunStats& LastRun = Subsystem->GetLastRunStats();
-		TArray<FGorgeousInsightTableRow> Rows;
-		Rows.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunProvider", "Provider"), FText::FromName(LastRun.ProviderName), NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunCategory", "Last Run") });
-		Rows.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunTest", "Test"), FText::FromName(LastRun.TestId), NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunCategory", "Last Run") });
-		Rows.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunDuration", "Duration (s)"), FText::AsNumber(LastRun.DurationSeconds, &FNumberFormattingOptions().SetMaximumFractionalDigits(2)), NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunCategory", "Last Run") });
-		Rows.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunErrors", "Errors"), FText::AsNumber(LastRun.ErrorCount), NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunCategory", "Last Run") });
-		Rows.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunWarnings", "Warnings"), FText::AsNumber(LastRun.WarningCount), NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunCategory", "Last Run") });
-		OutCharts.Add(FGorgeousInsightChartDefinition::MakeTableChart(
-			FName(TEXT("Core.LastRun.Table")),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunTitle", "Last Run Summary"),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "LastRunSubtitle", "Most recent test run"),
-			Rows));
-	}
-
-	// Per-root variable count bar chart
-	{
-		const TArray<FName> RootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-		if (RootNames.Num() > 0)
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			TArray<FGorgeousInsightBarValue> RootBars;
-			for (const FName RootName : RootNames)
-			{
-				const TArray<UGorgeousObjectVariable*> RootVars = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(RootName);
-				RootBars.Add({ FText::FromName(RootName), static_cast<double>(RootVars.Num()) });
-			}
-			OutCharts.Add(FGorgeousInsightChartDefinition::MakeBarChart(
-				FName(TEXT("Core.OV.PerRootCount")),
-				NSLOCTEXT("GorgeousInsightCoreCharts", "PerRootTitle", "Variables per Root"),
-				NSLOCTEXT("GorgeousInsightCoreCharts", "PerRootSubtitle", "Total OV count by root name"),
-				RootBars));
-		}
-	}
-
-	// Networking status pie chart
-	{
-		const TArray<UGorgeousObjectVariable*> AllVariables = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(NAME_None);
-		int32 Replicating = 0;
-		int32 NetworkCapable = 0;
-		int32 LocalOnly = 0;
-		for (const UGorgeousObjectVariable* Variable : AllVariables)
-		{
-			if (!IsValid(Variable))
-			{
-				continue;
-			}
-			if (Variable->IsReplicationActive())
-			{
-				++Replicating;
-			}
-			else if (static_cast<const UObject*>(Variable)->IsSupportedForNetworking())
-			{
-				++NetworkCapable;
-			}
-			else
-			{
-				++LocalOnly;
-			}
-		}
-		TArray<FGorgeousInsightPieSlice> NetSlices;
-		NetSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "Replicating", "Replicating"), static_cast<double>(Replicating), FLinearColor(0.3f, 0.9f, 0.4f, 1.f) });
-		NetSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "NetCapable", "Net Capable"), static_cast<double>(NetworkCapable), FLinearColor(0.9f, 0.75f, 0.2f, 1.f) });
-		NetSlices.Add({ NSLOCTEXT("GorgeousInsightCoreCharts", "LocalOnly", "Local Only"), static_cast<double>(LocalOnly), FLinearColor(0.5f, 0.5f, 0.5f, 1.f) });
-		OutCharts.Add(FGorgeousInsightChartDefinition::MakePieChart(
-			FName(TEXT("Core.OV.NetStatus")),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "NetStatusTitle", "OV Network Status"),
-			NSLOCTEXT("GorgeousInsightCoreCharts", "NetStatusSubtitle", "Replication breakdown"),
-			NetSlices,
-			true));
-	}
-
-	// ════════════════════════════════════════════════════════════════════════
-	//  AutoReplication charts (merged from AR provider)
-	// ════════════════════════════════════════════════════════════════════════
-	{
-		const TArray<UGorgeousObjectVariable*> AllVars = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(NAME_None);
-
-		// Replication Mode Distribution Pie
-		{
-			int32 ModeAuto = 0, ModeHybrid = 0, ModeManual = 0;
-			for (const UGorgeousObjectVariable* Var : AllVars)
-			{
-				if (!IsValid(Var) || !Var->bSupportsNetworking)
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+				
+				TMap<FString, int32> ClassCounts;
+				for (UGorgeousObjectVariable* OV : FoundOVs)
 				{
-					continue;
-				}
-				switch (Var->ReplicationMode)
-				{
-				case EGorgeousObjectVariableReplicationMode::EFullAutoReplication: ++ModeAuto; break;
-				case EGorgeousObjectVariableReplicationMode::EHybrid:             ++ModeHybrid; break;
-				case EGorgeousObjectVariableReplicationMode::EManual:             ++ModeManual; break;
-				default: break;
-				}
-			}
-			TArray<FGorgeousInsightPieSlice> Slices;
-			Slices.Add({ NSLOCTEXT("ARInsight", "FullAuto", "Full Auto"), static_cast<double>(ModeAuto), FLinearColor(0.3f, 0.85f, 0.45f, 1.f) });
-			Slices.Add({ NSLOCTEXT("ARInsight", "Hybrid", "Hybrid"), static_cast<double>(ModeHybrid), FLinearColor(0.9f, 0.7f, 0.25f, 1.f) });
-			Slices.Add({ NSLOCTEXT("ARInsight", "Manual", "Manual"), static_cast<double>(ModeManual), FLinearColor(0.85f, 0.35f, 0.35f, 1.f) });
-			OutCharts.Add(FGorgeousInsightChartDefinition::MakePieChart(
-				FName(TEXT("Core.AR.Chart.ReplicationMode")),
-				NSLOCTEXT("ARInsight", "ModeTitle", "Replication Mode Distribution"),
-				NSLOCTEXT("ARInsight", "ModeSubtitle", "Full Auto vs Hybrid vs Manual"),
-				Slices, true));
-		}
-
-		// Backend Distribution Pie
-		{
-			int32 Native = 0, Iris = 0, RepGraph = 0;
-			for (const UGorgeousObjectVariable* Var : AllVars)
-			{
-				if (!IsValid(Var) || !Var->bSupportsNetworking)
-				{
-					continue;
-				}
-				switch (Var->AutoReplicationConfig.Backend)
-				{
-				case EGorgeousAutoReplicationBackend::Native:           ++Native; break;
-				case EGorgeousAutoReplicationBackend::Iris:             ++Iris; break;
-				case EGorgeousAutoReplicationBackend::ReplicationGraph: ++RepGraph; break;
-				default: break;
-				}
-			}
-			TArray<FGorgeousInsightPieSlice> Slices;
-			Slices.Add({ NSLOCTEXT("ARInsight", "Native", "Native UE"), static_cast<double>(Native), FLinearColor(0.3f, 0.6f, 0.95f, 1.f) });
-			Slices.Add({ NSLOCTEXT("ARInsight", "Iris", "Iris"), static_cast<double>(Iris), FLinearColor(0.9f, 0.4f, 0.6f, 1.f) });
-			Slices.Add({ NSLOCTEXT("ARInsight", "RepGraph", "Rep Graph"), static_cast<double>(RepGraph), FLinearColor(0.6f, 0.85f, 0.3f, 1.f) });
-			OutCharts.Add(FGorgeousInsightChartDefinition::MakePieChart(
-				FName(TEXT("Core.AR.Chart.Backend")),
-				NSLOCTEXT("ARInsight", "BackendTitle", "Backend Distribution"),
-				NSLOCTEXT("ARInsight", "BackendSubtitle", "Native vs Iris vs RepGraph"),
-				Slices, true));
-		}
-
-		// Per-Root Replicating Bar Chart
-		{
-			const TArray<FName> RootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-			if (RootNames.Num() > 0)
-			{
-				TArray<FGorgeousInsightBarValue> Bars;
-				for (const FName& RootName : RootNames)
-				{
-					const TArray<UGorgeousObjectVariable*> RootVars = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(RootName);
-					int32 RepCount = 0;
-					for (const UGorgeousObjectVariable* Var : RootVars)
+					if (OV)
 					{
-						if (IsValid(Var) && Var->IsReplicationActive())
-						{
-							++RepCount;
-						}
+						FString ClassName = OV->GetClass()->GetName();
+						ClassName.RemoveFromEnd(TEXT("_OV"));
+						ClassName.RemoveFromEnd(TEXT("_C"));
+						int32& Count = ClassCounts.FindOrAdd(ClassName);
+						Count++;
 					}
-					Bars.Add({ FText::FromName(RootName), static_cast<double>(RepCount) });
 				}
-				OutCharts.Add(FGorgeousInsightChartDefinition::MakeBarChart(
-					FName(TEXT("Core.AR.Chart.PerRootReplicating")),
-					NSLOCTEXT("ARInsight", "PerRootTitle", "Replicating Variables per Root"),
-					NSLOCTEXT("ARInsight", "PerRootSubtitle", "Active replication count by root"),
-					Bars));
-			}
-		}
 
-		// Bandwidth Budget Bar Chart
-		{
-			TArray<FGorgeousInsightBarValue> Bars;
-			for (const UGorgeousObjectVariable* Var : AllVars)
-			{
-				if (!IsValid(Var) || !Var->bSupportsNetworking || !Var->IsReplicationActive())
+				if (ClassCounts.Num() > 0)
 				{
-					continue;
-				}
-				const FString Label = !Var->GetDisplayName().IsEmpty() ? Var->GetDisplayName() : Var->GetName();
-				Bars.Add({ FText::FromString(Label), static_cast<double>(Var->AutoReplicationConfig.BandwidthBudgetKB) });
-			}
-			if (Bars.Num() > 0)
-			{
-				Bars.Sort([](const FGorgeousInsightBarValue& A, const FGorgeousInsightBarValue& B) { return A.Value > B.Value; });
-				if (Bars.Num() > 20)
-				{
-					Bars.SetNum(20);
-				}
-				OutCharts.Add(FGorgeousInsightChartDefinition::MakeBarChart(
-					FName(TEXT("Core.AR.Chart.BandwidthBudget")),
-					NSLOCTEXT("ARInsight", "BudgetTitle", "Bandwidth Budget (Top 20)"),
-					NSLOCTEXT("ARInsight", "BudgetSubtitle", "KB per variable (replicating only)"),
-					Bars));
-			}
-		}
+					FGorgeousInsightChartDefinition OVChart;
+					OVChart.Id = TEXT("Core.Charts.ObjectVariables");
+					OVChart.Type = EGorgeousInsightChartType::Pie;
+					OVChart.Title = FText::FromString(TEXT("Object Variables Distribution"));
+					OVChart.bPieDonut = true;
 
-		// Stream Config Table
-		{
-			TArray<FGorgeousInsightTableRow> Rows;
-			int32 Count = 0;
-			for (const UGorgeousObjectVariable* Var : AllVars)
-			{
-				if (!IsValid(Var) || !Var->bSupportsNetworking || !Var->IsReplicationActive())
-				{
-					continue;
-				}
-				if (++Count > 30)
-				{
-					break;
-				}
-				const FString Label = !Var->GetDisplayName().IsEmpty() ? Var->GetDisplayName() : Var->GetName();
-				const FGorgeousAutoReplicationStreamConfig& Cfg = Var->AutoReplicationConfig;
-				const TCHAR* BackendStr = TEXT("Native");
-				switch (Cfg.Backend)
-				{
-				case EGorgeousAutoReplicationBackend::Iris:             BackendStr = TEXT("Iris"); break;
-				case EGorgeousAutoReplicationBackend::ReplicationGraph: BackendStr = TEXT("RepGraph"); break;
-				default: break;
-				}
-				Rows.Add({
-					FText::FromString(Label),
-					FText::FromString(FString::Printf(TEXT("%s | %.0fHz | %.1fKB | P%d"),
-						BackendStr, Cfg.GetEffectiveUpdateFrequency(), Cfg.BandwidthBudgetKB, Cfg.Priority)),
-					NSLOCTEXT("ARInsight", "StreamConfig", "Stream Config")
-				});
-			}
-			if (Rows.Num() > 0)
-			{
-				OutCharts.Add(FGorgeousInsightChartDefinition::MakeTableChart(
-					FName(TEXT("Core.AR.Chart.StreamTable")),
-					NSLOCTEXT("ARInsight", "StreamTableTitle", "Active Stream Configuration"),
-					NSLOCTEXT("ARInsight", "StreamTableSubtitle", "Backend | Freq | Budget | Priority"),
-					Rows));
-			}
-		}
+					int32 ColorIndex = 0;
+					TArray<FLinearColor> Palette = { FLinearColor::Blue, FLinearColor::Red, FLinearColor::Green, FLinearColor::Yellow, FLinearColor(1.f, 0.f, 1.f, 1.f), FLinearColor(0.f, 1.f, 1.f, 1.f) };
 
-		// Access Policy Pie
+					for (const auto& Pair : ClassCounts)
+					{
+						FGorgeousInsightPieSlice Slice;
+						Slice.Label = FText::FromString(Pair.Key);
+						Slice.Value = Pair.Value;
+						Slice.Color = Palette[ColorIndex % Palette.Num()];
+						OVChart.PieSlices.Add(Slice);
+						ColorIndex++;
+					}
+					OutCharts.Add(OVChart);
+				}
+		}
+	}
+
+#if GORGEOUS_SYSTEM_INSTALLED_STATSFOUNDATION
+	{
+		FGorgeousInsightChartDefinition StatsChart;
+		StatsChart.Id = TEXT("Core.Charts.StatsFoundation");
+		StatsChart.Type = EGorgeousInsightChartType::Bar;
+		StatsChart.Title = FText::FromString(TEXT("Stat Component Activity"));
+
+		FGorgeousInsightBarValue ActiveComps;
+		ActiveComps.Label = FText::FromString(TEXT("Active Components"));
+		ActiveComps.Value = UGorgeousStatComponent_AC::GetTotalActiveComponents();
+		StatsChart.Bars.Add(ActiveComps);
+
+		FGorgeousInsightBarValue Modifiers;
+		Modifiers.Label = FText::FromString(TEXT("Total Modifiers Applied"));
+		Modifiers.Value = UGorgeousStatComponent_AC::GetTotalModifiersApplied();
+		StatsChart.Bars.Add(Modifiers);
+
+		OutCharts.Add(StatsChart);
+	}
+#endif
+
+#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+	{
+		FGorgeousInsightChartDefinition UIChart;
+		UIChart.Id = TEXT("Core.Charts.UIFoundation");
+		UIChart.Type = EGorgeousInsightChartType::Bar;
+		UIChart.Title = FText::FromString(TEXT("UI Foundation Activity"));
+
+		FGorgeousInsightBarValue Overlays;
+		Overlays.Label = FText::FromString(TEXT("Active UI Overlays"));
+		Overlays.Value = UGorgeousPrimaryGameLayout::GetTotalActiveOverlays();
+		UIChart.Bars.Add(Overlays);
+
+		FGorgeousInsightBarValue ThemeSwaps;
+		ThemeSwaps.Label = FText::FromString(TEXT("Total Theme Swaps"));
+		ThemeSwaps.Value = UGorgeousUIFoundationSubsystem::GetTotalThemeSwapsTriggered();
+		UIChart.Bars.Add(ThemeSwaps);
+
+		OutCharts.Add(UIChart);
+	}
+#endif
+
+	// 3. Feedback Effects (Bar Chart)
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
 		{
-			int32 Everyone = 0, OwnerOnly = 0, Custom = 0;
-			for (const UGorgeousObjectVariable* Var : AllVars)
+			if (UGameInstance* GameInstance = World->GetGameInstance())
 			{
-				if (!IsValid(Var) || !Var->bSupportsNetworking)
+				if (UGorgeousFeedbackDispatcher* Dispatcher = GameInstance->GetSubsystem<UGorgeousFeedbackDispatcher>())
 				{
-					continue;
+					FGorgeousInsightChartDefinition FeedbackChart;
+					FeedbackChart.Id = TEXT("Core.Charts.FeedbackEffects");
+					FeedbackChart.Type = EGorgeousInsightChartType::Bar;
+					FeedbackChart.Title = FText::FromString(TEXT("Feedback Effects Activity"));
+
+					FGorgeousInsightBarValue ProvidersBar;
+					ProvidersBar.Label = FText::FromString(TEXT("Registered Providers"));
+					ProvidersBar.Value = Dispatcher->GetRegisteredProviderCount();
+					FeedbackChart.Bars.Add(ProvidersBar);
+
+					FGorgeousInsightBarValue TriggersBar;
+					TriggersBar.Label = FText::FromString(TEXT("Total Triggers"));
+					TriggersBar.Value = Dispatcher->GetTotalTriggers();
+					FeedbackChart.Bars.Add(TriggersBar);
+
+					FGorgeousInsightBarValue ResolvedBar;
+					ResolvedBar.Label = FText::FromString(TEXT("Triggers Resolved"));
+					ResolvedBar.Value = Dispatcher->GetTotalTriggersResolved();
+					FeedbackChart.Bars.Add(ResolvedBar);
+
+					FGorgeousInsightBarValue UnresolvedBar;
+					UnresolvedBar.Label = FText::FromString(TEXT("Triggers Unresolved"));
+					UnresolvedBar.Value = Dispatcher->GetTotalTriggersUnresolved();
+					FeedbackChart.Bars.Add(UnresolvedBar);
+
+					FGorgeousInsightBarValue EffectsBar;
+					EffectsBar.Label = FText::FromString(TEXT("Effects Executed"));
+					EffectsBar.Value = Dispatcher->GetTotalEffectsExecuted();
+					FeedbackChart.Bars.Add(EffectsBar);
+
+					OutCharts.Add(FeedbackChart);
 				}
-				if (!Var->RootNetworkConfig.bExposeThroughRootNetworkStack)
-				{
-					continue;
-				}
-				switch (Var->RootNetworkConfig.AccessPolicy)
-				{
-				case EGorgeousObjectVariableAccessPolicy::Everyone:              ++Everyone; break;
-				case EGorgeousObjectVariableAccessPolicy::OwningControllerOnly: ++OwnerOnly; break;
-				case EGorgeousObjectVariableAccessPolicy::Custom:               ++Custom; break;
-				default: break;
-				}
-			}
-			if (Everyone + OwnerOnly + Custom > 0)
-			{
-				TArray<FGorgeousInsightPieSlice> Slices;
-				Slices.Add({ NSLOCTEXT("ARInsight", "Everyone", "Everyone"), static_cast<double>(Everyone), FLinearColor(0.3f, 0.75f, 0.5f, 1.f) });
-				Slices.Add({ NSLOCTEXT("ARInsight", "OwnerOnly", "Owner Only"), static_cast<double>(OwnerOnly), FLinearColor(0.85f, 0.5f, 0.2f, 1.f) });
-				Slices.Add({ NSLOCTEXT("ARInsight", "Custom", "Custom"), static_cast<double>(Custom), FLinearColor(0.6f, 0.4f, 0.85f, 1.f) });
-				OutCharts.Add(FGorgeousInsightChartDefinition::MakePieChart(
-					FName(TEXT("Core.AR.Chart.AccessPolicy")),
-					NSLOCTEXT("ARInsight", "PolicyTitle", "Access Policy Distribution"),
-					NSLOCTEXT("ARInsight", "PolicySubtitle", "Root Network Stack access policies"),
-					Slices, true));
 			}
 		}
 	}
+
+	// Will pull published blueprint charts as well.
+	UGorgeousInsightStatBuilder::GatherPublishedCharts(ProviderName(), OutCharts);
 }
 
 void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightAction>& OutActions) const
@@ -856,6 +485,66 @@ void FGorgeousCoreInsightMatrixProvider::GetActions(TArray<FGorgeousInsightActio
 		Action.Category = FName(TEXT("Windows"));
 		OutActions.Add(Action);
 	}
+
+	// ── DataAsset Actions ──────────────────────────────────────────────────
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> AssetData;
+	AssetRegistryModule.Get().GetAssetsByClass(UGorgeousInsightActionConfig_DA::StaticClass()->GetClassPathName(), AssetData);
+
+	for (const FAssetData& Asset : AssetData)
+	{
+		if (UGorgeousInsightActionConfig_DA* Config = Cast<UGorgeousInsightActionConfig_DA>(Asset.GetAsset()))
+		{
+			// Only load actions for this provider or globally?
+			// Since this is the Core provider, we can load ALL of them and pipe them in, or 
+			// let each provider do it. Wait, the Insight Matrix gathers from all providers.
+			// Let's filter by ProviderName if we want, but since Core is the main one, we can 
+			// just append all of them to Core for now, or match ProviderName.
+			if (Config->ProviderName == ProviderName() || Config->ProviderName.IsNone())
+			{
+				for (const FGorgeousBlueprintInsightAction& BlueprintAction : Config->Actions)
+				{
+					FGorgeousInsightAction Action;
+					Action.Id = BlueprintAction.ActionId;
+					Action.DisplayName = BlueprintAction.DisplayName;
+					Action.Description = BlueprintAction.Description;
+					Action.Category = BlueprintAction.Category;
+					OutActions.Add(Action);
+				}
+			}
+		}
+	}
+
+	// ── Blueprint Actions ──────────────────────────────────────────────────
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		if (UWorld* World = GEngine->GetWorldContexts()[0].World())
+		{
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
+			{
+				for (UGorgeousObjectVariable* OV : FoundOVs)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+					{
+						for (const auto& Pair : StatsOV->SystemStatsMap)
+						{
+							FName CategoryName = Pair.Key;
+							for (const FGorgeousBlueprintStatsInsightAction& BPAction : Pair.Value.Actions)
+							{
+								FGorgeousInsightAction Action;
+								Action.Id = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
+								Action.DisplayName = FText::FromName(BPAction.ActionName);
+								Action.Description = FText::FromString(FString::Printf(TEXT("Triggers Action via Signal Bridge: %s"), *BPAction.SignalBridgeTag.ToString()));
+								Action.Category = CategoryName;
+								OutActions.Add(Action);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGorgeousInsightActionContext& Context)
@@ -864,6 +553,45 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 	{
 		SGorgeousObjectVariableBrowserWindow::Open();
 		return;
+	}
+
+	// ── Blueprint Actions ──────────────────────────────────────────────────
+	if (ActionId.ToString().StartsWith(TEXT("Blueprint.")))
+	{
+		UObject* ContextObj = Context.WorldContextObject;
+		if (!ContextObj && GEngine && GEngine->GetWorldContexts().Num() > 0)
+		{
+			ContextObj = GEngine->GetWorldContexts()[0].World();
+		}
+
+		if (ContextObj)
+		{
+			TArray<UGorgeousObjectVariable*> FoundOVs = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry();
+			if (FoundOVs.Num() > 0)
+			{
+				for (UGorgeousObjectVariable* OV : FoundOVs)
+				{
+					if (UGorgeousInsightBlueprintStats_OV* StatsOV = Cast<UGorgeousInsightBlueprintStats_OV>(OV))
+					{
+						for (const auto& Pair : StatsOV->SystemStatsMap)
+						{
+							FName CategoryName = Pair.Key;
+							for (const FGorgeousBlueprintStatsInsightAction& BPAction : Pair.Value.Actions)
+							{
+								FName FormattedActionId = FName(*FString::Printf(TEXT("Blueprint.%s.%s"), *CategoryName.ToString(), *BPAction.ActionName.ToString()));
+								if (FormattedActionId == ActionId)
+								{
+									// Dispatch via Signal Bridge
+									FInstancedStruct EmptyPayload;
+									USignalBridgeBlueprintFunctionLibrary::DispatchLocal(ContextObj, BPAction.SignalBridgeTag, EmptyPayload);
+									return;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// ── AutoReplication merged action handlers ───────────────────────────
@@ -877,6 +605,83 @@ void FGorgeousCoreInsightMatrixProvider::ExecuteAction(FName ActionId, const FGo
 	{
 		SGorgeousRPCInspectorWindow::Open();
 		return;
+	}
+
+	// ── DataAsset Actions ──────────────────────────────────────────────────
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	TArray<FAssetData> AssetData;
+	AssetRegistryModule.Get().GetAssetsByClass(UGorgeousInsightActionConfig_DA::StaticClass()->GetClassPathName(), AssetData);
+
+	for (const FAssetData& Asset : AssetData)
+	{
+		if (UGorgeousInsightActionConfig_DA* Config = Cast<UGorgeousInsightActionConfig_DA>(Asset.GetAsset()))
+		{
+			for (const FGorgeousBlueprintInsightAction& BlueprintAction : Config->Actions)
+			{
+				if (BlueprintAction.ActionId == ActionId)
+				{
+					// Action Found!
+#if WITH_EDITOR
+					if (BlueprintAction.EditorWidgetClass.IsValid() || !BlueprintAction.EditorWidgetClass.IsNull())
+					{
+						UClass* LoadedClass = BlueprintAction.EditorWidgetClass.LoadSynchronous();
+						if (LoadedClass && LoadedClass->IsChildOf(UEditorUtilityWidget::StaticClass()))
+						{
+							if (UEditorUtilitySubsystem* EditorUtilitySubsystem = GEditor->GetEditorSubsystem<UEditorUtilitySubsystem>())
+							{
+								if (UEditorUtilityWidgetBlueprint* WidgetBP = Cast<UEditorUtilityWidgetBlueprint>(LoadedClass->ClassGeneratedBy))
+								{
+									EditorUtilitySubsystem->SpawnAndRegisterTab(WidgetBP);
+								}
+								else
+								{
+									// It might be a native class or already compiled. Fallback:
+									FName TabID = FName(*(FString(TEXT("BlueprintActionTab_")) + ActionId.ToString()));
+									if (!FGlobalTabmanager::Get()->HasTabSpawner(TabID))
+									{
+										FGlobalTabmanager::Get()->RegisterNomadTabSpawner(
+											TabID,
+											FOnSpawnTab::CreateLambda([LoadedClass](const FSpawnTabArgs& Args)
+											{
+												UWorld* World = GEditor->GetEditorWorldContext().World();
+												UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(World, LoadedClass);
+												
+												return SNew(SDockTab)
+													.TabRole(ETabRole::NomadTab)
+													[
+														WidgetInstance->TakeWidget()
+													];
+											}))
+											.SetDisplayName(BlueprintAction.DisplayName)
+											.SetMenuType(ETabSpawnerMenuType::Hidden);
+									}
+									FGlobalTabmanager::Get()->TryInvokeTab(TabID);
+								}
+							}
+						}
+					}
+#endif
+					// Also handle RuntimeWidgetClass if playing in PIE / Game
+					if (Context.WorldContextObject && Context.WorldContextObject->GetWorld())
+					{
+						if (BlueprintAction.RuntimeWidgetClass.IsValid() || !BlueprintAction.RuntimeWidgetClass.IsNull())
+						{
+							UClass* LoadedRuntimeClass = BlueprintAction.RuntimeWidgetClass.LoadSynchronous();
+							if (LoadedRuntimeClass)
+							{
+								UUserWidget* WidgetInstance = CreateWidget<UUserWidget>(Context.WorldContextObject->GetWorld(), LoadedRuntimeClass);
+								if (WidgetInstance)
+								{
+									WidgetInstance->AddToViewport();
+								}
+							}
+						}
+					}
+
+					return; // Done executing
+				}
+			}
+		}
 	}
 }
 
@@ -895,7 +700,13 @@ void FGorgeousCoreInsightMatrixProvider::GetTests(TArray<FGorgeousInsightTest>& 
 		Test.Id = Descriptor.ScenarioName;
 		Test.DisplayName = FText::FromString(Descriptor.GetDisplayName());
 		Test.Description = FText::FromString(Descriptor.Description);
-		Test.Category = IsARScenario(Descriptor) ? FName(TEXT("AutoReplication")) : FName(TEXT("Tests"));
+		if (IsARScenario(Descriptor)) {
+			Test.Category = FName(TEXT("AutoReplication"));
+		} else if (Descriptor.Tags.Contains(TEXT("signal-bridge"))) {
+			Test.Category = FName(TEXT("Signal Bridge"));
+		} else {
+			Test.Category = FName(TEXT("Tests"));
+		}
 		Test.Tags = Descriptor.Tags;
 		Test.Inputs = Descriptor.Inputs;
 		OutTests.Add(Test);

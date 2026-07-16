@@ -91,6 +91,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
 	void SetCurrentTheme(UGorgeousUITheme_DA* NewTheme);
 
+	/** Track total theme swaps for the Insight Matrix. */
+	static int32 GetTotalThemeSwapsTriggered();
+	static void IncrementThemeSwapsTriggered();
+
 	/** Applies a theme to a single widget via its shared processor. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation")
 	void ApplyThemeToWidget(UObject* Widget, const UGorgeousUITheme_DA* Theme, const UGorgeousUITheme_DA* FallbackTheme = nullptr);

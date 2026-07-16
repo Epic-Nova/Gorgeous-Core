@@ -155,15 +155,15 @@ TArray<FString> UGorgeousRecompilationHelper::GetActiveGorgeousSystems()
 	#endif
 	
 	// Plugins
-	#ifdef GORGEOUSTHINGS_WITH_EVENTS
+	#ifdef GORGEOUS_WITH_EVENTS
 		Systems.Add(TEXT("Plugin:Events"));
 	#endif
 
-	#ifdef GORGEOUSTHINGS_WITH_INVENTORY
+	#ifdef GORGEOUS_WITH_INVENTORY
 		Systems.Add(TEXT("Plugin:Inventory"));
 	#endif
 
-	#ifdef GORGEOUSTHINGS_WITH_ENTERTAINING
+	#ifdef GORGEOUS_WITH_ENTERTAINING
 		Systems.Add(TEXT("Plugin:Entertaining"));
 	#endif
 

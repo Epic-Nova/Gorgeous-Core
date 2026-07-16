@@ -52,8 +52,12 @@ void AGorgeousInsightTestVolume::RunAllTests()
 	{
 		if (Test)
 		{
-			// TODO: Hook into FFunctionalTestingManager for sequential execution
-			// Currently a stub to prevent compilation errors if RunTest signature varies.
+			// TODO: Hook into FFunctionalTestingManager for proper sequential execution.
+			// TODO: Hook into the Insight Matrix — each test result should be forwarded to
+			//       UGorgeousInsightMatrixSubsystem so results appear under the Tests tab in
+			//       the Insight Matrix Live view. Results should only be visible while a game
+			//       session is active (i.e. surfaced exclusively in the Live tab, not the
+			//       static/editor stats view).
 		}
 	}
 	
