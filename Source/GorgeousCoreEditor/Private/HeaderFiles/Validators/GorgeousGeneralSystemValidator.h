@@ -82,6 +82,7 @@ public:
 	void ValidatePDA(class UGeneralSystemConfiguration_PDA* PDA, FDataValidationContext& Context);
 	
 	void HandleAssetAdded(const FAssetData& AssetData);
+	bool IsGeneralSystemBlueprint(const FAssetData& AssetData) const;
 	void OnSafeProcessAsset(UWorld* World, FAssetData AssetData);
 	
 	static FString GetSystemRootPath(const FString& Path);
