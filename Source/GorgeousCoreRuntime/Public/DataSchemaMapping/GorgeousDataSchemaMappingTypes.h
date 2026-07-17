@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousDataSchemaMappingTypes.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Enumeration defining the kind of source data for a data schema mapping.
- * 
+ *
  * @author Nils Bergemann
  */
 UENUM(BlueprintType)
@@ -31,7 +31,7 @@ enum class EGorgeousDataSchemaSourceKind_E : uint8
 
 /**
  * Enumeration defining the kinds of transformations that can be applied to source field values during data migration.
- * 
+ *
  * @author Nils Bergemann
  * @note Each transform kind may utilize the provided parameters differently, e.g., as literal values, prefixes/suffixes, search/replace text, or numeric factors/offsets.
  */
@@ -53,9 +53,9 @@ enum class EGorgeousDataSchemaTransformKind_E : uint8
 };
 
 /**
- * Structure for Source field definitions in a data schema mapping, 
+ * Structure for Source field definitions in a data schema mapping,
  * including properties relevant for identifying and validating source items based on the specified SourceKind.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -85,8 +85,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaSourceDefinition_S
 };
 
 /**
- * Structure for Target field definitions in a data schema mapping, 
- * 
+ * Structure for Target field definitions in a data schema mapping,
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -110,7 +110,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaTargetDefinition_S
 /**
  * Structure for migration-related definitions in a data schema mapping,
  * including properties for enabling migration actions, defining menu action labels, and configuring folder creation behavior during migration.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -127,7 +127,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaMigrationDefinition_S
 	FText MenuActionLabel;
 
 	/**
-	 * If enabled, migrated assets will be organized into subfolders under the specified TargetContentRootPath based on their source item labels or a specified source field value, depending on the TargetAssetNameSourcePath setting. 
+	 * If enabled, migrated assets will be organized into subfolders under the specified TargetContentRootPath based on their source item labels or a specified source field value, depending on the TargetAssetNameSourcePath setting.
 	 * This can help keep migrated assets organized when dealing with a large number of source items or when source items belong to different categories.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Migration", meta = (ToolTip = "If enabled, each migrated source item creates assets inside its own folder under TargetContentRootPath."))
@@ -135,7 +135,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaMigrationDefinition_S
 };
 
 /**
- * Structure for defining field mappings in a data schema mapping, 
+ * Structure for defining field mappings in a data schema mapping,
  *
  * @author Nils Bergemann
  */
@@ -144,15 +144,15 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaTransformDefinition_S
 {
 	GENERATED_BODY()
 
-	/** 
-	 * The transform kind to apply to source field values during migration. 
+	/**
+	 * The transform kind to apply to source field values during migration.
 	 * Determines how the provided parameters will be used to transform the source value before assigning it to the target field.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Transform")
 	EGorgeousDataSchemaTransformKind_E TransformKind = EGorgeousDataSchemaTransformKind_E::Transform_None;
 
 	/**
-	 * Its usage depends on the selected TransformKind, 
+	 * Its usage depends on the selected TransformKind,
 	 * e.g., as a literal value for SetLiteral, a prefix/suffix for AddPrefix/AddSuffix, search text for ReplaceText, or a numeric factor/offset for MultiplyNumeric/AddNumericOffset.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Transform", meta = (ToolTip = "Primary transform parameter. Used as literal value, fallback literal, prefix/suffix, search text, factor, or offset depending on TransformKind."))
@@ -191,9 +191,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaFieldMapping_S
 };
 
 /**
- * Structure representing a source value entry for a specific source field path, 
+ * Structure representing a source value entry for a specific source field path,
  * used in the context of data schema mapping and migration to hold the extracted value from the source item for that path.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -205,8 +205,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaSourceValueEntry_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snapshot")
 	FString Path;
 
-	/** 
-	 * The extracted value from the source item for the specified path, stored as a string for simplicity. 
+	/**
+	 * The extracted value from the source item for the specified path, stored as a string for simplicity.
 	 * The actual type and format may depend on the source field type and may require parsing or conversion during migration.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snapshot")
@@ -217,7 +217,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaSourceValueEntry_S
  * Structure representing a snapshot of source data for a specific source item,
  *
  * This structure is used to hold the extracted source data in a format that can be easily accessed and transformed during migration.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -233,9 +233,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaSourceSnapshot_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Snapshot")
 	TArray<FGorgeousDataSchemaSourceValueEntry_S> ValueEntries;
 
-	/** 
+	/**
 	 * Attempts to find the value entry for the specified source field path and returns its exported value.
-	 * 
+	 *
 	 * @param InPath The source field path to search for.
 	 * @param OutValue The output parameter to store the found value.
 	 * @return True if the value was found, false otherwise.
@@ -247,7 +247,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaSourceSnapshot_S
  * Structure representing the result of migrating a single source item in a data schema mapping.
  *
  * This structure is used to provide detailed feedback on the outcome of migrating each individual source item, which can be aggregated into an overall migration result.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -286,10 +286,10 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaMigrationItemResult_S
 
 /**
  * Structure representing the overall result of a data schema migration operation.
- * 
- * This structure is used to provide comprehensive feedback on the outcome of a migration operation, 
+ *
+ * This structure is used to provide comprehensive feedback on the outcome of a migration operation,
  * allowing developers to understand not only whether the migration succeeded or failed overall.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType)
@@ -297,8 +297,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaMigrationResult_S
 {
 	GENERATED_BODY()
 
-	/** 
-	 * True if the overall migration operation succeeded (i.e., all required fields were present and successfully migrated for all source items), 
+	/**
+	 * True if the overall migration operation succeeded (i.e., all required fields were present and successfully migrated for all source items),
 	 * false if it failed due to any issues with required fields, transformations, or other errors.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
@@ -312,8 +312,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDataSchemaMigrationResult_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")
 	TArray<FGorgeousDataSchemaMigrationItemResult_S> ItemResults;
 
-	/** 
-	 * Any global errors that were encountered during the migration process that are not specific to individual source items, 
+	/**
+	 * Any global errors that were encountered during the migration process that are not specific to individual source items,
 	 * such as issues with accessing source data, writing assets, or other systemic problems.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Result")

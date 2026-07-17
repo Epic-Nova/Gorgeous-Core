@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousArrayObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for setting array object variables.
@@ -122,7 +122,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Array|Float")
 	TArray<float> SetFloatArrayObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<float>& NewValue);
-	
+
     /**
      * Sets an array of doubles.
      *

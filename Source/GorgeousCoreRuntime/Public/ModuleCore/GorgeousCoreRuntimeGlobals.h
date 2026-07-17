@@ -14,21 +14,41 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "ReplicationGraph.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCoreRuntimeGlobals.generated.h"
 //<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousAutoReplicationRPCRequestAsyncAction;
 class APlayerController;
-
-/**
- * Class extended by all other classes that are part of the Gorgeous Things ecosystem.
- *
- * Used to provide a static way to extend the functionality of the Gorgeous Things ecosystem.
- * Although the accessing of these functionalities is mostly done through wrapper classes that are widely accessible in the engine (blueprint).
- */
-UCLASS()
+//<------------------------------------------------------------->
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous
+| Functional Name: UGorgeous
+| Parent Class: UObject
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Class extended by all other classes that are part of the Gorgeous Things
+| ecosystem. Used to provide a static way to extend the functionality of the
+| Gorgeous Things ecosystem. Although the accessing of these functionalities
+| is mostly done through wrapper classes that are widely accessible in the
+| engine (blueprint).
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Gorgeous",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeous : public UObject
 {
 	GENERATED_BODY()
@@ -65,11 +85,11 @@ class UGorgeousCoreRuntimeGlobals : public UGorgeous
 	GENERATED_BODY()
 
 public:
-	
+
 	/**
 	 *	Returns the reference to the Gorgeous World Settings,
 	 *	Requires to set AGorgeousWorldSettings or a child of it to be set in the Project Settings to work.
-	 * 
+	 *
 	 * @return The current instance of the Gorgeous World Settings.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals", meta = (WorldContext = "WorldContextObject"))
@@ -95,9 +115,9 @@ public:
 
 	/**
 	 * Shorthand function to refresh the replication entries for GorgeousAdditionalData of a QoL class, intended for use in Blueprint after registering new AutoReplication entries at runtime.
-	 * This function will soon be deprecated as the Auto Replication system currently does not have functionality for detecting a newly registered entry and refreshing the replication state accordingly, 
+	 * This function will soon be deprecated as the Auto Replication system currently does not have functionality for detecting a newly registered entry and refreshing the replication state accordingly,
 	 * but we plan to add that in the near future. Therefore, we provide this function as a temporary workaround to allow Blueprint users to manually trigger the replication refresh when they know they've registered new entries at runtime
-	 * 
+	 *
 	 * @param WorldContextObject The world context object used to find the relevant QoL class instance.
 	 * @param QualityOfLifeClass The QoL class to refresh replication for. Must implement the GorgeousQualityOfLifeNodeTarget_I interface.
 	 * @see FGorgeousAutoReplicationMixin::InitializeAdditionalData() for the underlying logic that iterates AdditionalGorgeousData and sets up replication for entries with bReplicate=true, which is what this function calls under the hood.
@@ -241,15 +261,15 @@ public:
 	static void InitializeAutoReplicationForWorld(class UWorld* World);
 
 #pragma endregion AutoReplication_Networking_Functions
-	
-	
+
+
 #pragma region GameFeaturePlugin_Helpers
 
 	/** Returns true if the specified Game Feature Plugin is currently active. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Globals|Game Feature Plugins", meta = (WorldContext = "WorldContextObject", AutoCreateRefTerm = "PluginName"))
 	static bool IsGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName);
-	
-	/** 
+
+	/**
 	 * Enables or Disables the specified Game Feature Plugin at runtime. The plugin must be installed and available in the project for this to succeed.
 	 * Note that enabling a plugin at runtime may not initialize all of its features immediately, depending on how the plugin is set up. Some features may require additional steps to become fully functional after the plugin is enabled.
 	 *
@@ -259,10 +279,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Globals|Game Feature Plugins", meta = (WorldContext = "WorldContextObject", AutoCreateRefTerm = "PluginName"))
 	static void SetGameFeaturePluginActive(const UObject* WorldContextObject,  const FName& PluginName, const bool bNewActive);
-	
-	
+
+
 	//@TODO: Maybe for future version we will expand this blueprint library. Well see what usecases we can find
-	
+
 #pragma endregion GameFeaturePlugin_Helpers
 };
-

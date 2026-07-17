@@ -36,8 +36,11 @@ public class GorgeousCoreEditor : GorgeousModuleRules
             "OpenSSL",
             "HTTP",
             "ToolWidgets",
+            "ContentBrowser",
             "InputCore",
-            "GameplayTags"
+            "GameplayTags",
+            "DeveloperSettings",
+            "WebBrowser"
         });
     }
 }

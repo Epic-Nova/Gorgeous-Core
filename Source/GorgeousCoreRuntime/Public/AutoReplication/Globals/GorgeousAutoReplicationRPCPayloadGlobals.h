@@ -11,41 +11,45 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeGlobals.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCPayloadGlobals.generated.h"
 //<-------------------------------------------------------------------------->
 
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
-| Display Name: Gorgeous Auto Replication RPC Payload Globals
+| Display Name: Gorgeous Auto Replication RPCPayload Globals
 | Functional Name: UGorgeousAutoReplicationRPCPayloadGlobals
 | Parent Class: UGorgeous
 | Class Suffix: -
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Static helper functions for constructing FGorgeousRPCPayload structures 
-| in Blueprint and C++.
-|  These functions are used when creating RPC payloads to be sent via 
-| AutoReplication, allowing you to specify the handler function name 
-| and add arguments in a flexible way.
+| Provides runtime functionality for Gorgeous Auto Replication RPCPayload
+| Globals.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-UCLASS()
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadGlobals",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCPayloadGlobals : public UGorgeous
 {
 	GENERATED_BODY()
 
 	//<=======================--- Blueprint Functions ---=======================>
+#pragma region Blueprint Functions
 public:
 
 	/**
 	 * HandlerName must match the name of the Blueprint or Native event function that will process this payload, e.g. "OnReceiveDamageRPC".
-	 * 
+	 *
 	 * @param HandlerName The name of the handler function that will process this RPC on the receiving end. Must match the function name exactly.
 	 * @return An initialized payload struct with the handler name set. You can then add arguments to this payload using the AddAutoReplicationRPCArgument functions before sending it via AutoReplication.
 	 */
@@ -56,7 +60,7 @@ public:
 	 * Universal wildcard argument – accepts any Blueprint-compatible value type.
 	 * The value is serialized by-value (no UObject pointer, no GC risk).
 	 * ArgumentName must match the handler function parameter name exactly.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param Value The value of the argument. This can be any type that is compatible with Blueprint. The function will handle serialization based on the value's type.
@@ -71,7 +75,7 @@ public:
 
 	/**
 	 * Convenience helper for adding a bool argument to the payload.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param bValue The bool value of the argument.
@@ -82,7 +86,7 @@ public:
 
 	/**
 	 * Convenience helper for adding an int32 argument to the payload.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param Value The int32 value of the argument.
@@ -93,7 +97,7 @@ public:
 
 	/**
 	 * Convenience helper for adding a float argument to the payload.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param Value The float value of the argument.
@@ -104,7 +108,7 @@ public:
 
 	/**
 	 * Convenience helper for adding a string argument to the payload.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param Value The string value of the argument.
@@ -115,7 +119,7 @@ public:
 
 	/**
 	 * Convenience helper for adding an FName argument to the payload.
-	 * 
+	 *
 	 * @param Payload The payload to add the argument to. This is passed by reference and also returned for chaining.
 	 * @param ArgumentName The name of the argument, which must match the parameter name in the handler function that will receive this payload. The match is case-insensitive.
 	 * @param Value The FName value of the argument.
@@ -147,6 +151,7 @@ public:
 	static bool AddArgumentFromProperty(FGorgeousRPCPayload& Payload, FName ArgumentName,
 	                                    const FProperty* Property, const void* ValuePtr);
 //<------------------------------------------------------------------------->
+#pragma endregion Blueprint Functions
 };
 
 using GT_AR_RPCPayloadLibrary = UGorgeousAutoReplicationRPCPayloadGlobals;

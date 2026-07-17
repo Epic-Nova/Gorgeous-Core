@@ -13,11 +13,31 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/Blueprint.h"
-//<--------------------------=== Module Includes ===------------------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCoreBlueprintTypes.generated.h"
 //<-------------------------------------------------------------------------->
 
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Object Variable Blueprint
+| Functional Name: UGorgeousObjectVariableBlueprint
+| Parent Class: UBlueprint
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Object Variable Blueprint.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//GorgeousObjectVariableBlueprint",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableBlueprint : public UBlueprint
 {
 	GENERATED_BODY()

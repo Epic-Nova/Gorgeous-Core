@@ -1,21 +1,20 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
+|                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Engine Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Factories/Factory.h"
-//<-------------------------=== Module Includes ===-------------------------->
 #include "GorgeousAssetRegistrationStructures.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -23,7 +22,7 @@
  * Base class for all Gorgeous Core asset factories.
  *
  * @author Nils Bergemann
- * 
+ *
  * @todo: Make factory creation chained with function calls
  */
 UCLASS()
@@ -52,18 +51,18 @@ public:
 
 	/**
 	 * Updates the factory information necessary for this class to execute its overwritten functions properly.
-	 * 
+	 *
 	 * @param NewFactoryInfo The new factory information
 	 */
 	void SetFactoryInformation(const FGorgeousFactoryInfo_S& NewFactoryInfo);
 
 	/**
-	 * Weather this Factory should participate in the Content Browser context menu. 
+	 * Weather this Factory should participate in the Content Browser context menu.
 	 *
 	 * @return True if the handled asset should show up in the create context menu, false otherwise.
 	 */
 	virtual bool ShouldShowInNewMenu() const override;
-	
+
 	//<============================--- Variables ---============================>
 private:
 

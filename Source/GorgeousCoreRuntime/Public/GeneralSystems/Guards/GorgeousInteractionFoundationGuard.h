@@ -1,19 +1,31 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
-
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "Components/SceneComponent.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
-#include "Components/SceneComponent.h"
+//<-------------------------------------------------------------------------->
 
 #if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
 	#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 	#define GORGEOUS_INTERACTION_FOUNDATION_INTERFACE IInteractionFoundation_I
-	
+
 	#define IMPLEMENT_INTERACTION_FOUNDATION_INTERFACE_OVERRIDES \
 		virtual FGameplayTagContainer RequestInteractionTags_Implementation() const override; \
 		virtual bool CanInteract_Implementation(AActor* InteractingActor) const override; \

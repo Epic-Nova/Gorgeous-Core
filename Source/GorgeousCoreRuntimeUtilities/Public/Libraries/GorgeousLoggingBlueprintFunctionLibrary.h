@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ModuleCore/GorgeousCoreRuntimeUtilitiesEnums.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousLoggingBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -39,7 +39,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousLoggingBlueprintFunctionLibrary 
     GENERATED_BODY()
 
 public:
-    
+
     /**
      * Logs a message with specified importance.
      *
@@ -55,7 +55,7 @@ public:
      */
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging", meta = (WorldContext = "WorldContextObject"))
     static void LogMessage(const FText Message, const EGorgeousLoggingImportance Importance, const FString LoggingKey, const float Duration = 5.0f, const bool bPrintToScreen = true, const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true, const bool bShowAsToast = false, UObject* WorldContextObject = nullptr);
-    
+
     /**
      * Logs an information message.
      *
@@ -116,7 +116,7 @@ public:
 
     /**
      * Sets whether a logging key should be suppressed.
-     * 
+     *
      * @param LoggingKey The logging key to suppress or unsuppress.
      * @param bShouldSuppress True to suppress the logging key, false to unsuppress.
      */
@@ -125,7 +125,7 @@ public:
 
     /**
      * Checks if a logging key is currently suppressed.
-     * 
+     *
      * @param LoggingKey The logging key to check.
      * @return True if the logging key is suppressed, false otherwise.
      */

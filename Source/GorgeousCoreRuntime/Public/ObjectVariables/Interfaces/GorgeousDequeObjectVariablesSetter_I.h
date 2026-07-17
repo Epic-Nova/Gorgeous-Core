@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousDequeObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for setting deque object variables.
@@ -122,7 +122,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque|Float")
 	TArray<float> SetFloatDequeObjectVariable(const FName OptionalVariableName, UPARAM(ref) TArray<float>& NewValue);
-	
+
     /**
      * Sets a deque of doubles.
      *

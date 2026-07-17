@@ -1,11 +1,26 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UObject_AOTOV;
 class APlayerController;
-
+//<------------------------------------------------------------->
 namespace FGorgeousQualityOfLifeStatics
 {
 	GORGEOUSCORERUNTIME_API UObject_AOTOV* EnsureSelfReference(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData, bool bExposeThroughNetworkStack);
@@ -17,7 +32,7 @@ namespace FGorgeousQualityOfLifeStatics
 	 * Also prunes any other stale (invalid) entries from the array at the same time.
 	 * If the array becomes empty after removal the entire OV entry is cleaned up.
 	 */
-	GORGEOUSCORERUNTIME_API void RemoveOwnerFromSelfReference(const UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData);	
+	GORGEOUSCORERUNTIME_API void RemoveOwnerFromSelfReference(const UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData);
 	GORGEOUSCORERUNTIME_API UObject* ResolveSelfReference(TSubclassOf<UObject> QualityOfLifeClass);
 	GORGEOUSCORERUNTIME_API FString ResolveSelfReferenceName(TSubclassOf<UObject> QualityOfLifeClass);
 
@@ -27,17 +42,17 @@ namespace FGorgeousQualityOfLifeStatics
 	 * whose owning PlayerController is registered under that ID is returned.
 	 * WorldContextObject is used to filter out OV entries that belong to other worlds
 	 * (prevents cross-world bleeding in PIE where multiple worlds share the same process).
-	 * 
+	 *
 	 * @warning PERFORMANCE NOTE: While resolution is extremely fast (e.g. ~3ms for 5000 objects),
-	 * calling this function every frame (on Tick) for heavily populated classes can consume a 
-	 * noticeable percentage of your frame budget. For large object pools, prefer event-driven 
+	 * calling this function every frame (on Tick) for heavily populated classes can consume a
+	 * noticeable percentage of your frame budget. For large object pools, prefer event-driven
 	 * logic (Signal Bridge) or caching the array at BeginPlay.
 	 */
 	GORGEOUSCORERUNTIME_API TArray<UObject*> ResolveSelfReferences(const UObject* WorldContextObject, TSubclassOf<UObject> QualityOfLifeClass, const FString& StablePlayerId = FString());
 
 	/** Strips any default object variables from a CDO so they don't end up serialized into cooked assets. */
 	GORGEOUSCORERUNTIME_API void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData);
-	
+
 	GORGEOUSCORERUNTIME_API void SanitizeCDOAdditionalDataOnLevelSwitch(const FString& LevelName);
 
 	// ── Local Player Stable ID helpers ────────────────────────────────────

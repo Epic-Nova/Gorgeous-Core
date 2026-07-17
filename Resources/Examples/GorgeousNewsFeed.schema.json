@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://api.gorgeous.simsalabim.studio/schemas/news-feed-v1.json",
+  "title": "Everything Gorgeous News Feed",
+  "description": "The response contract for https://api.gorgeous.simsalabim.studio/news. Successful entries are cached under NudgeFeedCache in GorgeousPersistentData.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "entries"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version understood by the Gorgeous nudge subsystem."
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Optional UTC timestamp for diagnostics and cache inspection."
+    },
+    "entries": {
+      "type": "array",
+      "description": "All ecosystem news, plugin updates, General System updates, and tutorial recommendations.",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "title",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable, globally unique nudge identifier. Changing it causes the entry to be eligible for display again."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ecosystem_news",
+            "plugin_update",
+            "general_system_update",
+            "new_plugin_tutorial"
+          ],
+          "description": "The notification scope and applicability rule."
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required for plugin_update, general_system_update, and new_plugin_tutorial. Use the installed Gorgeous plugin name or the recorded General System identifier."
+        },
+        "version": {
+          "type": "string",
+          "description": "Optional version being announced or made available."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Short plain-text preview used when no Markdown document is supplied."
+        },
+        "content": {
+          "$ref": "#/$defs/content"
+        },
+        "window": {
+          "$ref": "#/$defs/window"
+        },
+        "action": {
+          "$ref": "#/$defs/action"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "plugin_update",
+                  "general_system_update",
+                  "new_plugin_tutorial"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "targetId"
+            ]
+          }
+        }
+      ]
+    },
+    "content": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "url"
+          ],
+          "properties": {
+            "type": {
+              "const": "url"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Destination shown inside the carousel when there is no explicit action URL."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "const": "markdown"
+            },
+            "markdown": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Inline Markdown rendered into the preloaded carousel HTML page."
+            },
+            "markdownUrl": {
+              "type": "string",
+              "format": "uri",
+              "description": "Remote Markdown document downloaded and rendered before its carousel page is shown."
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "markdown"
+              ]
+            },
+            {
+              "required": [
+                "markdownUrl"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "type": "number",
+          "minimum": 720,
+          "maximum": 1600
+        },
+        "height": {
+          "type": "number",
+          "minimum": 520,
+          "maximum": 1100
+        }
+      },
+      "description": "Optional preferred size for a Markdown page. Missing dimensions use the 1100 x 760 default."
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Text displayed on the carousel action button."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "open_url",
+            "download_plugin"
+          ],
+          "default": "open_url",
+          "description": "open_url (or an omitted kind) loads url in the destination browser. download_plugin invokes the existing Gorgeous installer."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Destination for open_url and optional release-notes URL for download_plugin."
+        },
+        "downloadToken": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Server-issued token for download_plugin. If omitted, the subsystem falls back to the token cached by GorgeousPluginHelper."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "download_plugin"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {},
+          "else": {
+            "required": [
+              "url"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

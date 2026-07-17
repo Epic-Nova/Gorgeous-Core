@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,17 +8,21 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Widgets/SCompoundWidget.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
 #include "InsightMatrix/GorgeousInsightMatrixTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 enum class ECheckBoxState : uint8;
-
+//<------------------------------------------------------------->
 /**
  * Unified debug panel scaffold for the Insight Matrix.
  */
@@ -58,7 +62,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightPanelStateChanged, const F
 	{
 		FGorgeousInsightStat Stat;
 	};
-	
+
 
 	struct FProviderEntry
 	{
@@ -81,7 +85,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightPanelStateChanged, const F
 	FText FormatStatValue(const FGorgeousInsightStat& Stat) const;
 	FReply OnQueueTestClicked(TSharedPtr<FTestRow> RowData);
 	FReply OnRunTestClicked(TSharedPtr<FTestRow> RowData);
-	
+
 	TSharedRef<SWidget> BuildTestInputsWidget(const TSharedPtr<FTestRow>& RowData);
 	FSlateColor GetStatValueColor(const FGorgeousInsightStat& Stat) const;
 	TSharedRef<SWidget> BuildStatThresholdWidget(const FGorgeousInsightStat& Stat);
@@ -89,7 +93,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightPanelStateChanged, const F
 	FLinearColor GetTestStatusAccent(const FTestRow& Row) const;
 
 private:
-	
+
 	void RefreshProviders();
 	void RefreshProviderData();
 	void RebuildActions();

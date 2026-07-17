@@ -1,12 +1,26 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/NoExportTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
 #include "PropertyHandle.h"
 #include "DetailWidgetRow.h"
 #include "IDetailChildrenBuilder.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousDetailExtension.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Base class for modular property customizations in the Unreal Editor.F

@@ -8,15 +8,37 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousRPC_OV.generated.h"
+//<-------------------------------------------------------------------------->
 
-/** Lightweight container that captures the outcome of a AutoReplication RPC invocation. */
-UCLASS(BlueprintType, EditInlineNew, DisplayName = "AutoReplication RPC OV", Category = "Gorgeous Core|AutoReplication|Networking")
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous RPC
+| Functional Name: UGorgeousRPC_OV
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: _OV
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Lightweight container that captures the outcome of a AutoReplication RPC
+| invocation.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(BlueprintType, EditInlineNew, DisplayName = "AutoReplication RPC OV", Category = "Gorgeous Core|AutoReplication|Networking",
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/GorgeousRPC_OV",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousRPC_OV : public UGorgeousObjectVariable
 {
 	GENERATED_BODY()
@@ -77,15 +99,15 @@ public:
 
 
 private:
-	/** Cached list of all responder results captured for this request. */
+	// Cached list of all responder results captured for this request.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous AutoReplication|Networking", meta = (AllowPrivateAccess = "true"))
 	TArray<FGorgeousAutoReplicationRPCResult> CachedResults;
 
-	/** Keyed responder map for quick connection lookups. */
+	// Keyed responder map for quick connection lookups.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous AutoReplication|Networking", meta = (AllowPrivateAccess = "true"))
 	TMap<FString, FGorgeousAutoReplicationRPCResult> CachedResultMap;
 
-	/** Tracks whether the cached data is valid. */
+	// Tracks whether the cached data is valid.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous AutoReplication|Networking", meta = (AllowPrivateAccess = "true"))
 	bool bHasCachedResult;
 

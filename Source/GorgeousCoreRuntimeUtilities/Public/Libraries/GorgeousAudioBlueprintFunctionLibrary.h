@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,21 +11,20 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Kismet/GameplayStatics.h"
 #include "Sound/DialogueWave.h"
 #include "Sound/SoundBase.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
-//<--------------------------=== Module Includes ===------------------------->
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAudioBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<=================--- Delegates ---=================>
 DECLARE_DYNAMIC_DELEGATE(FOnVoiceLineFinishedNative);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnVoiceLineAudioReadyNative, UAudioComponent*, AudioComponent);
 //<--------------------------------------------------->
@@ -48,9 +47,9 @@ UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousAudioBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-	
+
 public:
-	
+
 	/**
 	 * Plays a voice line sound at the location of the specified actor.
 	 *
@@ -59,7 +58,7 @@ public:
 	 * @param OnVoiceLineFinished A delegate that will be executed when the voice line has finished playing.
 	 * @param OnVoiceLineAudioReady A delegate that will be executed when the audio component is spawned.
 	 * @param WorldContextObject The world context object for locating the world in which to play the sound.
-	 * 
+	 *
 	 * @TODO: This function needs to be completed with valid configuration providers (here to minimize the needed input parameters from the original function) providers could also stream stuff from the www
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Audio", meta = (WorldContext = "WorldContextObject"))
@@ -78,9 +77,9 @@ public:
 		auto HandleLoadedObject = [=](UObject* LoadedObject)
 		{
 			UAudioComponent* Audio = nullptr;
-			
+
 			if (!LoadedObject)
-			{	
+			{
 				return Audio;
 			}
 
@@ -105,7 +104,7 @@ public:
 				OnVoiceLineAudioReady.ExecuteIfBound(Audio);
 				OnVoiceLineFinished.ExecuteIfBound();
 			}
-			
+
 			return Audio;
 		};
 

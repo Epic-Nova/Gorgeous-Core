@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,17 +11,16 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "AssetTypeActions/AssetTypeActions_Blueprint.h"
 #include "AssetTypeActions/AssetTypeActions_DataAsset.h"
 #include "Toolkits/IToolkitHost.h"
-//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousAssetRegistrationStructures.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Custom asset type action class that defines how a specific asset type should be represented and behave in the Unreal Editor, for Gorgeous Core custom assets.
- * 
+ *
  * @author Nils Bergemann
  */
 class GORGEOUSCOREEDITORUTILITIES_API FGorgeousAssetTypeAction final : public FAssetTypeActions_Blueprint
@@ -37,10 +36,10 @@ public:
 
 	/** Destructor. */
 	virtual ~FGorgeousAssetTypeAction() override;
-	
+
 	//<============================--- Overrides ---=============================>
 
-	/** 
+	/**
 	 * Returns the display name of this asset type in the editor.
 	 *
 	 * @return Localized text representing the asset type's name.
@@ -99,10 +98,10 @@ public:
 	 * Opens the asset editor, optionally using a custom editor handler.
 	 */
 	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor) override;
-		
+
 	//<-------------------------------------------------------------------------->
 
-	
+
 	//<============================--- Variables ---============================>
 private:
 

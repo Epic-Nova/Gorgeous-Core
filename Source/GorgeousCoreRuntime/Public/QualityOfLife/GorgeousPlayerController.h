@@ -11,12 +11,9 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "GameFramework/PlayerController.h"
-#include "GameplayTagContainer.h"
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //<--------------------------=== Module Includes ===------------------------->
+#include "GameFramework/PlayerController.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
@@ -25,7 +22,10 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 #include "QualityOfLife/GorgeousPlayerConnectionInfo_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//<--------------------------=== Engine Includes ===------------------------->
+#include "GameplayTagContainer.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousPlayerController.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -41,23 +41,42 @@ struct FGorgeousAutomationRPCWitnessEntry
 };
 #endif
 
-/**
- * A custom subclass of APlayerController used to manage player input and data.
- * 
- * This class extends APlayerController to provide additional functionality for managing player-related data 
- * and input. The `AGorgeousPlayerController` class allows the handling of extra data, such as input configurations 
- * or custom player attributes, through the `AdditionalGorgeousData` map. It also provides custom behavior for the 
- * `BeginPlay()` and `PostEditChangeProperty()` functions, which are used to initialize and modify the player controller 
- * in different scenarios, such as gameplay start or when properties are edited in the Unreal Editor.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Player Controller
+| Functional Name: AGorgeousPlayerController
+| Parent Class: APlayerController
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of APlayerController used to manage player input and
+| data. This class extends APlayerController to provide additional
+| functionality for managing player-related data and input. The
+| `AGorgeousPlayerController` class allows the handling of extra data, such
+| as input configurations or custom player attributes, through the
+| `AdditionalGorgeousData` map. It also provides custom behavior for the
+| `BeginPlay()` and `PostEditChangeProperty()` functions, which are used to
+| initialize and modify the player controller in different scenarios, such
+| as gameplay start or when properties are edited in the Unreal Editor.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousPlayerController",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerController : public APlayerController
 	, public IGorgeousAutoReplicationRPCResponder_I
 	, public IGorgeousQualityOfLifeNodeTarget_I
 	, public IGorgeousPlayerConnectionInfo_I
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	AGorgeousPlayerController();
@@ -74,12 +93,13 @@ public:
 	const TArray<FGorgeousAutomationRPCWitnessEntry>& GetAutomationRPCWitnessEntries() const { return AutomationRPCWitnessEntries; }
 	void ResetAutomationRPCWitnessEntries();
 #endif
-	
+
 	//<============================--- Overrides ---=============================>
-	
-	/** 
+#pragma region Overrides
+
+	/**
 	 * Called when the player controller begins play.
-	 * 
+	 *
 	 * This function is called when the player controller starts. It can be overridden to initialize any player-specific
 	 * functionality or data, such as setting up player input or other gameplay-related elements.
 	 */
@@ -96,8 +116,9 @@ public:
 	virtual FUniqueNetIdRepl GetPlayerNetId_Implementation() const override;
 	virtual FString GetGorgeousStablePlayerId_Implementation() const override;
 	virtual int32 GetPlayerConnectionIndex_Implementation() const override;
-	
+
 	//<-------------------------------------------------------------------------->
+#pragma endregion Overrides
 
 	UFUNCTION()
 	void Automation_ServerToClient(int32 Sequence, const FString& Stamp);
@@ -120,17 +141,15 @@ public:
 	UFUNCTION()
 	void Automation_HandleRPC_WithReturnOV(UInteger_SOV* ReturnValue, int32 TestInputInt, const FString& TestInputString, int32 Sequence, const FString& Origin, const FString& Timestamp);
 
-	/** Enables networking features for this controller's AutoReplication data. */
+	// Enables networking features for this controller's AutoReplication data.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/**
-	 * Additional data for the current class.
-	 */
+	// Additional data for the current class.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player Controller")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Trunk that stores serialized default payloads for this controller's authored object variables. */
+	// Trunk that stores serialized default payloads for this controller's authored object variables.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player Controller|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
@@ -139,7 +158,7 @@ public:
 
 protected:
 
-	/** Component responsible for relaying RPC results back to the authority. */
+	// Component responsible for relaying RPC results back to the authority.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UGorgeousAutoReplicationRPCRelayComponent> AutoReplicationRPCRelay;
 
@@ -150,7 +169,7 @@ protected:
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-	
+
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

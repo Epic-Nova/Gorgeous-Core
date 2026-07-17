@@ -8,17 +8,23 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "Containers/Ticker.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
 class UWorld;
 class UReplicationGraph;
+//<------------------------------------------------------------->
+
 #if GORGEOUSCORE_WITH_IRIS
 class FGorgeousAutoReplicationIrisBackend;
 #endif

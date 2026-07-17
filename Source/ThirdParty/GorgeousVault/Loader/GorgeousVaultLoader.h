@@ -1,27 +1,25 @@
-// Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|              GorgeousVaultLoader — Runtime DLL Loader Singleton            |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|  This singleton manages the lifecycle of the GorgeousVault DLL:           |
-|    - Loads the DLL via FPlatformProcess::GetDllHandle                     |
-|    - Resolves C-linkage function pointers via GetDllExport                |
-|    - Runs integrity verification on first load                            |
-|    - Manages challenge-response rotation                                  |
-|    - Provides typed Resolve<FuncPtr>() for proxy forwarding               |
-|                                                                           |
-|  This file is OPEN SOURCE — it ships with GorgeousCoreRuntime.           |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousVaultPlatform.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Singleton that manages the GorgeousVault DLL lifecycle.
- * 
+ *
  * The proxy layer (.cpp files in GorgeousCoreRuntime) uses this to resolve
  * and call into the Vault's C-linkage exported functions.
  *

@@ -11,17 +11,17 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousFunctionalStructure.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
- * Structure for defining functional structures within the game. 
+ * Structure for defining functional structures within the game.
  * This structure can be extended to include various properties and functions as needed for specific use cases.
- * 
- * Functional structures enable structures to receive editor events and have an owner object, 
+ *
+ * Functional structures enable structures to receive editor events and have an owner object,
  * allowing for more dynamic and interactive data structures in Unreal Engine.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT(Blueprintable, DisplayName = "Gorgeous Functional Structure")
@@ -30,10 +30,12 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	GENERATED_BODY()
 
 	//<================--- Friend Classes ---================>
+#pragma region Friend Classes
 #if WITH_EDITOR
 	friend class FGorgeousFunctionalStructurePropertyTypeCustomization;
 #endif
 	//<------------------------------------------------------>
+#pragma endregion Friend Classes
 
 	// Default constructor that initializes the identifier with a new GUID and sets the owner object to nullptr.
 	FGorgeousFunctionalStructure_S()
@@ -42,9 +44,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 		OwnerObject = nullptr;
 	}
 
-	/** 
-	 * The destructor is declared as virtual to allow for proper cleanup in case of inheritance, 
-	 * even though USTRUCTs typically do not have virtual functions. 
+	/**
+	 * The destructor is declared as virtual to allow for proper cleanup in case of inheritance,
+	 * even though USTRUCTs typically do not have virtual functions.
 	 * This is a safeguard for any potential future extensions where this struct might be inherited by a class or another struct that requires a destructor.
 	 */
 	virtual ~FGorgeousFunctionalStructure_S() = default;
@@ -71,20 +73,20 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 
 	/**
 	 * Gives the chance for default value allocation after initialisation.
-	 * 
+	 *
 	 * @param OuterOwner The owner UObject of this structure.
 	 */
 	virtual void AllocateDefaultValues(UObject* OuterOwner) {};
-	
+
 #endif //WITH_EDITOR
 
 protected:
 
 #if WITH_EDITORONLY_DATA
-	
-	/** 
-	 * The owner object of this functional structure. 
-	 * This allows the structure to have context about which UObject it belongs to, 
+
+	/**
+	 * The owner object of this functional structure.
+	 * This allows the structure to have context about which UObject it belongs to,
 	 * enabling it to respond to editor events and interact with the owning object as needed.
 	 */
 	UPROPERTY(Transient)

@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousStackObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for getting stack object variables.
@@ -114,7 +114,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack|Float")
 	TArray<float> GetFloatStackObjectVariable(const FName OptionalVariableName) const;
-	
+
     /**
      * Gets a stack of doubles.
      *

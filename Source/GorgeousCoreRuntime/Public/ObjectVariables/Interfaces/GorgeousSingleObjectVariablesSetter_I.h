@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousSingleObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for setting single object variables.
@@ -42,7 +42,7 @@ class GORGEOUSCORERUNTIME_API IGorgeousSingleObjectVariablesSetter_I
 	GENERATED_BODY()
 
 public:
-	
+
     /**
      * Sets a GorgeousObjectVariable.
      *
@@ -122,7 +122,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Single|Float")
 	float SetFloatSingleObjectVariable(const FName OptionalVariableName, UPARAM(ref) float& NewValue);
-	
+
     /**
      * Sets a double.
      *

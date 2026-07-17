@@ -14,7 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
 #include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===---------------
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInteractionFoundation.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -28,32 +28,44 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Blueprint function library exposing helper functions for
-| interaction related functionality in Blueprints.
+| Provides runtime functionality for Gorgeous Interaction Foundation.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Overview",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
 {
 	GENERATED_BODY()
 
 	//<=======================--- Blueprint Functions ---=======================>
+#pragma region Blueprint Functions
 public:
 
-	/** Total successful interactions executed through the foundation. */
+	/**
+	 * Returns the number of successful interactions executed through the foundation.
+	 *
+	 * @return The total number of successful interactions.
+	 */
 	static int32 GetTotalSuccessfulInteractions();
 
-	/** Total interactions rejected because the target did not support the requested tag. */
+	/**
+	 * Returns the number of interactions rejected because the target lacked the requested tag.
+	 *
+	 * @return The total number of tag-rejected interactions.
+	 */
 	static int32 GetTotalRejectedInteractions();
 
-	/** Total interactions rejected because the interacting actor lacked permission. */
+	/**
+	 * Returns the number of interactions rejected because the actor lacked permission.
+	 *
+	 * @return The total number of permission-rejected interactions.
+	 */
 	static int32 GetTotalPermissionDeniedInteractions();
 
 	/** Increments the successful interaction counter. */
@@ -65,7 +77,11 @@ public:
 	/** Increments the permission-denied interaction counter. */
 	static void IncrementPermissionDeniedInteractions();
 
-	/** Number of actors currently tracked for interaction focus. */
+	/**
+	 * Returns the number of actors currently tracked for interaction focus.
+	 *
+	 * @return The number of actors with tracked interaction focus.
+	 */
 	static int32 GetActiveTrackedInteractionActors();
 
 	/**
@@ -202,13 +218,16 @@ public:
 		bool& bOutWasUnfocus,
 		FHitResult& OutHitResult);
 	//<------------------------------------------------------------------------->
+#pragma endregion Blueprint Functions
 
 	//<============================--- C++ Only ---=============================>
+#pragma region C++ Only
 private:
 
 	// Maps each interacting actor to the actor it is currently focused on.
 	static TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> InteractionActors;
 	//<------------------------------------------------------------------------->
+#pragma endregion C++ Only
 };
 
 using UGT_IF = UGorgeousInteractionFoundation;

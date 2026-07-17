@@ -1,19 +1,22 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|         Gorgeous Core - Abstract System Template Configuration             |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
-<=========================================================================*/
-
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-//<=====--- Includes ---=====>
-//<----- Engine Includes ----->
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-//--- Miscellaneous Includes -->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousSystemTemplate_DA.generated.h"
+//<-------------------------------------------------------------------------->
 
 class UTexture2D;
 
@@ -83,9 +86,9 @@ public:
 
 	/**
 	 * Specialized Payload classes whose UPROPERTIES are rendered as wizard pages.
-	 * 
-	 * [AUTO-MAPPING]: If a payload property name and type match a property in the 
-	 * generated Config asset, the Wizard will automatically copy the value 
+	 *
+	 * [AUTO-MAPPING]: If a payload property name and type match a property in the
+	 * generated Config asset, the Wizard will automatically copy the value
 	 * UNLESS PostCreate() is overridden in the payload class.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Template|Generation")

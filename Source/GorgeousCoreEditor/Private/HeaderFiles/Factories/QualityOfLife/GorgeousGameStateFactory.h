@@ -1,20 +1,20 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
+|                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousGameStateFactory.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -28,7 +28,7 @@ UCLASS()
 class UGorgeousGameStateFactory : public UGorgeousFactory
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	/**

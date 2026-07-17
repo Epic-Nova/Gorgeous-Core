@@ -1,40 +1,88 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 #include "Styling/SlateTypes.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 #include "GeneralSystems/GorgeousPrimaryDataAsset.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousUITheme_DA.generated.h"
+//<-------------------------------------------------------------------------->
 
-/**
- * Data Asset defining a global UI theme/skin.
- * Uses Instanced Structs to allow overriding any property (Colors, Fonts, Sizes, etc.).
- */
-UCLASS(BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous UITheme
+| Functional Name: UGorgeousUITheme_DA
+| Parent Class: UGorgeousPrimaryDataAsset
+| Class Suffix: _DA
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Data Asset defining a global UI theme/skin. Uses Instanced Structs to
+| allow overriding any property (Colors, Fonts, Sizes, etc.).
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousUITheme_DA : public UGorgeousPrimaryDataAsset
 {
 	GENERATED_BODY()
 
+	//<============================--- Overrides ---============================>
+	#pragma region Overrides
 public:
-	/** UGorgeousPrimaryDataAsset Interface */
+	// Identifies this asset as a UI theme primary asset.
 	virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("UI_Theme"); }
+
+	// Returns the directories that contain UI theme assets.
 	virtual TArray<FString> GetDefaultScanPaths() const override { return { TEXT("UserInterfaces") }; }
-	/** Returns the list of valid platform names for icon mapping. */
+	//<------------------------------------------------------------------------->
+	#pragma endregion Overrides
+
+
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
+public:
+	/**
+	 * Returns the valid platform names for icon mapping.
+	 *
+	 * @return The supported platform names.
+	 */
 	UFUNCTION()
 	static TArray<FString> GetPlatformOptions()
 	{
 		return { TEXT("Keyboard"), TEXT("Xbox"), TEXT("PlayStation"), TEXT("Switch"), TEXT("Mobile"), TEXT("Generic") };
 	}
 
-	/** Map of style property names to their values. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Styles", meta = (ShowOnlyInnerProperties))
-	TMap<FName, FInstancedStruct> StyleProperties;
-
-	/** Helper to get a color by name. */
+	/**
+	 * Retrieves a themed color by property name.
+	 *
+	 * @param PropertyName The name of the color property.
+	 * @param DefaultValue The value returned when the property is not configured.
+	 * @return The configured color or DefaultValue when absent.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	FLinearColor GetColor(FName PropertyName, FLinearColor DefaultValue = FLinearColor::White) const
 	{
@@ -48,7 +96,13 @@ public:
 		return DefaultValue;
 	}
 
-	/** Helper to get a float by name. */
+	/**
+	 * Retrieves a themed float by property name.
+	 *
+	 * @param PropertyName The name of the float property.
+	 * @param DefaultValue The value returned when the property is not configured.
+	 * @return The configured float or DefaultValue when absent.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	float GetFloat(FName PropertyName, float DefaultValue = 0.0f) const
 	{
@@ -63,7 +117,12 @@ public:
 		return DefaultValue;
 	}
 
-	/** Helper to get a brush by name. */
+	/**
+	 * Retrieves a themed brush by property name.
+	 *
+	 * @param PropertyName The name of the brush property.
+	 * @return The configured brush or an empty brush when absent.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	FSlateBrush GetBrush(FName PropertyName) const
 	{
@@ -77,14 +136,13 @@ public:
 		return FSlateBrush();
 	}
 
-	/** 
-	 * Icons for specific input actions (e.g. UI.Action.Confirm). 
-	 * These are automatically swapped based on the active platform and theme.
+	/**
+	 * Retrieves an action icon using the configured platform fallback order.
+	 *
+	 * @param ActionTag The action whose icon is requested.
+	 * @param PlatformName The active platform name.
+	 * @return The matching icon or an empty brush when no icon is configured.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Icons", meta = (Categories = "UI.Action"))
-	TMap<FGameplayTag, FGorgeousPlatformIconGroup_S> ActionIcons;
-
-	/** Helper to get an icon for an action and platform with prioritized fallbacks. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	FSlateBrush GetActionIcon(FGameplayTag ActionTag, FName PlatformName) const
 	{
@@ -95,20 +153,18 @@ public:
 			{
 				return *Icon;
 			}
-			
+
 			// 2. Generic Fallback
 			if (const FSlateBrush* GenericIcon = IconGroup->PlatformIcons.Find(TEXT("Generic")))
 			{
 				return *GenericIcon;
 			}
-			
-			// 3. PC Fallback (Keyboard)
+
+			// 3. PC fallback (Keyboard)
 			if (const FSlateBrush* PCIcon = IconGroup->PlatformIcons.Find(TEXT("Keyboard")))
 			{
 				return *PCIcon;
 			}
-			
-
 			// 4. Emergency Fallback: Take the first available icon in the map
 			for (auto& Pair : IconGroup->PlatformIcons)
 			{
@@ -118,11 +174,12 @@ public:
 		return FSlateBrush();
 	}
 
-	/** Map of Gameplay Tags to UI Sounds for themed audio. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
-	TMap<FGameplayTag, TObjectPtr<USoundBase>> SoundMap;
-
-	/** Returns a themed sound for the given tag. */
+	/**
+	 * Retrieves a themed sound by tag.
+	 *
+	 * @param SoundTag The tag that identifies the sound.
+	 * @return The configured sound, or null when no sound is configured.
+	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous UI|Theme")
 	USoundBase* GetThemedSound(FGameplayTag SoundTag) const
 	{
@@ -133,7 +190,12 @@ public:
 		return nullptr;
 	}
 
-	/** Helper to get typography settings by tag. */
+	/**
+	 * Retrieves typography settings by tag.
+	 *
+	 * @param Tag The tag that identifies the typography settings.
+	 * @return The configured typography or a default value when absent.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	FGorgeousUITypography_S GetTypography(FGameplayTag Tag) const
 	{
@@ -147,7 +209,12 @@ public:
 		return FGorgeousUITypography_S();
 	}
 
-	/** Helper to get a Progress Bar style. */
+	/**
+	 * Retrieves a progress bar style by property name.
+	 *
+	 * @param PropertyName The name of the progress bar style property.
+	 * @return The configured style or a default style when absent.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Theme")
 	FProgressBarStyle GetProgressBarStyle(FName PropertyName) const
 	{
@@ -160,4 +227,24 @@ public:
 		}
 		return FProgressBarStyle();
 	}
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
+
+
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	#pragma region UAT/UBT Exposed Variables
+public:
+	// Maps style property names to their themed values.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Styles", meta = (ShowOnlyInnerProperties))
+	TMap<FName, FInstancedStruct> StyleProperties;
+
+	// Maps input action tags to platform-specific icon groups.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Icons", meta = (Categories = "UI.Action"))
+	TMap<FGameplayTag, FGorgeousPlatformIconGroup_S> ActionIcons;
+
+	// Maps gameplay tags to themed UI sounds.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
+	TMap<FGameplayTag, TObjectPtr<USoundBase>> SoundMap;
+	//<------------------------------------------------------------------------->
+	#pragma endregion UAT/UBT Exposed Variables
 };
