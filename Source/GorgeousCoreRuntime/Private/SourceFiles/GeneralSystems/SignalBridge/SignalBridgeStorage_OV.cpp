@@ -7,8 +7,6 @@
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
 
-static const FName SignalBridgeEntryKey = TEXT("SignalBridge");
-
 DECLARE_STATS_GROUP(TEXT("Gorgeous Signal Bridge"), STATGROUP_GorgeousSignalBridge, STATCAT_Advanced);
 DECLARE_DWORD_COUNTER_STAT(TEXT("Local Signals Fired"), STAT_SignalBridge_LocalFired, STATGROUP_GorgeousSignalBridge);
 DECLARE_DWORD_COUNTER_STAT(TEXT("No Local Listeners"), STAT_SignalBridge_NoListeners, STATGROUP_GorgeousSignalBridge);
