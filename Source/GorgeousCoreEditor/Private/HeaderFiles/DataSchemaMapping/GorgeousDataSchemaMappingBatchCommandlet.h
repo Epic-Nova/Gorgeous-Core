@@ -11,9 +11,9 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Commandlets/Commandlet.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousDataSchemaMappingBatchCommandlet.generated.h"
 //<-------------------------------------------------------------------------->
 

@@ -11,9 +11,10 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/Interface.h"
 #include "GameFramework/OnlineReplStructs.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousPlayerConnectionInfo_I.generated.h"
 //<-------------------------------------------------------------------------->
 

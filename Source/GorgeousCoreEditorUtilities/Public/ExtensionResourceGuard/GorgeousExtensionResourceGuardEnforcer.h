@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "EditorSubsystem.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousExtensionResourceGuardEnforcer.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -45,16 +45,16 @@ class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuardEnforcer : 
 
 	//<============================--- Overrides ---============================>
 public:
-	
+
 	// Initialize override to set up ticker and callbacks.
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	
+
 	// Deinitialize override to clean up ticker and callbacks.
 	virtual void Deinitialize() override;
 	//<------------------------------------------------------------------------->
 
 	//<============================--- C++ Only ---=============================>
-	
+
 	/**
 	 * Called when the user actively rejects the plugin-enable prompt.
 	 * Starts the enforcement timer cycle for the given plugin.
@@ -67,14 +67,14 @@ public:
 	/**
 	 * Called when the user enables the required plugin or when the issue is otherwise resolved.
 	 * Stops the enforcement cycle for the given plugin.
-	 * 
+	 *
 	 * @param PluginName The plugin that is now enabled/resolved.
 	 */
 	void StopEnforcement(const FString& PluginName);
 
 	/**
 	 * Checks if there are any active enforcements in progress.
-	 * 
+	 *
 	 * @return Returns true if there are any active enforcements in progress, false otherwise.
 	 */
 	bool IsEnforcementActive() const;
@@ -103,7 +103,7 @@ private:
 	// Saves all dirty packages and shuts down the editor safely.
 	void SafeShutdownEditor();
 	//<------------------------------------------------------------------------->
-	
+
 	//<============================--- Variables ---============================>
 
 	// Represents a single enforcement session for one rejected plugin.

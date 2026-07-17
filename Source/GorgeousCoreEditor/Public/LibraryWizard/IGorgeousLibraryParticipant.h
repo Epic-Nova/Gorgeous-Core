@@ -1,24 +1,25 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|             Gorgeous Core - Library Wizard Participant Interface            |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
-<=========================================================================*/
-
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-//<=====--- Includes ---=====>
-//<----- Engine Includes ----->
-#include "CoreMinimal.h"
-//--- Module Includes ------->
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "LibraryWizard/GorgeousLibraryTypes.h"
 #include "LibraryWizard/GorgeousSystemTemplate_DA.h"
 #include "Styling/SlateBrush.h"
 #include "Brushes/SlateImageBrush.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
 #include "Engine/Texture2D.h"
-
-//<-------------------------->
+//<-------------------------------------------------------------------------->
 
 /*
 <=====--- Class Info ---=====>

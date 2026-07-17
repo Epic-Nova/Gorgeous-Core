@@ -13,18 +13,17 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousSingleton.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousPluginHelper.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 class IGorgeousThingsModuleInterface;
 enum class EGorgeousModuleFunctionality : uint8;
 //<-------------------------------------------------->
 
 /**
  * Enum defining the load state of a gorgeous plugin.
- * 
+ *
  * @author Nils Bergemann
  */
 UENUM(BlueprintType)
@@ -51,7 +50,7 @@ enum class EGorgeousPluginLoadState : uint8
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
 | Helper singleton to manage gorgeous things module interfaces.
-| Checks for minimum core version and dependent plugin requirements, 
+| Checks for minimum core version and dependent plugin requirements,
 | and allows for deferred registration of modules until requirements are met.
 <--------------------------------------------------------------------------->
 <===========================================================================>
@@ -90,30 +89,30 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 {
 	GENERATED_BODY()
 	GORGEOUS_ATTACH_SINGLETON(UGorgeousPluginHelper);
-	
+
 	//<============================--- C++ Only ---=============================>
-	
+
 	/**
 	 * Finds and returns the core gorgeous things module interface.
-	 * 
+	 *
 	 * @return The core gorgeous things module interface, or nullptr if not found.
 	 */
 	IGorgeousThingsModuleInterface* GetCoreModuleInterface(const EGorgeousModuleFunctionality FunctionalityType) const;
-	
+
 	/**
 	 * Registers a gorgeous things module interface with the module helper.
 	 *
 	 * @param ModuleInterface The module interface to register.
 	 */
 	bool RegisterModule(IGorgeousThingsModuleInterface* ModuleInterface);
-	
+
 	/**
 	 * Unregisters a gorgeous things module interface from the module helper.
 	 *
 	 * @param ModuleInterface The module interface to unregister.
 	 */
 	void UnregisterModule(const IGorgeousThingsModuleInterface* ModuleInterface);
-	
+
 	/**
 	 * Checks if a gorgeous things module interface is registered with the module helper.
 	 *
@@ -121,14 +120,14 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return true if the module interface is registered, false otherwise.
 	 */
 	bool IsModuleRegistered(const IGorgeousThingsModuleInterface* ModuleInterface) const;
-	
+
 	/**
 	 * Gets the list of known gorgeous plugins.
 	 *
 	 * @return Array of known gorgeous plugin names.
 	 */
 	TSet<FName> GetKnownGorgeousPlugins() const { return KnownGorgeousPlugins; }
-	
+
 	/**
 	 * Checks if a gorgeous things module interface satisfies the minimum requirements.
 	 *
@@ -159,7 +158,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @param Reason The reason for the failure.
 	 */
 	void RecordModuleLoadFailure(const IGorgeousThingsModuleInterface* ModuleInterface, const FString& Reason);
-	
+
 	/**
 	 * Flags whether to abort saving the binary checksum 10 seconds after boot.
 	 * Any validation error from the plugin helper sets this flag.
@@ -171,7 +170,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * of the current GorgeousCore binaries, bypassing the installer on next boot.
 	 */
 	static void GenerateAndSaveBinaryChecksum();
-	
+
 	/**
 	 * Checks if a plugin is installed (exists in the plugin manager).
 	 *
@@ -179,7 +178,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return true if the plugin is installed, false otherwise.
 	 */
 	bool IsPluginInstalled(const FName& PluginName) const;
-	
+
 	/**
 	 * Checks if a plugin is a Gorgeous plugin (part of the Gorgeous ecosystem).
 	 *
@@ -187,7 +186,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return true if the plugin is a Gorgeous plugin, false otherwise.
 	 */
 	bool IsGorgeousPlugin(const FName& PluginName) const;
-	
+
 	/**
 	 * Validates the entire dependency chain for a plugin.
 	 * Checks that dependencies are installed and enabled.
@@ -199,7 +198,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return true if all dependencies are valid, false otherwise.
 	 */
 	bool ValidateDependencyChain(const FName& PluginName, TArray<FName>& OutFailedDependencies, TMap<FName, FString>& OutFailureReasons);
-	
+
 	/**
 	 * Gets the declared dependencies of a Gorgeous plugin by checking its registered modules.
 	 *
@@ -216,27 +215,27 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return Flat array of all registered module interface pointers.
 	 */
 	TArray<IGorgeousThingsModuleInterface*> GetAllRegisteredModules() const;
-	
+
 	/**
 	 * Gets the current system validation count from persistent data.
 	 */
 	int32 GetSystemValidationCount() const;
-	
+
 	/**
 	 * Increments the system validation count and saves persistent data.
 	 */
 	void IncrementSystemValidationCount();
-	
+
 	/**
 	 * Sets the current system validation count.
 	 */
 	void SetSystemValidationCount(int32 NewCount);
-	
+
 	/**
 	 * Gets the interval (in startups) at which system validation should run.
 	 */
 	int32 GetSystemValidationInterval() const;
-	
+
 	/**
 	 * Sets the interval at which system validation should run.
 	 */
@@ -325,133 +324,133 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * Gets the file path for storing persistent Gorgeous metadata.
 	 */
 	static FString GetGorgeousPersistentDataFilePath();
-	
+
 	/**
 	 * Loads the persistent data from disk.
 	 */
 	void LoadPersistentData();
-	
+
 	/**
 	 * Saves the persistent data to disk.
 	 */
 	void SavePersistentData();
 
 private:
-	
+
 	/**
 	 * Checks if all modules for a plugin have been processed and shows a final notification if needed.
 	 * @param PluginName The name of the plugin to check.
 	 */
 	void TryShowFinalNotification(const FName& PluginName);
-	
+
 	/**
 	 * Checks if two plugins have a circular dependency through their deferred modules.
 	 * Used to allow co-loading when plugins mutually depend on each other.
-	 * 
+	 *
 	 * @param PluginA First plugin name.
 	 * @param PluginB Second plugin name.
 	 * @return true if the plugins have a circular deferred dependency.
 	 */
 	bool HasCircularDeferredDependency(const FName& PluginA, const FName& PluginB) const;
-	
+
 	/**
 	 * Attempts to resolve circular deferred dependencies by allowing co-loading.
 	 * This is called when a module detects that it's waiting for a plugin that is also waiting for it.
-	 * 
+	 *
 	 * @param ModuleInterface The module attempting to register.
 	 * @return true if the module can proceed with registration despite circular dependency.
 	 */
 	bool TryResolveCircularDependency(const IGorgeousThingsModuleInterface* ModuleInterface);
-	
+
 	/**
 	 * Handles circular dependency detection: logs once per plugin pair and shows a toast notification
 	 * if this combination hasn't been notified before (persisted to disk).
-	 * 
+	 *
 	 * @param PluginA First plugin in the circular dependency.
 	 * @param PluginB Second plugin in the circular dependency.
 	 */
 	void HandleCircularDependencyDetected(const FName& PluginA, const FName& PluginB);
-	
+
 	/**
 	 * Gets a canonical key for a plugin pair (sorted alphabetically to ensure A-B == B-A).
-	 * 
+	 *
 	 * @param PluginA First plugin name.
 	 * @param PluginB Second plugin name.
 	 * @return A canonical string key for the pair.
 	 */
 	static FString GetCircularDependencyPairKey(const FName& PluginA, const FName& PluginB);
-	
 
 
-	
+
+
 	//<============================--- Variables ---============================>
-	
+
 	// Array of registered core gorgeous things module interfaces.
 	TMap<IGorgeousThingsModuleInterface*, EGorgeousModuleFunctionality> RegisteredCoreModules;
-	
+
 	// Array of registered gorgeous things module interfaces.
 	TMap<IGorgeousThingsModuleInterface*, EGorgeousModuleFunctionality> RegisteredModules;
-	
+
 	// Array of gorgeous things module interfaces that need to be deferred
 	TArray<IGorgeousThingsModuleInterface*> ModulesToDefer;
 
 	// Track expected module count per plugin (for determining partial vs full failure)
 	TMap<FName, int32> ExpectedModulesPerPlugin;
-	
+
 	// Track successfully loaded modules per plugin
 	TMap<FName, int32> LoadedModulesPerPlugin;
-	
+
 	// Track failed modules per plugin
 	TMap<FName, int32> FailedModulesPerPlugin;
-	
+
 	// Track failed module types per plugin (for notification)
 	TMap<FName, TArray<EGorgeousModuleFunctionality>> FailedModuleTypesPerPlugin;
-	
+
 	// Track failure reasons per plugin (for notification)
 	TMap<FName, TSet<FString>> FailureReasonsPerPlugin;
-	
+
 	// Track plugins that have already shown their final notification
 	TSet<FName> PluginsWithNotificationShown;
-	
+
 	// Cached load states per plugin
 	TMap<FName, EGorgeousPluginLoadState> PluginLoadStates;
-	
+
 	// Known Gorgeous plugins (populated during registration)
 	TSet<FName> KnownGorgeousPlugins;
 
 	// Cache validation results per plugin
 	TMap<FName, bool> ValidatedDependencies;
-	
+
 	// Cache of system validation counts per plugin.
 	TMap<FName, int32> PluginValidationCounts;
 
 	// Cached plugin update information from persistent data
 	TArray<FGorgeousPluginUpdateCacheEntry> CachedPluginUpdates;
-	
+
 	// Cache validation failure reasons
 	TMap<FName, FString> ValidationFailureReasons;
-	
+
 	// Detect circular dependencies during validation
 	TSet<FName> PluginsCurrentlyValidating;
-	
+
 	// Track plugins that have modules currently being deferred (for circular dependency resolution)
 	TSet<FName> PluginsWithDeferredModules;
-	
+
 	// Track deferred retry count per module to prevent infinite loops
 	TMap<IGorgeousThingsModuleInterface*, int32> DeferredRetryCount;
-	
+
 	// Maximum number of deferred registration retries before giving up
 	static constexpr int32 MaxDeferredRetries = 10;
-	
+
 	// Track circular dependency pairs that have been logged this session (to avoid duplicate logs)
 	TSet<FString> LoggedCircularDependencyPairs;
-	
+
 	// Track circular dependency pairs that have shown toast notifications (loaded from/saved to disk)
 	TSet<FString> NotifiedCircularDependencyPairs;
-	
+
 	// Flag to track if we've loaded the persistent data from disk
 	bool bLoadedPersistentData = false;
-	
+
 	// Cached persistent data object
 	TSharedPtr<class FJsonObject> PersistentDataObject;
 	//<------------------------------------------------------------------------->

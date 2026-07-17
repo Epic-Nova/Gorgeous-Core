@@ -11,9 +11,8 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "GameFramework/PlayerState.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "GameFramework/PlayerState.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
@@ -21,32 +20,52 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 #include "QualityOfLife/GorgeousPlayerConnectionInfo_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousPlayerState.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * A custom subclass of APlayerState used to manage player state and additional data.
- * 
- * This class extends APlayerState to provide extra functionality for managing player state and custom player metadata. 
- * The `AGorgeousPlayerState` class allows for the management of additional data through the `AdditionalGorgeousData` map, 
- * which can hold metadata or other relevant information about the player. The class also provides custom behavior for 
- * `BeginPlay()` and `PostEditChangeProperty()` functions, enabling initialization and modification of the player state 
- * in various scenarios, such as at the start of the game or when properties are edited in the Unreal Editor.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Player State
+| Functional Name: AGorgeousPlayerState
+| Parent Class: APlayerState
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of APlayerState used to manage player state and
+| additional data. This class extends APlayerState to provide extra
+| functionality for managing player state and custom player metadata. The
+| `AGorgeousPlayerState` class allows for the management of additional data
+| through the `AdditionalGorgeousData` map, which can hold metadata or other
+| relevant information about the player. The class also provides custom
+| behavior for `BeginPlay()` and `PostEditChangeProperty()` functions,
+| enabling initialization and modification of the player state in various
+| scenarios, such as at the start of the game or when properties are edited
+| in the Unreal Editor.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousPlayerState",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 , public IGorgeousAutoReplicationRPCResponder_I
 , public IGorgeousQualityOfLifeNodeTarget_I
 , public IGorgeousPlayerConnectionInfo_I
 {
 	GENERATED_BODY()
-	
+
 	friend class AGorgeousGameState;
 	friend class AGorgeousGameMode;
-	
+
 	public:
-	
+
 	AGorgeousPlayerState();
 
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
@@ -57,13 +76,14 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
 	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
-	
+
 	//<============================--- Overrides ---=============================>
-	
-	/** 
+#pragma region Overrides
+
+	/**
 	 * Called when the player state begins play.
-	 * 
-	 * This function is called when the player state is initialized. It is ideal for setting up the player's state, 
+	 *
+	 * This function is called when the player state is initialized. It is ideal for setting up the player's state,
 	 * managing metadata, or initializing any relevant data related to the player.
 	 */
 	virtual void BeginPlay() override;
@@ -88,20 +108,19 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Player State|Player Connection")
 	void SetGorgeousStablePlayerId(const FString& NewId);
-	
-	//<-------------------------------------------------------------------------->
 
-	/** Enables mixin networking for this player state. */
+	//<-------------------------------------------------------------------------->
+#pragma endregion Overrides
+
+	// Enables mixin networking for this player state.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/**
-	 * Additional data for the current class.
-	 */
+	// Additional data for the current class.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Player State")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Trunk that persists serialized default payloads authored on this player state. */
+	// Trunk that persists serialized default payloads authored on this player state.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player State|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
@@ -156,10 +175,10 @@ protected:
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
 
-	/** Routes auto-replication RPCs between this PS and the server, mirroring the relay on AGorgeousPlayerController. */
+	// Routes auto-replication RPCs between this PS and the server, mirroring the relay on AGorgeousPlayerController.
 	UPROPERTY()
 	TObjectPtr<UGorgeousAutoReplicationRPCRelayComponent> AutoReplicationRPCRelay;
-	
+
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

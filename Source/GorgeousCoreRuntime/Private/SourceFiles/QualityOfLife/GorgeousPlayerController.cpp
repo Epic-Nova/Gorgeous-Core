@@ -17,7 +17,10 @@
 #include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
+#include "GeneralSystems/SignalBridge/GorgeousSignalBridgeCheatManagerExtension.h"
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationCheatManagerExtension.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundationCheatManagerExtension.h"
+#include "GeneralSystems/GorgeousPermissionCheatManagerExtension.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
@@ -46,6 +49,9 @@ UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
 	if (CheatManager)
 	{
 		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousSignalBridgeCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousInteractionFoundationCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousPermissionCheatManagerExtension>(CheatManager));
 	}
 	// temp for debugging so that the mouse pointer gets not stuck (linux issue)
 	// Delay input mode setup and reset any early suspension to frame 1.

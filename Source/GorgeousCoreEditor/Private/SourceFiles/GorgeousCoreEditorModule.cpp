@@ -18,6 +18,7 @@
 #include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
 #include "GorgeousCoreMinimalShared.h"
 #include "GorgeousCoreEditorUtilitiesMinimalShared.h"
+#include "NudgeHelper/GorgeousNudgeSubsystem.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
@@ -33,7 +34,11 @@
 #include "DataRegistry.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/AssetManagerSettings.h"
+#include "Engine/Blueprint.h"
 #include "EditorValidatorSubsystem.h"
+#include "HAL/PlatformProcess.h"
+#include "Toolkits/AssetEditorToolkit.h"
+#include "Toolkits/AssetEditorToolkitMenuContext.h"
 #include "Containers/Ticker.h"
 #include "UnrealEdMisc.h"
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
@@ -62,10 +67,191 @@
 #include "K2Nodes/GorgeousK2Node_Set.h"
 #endif
 
+//=============================================================================
+// Helpers
+//=============================================================================
+
 namespace
 {
 	static const FName GDebugMenuOwnerName{TEXT("GorgeousCoreEditorUtilities")};
+	static const FName GGorgeousHelpMenuOwnerName{TEXT("GorgeousCoreEditor.HelpMenu")};
 	static const FName GorgeousLibraryTabName("GorgeousLibrary");
+	static FDelegateHandle GGorgeousHelpMenuStartupCallbackHandle;
+	static FDelegateHandle GPostEngineInitHandle;
+	static FTSTicker::FDelegateHandle GStartupValidationTickerHandle;
+	static bool GBGorgeousHelpMenusRegistered = false;
+
+void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
+
+	struct FGorgeousDocumentationLink
+	{
+		FName EntryName;
+		FText Label;
+		FString Url;
+	};
+
+	UClass* GetAssetDocumentationClass(const UObject* Asset)
+	{
+		if (const UBlueprint* Blueprint = Cast<UBlueprint>(Asset))
+		{
+			if (Blueprint->GeneratedClass)
+			{
+				return Blueprint->GeneratedClass;
+			}
+			if (Blueprint->SkeletonGeneratedClass)
+			{
+				return Blueprint->SkeletonGeneratedClass;
+			}
+
+			return Blueprint->ParentClass.Get();
+		}
+
+		return Asset ? Asset->GetClass() : nullptr;
+	}
+
+	UClass* GetEditedAssetDocumentationClass(const FAssetEditorToolkit& AssetEditorToolkit)
+	{
+		const TArray<UObject*>* EditedAssets = AssetEditorToolkit.GetObjectsCurrentlyBeingEdited();
+		return EditedAssets && EditedAssets->Num() == 1 ? GetAssetDocumentationClass((*EditedAssets)[0]) : nullptr;
+	}
+
+	FString GetDocumentationMetadata(const UClass* FocusedClass, const TCHAR* MetadataKey)
+	{
+		for (const UClass* Class = FocusedClass; Class; Class = Class->GetSuperClass())
+		{
+			const FString Url = Class->GetMetaData(MetadataKey);
+			if (!Url.IsEmpty())
+			{
+				return Url;
+			}
+		}
+		return FString();
+	}
+
+	void ShowGorgeousNudgeCarousel()
+	{
+		if (GEditor)
+		{
+			if (UGorgeousNudgeSubsystem* Nudges = GEditor->GetEditorSubsystem<UGorgeousNudgeSubsystem>())
+			{
+				Nudges->ShowNudgeCarousel();
+			}
+		}
+	}
+
+	void PopulateGorgeousBlueprintDocumentationMenu(UToolMenu* Menu)
+	{
+		const UAssetEditorToolkitMenuContext* Context = Menu->FindContext<UAssetEditorToolkitMenuContext>();
+		const TSharedPtr<FAssetEditorToolkit> AssetEditorToolkit = Context ? Context->Toolkit.Pin() : nullptr;
+		UClass* FocusedClass = AssetEditorToolkit ? GetEditedAssetDocumentationClass(*AssetEditorToolkit) : nullptr;
+		if (!FocusedClass)
+		{
+			return;
+		}
+
+		TArray<FGorgeousDocumentationLink> DocumentationLinks;
+		const auto AddDocumentationLink = [&DocumentationLinks, FocusedClass](const TCHAR* MetadataKey, const FName EntryName, const FText& Label)
+		{
+			const FString Url = GetDocumentationMetadata(FocusedClass, MetadataKey);
+			if (!Url.IsEmpty())
+			{
+				DocumentationLinks.Add({EntryName, Label, Url});
+			}
+		};
+
+		AddDocumentationLink(TEXT("DocumentationOverview"), TEXT("GorgeousDocumentationOverview"), NSLOCTEXT("GorgeousCore", "ContextDocumentationOverview", "Gorgeous: Overview"));
+		AddDocumentationLink(TEXT("DocumentationAPI"), TEXT("GorgeousDocumentationAPI"), NSLOCTEXT("GorgeousCore", "ContextDocumentationAPI", "Gorgeous: API Reference"));
+		AddDocumentationLink(TEXT("DocumentationExamples"), TEXT("GorgeousDocumentationExamples"), NSLOCTEXT("GorgeousCore", "ContextDocumentationExamples", "Gorgeous: Examples"));
+		if (DocumentationLinks.IsEmpty())
+		{
+			return;
+		}
+
+		FToolMenuSection& Section = Menu->AddSection(
+			"GorgeousContextDocumentation",
+			NSLOCTEXT("GorgeousCore", "GorgeousContextDocumentationSection", "Gorgeous Documentation"),
+			FToolMenuInsert("HelpResources", EToolMenuInsertType::After));
+		for (const FGorgeousDocumentationLink& DocumentationLink : DocumentationLinks)
+		{
+			Section.AddMenuEntry(
+				DocumentationLink.EntryName,
+				DocumentationLink.Label,
+				FText::Format(NSLOCTEXT("GorgeousCore", "ContextDocumentationTooltip", "Open Gorgeous documentation: {0}"), DocumentationLink.Label),
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Help"),
+				FUIAction(FExecuteAction::CreateLambda([Url = DocumentationLink.Url]()
+				{
+					FPlatformProcess::LaunchURL(*Url, nullptr, nullptr);
+				})));
+		}
+	}
+
+	void RegisterGorgeousHelpMenus()
+	{
+		if (GBGorgeousHelpMenusRegistered)
+		{
+			return;
+		}
+
+		UToolMenus* ToolMenus = UToolMenus::TryGet();
+		if (!ToolMenus)
+		{
+			return;
+		}
+
+		FToolMenuOwnerScoped OwnerScoped(GGorgeousHelpMenuOwnerName);
+		UToolMenu* LevelEditorHelpMenu = ToolMenus->ExtendMenu("LevelEditor.MainMenu.Help");
+		FToolMenuSection& LevelEditorSection = LevelEditorHelpMenu->FindOrAddSection("GorgeousThings");
+		LevelEditorSection.Label = NSLOCTEXT("GorgeousCore", "GorgeousHelpSection", "Gorgeous Things");
+		LevelEditorSection.InsertPosition = FToolMenuInsert("HelpResources", EToolMenuInsertType::After);
+		LevelEditorSection.AddMenuEntry(
+			"ShowGorgeousNews",
+			NSLOCTEXT("GorgeousCore", "ShowGorgeousNews", "Gorgeous Updates & News"),
+			NSLOCTEXT("GorgeousCore", "ShowGorgeousNewsTooltip", "Show relevant Gorgeous plugin updates, system updates, tutorials, and ecosystem news."),
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Info"),
+			FUIAction(FExecuteAction::CreateStatic(&ShowGorgeousNudgeCarousel)));
+
+		UToolMenu* BlueprintEditorHelpMenu = ToolMenus->ExtendMenu("AssetEditor.BlueprintEditor.MainMenu.Help");
+		BlueprintEditorHelpMenu->AddDynamicSection(
+			"GorgeousContextDocumentationDynamic",
+			FNewToolMenuDelegate::CreateStatic(&PopulateGorgeousBlueprintDocumentationMenu),
+			FToolMenuInsert("HelpResources", EToolMenuInsertType::After));
+
+		GBGorgeousHelpMenusRegistered = true;
+	}
+
+	void UnregisterGorgeousHelpMenus()
+	{
+		if (GGorgeousHelpMenuStartupCallbackHandle.IsValid())
+		{
+			UToolMenus::UnRegisterStartupCallback(GGorgeousHelpMenuStartupCallbackHandle);
+			GGorgeousHelpMenuStartupCallbackHandle.Reset();
+		}
+
+		if (UToolMenus* ToolMenus = UToolMenus::TryGet())
+		{
+			ToolMenus->UnregisterOwner(GGorgeousHelpMenuOwnerName);
+		}
+
+		GBGorgeousHelpMenusRegistered = false;
+	}
+
+	void HandlePostEngineInit()
+	{
+		if (!GEditor)
+		{
+			return;
+		}
+
+		GStartupValidationTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateLambda([](float)
+			{
+				GStartupValidationTickerHandle.Reset();
+				FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+				RunGorgeousCoreStartupValidation(AssetRegistryModule.Get());
+				return false;
+			}),
+			2.0f);
+	}
 
 	void RegisterLibraryMenuEntry()
 	{
@@ -471,26 +657,11 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	
 	RegisterLibraryMenuEntry();
 	RegisterDebugMenuEntry();
-	
-	FCoreDelegates::OnPostEngineInit.AddLambda([this]()
-	{
-		if (!GEditor)
-			return;
+	UToolMenus::Get()->RefreshAllWidgets();
 
-		// Delay execution to ensure everything is fully initialized
-		FTSTicker::GetCoreTicker().AddTicker(
-			FTickerDelegate::CreateLambda([this](float)
-			{
-				FAssetRegistryModule& ARM =
-					FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-
-				RunGorgeousCoreStartupValidation(ARM.Get());
-
-				return false; // run once
-			}),
-			2.0f
-		);
-	});
+	GGorgeousHelpMenuStartupCallbackHandle = UToolMenus::RegisterStartupCallback(
+		FSimpleMulticastDelegate::FDelegate::CreateStatic(&RegisterGorgeousHelpMenus));
+	GPostEngineInitHandle = FCoreDelegates::OnPostEngineInit.AddStatic(&HandlePostEngineInit);
 }
 
 void FGorgeousCoreEditorModule::GorgeousShutdownModule()
@@ -504,6 +675,16 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	{
 		FEditorDelegates::EndPIE.Remove(EndPIEHandle);
 		EndPIEHandle.Reset();
+	}
+	if (GPostEngineInitHandle.IsValid())
+	{
+		FCoreDelegates::OnPostEngineInit.Remove(GPostEngineInitHandle);
+		GPostEngineInitHandle.Reset();
+	}
+	if (GStartupValidationTickerHandle.IsValid())
+	{
+		FTSTicker::RemoveTicker(GStartupValidationTickerHandle);
+		GStartupValidationTickerHandle.Reset();
 	}
 	
 	//@TODO: Planned for version 1.1 and upwards
@@ -529,6 +710,7 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GorgeousLibraryTabName);
 
 	UnregisterDebugMenuEntry();
+	UnregisterGorgeousHelpMenus();
 	
 	UNREGISTER_GORGEOUS_ASSETS;
 	GORGEOUS_UNREGISTER_STYLE_SET(ModuleStyleSet);

@@ -1,10 +1,24 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/NoExportTypes.h"
 #include "GorgeousSingleton.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousRecompilationHelper.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Helper class to manage system-wide recompilation needs.
@@ -27,9 +41,9 @@ public:
 	static bool IsRecompilationRequired();
 
 	/**
-	 * Checks if a recompilation is needed by comparing currently installed systems 
+	 * Checks if a recompilation is needed by comparing currently installed systems
 	 * with recorded systems from the previous session.
-	 * 
+	 *
 	 * @return true if a recompilation is required.
 	 */
 	static bool CheckRecompilationRequirement();

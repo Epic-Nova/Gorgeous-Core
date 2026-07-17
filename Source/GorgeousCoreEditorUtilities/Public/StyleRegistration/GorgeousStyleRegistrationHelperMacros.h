@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,9 +11,8 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "Styling/SlateStyleRegistry.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "Styling/SlateStyleRegistry.h"
 #include "StyleRegistration/GorgeousStyleRegistrationHelpers.h"
 //<-------------------------------------------------------------------------->
 
@@ -23,7 +22,7 @@
  * @param GGorgeousStyle The shared pointer variable that will hold the created style set instance, which should be defined in the module implementation file.
  * @param StyleName The name of the style set, which will be used as a prefix for all brushes registered to this style set.
  * @param PluginName The name of the plugin that this style set belongs to, used to locate the resources for the style set.
- * @param StyleScopeCalls A block of code containing calls to the helper macros for setting brushes, which will be executed within the scope of the style set registration, 
+ * @param StyleScopeCalls A block of code containing calls to the helper macros for setting brushes, which will be executed within the scope of the style set registration,
  *							allowing the brushes to be registered to the style set before it is registered to the Slate style registry.
  */
 #define GORGEOUS_REGISTER_STYLE_SET(GGorgeousStyle, StyleName, PluginName, StyleScopeCalls) \
@@ -60,7 +59,7 @@
 }
 
 /**
- * Macro to map the brushes of a parent class to a child class, which allows the child class to use the same icon and thumbnail as the parent class without needing to set new brushes, 
+ * Macro to map the brushes of a parent class to a child class, which allows the child class to use the same icon and thumbnail as the parent class without needing to set new brushes,
  * within the scope of a style set registration.
  *
  * @param ClassName The name of the child class for which the brushes are being mapped, used for class icon and thumbnail registration.

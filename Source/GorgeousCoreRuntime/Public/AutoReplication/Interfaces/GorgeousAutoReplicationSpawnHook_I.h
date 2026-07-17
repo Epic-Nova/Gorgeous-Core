@@ -10,9 +10,14 @@
 <==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/Interface.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationSpawnHook_I.generated.h"
+//<-------------------------------------------------------------------------->
 
 UINTERFACE(MinimalAPI, BlueprintType)
 class UGorgeousAutoReplicationSpawnHook_I : public UInterface
@@ -26,8 +31,8 @@ class GORGEOUSCORERUNTIME_API IGorgeousAutoReplicationSpawnHook_I
 	GENERATED_BODY()
 
 public:
-	/** 
-	 * Invoked on the client when this object has been instantiated and its replicated properties 
+	/**
+	 * Invoked on the client when this object has been instantiated and its replicated properties
 	 * have been initialized from the server-provided snapshot.
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|AutoReplication|Networking")

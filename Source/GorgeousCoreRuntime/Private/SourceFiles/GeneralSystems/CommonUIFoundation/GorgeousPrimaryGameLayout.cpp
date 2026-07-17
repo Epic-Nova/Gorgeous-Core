@@ -16,9 +16,8 @@
 #include "Engine/LocalPlayer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
-#include "Stats/Stats.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStats.h"
 
-DECLARE_STATS_GROUP(TEXT("Gorgeous UI Foundation"), STATGROUP_GorgeousUIFoundation, STATCAT_Advanced);
 DECLARE_DWORD_COUNTER_STAT(TEXT("Active UI Overlays"), STAT_GUI_ActiveOverlays, STATGROUP_GorgeousUIFoundation);
 DECLARE_CYCLE_STAT(TEXT("Push Widget To Layer"), STAT_GUI_PushWidget, STATGROUP_GorgeousUIFoundation);
 DECLARE_CYCLE_STAT(TEXT("Register UI Layer"), STAT_GUI_RegisterLayer, STATGROUP_GorgeousUIFoundation);

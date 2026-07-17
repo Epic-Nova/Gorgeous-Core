@@ -8,11 +8,14 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariableEnums.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 #if WITH_EDITORONLY_DATA
 #include "GorgeousObjectVariableStructures.h"
@@ -50,37 +53,37 @@ struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableSerializedPayload
 public:
 	FGorgeousObjectVariableSerializedPayload();
 
-	/** Identifier that callers use to reference this payload inside a trunk. */
+	// Identifier that callers use to reference this payload inside a trunk.
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	FGuid VariableIdentifier;
 
-	/** Concrete object-variable class that produced this payload. */
+	// Concrete object-variable class that produced this payload.
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	TSubclassOf<UGorgeousObjectVariable> VariableClass;
 
-	/** Container selection mirrored into graph pins (Single, Array, etc.). */
+	// Container selection mirrored into graph pins (Single, Array, etc.).
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	EObjectVariableContainerType_E SelectedContainerType;
 
-	/** When true, the property customization displays all editable properties of the object variable class. */
+	// When true, the property customization displays all editable properties of the object variable class.
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	bool bShowInnerProperties;
 
 #if WITH_EDITORONLY_DATA
-	/** Cached pin configuration exposed to editor-only tooling. */
+	// Cached pin configuration exposed to editor-only tooling.
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	FObjectVariablePinConfiguration_S CachedPinConfiguration;
 #endif
 
-	/** Raw serialized bytes captured from the variable instance. */
+	// Raw serialized bytes captured from the variable instance.
 	UPROPERTY(VisibleAnywhere, Category = "Gorgeous Object Variable")
 	TArray<uint8> SerializedBytes;
 
-	/** Rolling revision that increments whenever the serialized bytes change. */
+	// Rolling revision that increments whenever the serialized bytes change.
 	UPROPERTY(VisibleAnywhere, Category = "Gorgeous Object Variable")
 	uint32 PayloadRevision;
 
-	/** Hash that helps to detect external tampering and cache invalidation. */
+	// Hash that helps to detect external tampering and cache invalidation.
 	UPROPERTY(VisibleAnywhere, Category = "Gorgeous Object Variable")
 	uint32 PayloadHash;
 
@@ -128,7 +131,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableTrunk
 public:
 	FGorgeousObjectVariableTrunk();
 
-	/** Map of serialized payloads keyed by stable variable identifiers. */
+	// Map of serialized payloads keyed by stable variable identifiers.
 	UPROPERTY(EditAnywhere, Category = "Gorgeous Object Variable")
 	TMap<FGuid, FGorgeousObjectVariableSerializedPayload> SerializedEntries;
 

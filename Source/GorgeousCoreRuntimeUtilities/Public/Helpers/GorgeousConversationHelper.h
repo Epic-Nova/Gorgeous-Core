@@ -11,14 +11,14 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Misc/EngineVersionComparison.h"
 #include "Helpers/GorgeousPathHelper.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Returns an enum index from the enum value as the string.
- * 
+ *
  * @tparam Enumeration the enum that should be converted
  * @param InValue The string value that should be converted to a enum index
  * @return The string value
@@ -31,7 +31,7 @@ static FORCEINLINE Enumeration GorgeousStringToEnum(const FString InValue)
 
 /**
  * Returns the specified enum value as a string.
- * 
+ *
  * @tparam Enumeration the enum that should be converted
  * @param InValue The value of the enum that should be converted
  * @return The enum value as a string

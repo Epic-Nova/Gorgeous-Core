@@ -1,10 +1,24 @@
-// Copyright (c) 2026 Simsalabim Studios. All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/Interface.h"
 #include "InsightMatrix/GorgeousInsightMatrixTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightChartWidgetInterface.generated.h"
+//<-------------------------------------------------------------------------->
 
 UINTERFACE(MinimalAPI, BlueprintType)
 class UGorgeousInsightChartWidgetInterface : public UInterface
@@ -13,7 +27,7 @@ class UGorgeousInsightChartWidgetInterface : public UInterface
 };
 
 /**
- * Interface that your custom UMG widgets must implement to receive 
+ * Interface that your custom UMG widgets must implement to receive
  * dynamic data payloads from the Insight Matrix Publisher.
  */
 class GORGEOUSCORERUNTIME_API IGorgeousInsightChartWidgetInterface

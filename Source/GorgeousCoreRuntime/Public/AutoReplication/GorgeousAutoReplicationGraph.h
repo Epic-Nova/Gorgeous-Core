@@ -8,10 +8,13 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
+
 //#include "BasicReplicationGraph.h"
 #include "ReplicationGraph.h"
 #include "UObject/ObjectKey.h"
@@ -21,8 +24,28 @@ class UGorgeousObjectVariable;
 class UReplicationGraphNode_ActorList;
 class AActor;
 
-/** Dedicated replication graph that can be installed to broadcast auto-replicated object variables efficiently. */
-UCLASS(Config = Game)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Auto Replication Graph
+| Functional Name: UGorgeousAutoReplicationGraph
+| Parent Class: UReplicationGraph
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Dedicated replication graph that can be installed to broadcast
+| auto-replicated object variables efficiently.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Config = Game,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationGraph",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationGraph : public UReplicationGraph
 {
 	GENERATED_BODY()
@@ -62,7 +85,7 @@ private:
 	void HandleOwnerRenamed(const FRenamedReplicatedActorInfo& ActorInfo);
 	void RefreshAutoReplicationOwners();
 
-	/** Global node that keeps QoL owners always relevant when required by their streams. */
+	// Global node that keeps QoL owners always relevant when required by their streams.
 	UPROPERTY()
 	TObjectPtr<UReplicationGraphNode_ActorList> AutoReplicationNode;
 

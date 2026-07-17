@@ -1,9 +1,22 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInstallableSystem_DA.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Editor-only descriptor for a unified installable system (e.g. Core Systems).
@@ -11,7 +24,7 @@
  * and dictate whether the system can be downloaded, updated, or managed.
  */
 UCLASS(BlueprintType)
-class GORGEOUSCOREEDITOR_API 
+class GORGEOUSCOREEDITOR_API
 UGorgeousInstallableSystem_DA : public UPrimaryDataAsset
 {
     GENERATED_BODY()

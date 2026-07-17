@@ -8,12 +8,15 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Features/IModularFeatures.h"
 #include "Interfaces/GorgeousStatisticsInterface.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Modular feature interface for providing an editor stats widget implementation.

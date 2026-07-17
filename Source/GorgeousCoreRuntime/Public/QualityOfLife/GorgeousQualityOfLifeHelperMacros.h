@@ -8,18 +8,21 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Misc/Guid.h"
 #include "UObject/UObjectThreadContext.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class AActor;
 class AGorgeousPlayerState;
 class AGorgeousGameState;
-
+//<------------------------------------------------------------->
 /** Common helper dropped into QoL class constructors to bind the mixin and ensure the self reference entry exists. */
 #define UE_QOL_INITIALIZE_ADDITIONAL_DATA_NEEDS_REWORK() \
 	if (HasAnyFlags(RF_ClassDefaultObject) || HasAnyFlags(RF_ArchetypeObject)) \

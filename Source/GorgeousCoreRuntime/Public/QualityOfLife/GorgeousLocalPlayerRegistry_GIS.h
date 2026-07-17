@@ -1,36 +1,56 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Local Player Registry Subsystem             |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Subsystems/GameInstanceSubsystem.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousLocalPlayerRegistry_GIS.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class APlayerController;
 class AGameModeBase;
 class AController;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
-/**
- * Game Instance Subsystem that maintains a **stable string ID ↔ PlayerController** registry.
- *
- * Every PlayerController that participates in QoL self-reference logic is automatically
- * assigned a default stable ID of the form "LocalPlayer_N" (where N equals the local
- * player index) the first time EnsureSelfReference is called for it.
- * Callers can rename these IDs at any time via RenameLocalPlayer().
- *
- * The registry is kept up to date by binding to FGameModeEvents, so entries are added on
- * PostLogin and removed on Logout, no manual cleanup required between level transitions.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Local Player Registry
+| Functional Name: UGorgeousLocalPlayerRegistry_GIS
+| Parent Class: UGameInstanceSubsystem
+| Class Suffix: _GIS
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Game Instance Subsystem that maintains a **stable string ID ↔
+| PlayerController** registry. Every PlayerController that participates in
+| QoL self-reference logic is automatically assigned a default stable ID of
+| the form "LocalPlayer_N" (where N equals the local player index) the first
+| time EnsureSelfReference is called for it. Callers can rename these IDs at
+| any time via RenameLocalPlayer(). The registry is kept up to date by
+| binding to FGameModeEvents, so entries are added on PostLogin and removed
+| on Logout, no manual cleanup required between level transitions.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/GorgeousLocalPlayerRegistry_GIS",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousLocalPlayerRegistry_GIS : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()

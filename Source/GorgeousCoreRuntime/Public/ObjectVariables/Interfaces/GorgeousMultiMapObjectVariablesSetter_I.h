@@ -11,14 +11,15 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariableStructures.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousMultiMapObjectVariablesSetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for setting multi-map object variables.
@@ -113,7 +114,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map|Float")
     TMap<float, FObjectVariableMultiMapValue> SetFloatMultiMapObjectVariable(const FName OptionalVariableName, UPARAM(ref) TMap<float, FObjectVariableMultiMapValue>& NewValue);
-	
+
     /**
      * Sets a multi-map of doubles to GorgeousObjectVariables.
      *

@@ -11,13 +11,12 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Internationalization/Text.h"
 #include "AssetRegistry/AssetData.h"
 #include "Containers/UnrealString.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 class UGorgeousDataSchemaMapping_DA;
 //<-------------------------------------------------->
 

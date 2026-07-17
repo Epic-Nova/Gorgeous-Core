@@ -4,6 +4,7 @@
 #include "Components/ScrollBox.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStats.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget.h"
@@ -31,11 +32,6 @@
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonProgressBar.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
-#include "Stats/Stats.h"
-
-// Note: STATGROUP_GorgeousUIFoundation is declared in GorgeousPrimaryGameLayout.cpp, but for linking ease across translation units, we can just declare the counter here.
-extern TStatId GetStatId_STATGROUP_GorgeousUIFoundation();
-DECLARE_STATS_GROUP(TEXT("Gorgeous UI Foundation"), STATGROUP_GorgeousUIFoundation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Set UI Theme"), STAT_GUI_SetTheme, STATGROUP_GorgeousUIFoundation);
 DECLARE_DWORD_COUNTER_STAT(TEXT("Total Theme Swaps"), STAT_GUI_ThemeSwaps, STATGROUP_GorgeousUIFoundation);
 

@@ -135,7 +135,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|RPC|ValueResult")
 	TObjectPtr<UGorgeousRPC_OV> RPCContainer = nullptr;
 
-	/** Identifies who produced this value (server / which client). */
+	// Identifies who produced this value (server / which client).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|RPC|ValueResult")
 	FGorgeousAutoReplicationRPCResponderHandle Responder;
 };
@@ -158,12 +158,19 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 <--------------------------------------------------------------------------->
 <===========================================================================>
 */
-UCLASS()
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/GorgeousAutoReplicationRPCResultGlobals",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCResultGlobals : public UGorgeous
 {
 	GENERATED_BODY()
 
 	//<=======================--- Blueprint Functions ---=======================>
+#pragma region Blueprint Functions
 public:
 
 	// =========================================================================
@@ -439,4 +446,5 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|AutoReplication|RPC|ValueResult")
 	static TArray<FGorgeousAutoReplicationRPCValueResult> GetAllValueResults(const FGorgeousAutoReplicationRPCAsyncResult& AsyncResult);
 	//<------------------------------------------------------------------------->
+#pragma endregion Blueprint Functions
 };

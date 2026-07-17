@@ -1,14 +1,29 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/Interface.h"
-#include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousUIWidget_I.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousUITheme_DA;
-
+//<------------------------------------------------------------->
 UINTERFACE(MinimalAPI, BlueprintType, DisplayName = "Gorgeous UI Widget Interface")
 class UGorgeousUIWidget_I : public UInterface
 {
@@ -85,7 +100,11 @@ public:
 	/** Notifies that the widget has finished its transition. */
 	virtual void NotifyReadyForStateSwap() {}
 
-	/** Processes interpolation for opacity and theme colors. */
+	/**
+	 * Processes interpolation for opacity and theme colors.
+	 *
+	 * @param DeltaTime The elapsed time since the previous update.
+	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
 	void TickInterpolation(float DeltaTime);
 

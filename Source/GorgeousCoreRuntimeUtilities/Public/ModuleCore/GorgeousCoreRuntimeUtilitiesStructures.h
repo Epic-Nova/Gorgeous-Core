@@ -13,15 +13,15 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCoreRuntimeUtilitiesStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Struct representing a hyperlink in a gorgeous log entry.
- * 
+ *
  * @author Nils Bergemann
- * 
+ *
  * @note https://c.tenor.com/m7WYX_Q1_mUAAAAd/tenor.gif - Bread
  */
 USTRUCT()
@@ -53,10 +53,10 @@ struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogHyperlink
 	UPROPERTY()
 	FName ConditionName;
 
-	/** 
+	/**
 	 * Checks if the hyperlink is valid.
 	 * A hyperlink is considered valid if it has non-empty link text and either a valid target asset or a non-empty action name.
-	 * 
+	 *
 	 * @return true if the hyperlink is valid, false otherwise.
 	 */
 	FORCEINLINE bool IsValid() const
@@ -67,7 +67,7 @@ struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogHyperlink
 
 /**
  * Struct representing a log entry in the Gorgeous logging system.
- * 
+ *
  * @author Nils Bergemann
  */
 USTRUCT()

@@ -1,12 +1,24 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "Components/Widget.h"
 #include "Blueprint/UserWidget.h"
 #include "Curves/CurveFloat.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * IMPLEMENTATION bodies for Gorgeous UI Foundation macros.

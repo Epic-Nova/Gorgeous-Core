@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -13,7 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariableEnums.h"
-//<--------------------------=== Engine Includes ===------------------------->
+//<-------------------------------------------------------------------------->
+
 #if WITH_EDITOR
 #include "EdGraphSchema_K2.h"
 #endif
@@ -91,21 +92,21 @@ struct FObjectVariablePinConfiguration_S
 	// Whether the pin is a reference (e.g., for output parameters) or a value pin.
 	UPROPERTY(EditAnywhere)
 	bool bIsReference;
-	
-	/** 
+
+	/**
 	 * Whether to use a custom graph terminal type instead of deriving it from the pin type.
 	 * This allows for more control over how the pin is treated in the graph, such as constness and weak pointer semantics.
 	 */
 	UPROPERTY(EditAnywhere, AdvancedDisplay)
 	bool bCustomGraphTerminalType;
-	
-	/** 
+
+	/**
 	 * Custom graph terminal type information.
 	 * This allows for specifying a different terminal type than what would be derived from the pin type, which can affect how the pin is treated in the graph (e.g., constness, weak pointer semantics).
 	 */
 	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	FName TerminalCategory;
-	
+
 	// Sub-category for the custom graph terminal type, providing more specific type information if needed (e.g., struct name for a struct pin).
 	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	FName TerminalSubCategory;
@@ -156,7 +157,7 @@ struct FObjectVariablePinConfiguration_S
 
 		FEdGraphPinType PinType = FEdGraphPinType(PinCategory, PinSubCategory, PinSubCategoryObject, UnrealContainerType, bIsReference, FEdGraphTerminalType());
 		FEdGraphTerminalType GraphTerminalType;
-		
+
 		if (bCustomGraphTerminalType)
 		{
 			GraphTerminalType.TerminalCategory = TerminalCategory;
@@ -170,7 +171,7 @@ struct FObjectVariablePinConfiguration_S
 		{
 			GraphTerminalType = FEdGraphTerminalType::FromPinType(PinType);
 		}
-		
+
 
 		PinType.PinValueType = GraphTerminalType;
 

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|       Gorgeous Core - Async RPC Action Test Helper (Delegate Sink)       |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,35 +8,43 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
-/**
- * Lightweight UObject that binds to every BlueprintAssignable delegate exposed
- * by UGorgeousAutoReplicationRPCRequestAsyncAction and captures the payloads
- * in plain C++ arrays, making them accessible from synchronous test scenarios.
- *
- * Usage inside a test runner lambda:
- *   UGorgeousAsyncActionTestHelper* Sink = NewObject<UGorgeousAsyncActionTestHelper>();
- *   UGorgeousAutoReplicationRPCRequestAsyncAction* Action = ...;
- *   Sink->BindTo(Action);
- *   Action->Activate();
- *   // After synchronous completion (listen-server path):
- *   check(Sink->CompletedCallCount > 0);
- */
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "UObject/Object.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAsyncActionTestHelper.generated.h"
+//<-------------------------------------------------------------------------->
 
 //#if WITH_DEV_AUTOMATION_TESTS
 
-/**
- * Captures every delegate callback fired by UGorgeousAutoReplicationRPCRequestAsyncAction
- * so that synchronous test code can inspect the delivery count & payload content.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Async Action Test Helper
+| Functional Name: UGorgeousAsyncActionTestHelper
+| Parent Class: UObject
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Captures every delegate callback fired by
+| UGorgeousAutoReplicationRPCRequestAsyncAction so that synchronous test
+| code can inspect the delivery count & payload content.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/GorgeousAsyncActionTestHelper",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Examples/"
+		)
+)
 class UGorgeousAsyncActionTestHelper : public UObject
 {
 	GENERATED_BODY()

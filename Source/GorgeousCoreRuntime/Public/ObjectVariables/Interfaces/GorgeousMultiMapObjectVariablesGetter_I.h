@@ -11,14 +11,15 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariableStructures.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousMultiMapObjectVariablesGetter_I.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
 /**
  * Interface for getting multi-map object variables.
@@ -106,7 +107,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map|Float")
     TMap<float, FObjectVariableMultiMapValue> GetFloatMultiMapObjectVariable(const FName OptionalVariableName) const;
-	
+
     /**
      * Gets a multi-map of doubles to GorgeousObjectVariables.
      *

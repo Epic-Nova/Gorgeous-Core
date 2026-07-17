@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,7 +11,7 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousObjectVariableInteraction_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -54,15 +54,15 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
 	void GetObjectVariableParameter(int32& OutValue, const FName OptionalVariableName);
-	
+
 	DECLARE_FUNCTION(execGetObjectVariableParameter) {}
-	
+
 	virtual void GetObjectVariableParameter_Implementation(int32& OutValue, const FName OptionalVariableName) {}
-	
+
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "NewValue"))
 	void SetObjectVariableParameter(const int32& NewValue, const FName OptionalVariableName);
-	
+
 	DECLARE_FUNCTION(execSetObjectVariableParameter) {}
-	
+
 	virtual void SetObjectVariableParameter_Implementation(const int32& NewValue, const FName OptionalVariableName) {}
 };
