@@ -56,16 +56,17 @@ public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
 	
-protected:
-	
 	// Reapplies styled properties after editor or runtime property changes.
 	virtual void SynchronizeProperties() override;
+	
+	// Frees any cached slate resources held by the widget.
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
+	
+protected:
 	
 	// Re-initializes styling bindings when the underlying widget is rebuilt.
 	virtual void OnWidgetRebuilt() override;
 	
-	// Frees any cached slate resources held by the widget.
-	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	//<------------------------------------------------------------------------->
 	#pragma endregion Overrides
 

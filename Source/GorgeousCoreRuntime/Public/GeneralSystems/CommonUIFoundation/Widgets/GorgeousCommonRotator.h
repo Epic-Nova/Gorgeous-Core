@@ -56,17 +56,16 @@ public:
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
 	
-protected:
-	
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
 	
 	// Called when the widget is removed from the viewport.
 	virtual void NativeDestruct() override;
+	
 	//<------------------------------------------------------------------------->
 	#pragma endregion Overrides
-
-
+	
+	
 	//<=======================--- Blueprint Functions ---=======================>
 	#pragma region Blueprint Functions
 public:

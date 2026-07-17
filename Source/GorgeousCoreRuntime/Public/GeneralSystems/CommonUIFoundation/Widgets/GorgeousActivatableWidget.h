@@ -52,12 +52,13 @@ class GORGEOUSCORERUNTIME_API UGorgeousActivatableWidget : public UCommonActivat
 {
 	GENERATED_BODY()
 
+public:
+	
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
-	UGorgeousActivatableWidget(const FObjectInitializer& ObjectInitializer);
+	UGorgeousActivatableWidget();
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
 	

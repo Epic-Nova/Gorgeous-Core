@@ -44,25 +44,26 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonButton : public UCommonButtonBase, 
 {
 	GENERATED_BODY()
 
+public:
+	
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
 	UGorgeousCommonButton(const FObjectInitializer& ObjectInitializer);
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
 	
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
 	
-protected:
-	
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
 	
 	// Called when the widget is removed from the viewport.
 	virtual void NativeDestruct() override;
+	
+protected:
 	
 	// Called when the pointer enters the widget bounds.
 	virtual void NativeOnHovered() override;
