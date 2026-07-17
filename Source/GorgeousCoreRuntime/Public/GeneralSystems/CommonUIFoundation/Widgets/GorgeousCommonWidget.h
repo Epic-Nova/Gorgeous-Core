@@ -52,25 +52,27 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonWidget : public UCommonUserWidget, 
 {
 	GENERATED_BODY()
 
+public:
+	
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
 	UGorgeousCommonWidget(const FObjectInitializer& ObjectInitializer);
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
 	
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
 	
-protected:
 	
 	// Returns the routing ID used by the Signal Bridge.
 	virtual FName GetRoutingID() const override { return RoutingID; }
 	
 	// Sets the routing ID used by the Signal Bridge.
 	virtual void SetRoutingID(FName InID) override { RoutingID = InID; }
+	
+protected:
 	
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
@@ -127,6 +129,10 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
+	
+	// Routing ID for this widget instance (e.g. Slot Index).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
+	FName RoutingID;
 	
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")

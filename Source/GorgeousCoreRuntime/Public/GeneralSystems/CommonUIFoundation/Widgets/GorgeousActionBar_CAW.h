@@ -45,12 +45,13 @@ class GORGEOUSCORERUNTIME_API UGorgeousActionBar_CAW : public UGorgeousActivatab
 {
 	GENERATED_BODY()
 
+public:
+	
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
-	UGorgeousActionBar_CAW(const FObjectInitializer& ObjectInitializer);
+	UGorgeousActionBar_CAW();
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-protected:
 
 	// Resolves the desired UI input configuration for this action bar.
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;

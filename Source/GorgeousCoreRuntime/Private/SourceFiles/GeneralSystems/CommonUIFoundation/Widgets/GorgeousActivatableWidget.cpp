@@ -11,8 +11,7 @@
 
 UE_UI_IMPLEMENT_WIDGET_INTERFACE(UGorgeousActivatableWidget)
 
-UGorgeousActivatableWidget::UGorgeousActivatableWidget(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UGorgeousActivatableWidget::UGorgeousActivatableWidget()
 {
 	StylePropertyAllowList = {
 		"RenderOpacity",

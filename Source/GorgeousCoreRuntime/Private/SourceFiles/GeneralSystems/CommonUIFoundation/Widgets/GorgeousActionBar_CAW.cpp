@@ -1,8 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActionBar_CAW.h"
 
-UGorgeousActionBar_CAW::UGorgeousActionBar_CAW(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UGorgeousActionBar_CAW::UGorgeousActionBar_CAW()
 {
 	// The Action Bar should be transparent to input by default
 	// This ensures it doesn't steal focus or block the character control
