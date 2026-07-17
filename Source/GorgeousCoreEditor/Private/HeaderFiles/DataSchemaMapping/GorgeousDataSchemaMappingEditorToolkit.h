@@ -11,14 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Toolkits/AssetEditorToolkit.h"
 #include "Types/SlateEnums.h"
 #include "UObject/GCObject.h"
 #include "UObject/ObjectPtr.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 class FSpawnTabArgs;
 class FToolBarBuilder;
 class FExtender;

@@ -1,27 +1,28 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|             Gorgeous Core - Library Wizard View Widget                     |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
-<=========================================================================*/
-
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-//<=====--- Includes ---=====>
-//<----- Engine Includes ----->
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Widgets/SCompoundWidget.h"
 #include "AssetRegistry/AssetData.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Views/STileView.h"
 #include "Widgets/Views/STableRow.h"
 #include "Filters/SFilterBar.h"
-//<----- Module Includes ----->
 #include "LibraryWizard/GorgeousLibraryTypes.h"
-//<-------------------------->
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
-//<=====--- Forward Declarations ---=====>
 class IGorgeousLibraryParticipant;
 //<--------------------------------------->
 
@@ -103,7 +104,7 @@ private:
 	//<-------------------------->
 
 	//<=====--- Filtering & View Commands ---=====>
-	
+
 	/** Called when the Filter Bar state changes. */
 	void OnFilterChanged(FName CategoryId);
 

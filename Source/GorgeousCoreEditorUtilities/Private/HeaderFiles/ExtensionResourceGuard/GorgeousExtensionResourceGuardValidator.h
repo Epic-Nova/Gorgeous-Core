@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "EditorValidatorBase.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousExtensionResourceGuardValidator.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -32,10 +32,10 @@ UCLASS()
 class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuardValidator : public UEditorValidatorBase
 {
 	GENERATED_BODY()
-	
+
 	// Constructor
 	UGorgeousExtensionResourceGuardValidator();
-	
+
 	// Destructor
 	~UGorgeousExtensionResourceGuardValidator();
 
@@ -44,7 +44,7 @@ public:
 
 	// Override of CanValidateAsset to specify that this validator only applies to UGorgeousExtensionResourceGuard assets.
 	virtual bool CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const override;
-	
+
 	// Override of ValidateLoadedAsset to perform the actual validation logic on loaded guard assets.
 	virtual EDataValidationResult ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context) override;
 	//<------------------------------------------------------------------------->

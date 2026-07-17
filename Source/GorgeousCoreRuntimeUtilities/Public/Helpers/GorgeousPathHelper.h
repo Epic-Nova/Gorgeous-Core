@@ -10,13 +10,17 @@
 <==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Interfaces/IPluginManager.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Gets the Gorgeous plugin base directory.
  * This returns the root folder containing all Gorgeous plugins (e.g., .../Plugins/GorgeousThings/).
- * 
+ *
  * @return The base directory path of the GorgeousThings plugins folder.
  */
 static FORCEINLINE FString GetGorgeousPluginBaseDir()
@@ -27,7 +31,7 @@ static FORCEINLINE FString GetGorgeousPluginBaseDir()
 	{
 		return FPaths::GetPath(CorePlugin->GetBaseDir());
 	}
-	
+
 	// Fallback for non-monolithic builds or unusual structures:
 	// Find the first plugin that starts with 'Gorgeous'
 	TArray<TSharedRef<IPlugin>> AllPlugins = IPluginManager::Get().GetDiscoveredPlugins();
@@ -44,17 +48,17 @@ static FORCEINLINE FString GetGorgeousPluginBaseDir()
 
 /**
  * Converts an absolute file path to a gorgeous relative file path.
- * 
- * @param FilePath An absolute file path that can be relativated to the gorgeous plugin directory schema. 
+ *
+ * @param FilePath An absolute file path that can be relativated to the gorgeous plugin directory schema.
  * @return The relativated file path that comes from an absolute gorgeous file path.
  */
 static FORCEINLINE FString GorgeousPathToRelativePath(FString FilePath)
 {
 	FString PluginBaseDir = GetGorgeousPluginBaseDir();
-	
+
 	FPaths::NormalizeFilename(FilePath);
 	FPaths::NormalizeFilename(PluginBaseDir);
-	
+
 	if (!PluginBaseDir.EndsWith("/"))
 	{
 		PluginBaseDir += "/";
@@ -64,7 +68,7 @@ static FORCEINLINE FString GorgeousPathToRelativePath(FString FilePath)
 	{
 		return FilePath.RightChop(PluginBaseDir.Len());
 	}
-	
+
 	return FilePath;
 }
 
@@ -118,11 +122,11 @@ static FORCEINLINE FString RelativePathToGorgeousPath(FString RelativePath)
 	// 3. Fallback: Ecosystem-Relative (Legacy sibling-based logic)
 	FString PluginBaseDir = GetGorgeousPluginBaseDir();
 	FPaths::NormalizeFilename(PluginBaseDir);
-	
+
 	if (!PluginBaseDir.EndsWith("/"))
 	{
 		PluginBaseDir += "/";
 	}
-	
+
 	return FPaths::Combine(PluginBaseDir, RelativePath);
 }

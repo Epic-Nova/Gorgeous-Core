@@ -10,15 +10,18 @@
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Adds a gameplay tag to a specific permanent configuration file.
- * 
+ *
  * @param TagName        The full tag name (e.g., "Gorgeous.Inventory.Action.Add").
- * @param SourceName     The name of the tag source / ini file (e.g., "GorgeousInventoryTags"). 
+ * @param SourceName     The name of the tag source / ini file (e.g., "GorgeousInventoryTags").
  *                       If empty or "Default", it goes into DefaultGameplayTags.ini.
  * @param TagComment     Optional comment to describe the tag's purpose.
  * @return True if the tag was added successfully or already exists.
@@ -53,7 +56,7 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 		Settings->GameplayTagList.Add(NewTag);
 		Settings->TryUpdateDefaultConfigFile();
 		Settings->SaveConfig();
-		
+
 		UGameplayTagsManager::Get().EditorRefreshGameplayTagTree();
 		return true;
 	}
@@ -62,7 +65,7 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 	// We use the universal RelativePathToGorgeousPath to resolve the plugin-relative structure.
 	const FString TagFolderRelative = SourceName / TEXT("Config/Tags");
 	const FString IniPathRelative = TagFolderRelative / (SourceName + TEXT(".ini"));
-	
+
 	const FString IniPath = RelativePathToGorgeousPath(IniPathRelative);
 	const FString TagFolder = RelativePathToGorgeousPath(TagFolderRelative);
 
@@ -71,12 +74,12 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 	{
 		IFileManager::Get().MakeDirectory(*TagFolder, true);
 	}
-	
+
 	// Load the INI and add the tag entry
 	// Format:
 	// [/Script/GameplayTags.GameplayTagsList]
 	// GameplayTagList=(Tag="Gorgeous.Inventory.Action.Add",DevComment="...")
-	
+
 	const FString Section = TEXT("/Script/GameplayTags.GameplayTagsList");
 	const FString Key = TEXT("GameplayTagList");
 	const FString Entry = FString::Printf(TEXT("(Tag=\"%s\",DevComment=\"%s\")"), *TagName, *TagComment);
@@ -104,7 +107,7 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 
 /**
  * Bulk adds an array of gameplay tags to a specific project configuration file.
- * 
+ *
  * @param TagNames       Array of tag names to register.
  * @param SourceName     The name of the tag source / ini file.
  * @param CommentPrefix  Prefix for the developer comment.

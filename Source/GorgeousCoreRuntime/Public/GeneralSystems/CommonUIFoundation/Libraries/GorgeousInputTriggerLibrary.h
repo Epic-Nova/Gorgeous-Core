@@ -11,19 +11,20 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "CoreMinimal.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInputTriggerLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UInputTrigger;
 class UInputTriggerHold;
 class UInputTriggerTap;
 class UInputTriggerPulse;
-
+//<------------------------------------------------------------->
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -34,20 +35,27 @@ class UInputTriggerPulse;
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Function Library providing static helper functions to modify Enhanced Input Trigger parameters at runtime.
+| Provides runtime functionality for Gorgeous Input Trigger Library.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-UCLASS()
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Libraries/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Libraries/GorgeousInputTriggerLibrary",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Libraries/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInputTriggerLibrary : public UGorgeous
 {
 	GENERATED_BODY()
 
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
 public:
-
 	/**
 	 * Sets the hold time threshold for an input trigger. Useful for dynamically adjusting input responsiveness based on game state or player preferences.
-	 * 
+	 *
 	 * @param Trigger The input trigger to modify. Safely handles UInputTriggerHold and UInputTriggerHoldAndRelease.
 	 * @param HoldTimeThreshold The new hold time threshold in seconds. Must be non-negative
 	 */
@@ -56,7 +64,7 @@ public:
 
 	/**
 	 * Sets whether a Hold trigger should fire only once (OneShot) or repeatedly.
-	 * 
+	 *
 	 * @param Trigger The input trigger to modify. Must be a UInputTriggerHold.
 	 * @param bIsOneShot If true, the trigger fires only once when the hold time is met.
 	 */
@@ -65,7 +73,7 @@ public:
 
 	/**
 	 * Sets the maximum duration a Tap trigger can be held before it is considered canceled.
-	 * 
+	 *
 	 * @param Trigger The input trigger to modify. Must be a UInputTriggerTap.
 	 * @param TapReleaseTimeThreshold The max time the key can be held down and still be considered a tap.
 	 */
@@ -74,7 +82,7 @@ public:
 
 	/**
 	 * Sets the interval and trigger limit for a Pulse trigger.
-	 * 
+	 *
 	 * @param Trigger The input trigger to modify. Must be a UInputTriggerPulse.
 	 * @param Interval How often the pulse fires (in seconds).
 	 * @param TriggerLimit How many times it can trigger before completing. 0 = unlimited.
@@ -84,12 +92,14 @@ public:
 
 	/**
 	 * Extracts the FInputActionValue from a given FInputActionInstance.
-	 * 
+	 *
 	 * @param Instance The input action instance, typically passed from HandleGorgeousInputAdvanced.
 	 * @return The evaluated input action value (e.g. Bool, Axis1D, Axis2D) for this frame.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation|Extensions|Input")
 	static struct FInputActionValue GetActionValueFromInstance(const struct FInputActionInstance& Instance);
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
 };
 
 using UGT_InputTrigger_FL = UGorgeousInputTriggerLibrary;

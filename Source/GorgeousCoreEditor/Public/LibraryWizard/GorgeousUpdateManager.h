@@ -1,9 +1,24 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Interfaces/IHttpRequest.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "EditorSubsystem.h"
-#include "Interfaces/IHttpRequest.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousUpdateManager.generated.h"
+//<-------------------------------------------------------------------------->
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGorgeousUpdateCheckCompleted, bool, bUpdatesAvailable);
 
@@ -47,20 +62,20 @@ public:
 
 private:
     bool bIsDevMode = false;
-    
+
     void ProbeConnection();
     void OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 
     void OnUpdateCheckResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
     void OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName);
     void OnFetchSystemsCatalogResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-    
+
     FString HashDirectory(const FString& DirectoryPath);
-    
+
     FString CalculatePluginModuleCoreHash(const FString& PluginName, const FString& PluginBaseDir);
-    
+
     FString CalculatePluginChecksum(const FString& PluginName, const FString& PluginBaseDir);
-    
+
     TSharedPtr<class SWindow> ActiveProgressWindow;
     TSharedPtr<class SProgressBar> ActiveProgressBar;
     TSharedPtr<class STextBlock> ActiveProgressStatusText;

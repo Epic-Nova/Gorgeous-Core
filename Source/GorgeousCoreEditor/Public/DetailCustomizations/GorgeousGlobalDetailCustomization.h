@@ -10,10 +10,14 @@
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "UObject/StrongObjectPtr.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "IDetailCustomization.h"
 #include "DetailLayoutBuilder.h"
-#include "UObject/StrongObjectPtr.h"
+//<-------------------------------------------------------------------------->
 
 class UGorgeousDetailExtension;
 
@@ -29,6 +33,6 @@ public:
 	static TMap<FName, TStrongObjectPtr<UGorgeousDetailExtension>> ExtensionRegistry;
 private:
 	void ProcessProperties(IDetailLayoutBuilder& DetailBuilder);
-    
+
 	friend class FGorgeousCoreEditorModule;
 };

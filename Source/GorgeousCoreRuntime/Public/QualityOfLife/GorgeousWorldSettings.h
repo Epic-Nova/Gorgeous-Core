@@ -11,31 +11,50 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "GameFramework/WorldSettings.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "GameFramework/WorldSettings.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousWorldSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * A custom subclass of AWorldSettings used to manage world-specific settings and configuration.
- * 
- * This class extends AWorldSettings to provide extra functionality for managing world-specific data and configurations. 
- * The `AGorgeousWorldSettings` class enables the management of additional world-related settings such as NPC spawn points, 
- * item spawns, and other important world data through the `AdditionalGorgeousData` map. Custom behaviors are also provided 
- * for `BeginPlay()` and `PostEditChangeProperty()` functions to handle world initialization and property changes.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous World Settings
+| Functional Name: AGorgeousWorldSettings
+| Parent Class: AWorldSettings
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of AWorldSettings used to manage world-specific settings
+| and configuration. This class extends AWorldSettings to provide extra
+| functionality for managing world-specific data and configurations. The
+| `AGorgeousWorldSettings` class enables the management of additional
+| world-related settings such as NPC spawn points, item spawns, and other
+| important world data through the `AdditionalGorgeousData` map. Custom
+| behaviors are also provided for `BeginPlay()` and
+| `PostEditChangeProperty()` functions to handle world initialization and
+| property changes.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousWorldSettings",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousWorldSettings : public AWorldSettings
 , public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	AGorgeousWorldSettings();
@@ -43,7 +62,7 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	
+
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 
@@ -52,28 +71,28 @@ public:
 	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
 	//<============================--- Overrides ---=============================>
-	
-	/** 
+#pragma region Overrides
+
+	/**
 	 * Called when the world settings begin play.
-	 * 
-	 * This function is called when the world settings are initialized. It is ideal for setting up world-specific data, 
+	 *
+	 * This function is called when the world settings are initialized. It is ideal for setting up world-specific data,
 	 * such as NPC spawn locations, item spawns, and other world-related properties.
 	 */
 	virtual void BeginPlay() override;
-	
-	//<-------------------------------------------------------------------------->
 
-	/** Enables networking for world-setting AutoReplication values. */
+	//<-------------------------------------------------------------------------->
+#pragma endregion Overrides
+
+	// Enables networking for world-setting AutoReplication values.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/**
-	 * Additional settings/configuration data for the current world.
-	 */
+	// Additional settings/configuration data for the current world.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous World Settings")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Trunk that persists serialized default payloads for this world's object variables. */
+	// Trunk that persists serialized default payloads for this world's object variables.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous World Settings|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
@@ -83,7 +102,7 @@ protected:
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-	
+
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

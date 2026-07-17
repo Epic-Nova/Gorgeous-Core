@@ -103,7 +103,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRootNetworkAccessConfig
 public:
 	FGorgeousRootNetworkAccessConfig();
 
-	/** Enables the root network stack for this variable when networking is active. */
+	// Enables the root network stack for this variable when networking is active.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	bool bExposeThroughRootNetworkStack;
 
@@ -114,7 +114,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	EGorgeousObjectVariableAccessPolicy AccessPolicy;
 
-	/** Optional logical channel name used by the networking layer to group streams. */
+	// Optional logical channel name used by the networking layer to group streams.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup")
 	FName ReplicationChannel;
 };
@@ -134,23 +134,23 @@ struct GORGEOUSCORERUNTIME_API FGorgeousReplicatedPropertyConfig
 public:
 	FGorgeousReplicatedPropertyConfig();
 
-	/** Optional per-property replication condition mirroring legacy lifetime conditions. */
+	// Optional per-property replication condition mirroring legacy lifetime conditions.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	TEnumAsByte<ELifetimeCondition> ReplicationCondition;
 
-	/** When set, the provided function name will be executed as a RepNotify when the property updates. */
+	// When set, the provided function name will be executed as a RepNotify when the property updates.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	FName RepNotifyFunction;
 
-	/** Determines whether the RepNotify should fire only when a change is detected or on every network update. */
+	// Determines whether the RepNotify should fire only when a change is detected or on every network update.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	EGorgeousRepNotifyPolicy RepNotifyPolicy;
 
-	/** Allows the RepNotify to trigger once when the initial replicated state arrives on a client. */
+	// Allows the RepNotify to trigger once when the initial replicated state arrives on a client.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bFireInitialNotify;
 
-	/** If true, object references that resolve to null on the client will be instantiated using the server-provided class and property snapshot. */
+	// If true, object references that resolve to null on the client will be instantiated using the server-provided class and property snapshot.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bInitializeNullReferences;
 };
@@ -176,27 +176,27 @@ public:
 	{
 	}
 
-	/** Request guid forwarded by the originating RPC payload. */
+	// Request guid forwarded by the originating RPC payload.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	FGuid RequestGuid;
 
-	/** Identifier that resolves the spawned result variable across the network. */
+	// Identifier that resolves the spawned result variable across the network.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	FGuid ResultIdentifier;
 
-	/** Handler name that produced this descriptor. */
+	// Handler name that produced this descriptor.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	FName HandlerName;
 
-	/** Concrete result variable class (helpful for validation/debugging). */
+	// Concrete result variable class (helpful for validation/debugging).
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	TSubclassOf<UGorgeousObjectVariable> ResultClass;
 
-	/** True when the descriptor should replicate to every connection, false for invoker-only delivery. */
+	// True when the descriptor should replicate to every connection, false for invoker-only delivery.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	bool bReplicateToAllConnections;
 
-	/** Snapshot payload that reconstructs the full RPC result hierarchy on remote peers. */
+	// Snapshot payload that reconstructs the full RPC result hierarchy on remote peers.
 	UPROPERTY()
 	TArray<uint8> SnapshotPayload;
 };
@@ -236,6 +236,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	GENERATED_BODY()
 
 	//<================--- Friend Classes ---================>
+#pragma region Friend Classes
 	friend struct FGorgeousAutoReplicationHandle;
 	friend class FGorgeousAutoReplicationCoordinator;
 	friend class FGorgeousAutoReplicationMixin;
@@ -246,6 +247,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	friend struct FGorgeousObjectVariablePerfTestAccess;
 #endif
 	//<------------------------------------------------------>
+#pragma endregion Friend Classes
 
 public:
 	virtual void PostInitProperties() override;
@@ -735,9 +737,7 @@ public:
 	 */
 	static FSimpleMulticastDelegate OnVariableTreeChanged;
 
-	/**
-	 * The unique identifier of the object variable.
-	 */
+	// The unique identifier of the object variable.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	FGuid UniqueIdentifier;
 
@@ -751,45 +751,43 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	TMap<FName, TObjectPtr<UGorgeousObjectVariable>> VariableRegistry;
 
-	/**
-	 * Whether the object variable is persistent across level switches.
-	 */
+	// Whether the object variable is persistent across level switches.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable")
 	bool bPersistent;
 
-	/** Will allow the variable to be replicated and interact with the AutoReplication system, but may introduce additional overhead */
+	// Will allow the variable to be replicated and interact with the AutoReplication system, but may introduce additional overhead
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking")
 	bool bSupportsNetworking;
 	
-	/** Multicast dispatcher triggered for every executed AutoReplication RPC payload. */
+	// Multicast dispatcher triggered for every executed AutoReplication RPC payload.
 	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Object Variable|Networking")
 	FGorgeousAutoReplicationRPCPayloadEvent OnAutoReplicationRPCPayload;
 
-	/** Determines which networking stack(s) this object variable should use. */
+	// Determines which networking stack(s) this object variable should use.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
 	EGorgeousObjectVariableReplicationMode ReplicationMode;
 	
-	/** Per-instance tuning for the auto-replication backend. */
+	// Per-instance tuning for the auto-replication backend.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
 		, meta = (EditCondition = "bSupportsNetworking", ShowOnlyInnerProperties))
 	FGorgeousAutoReplicationStreamConfig AutoReplicationConfig;
 
-	/** Optional root network stack configuration (only visible when networking is available and the shared stack is disabled). */
+	// Optional root network stack configuration (only visible when networking is available and the shared stack is disabled).
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides, ShowOnlyInnerProperties))
 	FGorgeousRootNetworkAccessConfig RootNetworkConfig;
 
-	/** Enables the shared network stack path when root access is disabled. */
+	// Enables the shared network stack path when root access is disabled.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking"
 		, meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
 	bool bUseSharedNetworkStack;
 
-	/** Per-instance binding that opts the variable into a specific root registry. */
+	// Per-instance binding that opts the variable into a specific root registry.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous Object Variable|Root Setup", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableRootConfiguration RootConfiguration;
 
-	/** Optional friendly name surfaced in tooling and console commands. */
+	// Optional friendly name surfaced in tooling and console commands.
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_DisplayName, Category = "Gorgeous Object Variable")
 	FString DisplayName;
 
@@ -799,15 +797,15 @@ public:
 	/** Returns true when the variable is configured to route through the root network stack. */
 	bool IsRootNetworkStackEnabled() const { return ShouldUseRootNetworkStack(); }
 
-	/** Runtime replicated flag toggled by the owning AutoReplication system. */
+	// Runtime replicated flag toggled by the owning AutoReplication system.
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", meta = (EditCondition = "bSupportsNetworking", EditConditionHides))
 	bool bReplicates;
 	
-	/** Ensures only a single instance of this class can exist in the hierarchy. */
+	// Ensures only a single instance of this class can exist in the hierarchy.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Registration")
 	bool bUnique = false;
 	
-	/** Behavior that is executed when uniqueness conflicts are detected. */
+	// Behavior that is executed when uniqueness conflicts are detected.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Registration", meta = (EditCondition = "bUnique"))
 	EGorgeousObjectVariableUniqueRegistrationPolicy UniqueRegistrationPolicy = EGorgeousObjectVariableUniqueRegistrationPolicy::CancelRegistration;
 
@@ -815,24 +813,18 @@ protected:
 	
 	static bool HandleUniqueRegistrationPolicy(UGorgeousObjectVariable* Candidate);
 
-	/**
-	 * The parent of the object variable.
-	 */
+	// The parent of the object variable.
 	UPROPERTY(BlueprintReadOnly, Transient, Category = "Gorgeous Object Variable")
 	UGorgeousObjectVariable* Parent;
 
 #if WITH_EDITORONLY_DATA
 	
-	/**
-	 * Configuration values that provides the Blueprint VM with information how to handle and display various object variables.
-	 */
+	// Configuration values that provides the Blueprint VM with information how to handle and display various object variables.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true), AdvancedDisplay)
 	FObjectVariablePinConfiguration_S PinConfiguration;
 
 	
-	/**
-	 * The Ptr to the transactional default value object of this object variable
-	 */
+	// The Ptr to the transactional default value object of this object variable
 	UPROPERTY()
 	TWeakObjectPtr<UGorgeousObjectVariable> DefaultValuePtr;
 	

@@ -19,6 +19,7 @@
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCommonButton.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -29,47 +30,48 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| A Gorgeous button that automatically skins itself and plays themed audio.
+| Provides runtime functionality for Gorgeous Common Button.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
 UCLASS(Abstract, Blueprintable,
 	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonButton",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonButton",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonButton : public UCommonButtonBase, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
+
+public:
 
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
 	UGorgeousCommonButton(const FObjectInitializer& ObjectInitializer);
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
+
 protected:
-	
+
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
-	
+
 	// Called when the widget is removed from the viewport.
 	virtual void NativeDestruct() override;
-	
+
 	// Called when the pointer enters the widget bounds.
 	virtual void NativeOnHovered() override;
-	
+
 	// Called when the pointer leaves the widget bounds.
 	virtual void NativeOnUnhovered() override;
-	
+
 	// Called when the widget is clicked.
 	virtual void NativeOnClicked() override;
 	//<------------------------------------------------------------------------->
@@ -98,19 +100,19 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;
-	
+
 	// Sound tag played on the hover event.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI|Audio")
 	FGameplayTag HoverSoundTag;
-	
+
 	// Sound tag played on the click event.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI|Audio")
 	FGameplayTag ClickSoundTag;

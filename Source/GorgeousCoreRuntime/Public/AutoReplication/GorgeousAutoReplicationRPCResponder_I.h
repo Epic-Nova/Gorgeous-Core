@@ -8,12 +8,16 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCResponder_I.generated.h"
+//<-------------------------------------------------------------------------->
 
 UINTERFACE(Blueprintable)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCResponder_I : public UInterface
@@ -31,4 +35,3 @@ public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Core|AutoReplication|Networking")
 	void HandleAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC);
 };
-

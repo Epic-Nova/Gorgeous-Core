@@ -1,22 +1,21 @@
-// Copyright (c) 2026-2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|              GorgeousVault — C-Linkage Export Table                        |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
-|         Copyright (C) 2026-2026 Gorgeous Things by Simsalabim Studios,    |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|  This header defines the flat C function table exported by the Vault DLL. |
-|  No C++ name mangling — no vtables cross the DLL boundary.               |
-|                                                                           |
-|  This file ships with the open-source GorgeousCore headers.              |
-|  The IMPLEMENTATIONS live inside the Vault DLL (never distributed as     |
-|  source).                                                                 |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousVaultPlatform.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include <stdint.h>
+//<-------------------------------------------------------------------------->
 
 #ifdef __cplusplus
 extern "C"

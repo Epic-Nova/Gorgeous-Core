@@ -1,12 +1,46 @@
-// Copyright (c) 2026 Simsalabim Studios. All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "InsightMatrix/GorgeousInsightMatrixTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightStatBuilder.generated.h"
+//<-------------------------------------------------------------------------->
 
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Insight Stat Builder
+| Functional Name: UGorgeousInsightStatBuilder
+| Parent Class: UBlueprintFunctionLibrary
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Insight Stat Builder.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightStatBuilder",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInsightStatBuilder : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
@@ -27,7 +61,7 @@ public:
 	static void GatherPublishedStats(FName ProviderName, TArray<FGorgeousInsightStat>& OutStats);
 
 			// Retrieve published BP charts for a provider
-	
+
 	UFUNCTION(BlueprintCallable, Category="Insight Matrix|Charts")
 	static void PublishCustomChart(FName ProviderName, FName ChartId, FName ChartType, const FString& Title, const FString& Subtitle, const FGorgeousInsightChartPayload& Payload);
 
@@ -38,7 +72,7 @@ public:
 	// -------------------------------------------------------------------------
 	// NATIVE SLATE CHARTS
 	// Use these to publish high-performance native C++ charts without custom UMG widgets.
-	// NOTE: In the future, we want to make these native charts more visually appealing 
+	// NOTE: In the future, we want to make these native charts more visually appealing
 	// and informative, potentially tying them more tightly to the systems themselves.
 	// -------------------------------------------------------------------------
 

@@ -19,6 +19,7 @@
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCommonRotator.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -29,17 +30,17 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| AAA Rotator with Gorgeous Foundation support.
+| Provides runtime functionality for Gorgeous Common Rotator.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
 UCLASS(BlueprintType, Blueprintable,
 	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonRotator",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonRotator",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonRotator : public UCommonRotator, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
@@ -52,15 +53,15 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonRotator : public UCommonRotator, pu
 public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
+
 protected:
-	
+
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
-	
+
 	// Called when the widget is removed from the viewport.
 	virtual void NativeDestruct() override;
 	//<------------------------------------------------------------------------->
@@ -89,11 +90,11 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;

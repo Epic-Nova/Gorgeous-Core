@@ -10,10 +10,15 @@
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "ObjectVariables/GorgeousRootObjectVariable.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
-#include "ObjectVariables/GorgeousRootObjectVariable.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousObjectVariableRootSettings.generated.h"
+//<-------------------------------------------------------------------------->
 
 USTRUCT(BlueprintType)
 struct FGorgeousObjectVariableRootEntry
@@ -31,19 +36,19 @@ public:
 	{
 	}
 
-	/** Identifier exposed in dropdowns/console commands. */
+	// Identifier exposed in dropdowns/console commands.
 	UPROPERTY(EditAnywhere, Config, Category = "Root")
 	FName RootName;
 
-	/** Concrete root type to instantiate for this entry. */
+	// Concrete root type to instantiate for this entry.
 	UPROPERTY(EditAnywhere, Config, Category = "Root")
 	TSoftClassPtr<UGorgeousRootObjectVariable> RootClass;
 
-	/** Whether this root participates in the networking stack. */
+	// Whether this root participates in the networking stack.
 	UPROPERTY(EditAnywhere, Config, Category = "Root")
 	bool bSupportsNetworking;
 
-	/** If true, every variable registered under this root must expose itself through the network stack and keep replication enabled. */
+	// If true, every variable registered under this root must expose itself through the network stack and keep replication enabled.
 	UPROPERTY(EditAnywhere, Config, Category = "Root")
 	bool bEnforceNetworking;
 
@@ -54,16 +59,36 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "Root", AdvancedDisplay)
 	bool bHandlesParentlessReplicatedVariables;
 
-	/** Marks this entry as the default/fallback root. */
+	// Marks this entry as the default/fallback root.
 	UPROPERTY(EditAnywhere, Config, Category = "Root")
 	bool bDefault;
 
-	/** Optional description surfaced via tooling. */
+	// Optional description surfaced via tooling.
 	UPROPERTY(EditAnywhere, Config, Category = "Root", meta = (MultiLine = true))
 	FText Description;
 };
 
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Core ↪ Object Variable Roots"))
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Object Variable Root Settings
+| Functional Name: UGorgeousObjectVariableRootSettings
+| Parent Class: UDeveloperSettings
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Object Variable Root Settings.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Config = Game, DefaultConfig,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/GorgeousObjectVariableRootSettings",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRootSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -71,11 +96,11 @@ class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRootSettings : public UDeve
 public:
 	UGorgeousObjectVariableRootSettings(const FObjectInitializer& ObjectInitializer);
 
-	/** List of available roots that can be referenced by name. */
+	// List of available roots that can be referenced by name.
 	UPROPERTY(EditAnywhere, Config, Category = "Roots")
 	TArray<FGorgeousObjectVariableRootEntry> RegisteredRoots;
 
-	/** Explicit fallback when console commands omit a root argument (optional). */
+	// Explicit fallback when console commands omit a root argument (optional).
 	UPROPERTY(EditAnywhere, Config, Category = "Roots")
 	FName DefaultConsoleRoot;
 

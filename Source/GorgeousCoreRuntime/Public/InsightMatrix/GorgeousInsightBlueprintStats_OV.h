@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Blueprint Stats OV                 |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,12 +8,16 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightBlueprintStats_OV.generated.h"
+//<-------------------------------------------------------------------------->
 
 USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintStatsInsightAction
@@ -32,19 +36,37 @@ struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintSystemStatsData
 {
 	GENERATED_BODY()
 
-	/** Map of Stat Name to Numeric Value */
+	// Map of stat names to numeric values.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Insight Stats")
 	TMap<FString, double> NumericStats;
 
-	/** List of clickable UI actions registered by this Blueprint system */
+	// Clickable UI actions registered by this Blueprint system.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Insight Stats")
 	TArray<FGorgeousBlueprintStatsInsightAction> Actions;
 };
 
-/**
- * Registry Object Variable to hold Insight Matrix stats from Blueprint systems (Playlist, Team, VDG, etc.)
- */
-UCLASS(BlueprintType, Blueprintable)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Insight Blueprint Stats
+| Functional Name: UGorgeousInsightBlueprintStats_OV
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: _OV
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Registry Object Variable that holds Insight Matrix stats from Blueprint
+| systems such as playlists, teams, and VDG.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(BlueprintType, Blueprintable,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightBlueprintStats_OV",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInsightBlueprintStats_OV : public UGorgeousObjectVariable
 {
 	GENERATED_BODY()

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,17 +8,22 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "InstancedStruct.h"
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightMatrixTypes.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UWorld;
-
+//<------------------------------------------------------------->
 UENUM(BlueprintType)
 enum class EGorgeousInsightContextMode : uint8
 {
@@ -103,10 +108,10 @@ struct FGorgeousInsightTest
 		bool bRequired = false;
 		/** Optional allowed base class path for Class inputs. */
 		FString AllowedClassPath;
-		
+
 		/** Options for Dropdown inputs. */
 		TArray<FString> DropdownOptions;
-		
+
 		/** Internal array of pointers required by SComboBox. */
 		TArray<TSharedPtr<FString>> DropdownOptionPtrs;
 	};

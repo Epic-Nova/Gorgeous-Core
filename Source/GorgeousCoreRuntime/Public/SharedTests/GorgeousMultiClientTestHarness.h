@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|      Gorgeous Core - PIE-Based Multi-Client Replication Test Harness      |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,40 +8,15 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
-/**
- * Self-contained multi-client test harness for the AutoReplication system.
- *
- * WHY: Gauntlet is in an experimental state and requires a custom Program target
- * that is hard to set up with plugin-only projects.  This harness instead uses
- * UE's built-in PIE (Play In Editor) multi-player infrastructure to:
- *
- *   1. Launch a PIE session with a dedicated server + N clients
- *   2. Wait for all connections to settle (with configurable timeout)
- *   3. Run the registered comprehensive scenarios on EACH endpoint
- *   4. Collect and merge results across all endpoints
- *   5. Report aggregate pass/fail with origin/destination proof
- *
- * This runs entirely inside the editor, no external processes, no Gauntlet
- * controller, no custom exe builds needed.
- *
- * ARCHITECTURE:
- *   - FGorgeousMultiClientTestOrchestrator (static utility)
- *       Drives PIE session creation, connection polling, scenario dispatch,
- *       and result aggregation.  Exposed as an Insight Matrix scenario AND
- *       as a standalone automation test.
- *
- *   - Integration points:
- *       a) Insight Matrix scenario: "AutoReplication.MultiClient.Orchestrator"
- *       b) Unreal Automation: "GorgeousCore.AutoReplication.MultiClient"
- *       c) Console command: "Gorgeous.RunMultiClientTests [NumClients] [Map]"
- */
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariablePerfTestTypes.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR
 #include "Editor.h"

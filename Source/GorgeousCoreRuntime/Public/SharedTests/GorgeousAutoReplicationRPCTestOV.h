@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|    Gorgeous Core - AutoReplication RPC Test Object Variable Helper       |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,35 +8,43 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
-/**
- * A minimal UGorgeousObjectVariable subclass used exclusively by the async-RPC
- * test scenarios to exercise the "first-parameter OV as return value" dispatch
- * convention without polluting the production base class with test UFUNCTIONs.
- *
- * SetupAsyncRPCTestOV() registers an instance of this class under the entry key
- * so that:
- *   - EObjectVariable / EAuto paths dispatch via InvokeNativeHandler on this OV
- *     and find Automation_HandleRPC_WithReturnOV by name.
- *   - The handler sets ReturnValue->Value = TestInputInt * 7 + 42, which the
- *     backend threads back as TargetVariable so E9 can verify the round-trip.
- */
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCTestOV.generated.h"
+//<-------------------------------------------------------------------------->
 
-/**
- * Test-only OV subclass that holds the universal Automation_HandleRPC_WithReturnOV
- * UFUNCTION for EObjectVariable / EAuto dispatch paths.
- *
- * Only compiled when the automation-test infrastructure is available; the UCLASS
- * itself is unconditional so UHT can reflect it in all configurations.
- */
-UCLASS(NotBlueprintable, NotBlueprintType, Hidden)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Automation Test OV
+| Functional Name: UGorgeousAutomationTestOV
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Test-only OV subclass that holds the universal
+| Automation_HandleRPC_WithReturnOV UFUNCTION for EObjectVariable / EAuto
+| dispatch paths. Only compiled when the automation-test infrastructure is
+| available; the UCLASS itself is unconditional so UHT can reflect it in all
+| configurations.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(NotBlueprintable, NotBlueprintType, Hidden,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/GorgeousAutomationTestOV",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Examples/"
+		)
+)
 class UGorgeousAutomationTestOV : public UGorgeousObjectVariable
 {
 	GENERATED_BODY()

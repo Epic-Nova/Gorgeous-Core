@@ -13,9 +13,10 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/DebugAssist/DebugAssistStructures.h"
-//--------------=== Third Party & Miscellaneous Includes ===-----------------
-#include "CoreMinimal.h"
 #include "GorgeousCoreMinimalShared.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "InteractionFoundationStructures.generated.h"
 //<-------------------------------------------------------------------------->
 

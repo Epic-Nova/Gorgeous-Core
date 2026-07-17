@@ -11,10 +11,11 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
-#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "InteractionFoundation_I.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -34,6 +35,8 @@ class GORGEOUSCORERUNTIME_API IInteractionFoundation_I
 {
 	GENERATED_BODY()
 
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
 public:
 
 	/**
@@ -123,4 +126,6 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
 	void InteractCancel(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
 };

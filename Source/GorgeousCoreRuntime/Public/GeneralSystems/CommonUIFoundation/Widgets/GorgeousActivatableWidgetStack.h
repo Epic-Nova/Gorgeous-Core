@@ -13,9 +13,9 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "Widgets/CommonActivatableWidgetContainer.h"
 #include "GameplayTagContainer.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousActivatableWidgetStack.generated.h"
@@ -31,16 +31,17 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| A CommonActivatableWidgetStack that auto-registers itself as a layout layer.
+| Provides runtime functionality for Gorgeous Activatable Widget Stack.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
-UCLASS(BlueprintType, Blueprintable, meta = (DisplayName = "Gorgeous Activatable Widget Stack",
+UCLASS(BlueprintType, Blueprintable,
+	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousActivatableWidgetStack",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidgetStack",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousActivatableWidgetStack : public UCommonActivatableWidgetStack
 {
 	GENERATED_BODY()

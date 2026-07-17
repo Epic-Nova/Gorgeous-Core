@@ -8,17 +8,24 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "Net/UnrealNetwork.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationTypes.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
 class UPackageMap;
 class AGorgeousPlayerController;
+//<------------------------------------------------------------->
+
 UENUM(BlueprintType)
 enum class EGorgeousAutoReplicationBackend : uint8
 {
@@ -43,26 +50,26 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStreamConfig
 		, BandwidthBudgetKB(4.f)
 	{}
 
-	/** Backend to use when replicating this object variable. */
+	// Backend to use when replicating this object variable.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	EGorgeousAutoReplicationBackend Backend;
 
-	/** Desired updates per second when the backend supports rate control. */
+	// Desired updates per second when the backend supports rate control.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking", meta = (ClampMin = "1.0"))
 	float UpdateFrequency;
-	
-	/** Lower bound applied when the scheduler attempts to throttle the stream. */
+
+	// Lower bound applied when the scheduler attempts to throttle the stream.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking", meta = (ClampMin = "1.0"))
 	float MinUpdateFrequency;
-	
-	/** Scheduler priority hint forwarded to backend integrations (higher means more important). */
+
+	// Scheduler priority hint forwarded to backend integrations (higher means more important).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking", meta = (ClampMin = "-8", ClampMax = "8"))
 	int32 Priority;
 
-	/** Whether this stream should forward multicast events as well as owner-only state. */
+	// Whether this stream should forward multicast events as well as owner-only state.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bSupportsMulticast;
-	
+
 	/**
 	 * Mirrors the (shared) root network access stack under an Everyone policy.
 	 * Non-Everyone policies always enforce the root stack, so this flag
@@ -77,10 +84,10 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStreamConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bRespectAccessPolicy;
 
-	/** Soft bandwidth budget for this stream when Iris throttling is available (kilobytes per second). */
+	// Soft bandwidth budget for this stream when Iris throttling is available (kilobytes per second).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking", meta = (ClampMin = "0.5"))
 	float BandwidthBudgetKB;
-	
+
 	float GetEffectiveUpdateFrequency() const { return FMath::Max(UpdateFrequency, MinUpdateFrequency); }
 };
 
@@ -120,7 +127,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationActiveStream
 	UPROPERTY()
 	FGorgeousAutoReplicationStreamConfig Config;
 
-	/** Optional logical channel used for root network stack routing. */
+	// Optional logical channel used for root network stack routing.
 	UPROPERTY()
 	FName RootNetworkChannel;
 
@@ -164,23 +171,23 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationPropertyValue
 	{
 	}
 
-	/** Name of the property as registered through RegisterReplicatedProperty. */
+	// Name of the property as registered through RegisterReplicatedProperty.
 	UPROPERTY()
 	FName PropertyName;
 
-	/** Serialization strategy requested by the registration. */
+	// Serialization strategy requested by the registration.
 	UPROPERTY()
 	EGorgeousReplicationMode Mode;
 
-	/** Lifetime condition that mirrors native replication filters. */
+	// Lifetime condition that mirrors native replication filters.
 	UPROPERTY()
 	TEnumAsByte<ELifetimeCondition> ReplicationCondition;
 
-	/** True if this blob represents the initial replicated state. */
+	// True if this blob represents the initial replicated state.
 	UPROPERTY()
 	uint8 bIsInitialState : 1;
 
-	/** Raw serialized payload for the property. */
+	// Raw serialized payload for the property.
 	UPROPERTY()
 	TArray<uint8> Payload;
 };
@@ -199,11 +206,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationPropertyPayload
 	bool IsEmpty() const { return Properties.Num() == 0; }
 	void Reset() { StreamGuid.Invalidate(); Properties.Reset(); }
 
-	/** Identifier that matches the AutoReplication stream the data belongs to. */
+	// Identifier that matches the AutoReplication stream the data belongs to.
 	UPROPERTY()
 	FGuid StreamGuid;
 
-	/** Serialized properties that changed since the previous dispatch. */
+	// Serialized properties that changed since the previous dispatch.
 	UPROPERTY()
 	TArray<FGorgeousAutoReplicationPropertyValue> Properties;
 };

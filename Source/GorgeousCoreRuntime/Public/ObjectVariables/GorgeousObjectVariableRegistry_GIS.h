@@ -11,26 +11,39 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousObjectVariableRegistry_GIS.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
+//<=================--- Forward Declarations ---=================>
 class ULevel;
 class UWorld;
-//<-------------------------------------------------->
+//<------------------------------------------------------------->//<-------------------------------------------------->
 
-/**
- * Game Instance Subsystem for managing the Gorgeous Object Variable Registry.
- *
- * Key features include:
- * - Initialization and deinitialization of the registry.
- * - Handling level removal events to clean up persistent variables.
- *
- * @note This subsystem provides a centralized place for managing object variables across the game instance.
- * @todo Bind a delegate to when live coding is completed and then clean the root object variable registry. For some reason the core crashes the editor after a live coding compile
- */
-UCLASS(NotBlueprintable, NotBlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Object Variable Registry
+| Functional Name: UGorgeousObjectVariableRegistry_GIS
+| Parent Class: UGameInstanceSubsystem
+| Class Suffix: _GIS
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Game Instance Subsystem for managing the Gorgeous Object Variable
+| Registry. Key features include: - Initialization and deinitialization of
+| the registry. - Handling level removal events to clean up persistent
+| variables.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(NotBlueprintable, NotBlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousObjectVariableRegistry_GIS",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRegistry_GIS : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()

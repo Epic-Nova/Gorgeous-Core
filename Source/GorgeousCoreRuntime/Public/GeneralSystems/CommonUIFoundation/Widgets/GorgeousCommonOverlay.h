@@ -13,13 +13,14 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+#include "Components/Overlay.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "Components/Overlay.h"
 #include "GameplayTagContainer.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCommonOverlay.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -30,17 +31,17 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Overlay widget that integrates with the Signal Bridge and theme
-| styling system to allow routed binding and selective property styling.
+| Provides runtime functionality for Gorgeous Common Overlay.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
-UCLASS(meta = (
+UCLASS(
+	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonOverlay",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonOverlay",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonOverlay : public UOverlay, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
@@ -53,18 +54,18 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonOverlay : public UOverlay, public I
 public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
+
 protected:
-	
+
 	// Reapplies styled properties after editor or runtime property changes.
 	virtual void SynchronizeProperties() override;
-	
+
 	// Re-initializes styling bindings when the underlying widget is rebuilt.
 	virtual void OnWidgetRebuilt() override;
-	
+
 	// Frees any cached slate resources held by the widget.
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	//<------------------------------------------------------------------------->
@@ -93,11 +94,11 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;

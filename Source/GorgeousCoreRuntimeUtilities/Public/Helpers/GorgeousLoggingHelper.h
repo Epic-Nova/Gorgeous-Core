@@ -15,7 +15,8 @@
 #include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
 #include "Macros/GorgeousLoggingHelperMacros.h"
-//<--------------------------=== Engine Includes ===------------------------->
+//<-------------------------------------------------------------------------->
+
 #if WITH_EDITOR
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
@@ -24,29 +25,29 @@
 
 /**
  * Struct containing all customizable options for toast notifications.
- * 
+ *
  * @author Nils Bergemann
  */
 struct FGorgeousToastParams
 {
 	// The title displayed at the top of the toast notification.
 	FString Title;
-	
+
 	// The detailed message or description shown below the title.
 	FString Message;
-    
+
     // Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
     int32 ToastIconKind = 3;
-	
+
 	// Duration in seconds the toast will be visible before auto-dismissing.
 	float ExpireDuration = 8.0f;
-	
+
 	// Whether to use the throbber animation (spinner).
 	bool bUseThrobber = false;
-	
+
 	// Whether to display icons.
 	bool bUseIcons = true;
-	
+
 	// Whether the notification auto-dismisses (true) or requires user interaction (false).
 	bool bFireAndForget = true;
 
@@ -79,14 +80,14 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
 {
 #if WITH_EDITOR
 	auto& NotificationManager = FSlateNotificationManager::Get();
-	
+
 	FNotificationInfo Info(FText::FromString(Params.Title));
 	Info.SubText = FText::FromString(Params.Message);
 	Info.bFireAndForget = Params.bFireAndForget;
 	Info.ExpireDuration = Params.ExpireDuration;
 	Info.bUseThrobber = Params.bUseThrobber;
 	Info.bUseSuccessFailIcons = Params.bUseIcons;
-	
+
     switch (Params.ToastIconKind)
     {
         case 0:
@@ -103,13 +104,13 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
             Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
             break;
     }
-	
+
 	if (!Params.HyperlinkText.IsEmpty() && Params.HyperlinkDelegate.IsBound())
 	{
 		Info.Hyperlink = Params.HyperlinkDelegate;
 		Info.HyperlinkText = Params.HyperlinkText;
 	}
-	
+
 	NotificationManager.AddNotification(Info);
 #endif
 }
@@ -131,14 +132,14 @@ FORCEINLINE static void TryFlushQueuedToastNotifications()
 		}), 0.5f);
 		return;
 	}
-	
+
 	GbToastNotificationsFlushed = true;
-	
+
 	for (const FGorgeousToastParams& Params : QueuedToastNotifications)
 	{
 		ShowToastNotificationImmediate(Params);
 	}
-	
+
 	QueuedToastNotifications.Empty();
 #endif
 }
@@ -183,7 +184,7 @@ FORCEINLINE static void ShowToastNotification(const FString& Title, const FStrin
 
 namespace GorgeousLogging
 {
-    
+
     /**
      * Converts various input types to FText for logging purposes.
      *
@@ -214,10 +215,10 @@ namespace GorgeousLogging
     {
         return FText::FromString(In);
     }
-    
+
     // The messages that were logged and are currently on cooldown with their gameplay tag as key.
     inline TMap<FGameplayTag, FString> LoggedMessages;
-    
+
     // The set of logging keys that are currently suppressed.
     inline TSet<FName> SuppressedLoggingKeys;
 
@@ -254,7 +255,7 @@ namespace GorgeousLogging
         {
             return;
         }
-        
+
         if (SuppressedLoggingKeys.Contains(LoggingKey))
         {
             UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' is already suppressed."), *LoggingKey.ToString());
@@ -292,7 +293,7 @@ namespace GorgeousLogging
 
     /**
      * Snapshot of the current logging settings.
-     * 
+     *
      * @author Nils Bergemann
      */
     struct FGorgeousLoggingSettingsSnapshot
@@ -334,14 +335,14 @@ namespace GorgeousLogging
             Snapshot.bShowOnScreen = bBoolValue;
         }
 
-        if (FString ListingName; GConfig->GetString(SettingsSection, TEXT("MessageLogListingName"), ListingName, GGameIni) && 
+        if (FString ListingName; GConfig->GetString(SettingsSection, TEXT("MessageLogListingName"), ListingName, GGameIni) &&
             !ListingName.IsEmpty())
         {
             Snapshot.MessageLogListingName = FName(*ListingName);
         }
 
         // TEnumAsByte is saved as a string (enum name), not an integer
-        if (FString VerbosityString; GConfig->GetString(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityString, GGameIni) && 
+        if (FString VerbosityString; GConfig->GetString(SettingsSection, TEXT("MinMessageLogVerbosity"), VerbosityString, GGameIni) &&
             !VerbosityString.IsEmpty())
         {
             if (VerbosityString == TEXT("Logging_Information"))
@@ -392,7 +393,7 @@ namespace GorgeousLogging
     {
         ::ShowToastNotification(Title, Message, ToastIconKind);
     }
-    
+
 	/**
 	 * Logs a message with customizable parameters.
 	 *
@@ -438,7 +439,7 @@ namespace GorgeousLogging
         {
             return;
         }
-        
+
         if (GameplayLoggingKey.IsValid() && IsValid(WorldContextObject))
         {
             if (bOverrideLoggingIfPresent && LoggedMessages.Contains(GameplayLoggingKey))
@@ -447,7 +448,7 @@ namespace GorgeousLogging
 
                 // Remove the on-screen message if it exists.  This requires a bit of a hack since AddOnScreenDebugMessage uses a hash.
                 const uint64 UniqueKey = GetTypeHash(GameplayLoggingKey.GetTagName());
-                GEngine->RemoveOnScreenDebugMessage(UniqueKey); 
+                GEngine->RemoveOnScreenDebugMessage(UniqueKey);
             }
 
             LoggedMessages.Add(GameplayLoggingKey, Message.ToString());
@@ -471,9 +472,9 @@ namespace GorgeousLogging
                 );
             }
         }
-        
+
         const FString FinalMessage = FString::Printf(TEXT("[%s] %s"), *LoggingKey, *Message.ToString());
-        
+
         switch (Importancy)
         {
             case Logging_Information:
@@ -551,7 +552,7 @@ namespace GorgeousLogging
             const uint64 UniqueKey = GameplayLoggingKey.IsValid()
                 ? GetTypeHash(GameplayLoggingKey.GetTagName())
                 : GetTypeHash(LoggingKeyName);
-            
+
             const FVector2D DefaultTextScale(1.0f, 1.0f);
             constexpr bool bNewerOnTop = true;
 

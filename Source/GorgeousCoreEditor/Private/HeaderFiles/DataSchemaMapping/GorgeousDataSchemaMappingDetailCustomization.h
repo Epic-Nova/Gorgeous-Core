@@ -11,15 +11,15 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "IDetailCustomization.h"
+//<--------------------------=== Module Includes ===------------------------->
 #include "Input/Reply.h"
 #include "Layout/Visibility.h"
 #include "Types/SlateEnums.h"
 #include "UObject/WeakObjectPtr.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "IDetailCustomization.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 struct FAssetData;
 class IDetailLayoutBuilder;
 class IPropertyHandle;

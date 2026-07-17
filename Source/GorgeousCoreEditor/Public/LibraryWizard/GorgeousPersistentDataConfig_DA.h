@@ -1,9 +1,24 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/GorgeousPluginHelper.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "Helpers/GorgeousPluginHelper.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousPersistentDataConfig_DA.generated.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Memory-only proxy asset that allows viewing and editing the GorgeousPersistentData.json

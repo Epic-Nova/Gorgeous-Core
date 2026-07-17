@@ -26,6 +26,7 @@
 class UGorgeousUIProcessor;
 class UGorgeousUIState_DA;
 //<------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -36,45 +37,43 @@ class UGorgeousUIState_DA;
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Base widget for the Gorgeous UI system. Inherits from CommonUserWidget for
-| Common UI compatibility.
+| Provides runtime functionality for Gorgeous Common Widget.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
 UCLASS(Abstract, BlueprintType, Blueprintable,
 	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonWidget",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonWidget",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonWidget : public UCommonUserWidget, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
+
+public:
 
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
 	UGorgeousCommonWidget(const FObjectInitializer& ObjectInitializer);
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
-public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
-protected:
-	
+
 	// Returns the routing ID used by the Signal Bridge.
 	virtual FName GetRoutingID() const override { return RoutingID; }
-	
+
 	// Sets the routing ID used by the Signal Bridge.
 	virtual void SetRoutingID(FName InID) override { RoutingID = InID; }
-	
+
 	// Called when the widget is constructed into the viewport.
 	virtual void NativeConstruct() override;
-	
+
 	// Called when the widget is removed from the viewport.
 	virtual void NativeDestruct() override;
 	//<------------------------------------------------------------------------->
@@ -92,7 +91,7 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous UI", meta = (DisplayName = "On Theme Applied"))
 	void OnThemeApplied_BP(const UGorgeousUITheme_DA* Theme);
-	
+
 	/**
 	 * Plays an animation on this widget by name.
 	 *
@@ -100,7 +99,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI|Animation")
 	void PlayAnimationByName(const FName& AnimName);
-	
+
 	/**
 	 * Updates the widget's icon based on the current theme and input method.
 	 *
@@ -108,7 +107,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous UI")
 	void UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOverride = nullptr);
-	
+
 	/**
 	 * Called when the global UI state changes.
 	 *
@@ -127,19 +126,23 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
+	// Identifies this widget instance for Signal Bridge routing.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
+	FName RoutingID;
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;
-	
+
 	// Optional Action Tag for this widget (e.g. UI.Action.Confirm), used for dynamic icon swapping.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI")
 	FGameplayTag ActionTag;
-	
+
 	// Map of UI States to animation names, played automatically when the system switches states.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	TMap<UGorgeousUIState_DA*, FName> StateAnimations;

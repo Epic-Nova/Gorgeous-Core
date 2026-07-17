@@ -1,44 +1,95 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Blueprint/DragDropOperation.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousDragDropFoundation.generated.h"
+//<-------------------------------------------------------------------------->
 
-/**
- * Universal base class for stateful drag and drop interactions in the Gorgeous ecosystem.
- * Supports both standard PC (mouse) and state-based Gamepad flows.
- */
-UCLASS(Abstract, BlueprintType, Blueprintable)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Drag Drop Foundation
+| Functional Name: UGorgeousDragDropFoundation
+| Parent Class: UDragDropOperation
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Universal base class for stateful drag and drop interactions in the
+| Gorgeous ecosystem. Supports both standard PC (mouse) and state-based
+| Gamepad flows.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Abstract, BlueprintType, Blueprintable,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Interaction/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Interaction/GorgeousDragDropFoundation",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Interaction/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousDragDropFoundation : public UDragDropOperation
 {
 	GENERATED_BODY()
 
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
 public:
-	/** The gameplay tag representing the context of this drag operation (e.g., UI.DragContext.Inventory). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous|Interaction")
-	FGameplayTag DragContext;
-
-	/** The tag of the item or action being dragged. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous|Interaction")
-	FGameplayTag PayloadTag;
-
-	/** Called when the drag operation starts. */
+	// Starts the drag operation.
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous|Interaction")
 	void OnDragStarted();
 
-	/** Called when a potential drop target is highlighted (e.g., hovered or selected via gamepad). */
+	/**
+	 * Handles a highlighted potential drop target.
+	 *
+	 * @param Target The highlighted drop target.
+	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous|Interaction")
 	void OnTargetHighlighted(UObject* Target);
 
-	/** Called when the drag is confirmed (dropped). */
+	/**
+	 * Handles a confirmed drag target.
+	 *
+	 * @param Target The target that receives the drop.
+	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous|Interaction")
 	void OnDragConfirmed(UObject* Target);
 
-	/** 
-	 * For Gamepads: Resumes a stateful interaction that was waiting for a target.
+	/**
+	 * Resumes an interaction that is waiting for a target.
+	 *
+	 * @param Target The target selected to resume the interaction.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous|Interaction")
 	void ResumeStatefulInteraction(UObject* Target);
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
+
+
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	#pragma region UAT/UBT Exposed Variables
+public:
+	// Stores the context in which this drag operation runs.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous|Interaction")
+	FGameplayTag DragContext;
+	// Stores the item or action carried by the drag operation.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous|Interaction")
+	FGameplayTag PayloadTag;
+	//<------------------------------------------------------------------------->
+	#pragma endregion UAT/UBT Exposed Variables
 };

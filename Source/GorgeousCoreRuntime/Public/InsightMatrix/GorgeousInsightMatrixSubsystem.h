@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,26 +8,47 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Subsystems/EngineSubsystem.h"
 #include "InsightMatrix/GorgeousInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "Slate/GorgeousInsightDebugPanel.h"
 #include "Widgets/SWindow.h"
 #include "Features/IModularFeatures.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightMatrixSubsystem.generated.h"
+//<-------------------------------------------------------------------------->
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightProviderChanged, IGorgeousInsightMatrixProvider*);
 
-/**
- * Runtime registry and execution layer for the Insight Matrix.
- * Editor modules can bridge into this subsystem.
- * TODO: Add hooks into Unreal Automation, Insights/Trace, Gauntlet, and profiler pipelines.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Insight Matrix Subsystem
+| Functional Name: UGorgeousInsightMatrixSubsystem
+| Parent Class: UEngineSubsystem
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Runtime registry and execution layer for the Insight Matrix. Editor
+| modules can bridge into this subsystem. TODO: Add hooks into Unreal
+| Automation, Insights/Trace, Gauntlet, and profiler pipelines.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightMatrixSubsystem",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInsightMatrixSubsystem : public UEngineSubsystem
 {
 	GENERATED_BODY()
@@ -177,7 +198,7 @@ public:
 		FDateTime Timestamp;
 		TMap<FName, TArray<FGorgeousInsightStat>> ProviderStats;
 	};
-	
+
 	const TArray<FGorgeousInsightEditorSnapshot>& GetEditorHistory() const { return EditorHistory; }
 	int32 GetActiveHistoryIndex() const { return ActiveHistoryIndex; }
 	void SetActiveHistoryIndex(int32 Index) { ActiveHistoryIndex = Index; }
