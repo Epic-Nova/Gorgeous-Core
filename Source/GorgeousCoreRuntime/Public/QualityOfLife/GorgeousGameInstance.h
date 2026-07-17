@@ -11,26 +11,43 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<-------------------------------------------------------------------------->
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousGameInstance.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * A custom subclass of UGameInstance used to handle game-specific initialization, settings, and configuration.
- * 
- * This class extends UGameInstance to provide additional functionality tailored for the GorgeousCore runtime. It includes the ability
- * to manage additional configuration data specific to the game instance through the `AdditionalGorgeousData` property.
- * 
- * The class provides overrides for the `Init()` and `PostEditChangeProperty()` functions, which allow custom initialization 
- * and handling of property changes, respectively.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Game Instance
+| Functional Name: UGorgeousGameInstance
+| Parent Class: UGameInstance
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of UGameInstance used to handle game-specific
+| initialization, settings, and configuration. This class extends
+| UGameInstance to provide additional functionality tailored for the
+| GorgeousCore runtime. It includes the ability to manage additional
+| configuration data specific to the game instance through the
+| `AdditionalGorgeousData` property. The class provides overrides for the
+| `Init()` and `PostEditChangeProperty()` functions, which allow custom
+| initialization and handling of property changes, respectively.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/GorgeousGameInstance",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
 	, public IGorgeousQualityOfLifeNodeTarget_I
 {
@@ -39,13 +56,14 @@ class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
 public:
 
 	UGorgeousGameInstance();
-	
-	//<============================--- Overrides ---=============================>
 
-	/** 
+	//<============================--- Overrides ---=============================>
+#pragma region Overrides
+
+	/**
 	 * Initializes the game instance.
-	 * 
-	 * This function is called when the game instance is initialized. It is intended to be overridden 
+	 *
+	 * This function is called when the game instance is initialized. It is intended to be overridden
 	 * to add custom initialization logic for the game instance, such as loading resources or setting up settings.
 	 */
 	virtual void Init() override;
@@ -53,16 +71,15 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	
+
 	//<-------------------------------------------------------------------------->
-	
-	/**
-	 * Additional settings/configuration data for the current game instance.
-	 */
+#pragma endregion Overrides
+
+	// Additional settings/configuration data for the current game instance.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Instance")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Serialized trunk that keeps authoritative default payloads for object variables authored on this instance. */
+	// Serialized trunk that keeps authoritative default payloads for object variables authored on this instance.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Instance|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 

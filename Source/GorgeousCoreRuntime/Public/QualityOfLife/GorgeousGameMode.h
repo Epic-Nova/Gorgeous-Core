@@ -11,33 +11,51 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "GameFramework/GameMode.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "GameFramework/GameMode.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousGameMode.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * A custom subclass of AGameMode used to manage game mode-specific logic and settings.
- * 
- * This class extends AGameMode to provide additional functionality tailored for the GorgeousCore runtime.
- * It is used to manage game mode-specific data and logic, such as player data and other relevant information.
- * The class provides overrides for the `BeginPlay()` and `PostEditChangeProperty()` functions, allowing custom behavior 
- * during the start of the game and when properties are changed in the editor, respectively.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Game Mode
+| Functional Name: AGorgeousGameMode
+| Parent Class: AGameMode
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of AGameMode used to manage game mode-specific logic and
+| settings. This class extends AGameMode to provide additional functionality
+| tailored for the GorgeousCore runtime. It is used to manage game
+| mode-specific data and logic, such as player data and other relevant
+| information. The class provides overrides for the `BeginPlay()` and
+| `PostEditChangeProperty()` functions, allowing custom behavior during the
+| start of the game and when properties are changed in the editor,
+| respectively.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousGameMode",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousGameMode : public AGameMode
 	, public IGorgeousAutoReplicationRPCResponder_I
 	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	AGorgeousGameMode();
@@ -45,6 +63,7 @@ public:
 	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
 
 	//<============================--- Overrides ---=============================>
+#pragma region Overrides
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
 	const FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() const { return AutoReplicationMixin; }
 
@@ -52,10 +71,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Game Mode|Networking")
 	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
 
-	
-	/** 
+
+	/**
 	 * Called when the game mode begins play.
-	 * 
+	 *
 	 * This function is invoked when the game mode starts. It is intended to be overridden to implement custom
 	 * logic for game mode initialization, such as managing players or configuring game settings.
 	 */
@@ -63,7 +82,7 @@ public:
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	
+
 	void Test();
 
 	/**
@@ -75,20 +94,19 @@ public:
 
 	/** Called on the server when a player logs out or disconnects. */
 	virtual void Logout(AController* Exiting) override;
-	
-	//<-------------------------------------------------------------------------->
 
-	/** Enables mixin-level networking for AutoReplication data. */
+	//<-------------------------------------------------------------------------->
+#pragma endregion Overrides
+
+	// Enables mixin-level networking for AutoReplication data.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Mode|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/**
-	 * Additional data for the current class.
-	 */
+	// Additional data for the current class.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game Mode")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Trunk that stores serialized default payloads for this game mode's object variables. */
+	// Trunk that stores serialized default payloads for this game mode's object variables.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game Mode|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
@@ -113,13 +131,13 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game Mode|Players")
 	void OnPlayerLoggedOut(AController* ExitingController);
 
-	/** Indexed replicated payload used by the AutoReplication mixin. */
+	// Indexed replicated payload used by the AutoReplication mixin.
 	UPROPERTY(ReplicatedUsing = OnRep_GorgeousAutoReplicationVariables)
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	/** Mixin that keeps the AdditionalGorgeousData map and replicated payload in sync. */
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-	
+
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 

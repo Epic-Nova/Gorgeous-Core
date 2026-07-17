@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,15 +11,15 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "PropertyEditorModule.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousFunctionalStructurePropertyTypeCustomization.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "PropertyEditorModule.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Registers a custom property layout customization to the specified Functional Structure.
- * 
+ *
  * @param StaticStructName The FName of the static struct you want to register.
  */
 #define UE_DECLARE_FUNCTIONAL_STRUCTURES_REGISTER(StaticStructName) \
@@ -33,7 +33,7 @@
 
 /**
  * Unregisters the custom property layout customization from the specified Functional Structure.
- * 
+ *
  * @param StaticStructName The FName of the static struct you want to unregister.
  */
 #define UE_DECLARE_FUNCTIONAL_STRUCTURES_UNREGISTER(StaticStructName) \

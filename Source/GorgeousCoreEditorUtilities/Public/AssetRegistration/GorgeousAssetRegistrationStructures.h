@@ -5,18 +5,18 @@
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
-|                   Epic Nova is an independent entity,                     |
+|                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Templates/Function.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Engine/Blueprint.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
-#include "Templates/Function.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAssetRegistrationStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -95,13 +95,13 @@ struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousFactoryInfo_S
 
 	/// Blueprint asset class to create for this factory.
 	TSubclassOf<UBlueprint> BlueprintClass;
-	
+
 	// Generated class to use for this blueprint asset type.
 	TSubclassOf<UBlueprintGeneratedClass> BlueprintGeneratedClass;
 
 	// True if the associated editor should be opened after creating a new object.
 	bool bEditAfterNew;
-	
+
 	// True if the factory imports objects from files.
 	bool bEditorImport;
 
@@ -110,7 +110,7 @@ struct GORGEOUSCOREEDITORUTILITIES_API FGorgeousFactoryInfo_S
 
 	// True if the factory supports importing from text.
 	bool bText;
-	
+
 	// Trie if the factory should use NewObject instead of CreateBlueprint.
 	bool bDataOnly;
 };

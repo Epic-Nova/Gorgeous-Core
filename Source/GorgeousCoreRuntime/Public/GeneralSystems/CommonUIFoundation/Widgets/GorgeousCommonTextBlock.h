@@ -13,14 +13,15 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+#include "Components/TextBlock.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "CommonTextBlock.h"
-#include "Components/TextBlock.h"
 #include "GameplayTagContainer.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCommonTextBlock.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -31,16 +32,17 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Overridden TextBlock with Signal Bridge support.
+| Provides runtime functionality for Gorgeous Common Text Block.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
-UCLASS(meta = (
+UCLASS(
+	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonTextBlock",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonTextBlock",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UCommonTextBlock, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
@@ -53,18 +55,18 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonTextBlock : public UCommonTextBlock
 public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
+
 protected:
-	
+
 	// Reapplies styled properties after editor or runtime property changes.
 	virtual void SynchronizeProperties() override;
-	
+
 	// Re-initializes styling bindings when the underlying widget is rebuilt.
 	virtual void OnWidgetRebuilt() override;
-	
+
 	// Frees any cached slate resources held by the widget.
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	//<------------------------------------------------------------------------->
@@ -93,15 +95,15 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;
-	
+
 	// The typography tag used for automatic styling from the theme.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag TypographyTag;

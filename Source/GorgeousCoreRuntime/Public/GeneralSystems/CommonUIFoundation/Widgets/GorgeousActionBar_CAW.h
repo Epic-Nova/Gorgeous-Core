@@ -19,28 +19,28 @@
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousActionBar_CAW.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
-| Display Name: Gorgeous Action Bar CAW
+| Display Name: Gorgeous Action Bar
 | Functional Name: UGorgeousActionBar_CAW
 | Parent Class: UGorgeousActivatableWidget
-| Class Suffix: -
+| Class Suffix: _CAW
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Base widget for the HUD Action Bar stripe. Displays available input
-| actions, their icons, and names.
+| Provides runtime functionality for Gorgeous Action Bar.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
 UCLASS(Abstract, Blueprintable,
 	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousActionBar_CAW",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousActionBar_CAW",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousActionBar_CAW : public UGorgeousActivatableWidget
 {
 	GENERATED_BODY()

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -10,22 +10,25 @@
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Styling/SlateStyle.h"
 #include "Fonts/CompositeFont.h"
 #include "Fonts/SlateFontInfo.h"
 #include "Styling/SlateStyle.h"
+//<-------------------------------------------------------------------------->
 
 namespace GorgeousStyleRegistration
 {
 	// Shorthand constants for icon sizes (16px)
 	const FVector2D Icon16(16.0f, 16.0f);
-	
+
 	// Shorthand constants for thumbnail sizes (128px)
 	const FVector2D Thumb128(128.0f, 128.0f);
-	
+
 	// The shared pointer to the style set that will hold all the brushes for Gorgeous Core editor utilities.
 	static TSharedPtr<FSlateStyleSet> GGorgeousStyleSet;
-	
+
 	/**
 	 * Helper function to set both icon and thumbnail brushes for a given key and class name, using the same file name for both.
 	 *

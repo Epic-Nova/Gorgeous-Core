@@ -13,8 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
-//<--------------------------=== Engine Includes ===------------------------->
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousEditorLoggingBlueprintFunctionLibrary.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -29,7 +28,7 @@
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
 | Function Library providing logging functionalities from the Logging Helper
-| exposed to Blueprints in the Editor. 
+| exposed to Blueprints in the Editor.
 | Provides functionalities to create hyperlinks in the Message Log,
 | that can open assets or execute registered actions when clicked.
 <--------------------------------------------------------------------------->
@@ -47,12 +46,12 @@ public:
 	 *
 	 * @param HandlerClass The class that will handle the action when the hyperlink is clicked.
 	 * @param ActionName A unique name for the action to be registered.
-	 * @param FunctionName The name of the function on the HandlerObject that will be called when the hyperlink is clicked. 
+	 * @param FunctionName The name of the function on the HandlerObject that will be called when the hyperlink is clicked.
 	 *                     This function must be a UFUNCTION and should accept a single FString parameter for the payload.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
 	static void RegisterLogHyperlinkAction(const TSubclassOf<UObject> HandlerClass, const FName ActionName, const FName FunctionName);
-	
+
 	/**
 	 * Unregisters a previously registered hyperlink action, preventing it from being executed when hyperlinks with the same action name are clicked.
 	 *
@@ -60,7 +59,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
 	static void UnregisterLogHyperlinkAction(const FName ActionName);
-	
+
 	/**
 	 * Registers a callable condition that determines if a hyperlink in the Message Log is enabled.
 	 *
@@ -79,11 +78,11 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Logging|Editor")
 	static void UnregisterLogHyperlinkCondition(const FName ConditionName);
-	
-	/** 
-	 * Emits a Message Log entry with a clickable hyperlink to an asset. 
+
+	/**
+	 * Emits a Message Log entry with a clickable hyperlink to an asset.
 	 * If the asset is missing, a notification is shown.
-	 * 
+	 *
 	 * @param Message The message to log.
 	 * @param LoggingKey A unique key to manage the log message.
 	 * @param Importance The importance level of the log message.
@@ -95,7 +94,7 @@ public:
 	static void LogMessageWithAssetHyperlink(const FString Message, const FString LoggingKey,
 		const EGorgeousLoggingImportance Importance, const FSoftObjectPath& AssetPath,
 		const FString LinkText, UObject* WorldContextObject = nullptr);
-	
+
 	/**
 	 * Emits a Message Log entry with a clickable hyperlink that executes a registered action when clicked.
 	 *

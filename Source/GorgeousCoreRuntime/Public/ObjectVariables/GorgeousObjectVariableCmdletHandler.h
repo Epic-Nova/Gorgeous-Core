@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -13,11 +13,13 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Templates/Function.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousObjectVariableCmdletHandler.generated.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
 //<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
+//<------------------------------------------------------------->
 
 /** Aggregated replication stats for a scope of object variables. */
 struct FGorgeousObjectVariableStats
@@ -43,12 +45,27 @@ struct FGorgeousVariableHierarchyHandler
 	static void LogAvailableRoots(const TCHAR* ContextTag);
 };
 
-/**
- * Handles console commands related to Gorgeous Object Variables.
- *
- * @note This class provides a way to interact with Gorgeous Object Variables through the console.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Object Variable Cmdlet Handler
+| Functional Name: UGorgeousObjectVariableCmdletHandler
+| Parent Class: UObject
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Handles console commands related to Gorgeous Object Variables.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousObjectVariableCmdletHandler",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableCmdletHandler : public UObject
 {
 	GENERATED_BODY()

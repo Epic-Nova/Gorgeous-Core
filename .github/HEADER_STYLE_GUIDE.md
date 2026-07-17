@@ -156,6 +156,13 @@ class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
   characters.
 - **This block replaces any separate simple `/* */` class description** — do not add both.
 - Struct/enum-only headers (no `UCLASS`) do **not** get a Class Info block.
+- **Declaration-boundary rule (critical):** build a Class Info block only from the comment
+  immediately attached to that `UCLASS`. Never scan backward across a completed top-level
+  declaration to find source text. In particular, stop at a preceding `USTRUCT`, `UENUM`,
+  `DECLARE_*` delegate, free function, `using` alias, or closing `};`. A struct's properties,
+  a delegate declaration, or an architecture diagram must never be absorbed into a following
+  class description. When no class-specific description is directly adjacent, write a new
+  concise description based on the class itself instead.
 
 ---
 

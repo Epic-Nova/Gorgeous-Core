@@ -10,17 +10,43 @@
 <==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
 #include "ReplicationGraph.h"
 #include "Engine/DeveloperSettings.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationSettings.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousAutoReplicationGraph;
 class UReplicationGraph;
-
-/** Centralized developer settings that configure the Auto Replication backends. */
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Core ↪ Auto Replication"))
+//<------------------------------------------------------------->
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Auto Replication Settings
+| Functional Name: UGorgeousAutoReplicationSettings
+| Parent Class: UDeveloperSettings
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Centralized developer settings that configure the Auto Replication
+| backends.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Config = Game, DefaultConfig,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/GorgeousAutoReplicationSettings",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
@@ -28,31 +54,31 @@ class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationSettings : public UDevelop
 public:
 	UGorgeousAutoReplicationSettings(const FObjectInitializer& ObjectInitializer);
 
-	/** True if Iris should be initialized for object variables when available. */
+	// True if Iris should be initialized for object variables when available.
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableReplicationGraph", EditConditionHides))
 	bool bEnableIris;
 
-	/** True if a dedicated replication grap<<h should be created for auto-replicated objects. */
+	// True if a dedicated replication grap<<h should be created for auto-replicated objects.
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "!bEnableIris", EditConditionHides))
 	bool bEnableReplicationGraph;
 
-	/** Optional class that overrides the default auto-replication graph implementation. */
+	// Optional class that overrides the default auto-replication graph implementation.
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (EditCondition = "bEnableReplicationGraph", EditConditionHides))
 	TSoftClassPtr<UReplicationGraph> AutoReplicationGraphClass;
 
-	/** If true, apply an explicit runtime override to enable Iris regardless of other runtime toggles. */
+	// If true, apply an explicit runtime override to enable Iris regardless of other runtime toggles.
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Iris At Runtime", EditCondition = "bEnableIris", EditConditionHides))
 	bool bForceIrisAtRuntime;
 
-	/** If true, apply an explicit runtime override to enable the replication graph regardless of other runtime toggles. */
+	// If true, apply an explicit runtime override to enable the replication graph regardless of other runtime toggles.
 	UPROPERTY(Config, EditAnywhere, Category = "Backends", meta = (DisplayName = "Force Replication Graph At Runtime", EditCondition = "bEnableReplicationGraph", EditConditionHides))
 	bool bForceReplicationGraphAtRuntime;
 
-     /** Default stream configuration applied to every object variable unless overridden. */
+     // Default stream configuration applied to every object variable unless overridden.
      UPROPERTY(Config, EditAnywhere, Category = "Streams")
      FGorgeousAutoReplicationStreamConfig DefaultStreamConfig;
 
-	/** Per-object overrides referenced by AutoReplication key. */
+	// Per-object overrides referenced by AutoReplication key.
 	UPROPERTY(Config, EditAnywhere, Category = "Streams")
 	TMap<FName, FGorgeousAutoReplicationStreamConfig> StreamOverrides;
 

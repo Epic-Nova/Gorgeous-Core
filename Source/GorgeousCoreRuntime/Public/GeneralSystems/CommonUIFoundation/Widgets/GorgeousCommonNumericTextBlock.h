@@ -20,6 +20,7 @@
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCommonNumericTextBlock.generated.h"
 //<-------------------------------------------------------------------------->
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -30,16 +31,17 @@
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Overridden CommonNumericTextBlock with Signal Bridge support.
+| Provides runtime functionality for Gorgeous Common Numeric Text Block.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-
-UCLASS(meta = (
+UCLASS(
+	meta = (
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousCommonNumericTextBlock",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/GorgeousCommonNumericTextBlock",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
-		))
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousCommonNumericTextBlock : public UCommonNumericTextBlock, public IGorgeousUIWidget_I
 {
 	GENERATED_BODY()
@@ -52,18 +54,18 @@ class GORGEOUSCORERUNTIME_API UGorgeousCommonNumericTextBlock : public UCommonNu
 public:
 
 	//<----------------------=== Interface Overrides ===------------------------>
-	
+
 	UE_UI_WIDGET_INTERFACE_BOILERPLATE()
 	//<----------------------=== End Interface Overrides ===-------------------->
-	
+
 protected:
-	
+
 	// Reapplies styled properties after editor or runtime property changes.
 	virtual void SynchronizeProperties() override;
-	
+
 	// Re-initializes styling bindings when the underlying widget is rebuilt.
 	virtual void OnWidgetRebuilt() override;
-	
+
 	// Frees any cached slate resources held by the widget.
 	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 	//<------------------------------------------------------------------------->
@@ -92,11 +94,11 @@ public:
 	// The gameplay tag used to route this widget's binding through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gorgeous UI")
 	FGameplayTag BindingTag;
-	
+
 	// Enables per-widget filtering of which properties themes and Signal Bridge payloads may style.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	bool bUseStylePropertyAllowList = true;
-	
+
 	// The set of property names permitted to be styled when the allow list is enabled.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous UI|Style")
 	TSet<FName> StylePropertyAllowList;

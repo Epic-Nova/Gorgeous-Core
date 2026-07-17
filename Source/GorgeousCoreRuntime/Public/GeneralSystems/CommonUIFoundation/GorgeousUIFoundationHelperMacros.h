@@ -1,11 +1,23 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/CommonUIFoundation/Interfaces/GorgeousUIWidget_I.h"
 #include "GeneralSystems/CommonUIFoundation/Processors/GorgeousUIProcessor.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Widget.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
+//<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR
 struct FPropertyChangedChainEvent;

@@ -11,38 +11,56 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "GameFramework/GameState.h"
 //<--------------------------=== Module Includes ===------------------------->
+#include "GameFramework/GameState.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousGameState.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * A custom subclass of AGameState used to manage game state-specific logic and settings.
- * 
- * This class extends AGameState to provide additional functionality tailored for the GorgeousCore runtime.
- * It is used to manage game state-specific data and logic, such as match data and other relevant information 
- * during gameplay. The class provides overrides for the `BeginPlay()` and `PostEditChangeProperty()` functions,
- * enabling custom behavior during the start of the game state and when properties are modified in the editor.
- */
-UCLASS(Blueprintable, BlueprintType)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Game State
+| Functional Name: AGorgeousGameState
+| Parent Class: AGameState
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| A custom subclass of AGameState used to manage game state-specific logic
+| and settings. This class extends AGameState to provide additional
+| functionality tailored for the GorgeousCore runtime. It is used to manage
+| game state-specific data and logic, such as match data and other relevant
+| information during gameplay. The class provides overrides for the
+| `BeginPlay()` and `PostEditChangeProperty()` functions, enabling custom
+| behavior during the start of the game state and when properties are
+| modified in the editor.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousGameState",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousGameState : public AGameState
 	, public IGorgeousAutoReplicationRPCResponder_I
 	, public IGorgeousQualityOfLifeNodeTarget_I
 {
 	GENERATED_BODY()
-	
+
 public:
 
 	AGorgeousGameState();
 
-	
+
 	virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
 
 	FGorgeousAutoReplicationMixin& GetAutoReplicationMixin() { return AutoReplicationMixin; }
@@ -51,12 +69,13 @@ public:
 	/** Registers or updates an AutoReplication entry at runtime. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Game State|Networking")
 	bool RegisterAutoReplicationEntry(FName Key, TSubclassOf<UGorgeousObjectVariable> DefaultClass, bool bReplicate, bool bOverrideStreamConfig, FGorgeousAutoReplicationStreamConfig StreamConfigOverride);
-	
+
 	//<============================--- Overrides ---=============================>
-	
-	/** 
+#pragma region Overrides
+
+	/**
 	 * Called when the game state begins play.
-	 * 
+	 *
 	 * This function is called when the game state starts. It is intended to be overridden to implement custom
 	 * logic for initializing the game state, such as setting up match conditions or managing state variables.
 	 */
@@ -78,20 +97,19 @@ public:
 	 * this override fires the BP event and calls Super.
 	 */
 	virtual void RemovePlayerState(APlayerState* PlayerState) override;
-	
-	//<-------------------------------------------------------------------------->
 
-	/** Enables mixin networking path for this game state. */
+	//<-------------------------------------------------------------------------->
+#pragma endregion Overrides
+
+	// Enables mixin networking path for this game state.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State|Networking")
 	bool bActivateNetworkingCapabilities;
 
-	/**
-	 * Additional data for the current class.
-	 */
+	// Additional data for the current class.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Game State")
 	TMap<FName, FGorgeousObjectVariableEntry> AdditionalGorgeousData;
 
-	/** Authoritative trunk for serialized default payloads authored on this game state. */
+	// Authoritative trunk for serialized default payloads authored on this game state.
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Game State|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
@@ -119,10 +137,9 @@ protected:
 	TArray<FGorgeousReplicatedVariableEntry> ReplicatedAutoReplicationVariables;
 
 	FGorgeousAutoReplicationMixin AutoReplicationMixin;
-	
+
 	UFUNCTION()
 	void OnRep_GorgeousAutoReplicationVariables();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
-

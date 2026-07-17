@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -13,11 +13,10 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariable.h"
-//<--------------------------=== Engine Includes ===------------------------->
 #include "Containers/Queue.h"
 #include "Containers/Deque.h"
 #include "Containers/Map.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "NativeObjectVariableDefinitions.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -25,12 +24,27 @@
 template <typename ElementType, typename AllocatorType = FDefaultAllocator>
 using TStack = TArray<ElementType, AllocatorType>;
 
-/**
- * Abstract base class for single object variables.
- *
- * @author Nils Bergemann
- */
-UCLASS(Abstract)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Single Object Variable
+| Functional Name: USingleObjectVariable
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Abstract base class for single object variables.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Abstract,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/SingleObjectVariable",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API USingleObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
@@ -564,7 +578,7 @@ class GORGEOUSCORERUNTIME_API UName_AOV : public UArrayObjectVariable
     UE_DEFINE_OBJECT_VARIABLE_MULTIPLE_INTERFACE_IMPLEMENTATION(Array, TArray<FName>, Value, Name)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TArray<FName> Value;
-    
+
     UName_AOV()
     {
         Value = TArray<FName>();
@@ -3994,7 +4008,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_MOTOV : public UMapObjectTypeObjectVari
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(TSoftClassPtr<UObject>, Value, SoftObjectClass)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*> Value;
-    
+
     USoftClass_MOTOV()
     {
         Value = TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*>();
@@ -4015,7 +4029,7 @@ class GORGEOUSCORERUNTIME_API UByte_MOV : public UMapObjectVariable
     UE_DEFINE_OBJECT_VARIABLE_MAP_INTERFACE_IMPLEMENTATION(uint8, Value, Byte)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category = "Default", meta = (ExposeOnSpawn = true, AllowPrivateAccess = "true"))
     TMap<uint8, UGorgeousObjectVariable*> Value;
-    
+
     UByte_MOV()
     {
         Value = TMap<uint8, UGorgeousObjectVariable*>();
@@ -4256,7 +4270,7 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(uint8, Byte)
-    
+
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(uint8 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
@@ -5058,6 +5072,3 @@ class GORGEOUSCORERUNTIME_API UString_STOV : public USetObjectVariable
         PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
-
-
-

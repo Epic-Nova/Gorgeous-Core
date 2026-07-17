@@ -32,6 +32,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "GeneralSystems/GorgeousCheatCommandAliases.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
@@ -71,6 +72,7 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 	GT_REGISTER_TAG_SOURCE("GorgeousCore")
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
+	FGorgeousCheatCommandAliases::RegisterConsoleCommands();
 
 	// Register a world-cleanup hook that removes all registry entries belonging to a dying world
 	// from the immortal Root OV registries. This MUST fire before UEditorEngine::CheckForWorldGCLeaks

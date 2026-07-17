@@ -8,25 +8,48 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Components/ActorComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCRelayComponent.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousAutoReplicationRPCRequestAsyncAction;
 class FGorgeousAutoReplicationMixin;
-
-/**
- * Component that lives on each player controller to shuttle AutoReplication RPC
- * results back to the authority so asynchronous requests can aggregate per-connection
- * responses. Also handles relaying property payloads from client to server.
- */
-UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType, meta = (BlueprintSpawnableComponent))
+//<------------------------------------------------------------->
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Auto Replication RPCRelay Component
+| Functional Name: UGorgeousAutoReplicationRPCRelayComponent
+| Parent Class: UActorComponent
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Component that lives on each player controller to shuttle AutoReplication
+| RPC results back to the authority so asynchronous requests can aggregate
+| per-connection responses. Also handles relaying property payloads from
+| client to server.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCRelayComponent",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRelayComponent : public UActorComponent
 {
 	GENERATED_BODY()

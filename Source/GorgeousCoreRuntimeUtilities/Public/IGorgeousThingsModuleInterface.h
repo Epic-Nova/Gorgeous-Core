@@ -11,13 +11,12 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Modules/ModuleManager.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "IGorgeousThingsModuleInterface.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 class FSlateStyleSet;
 class IGorgeousInsightMatrixProvider;
 class IGorgeousLibraryParticipant;
@@ -57,9 +56,9 @@ enum class EGorgeousModuleLoadFailureHandling : uint8
  */
 class GORGEOUSCORERUNTIMEUTILITIES_API IGorgeousThingsModuleInterface : public IModuleInterface
 {
-	
+
 	//<============================--- Overrides ---============================>
-	
+
 	/**
 	 * The override function of the module interface that is called to load up this module.
 	 */
@@ -71,30 +70,30 @@ class GORGEOUSCORERUNTIMEUTILITIES_API IGorgeousThingsModuleInterface : public I
 	virtual void ShutdownModule() override;
 	//<------------------------------------------------------------------------->
 
-	
+
 	//<============================--- C++ Only ---=============================>
 public:
-	
+
 	/**
 	 * The public wrapper function of the module interface that is called to load up this module.
 	 */
 	virtual void GorgeousStartupModule() = 0;
-	
+
 	/**
 	 * The public wrapper function of the module interface that is called to unload this module.
 	 */
 	virtual void GorgeousShutdownModule() = 0;
-	
+
 	/**
 	 * Returns the name of the gorgeous plugin that this module belongs to.
-	 * 
+	 *
 	 * @return The name of the gorgeous plugin that this module belongs to.
 	 */
 	virtual FName GetBelongingPluginName() const = 0;
-	
+
 	/**
 	 * Returns the functionality type of this gorgeous module.
-	 * 
+	 *
 	 * @return The functionality type of this gorgeous module.
 	 */
 	virtual EGorgeousModuleFunctionality GetModuleFunctionality() const = 0;
@@ -102,39 +101,39 @@ public:
 	/**
 	 * Returns how to handle failures during gorgeous module loading.
 	 * Defaults to ContinueOnFailure.
-	 * 
+	 *
 	 * @return  How to handle failures during gorgeous module loading.
 	 */
 	virtual EGorgeousModuleLoadFailureHandling GetLoadFailureHandling() const;
-	
+
 	/**
 	 * Returns an array of names from other gorgeous plugins that this module depends on.
 	 * This is used for the shop extension to download the full dependency chain for a gorgeous plugin.
-	 * 
+	 *
 	 * @return All plugins that provide functionality that is used within this current module.
 	 */
 	virtual TArray<FName> GetDependentPlugins() const = 0;
-	
+
 	/**
 	 * Returns the minimum required core version for this module to work properly.
 	 * This is used to ensure compatibility between different versions of gorgeous plugins.
-	 * 
+	 *
 	 * @return The minimum required core version as an integer. Represented as Major * 100 + (Minor * 10)
 	 */
 	virtual int32 GetMinimumRequiredCoreVersion() const = 0;
-	
+
 	/**
 	 * Returns the style set provided by this module for editor modules.
 	 * This is used to define used slate brushes and other style elements for editor modules of the gorgeous plugin family.
-	 * 
+	 *
 	 * @return The style set as a shared pointer to an FSlateStyleSet. Defaults to nullptr.
 	 */
 	virtual TSharedPtr<FSlateStyleSet> GetModuleStyleSet() const { return ModuleStyleSet; }
-	
+
 	/**
 	 * Returns whether this module provides core functionality.
 	 * Core functionality modules are essential for the operation of the gorgeous plugin family.
-	 * 
+	 *
 	 * @return true if this module provides core functionality, false otherwise.
 	 */
 	virtual bool ProvidesCoreFunctionality() const;
@@ -146,28 +145,28 @@ public:
 	 * @return Pointer to the library participant, or nullptr if this module does not participate.
 	 */
 	IGorgeousLibraryParticipant* GetLibraryParticipant() const { return LibraryParticipant; }
-	
+
 #if WITH_EDITOR
 	/**
 	 * Called during the Gorgeous Systems validation pass to allow this module to perform custom validation.
-	 * 
+	 *
 	 * @param InContext The validation context to record errors and warnings into.
 	 */
 	virtual void ValidateGorgeousModule(FDataValidationContext& InContext) {}
 #endif
-	
+
 protected:
 
 	/** Returns the Insight Matrix provider instance for this module (if any). */
 	class IGorgeousInsightMatrixProvider* GetInsightProvider() const { return (class IGorgeousInsightMatrixProvider*)InsightProvider; }
 	//<------------------------------------------------------------------------->
 
-	
+
 	//<============================--- Variables ---============================>
-	
+
 	// Optional style set for editor modules.
 	TSharedPtr<FSlateStyleSet> ModuleStyleSet;
-	
+
 	// Optional Insight Matrix provider for runtime modules.
 	IModularFeature* InsightProvider = nullptr;
 

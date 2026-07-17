@@ -10,12 +10,11 @@
 <==========================================================================*/
 #pragma once
 
-
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariable.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousRootObjectVariable.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -37,34 +36,44 @@ struct FGorgeousRootRegistryOwnerHandle
    {
    }
 
-   /** Root registry this handle refers to. */
+   // Root registry this handle refers to.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FName RootName;
 
-   /** Stable token assigned when ownership was first granted. */
+   // Stable token assigned when ownership was first granted.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FGuid OwnerToken;
 
-   /** Stable identifier provided by the original owner (typically a connection key). */
+   // Stable identifier provided by the original owner, typically a connection key.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FString StableIdentifier;
 
    bool IsValid() const { return OwnerToken.IsValid(); }
 };
 
-/**
- * The root object variable, serving as the central registry for all object variables.
- *
- * Key features include:
- * - Singleton pattern for global access.
- * - Registry for tracking all object variables.
- * - Hierarchy management for nested variables.
- * - Universal getter and setter functions for dynamic property access.
- * - Cleanup functionality for removing variables from the registry.
- *
- * @note This class provides a centralized and efficient way to manage object variables within the game.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Root Object Variable
+| Functional Name: UGorgeousRootObjectVariable
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| The root object variable is the central registry for all object variables.
+| It provides global access, hierarchy management, property access, and
+| registry cleanup.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousRootObjectVariable",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousRootObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
@@ -129,7 +138,7 @@ public:
 
     /**
      * Checks if a given object variable is already registered with the registry
-     * 
+     *
      * @param Variable The variable to check for existance in the registry
      * @return True if the variable is contained either in the root registry ot the registry of any other variable, false otherwise.
      */
@@ -151,7 +160,7 @@ public:
    /** Lookup helper that resolves a variable by its registered display name. */
    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
    static UGorgeousObjectVariable* FindVariableByDisplayName(FName InDisplayName);
-   
+
    template<typename VariableType>
    static VariableType* FindVariableByDisplayNameTyped(const FName InDisplayName)
    {
@@ -206,13 +215,13 @@ public:
      */
     static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);
 
-   
+
     /**
      * Sets the value of a property with any type for an object variable identified by its unique identifier.
      *
      * This function is not intended to be called from C++, it should only be used in Blueprint.
      * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
-     * 
+     *
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to set.
      * @param Value The value to set.
@@ -230,7 +239,7 @@ public:
      *
      * This function is not intended to be called from C++, it should only be used in Blueprint.
      * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
-     * 
+     *
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to get.
      * @param OutValue The output value.
@@ -240,7 +249,7 @@ public:
      */
     UFUNCTION(BlueprintPure, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
     static void GetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, int32& OutValue);
-   
+
     DECLARE_FUNCTION(execGetUniversalVariable);
 
     /**
@@ -265,9 +274,9 @@ private:
 public:
    /** Named root instances keyed by the identifier configured in settings. */
    static TMap<FName, TObjectPtr<UGorgeousRootObjectVariable>> NamedRootInstances;
-   
+
 protected:
-   /** Name key this root was registered with (None for legacy fallback). */
+   // Name key this root was registered with (None for legacy fallback).
    UPROPERTY(VisibleInstanceOnly, Category = "Gorgeous Core|Gorgeous Object Variables")
    FName RegisteredRootName;
 

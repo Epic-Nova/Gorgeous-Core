@@ -11,16 +11,16 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "SCheckBoxList.h"
+//<--------------------------=== Module Includes ===------------------------->
 #include "Input/Reply.h"
 #include "Types/SlateEnums.h"
 #include "UObject/Object.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "SCheckBoxList.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 struct FPropertyChangedEvent;
 enum class EGorgeousDataSchemaTransformKind_E : uint8;
 class FProperty;

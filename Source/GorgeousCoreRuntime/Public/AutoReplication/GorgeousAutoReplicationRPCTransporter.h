@@ -8,25 +8,49 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Components/ActorComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "Delegates/DelegateCombinations.h"
-
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCTransporter.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class FGorgeousAutoReplicationMixin;
 class APlayerController;
-
+//<------------------------------------------------------------->
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRequestClientTargetSignature, UGorgeousAutoReplicationRPCTransporter*, Transporter, const FGorgeousQueuedRPC&, QueuedRPC);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRPCRoutedSignature, const FGorgeousQueuedRPC&, QueuedRPC, UObject*, Target);
 
-/** Component responsible for routing AutoReplication RPC payloads across the desired network target. Can be subclassed for custom routing rules. */
-UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType, meta = (BlueprintSpawnableComponent))
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Auto Replication RPCTransporter
+| Functional Name: UGorgeousAutoReplicationRPCTransporter
+| Parent Class: UActorComponent
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Component responsible for routing AutoReplication RPC payloads across the
+| desired network target. Can be subclassed for custom routing rules.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCTransporter",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCTransporter : public UActorComponent
 {
 	GENERATED_BODY()
@@ -46,11 +70,11 @@ public:
 	/** Returns true when this transporter already services the provided mixin. */
 	bool IsLinkedToMixin(const FGorgeousAutoReplicationMixin* InOwningMixin) const;
 
-	/** Blueprint hook invoked when a client target is needed for RPC routing. */
+	// Blueprint hook invoked when a client target is needed for RPC routing.
 	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Core|AutoReplication|Networking")
 	FGorgeousAutoReplicationRequestClientTargetSignature OnResolveClientTarget;
 
-	/** Broadcast after an RPC has been forwarded to a remote endpoint. */
+	// Broadcast after an RPC has been forwarded to a remote endpoint.
 	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Core|AutoReplication|Networking")
 	FGorgeousAutoReplicationRPCRoutedSignature OnRPCForwarded;
 
@@ -77,7 +101,7 @@ protected:
 	virtual void ForwardPropertyPayloadToMulticast(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType);
 	virtual bool IsOwnerLocallyAuthoritative() const;
 	virtual bool IsOwnerLocallyControlledClient() const;
-	
+
 	UFUNCTION(Server, Reliable)
 	void ServerReceiveRPCReliable(const FGorgeousQueuedRPC& QueuedRPC);
 

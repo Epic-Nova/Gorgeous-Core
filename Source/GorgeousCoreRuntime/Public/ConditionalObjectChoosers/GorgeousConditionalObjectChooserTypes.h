@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -11,13 +11,13 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousConditionalObjectChooserTypes.generated.h"
 //<-------------------------------------------------------------------------->
 
 /**
  * Enumeration defining modes for conditional object choosers.
- * 
+ *
  * @author Nils Bergemann
  * @note This enum is used to specify how conditions are evaluated in conditional object choosers.
  */
@@ -72,10 +72,8 @@ struct FGameplayTagContainerWrapper_S
 	 * Default constructor. Initializes an empty container.
 	 */
 	FGameplayTagContainerWrapper_S() : Container() {}
-	
-	/**
-	 * The underlying Gameplay Tag Container.
-	 */
+
+	// The underlying Gameplay Tag Container.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Conditional Object Chooser")
 	FGameplayTagContainer Container;
 

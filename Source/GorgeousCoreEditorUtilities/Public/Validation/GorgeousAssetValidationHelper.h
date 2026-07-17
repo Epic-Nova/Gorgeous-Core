@@ -10,7 +10,10 @@
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR
 #include "Editor.h"
@@ -21,7 +24,7 @@
 
 /**
  * FGorgeousAssetValidationHelper
- * 
+ *
  * Reusable utility for validating assets by class type on startup.
  * This helper is designed to be used by the editor module to validate
  * specific asset types across all Gorgeous plugins.
@@ -31,11 +34,11 @@ class FGorgeousAssetValidationHelper
 public:
 	/**
 	 * Validates assets of a specific class type within the Gorgeous ecosystem.
-	 * 
+	 *
 	 * @param AssetClass The class type to validate (e.g., UGeneralSystemConfiguration_PDA, UDataRegistry)
 	 * @param AssetCount Output parameter: receives the number of assets validated
 	 * @param PluginContentPath Optional: restrict validation to a specific plugin path (e.g., "/GorgeousCore", "/GorgeousPlaylist")
-	 * 
+	 *
 	 * @return True if validation completed successfully, false otherwise
 	 */
 	static bool ValidateAssetsByClass(
@@ -100,7 +103,7 @@ public:
 
 	/**
 	 * Validates multiple asset classes in sequence.
-	 * 
+	 *
 	 * @param AssetClasses Array of class types to validate
 	 * @param PluginContentPath Optional: restrict validation to a specific plugin path
 	 */
@@ -120,6 +123,3 @@ public:
 #endif
 	}
 };
-
-
-

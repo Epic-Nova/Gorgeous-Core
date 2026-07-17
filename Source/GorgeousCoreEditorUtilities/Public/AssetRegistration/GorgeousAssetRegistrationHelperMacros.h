@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -18,7 +18,7 @@
 
 /**
  * Macro to register a new asset category in the Unreal Editor, which will be used to group all custom asset types related to Gorgeous Things under a common category in the content browser.
- * 
+ *
  * @param CategoryName The name of the asset category to register.
  * @param LocalizedDisplayName The localized display name of the asset category.
  */

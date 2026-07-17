@@ -11,48 +11,56 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<-------------------------=== Module Includes ===-------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeGlobals.h"
-//--------------=== Third Party & Miscellaneous Includes ===----------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationNetworkingGlobals.generated.h"
 //<-------------------------------------------------------------------------->
 
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
-| Display Name: Gorgeous AutoReplication Networking Globals
+| Display Name: Gorgeous Auto Replication Networking Globals
 | Functional Name: UGorgeousAutoReplicationNetworkingGlobals
 | Parent Class: UGorgeous
 | Class Suffix: -
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
-| Provides Blueprint-accessible helper functions for 
-| networking-related tasks in the context of AutoReplication.
+| Provides runtime functionality for Gorgeous Auto Replication Networking
+| Globals.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-UCLASS()
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/GorgeousAutoReplicationNetworkingGlobals",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationNetworkingGlobals : public UGorgeous
 {
 	GENERATED_BODY()
 
 	//<=======================--- Blueprint Functions ---=======================>
+#pragma region Blueprint Functions
 public:
 
 	/**
 	 * Builds an identifier by combining the AutoReplication connection key with platform fingerprints (OS/Login/hostname).
 	 * This keeps the value stable across reconnects on the same PC while still differentiating individual controllers.
-	 * 
+	 *
 	 * @param PlayerController The player controller to build the identifier for.
 	 * @return A stable identifier for the player's connection, which can be used for tracking players across disconnects/reconnects.
-	 * 
-	 * @note This function is designed to be stable for the same player on the same machine, but will produce different identifiers for different players or the same player on a different machine. 
+	 *
+	 * @note This function is designed to be stable for the same player on the same machine, but will produce different identifiers for different players or the same player on a different machine.
 	 * It is not intended to be globally unique or secure, but rather to provide a consistent identifier for a player's connection within the context of AutoReplication.
 	 */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|AutoReplication|Networking")
 	static FString MakeStablePlayerConnectionId(const APlayerController* PlayerController);
 	//<------------------------------------------------------------------------->
+#pragma endregion Blueprint Functions
 };
 
 using GT_AR_NetworkingLibrary = UGorgeousAutoReplicationNetworkingGlobals;

@@ -1,6 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - AutoReplication Transporter Probe           |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
@@ -8,20 +8,16 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
-/**
- * Enhanced test double that records RPC execution origin, destination, and
- * reliability for every routed call.  Unlike the lightweight TransporterSpy
- * this probe captures a full trace log, each entry records WHAT happened,
- * WHERE the call started (server/client), and WHERE it was dispatched plus
- * whether it was reliable or unreliable.
- */
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationTransporterProbe.generated.h"
+//<-------------------------------------------------------------------------->
 
 /** One captured RPC routing event. */
 USTRUCT()

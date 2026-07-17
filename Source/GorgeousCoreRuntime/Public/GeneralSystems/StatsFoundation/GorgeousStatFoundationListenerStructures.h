@@ -1,15 +1,29 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousStatFoundationListenerStructures.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class AGorgeousPlayerController;
 class AActor;
-
-/** 
- * Wrapper struct to allow TMap of TArray in UPROPERTY. 
+//<------------------------------------------------------------->
+/**
+ * Wrapper struct to allow TMap of TArray in UPROPERTY.
  * Mirrored from Signal Bridge system for architectural consistency.
  */
 USTRUCT()
@@ -31,15 +45,15 @@ struct FGorgeousStatListener_S
 	GENERATED_BODY()
 
 public:
-	/** The actor this listener registry is tracking. */
+	// The actor this listener registry is tracking.
 	UPROPERTY()
 	TWeakObjectPtr<AActor> TargetActor;
 
-	/** Controllers that want to receive all stat updates for this actor. */
+	// Controllers that want to receive all stat updates for this actor.
 	UPROPERTY()
 	TArray<TObjectPtr<AGorgeousPlayerController>> RegisteredListeners;
 
-	/** Controllers that only want specific stats for this actor. */
+	// Controllers that only want specific stats for this actor.
 	UPROPERTY()
 	TMap<FGameplayTag, FGorgeousStatControllerArray_S> TagSpecificListeners;
 };

@@ -1,13 +1,28 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "ObjectVariables/GorgeousObjectVariable.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
-#include "ObjectVariables/GorgeousObjectVariable.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousStatFoundationStructures.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class AGorgeousPlayerController;
-
+//<------------------------------------------------------------->
 /**
  * Global stat value storage for an actor.
  */
@@ -21,7 +36,9 @@ struct FGorgeousStatValues_S
 };
 
 /**
- * Container for multiple stat values, used by the Stat Storage and its listeners.
+ * Defines how a statistic value is rounded for presentation or storage.
+ *
+ * @author Nils Bergemann
  */
 UENUM(BlueprintType)
 enum class EGorgeousStatRoundingRule : uint8
@@ -35,6 +52,8 @@ enum class EGorgeousStatRoundingRule : uint8
 
 /**
  * Defines the category of a stat for UI grouping.
+ *
+ * @author Nils Bergemann
  */
 UENUM(BlueprintType)
 enum class EGorgeousStatCategory : uint8
@@ -58,15 +77,15 @@ struct FGorgeousStatAccessRules_S
 		: AccessPolicy(EGorgeousObjectVariableAccessPolicy::Everyone)
 	{}
 
-	/** Determines who can receive replicated updates for this stat. */
+	// Determines who can receive replicated updates for this stat.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat Access")
 	EGorgeousObjectVariableAccessPolicy AccessPolicy;
 
-	/** Whitelist of specific controller instances allowed to interact with this stat. */
+	// Whitelist of specific controller instances allowed to interact with this stat.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat Access", meta = (EditCondition = "AccessPolicy == EGorgeousObjectVariableAccessPolicy::Custom"))
 	TArray<TObjectPtr<AGorgeousPlayerController>> AllowedControllers;
 
-	/** Whitelist of controller classes allowed to interact with this stat. */
+	// Whitelist of controller classes allowed to interact with this stat.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat Access", meta = (EditCondition = "AccessPolicy == EGorgeousObjectVariableAccessPolicy::Custom"))
 	TArray<TSubclassOf<AGorgeousPlayerController>> AllowedClasses;
 };
@@ -109,15 +128,15 @@ struct FGorgeousStat_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Presentation")
 	EGorgeousStatRoundingRule RoundingRule = EGorgeousStatRoundingRule::None;
 
-	/** If set, this signal tag will trigger a stat modification when dispatched through the Signal Bridge. */
+	// If set, this signal tag will trigger a stat modification when dispatched through the Signal Bridge.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Signals")
 	FGameplayTag ModificationSignal;
 
-	/** If true, the modification signal payload is treated as a delta (addition). If false, it's treated as a absolute 'Set' operation. */
+	// If true, the modification signal payload is treated as a delta (addition). If false, it's treated as a absolute 'Set' operation.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Signals", meta = (EditCondition = "!ModificationSignal.IsNone()"))
 	bool bSignalIsDelta = true;
 
-	/** Network access rules for this stat. */
+	// Network access rules for this stat.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat|Networking")
 	FGorgeousStatAccessRules_S AccessRules;
 };
@@ -133,7 +152,7 @@ struct FGorgeousStatModificationPayload_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float Value = 0.0f;
 
-	/** Optional source of the modification (e.g. the actor that dealt damage). */
+	// Optional source of the modification (e.g. the actor that dealt damage).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	TObjectPtr<AActor> Source = nullptr;
 };

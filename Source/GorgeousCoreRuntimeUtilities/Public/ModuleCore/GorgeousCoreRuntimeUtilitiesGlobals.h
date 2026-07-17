@@ -15,7 +15,6 @@
 #include "GorgeousCoreRuntimeUtilitiesStructures.h"
 //<-------------------------------------------------------------------------->
 
-//<=================--- Delegates ---=================>
 DECLARE_MULTICAST_DELEGATE_OneParam(FGorgeousLogEntryDelegate, const FGorgeousLogEntry&);
 //<--------------------------------------------------->
 

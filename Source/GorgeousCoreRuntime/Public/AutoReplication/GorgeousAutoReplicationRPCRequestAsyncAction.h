@@ -43,11 +43,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCAsyncResult
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	FGorgeousAutoReplicationRPCResult Result;
 
-	/** Ordered list of every responder result received so far (server-first on completion). */
+	// Ordered list of every responder result received so far (server-first on completion).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	TArray<FGorgeousAutoReplicationRPCResult> ResultSet;
 
-	/** Keyed responder map for quick lookups by connection identifier. */
+	// Keyed responder map for quick lookups by connection identifier.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	TMap<FString, FGorgeousAutoReplicationRPCResult> ResultMap;
 
@@ -64,19 +64,39 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCAsyncResult
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	bool bIsLastResult;
 
-	/** Total number of responders expected to reply (0 = unknown, e.g. multicast). */
+	// Total number of responders expected to reply (0 = unknown, e.g. multicast).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	int32 TotalExpectedResponders;
 
-	/** Number of responders that have replied so far (including the current one). */
+	// Number of responders that have replied so far (including the current one).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	int32 TotalReceivedResponders;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGorgeousAutoReplicationRPCAsyncDelegate, const FGorgeousAutoReplicationRPCAsyncResult&, Result);
 
-/** Blueprint async node that queues a AutoReplication RPC and fires when the payload is executed. */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Auto Replication RPC Request Async Action
+| Functional Name: UGorgeousAutoReplicationRPCRequestAsyncAction
+| Parent Class: UBlueprintAsyncActionBase
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Blueprint async node that queues an AutoReplication RPC and broadcasts its
+| responder results as they arrive.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRequestAsyncAction : public UBlueprintAsyncActionBase
 {
 	GENERATED_BODY()
@@ -125,11 +145,11 @@ public:
 		meta = (WorldContext = "WorldContextObject", DisplayName = "Mark RPC Responder Ready"))
 	static void MarkAutoReplicationRPCResponderReady(UObject* WorldContextObject, const FGorgeousQueuedRPC& QueuedRPC, EGorgeousRPCReadyState ReadyState);
 
-	/** Completion event that exposes the responder map through UGorgeousRPC_OV. */
+	// Completion event that exposes the responder map through UGorgeousRPC_OV.
 	UPROPERTY(BlueprintAssignable)
 	FGorgeousAutoReplicationRPCAsyncDelegate OnCompleted;
 
-	/** Failure event that mirrors the detailed completion payload. */
+	// Failure event that mirrors the detailed completion payload.
 	UPROPERTY(BlueprintAssignable)
 	FGorgeousAutoReplicationRPCAsyncDelegate OnFailed;
 
@@ -146,11 +166,11 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FGorgeousAutoReplicationRPCAsyncDelegate OnSingleResponderCompleted;
 
-	/** Optional container that will receive a copy of the result when the request finishes. */
+	// Optional container that will receive a copy of the result when the request finishes.
 	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|AutoReplication|Networking", meta = (ExposeOnSpawn = "true"))
 	UGorgeousRPC_OV* ResultContainer;
 
-	/** Cached responder results collected for the most recent request (may contain a single entry). */
+	// Cached responder results collected for the most recent request (may contain a single entry).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking", meta = (AllowPrivateAccess = "true"))
 	TArray<FGorgeousAutoReplicationRPCResult> CachedResults;
 
@@ -256,4 +276,3 @@ private:
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking", meta = (AllowPrivateAccess = "true"))
 	TMap<FString, FGorgeousAutoReplicationRPCResult> CachedResultMap;
 };
-
