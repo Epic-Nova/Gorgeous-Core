@@ -12,7 +12,7 @@
 <h3 align="center">Gorgeous Things: Gorgeous Core</h3>
 
   <p align="center">
-    Gorgeous Things Core plugin that provides core code for other Gorgeous Things Plugins, that opens the door to new possibilities in Programming.
+    Build Games not Infrastructure. Spend your time creating worlds, not repeatedly pouring the same foundation.
     <br />
     <br />
     <a href="https://gorgeous.simsalabim.studio/docs"><strong>Explore the docs</strong></a>
