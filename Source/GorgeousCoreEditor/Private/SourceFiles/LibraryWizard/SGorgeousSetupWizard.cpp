@@ -643,9 +643,9 @@ FString SGorgeousSetupWizard::ValidateSavePath() const
 		return TEXT("Save Path cannot be empty.");
 	}
 
-	if (!SavePath.StartsWith(TEXT("/Game")) && !SavePath.StartsWith(TEXT("/Plugin")))
+	if (!FPackageName::IsValidLongPackageName(SavePath, true))
 	{
-		return TEXT("Save Path must start with /Game or /Plugin.");
+		return TEXT("Save Path must be a valid Unreal long package path, such as /Game/Items/ or /MyCoolItem/");
 	}
 
 	if (AssetName.IsEmpty())

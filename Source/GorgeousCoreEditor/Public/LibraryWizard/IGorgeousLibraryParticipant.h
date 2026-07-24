@@ -86,6 +86,14 @@ public:
 	virtual TArray<FGorgeousLibraryCategoryDescriptor> GetLibraryCategories() const = 0;
 
 	/**
+	 * Appends transient or native entries to a category after the Asset Registry
+	 * result has been gathered. This is intended for C++ template CDOs: they are
+	 * valid wizard sources but are not saved .uasset files and therefore cannot
+	 * be discovered by an Asset Registry class query.
+	 */
+	virtual void AppendLibraryAssets(const FGorgeousLibraryCategoryDescriptor& Category, TArray<FAssetData>& InOutAssets) const {}
+
+	/**
 	 * Called when an asset in one of this participant's categories is double-clicked.
 	 */
 	virtual void OnAssetDoubleClicked(const FAssetData& Asset, const FGorgeousLibraryCategoryDescriptor& Category) {}

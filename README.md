@@ -5,14 +5,14 @@
 <br />
 <div align="center">
   <a href="https://github.com/Epic-Nova/Gorgeous-Core">
-    <img src=".github/Logo.png" alt="Logo" width="128" height="128">
+    <img src=".github/Logo.png" alt="Gorgeous Core logo" width="128" height="128">
   </a>
-  
-  <a href="https://epicnova.net">![Epic Nova](./.github/EpicNova-Shield.svg)</a>
+
+  <a href="https://epicnova.net"><img src="./.github/EpicNova-Shield.svg" alt="Epic Nova"></a>
 <h3 align="center">Gorgeous Things: Gorgeous Core</h3>
 
   <p align="center">
-    Build Games not Infrastructure. Spend your time creating worlds, not repeatedly pouring the same foundation.
+    <strong>Build games, not infrastructure.</strong> Spend your time creating worlds, not repeatedly pouring the same foundation.
     <br />
     <br />
     <a href="https://gorgeous.simsalabim.studio/docs"><strong>Explore the docs</strong></a>
@@ -34,20 +34,20 @@
 <div align="center">
   <h2>Built With</h2>
 
-  <a href="">[![Unreal Engine][UnrealEngine-Shield-URL]][Unreal-URL]</a>
-  <a href="">![C++][CPP-Shield-URL]</a>
-  <a href="">![C#][CSharp-Shield-URL]</a>
+  <a href="https://unrealengine.com"><img src="https://img.shields.io/badge/unrealengine-%23313131.svg?style=for-the-badge&logo=unrealengine&logoColor=white" alt="Unreal Engine"></a>
+  <img src="https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white" alt="C++">
+  <img src="https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white" alt="C#">
 
 </div>
 
 <div align="center">
   <h2>Stats</h2>
 
-  <a href="">[![Contributors][Contributors-Shield-URL]][Contributors-URL]</a>
-  <a href="">[![Forks][Forks-Shield-URL]][Forks-URL]</a>
-  <a href="">[![Stargazers][Stars-Shield-URL]][Stars-URL]</a>
-  <a href="">[![Issues][Issues-Shield-URL]][Issues-URL]</a>
-  <a href="">[![project_license][License-Shield-URL]][License-URL]</a>
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors"><img src="https://img.shields.io/github/contributors/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge" alt="Contributors"></a>
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/network/members"><img src="https://img.shields.io/github/forks/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge" alt="Forks"></a>
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/stargazers"><img src="https://img.shields.io/github/stars/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge" alt="Stargazers"></a>
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/issues"><img src="https://img.shields.io/github/issues/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge" alt="Issues"></a>
+  <a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/LICENSE"><img src="https://img.shields.io/github/license/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge" alt="MIT License"></a>
 
 </div>
 
@@ -67,7 +67,7 @@
         <li><a href="https://github.com/Epic-Nova/Gorgeous-Core/blob/master/.github/DEVELOPMENT.md#-blueprint-only-users-no-c-required">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#-usage">Usage</a></li>
+    <li><a href="#️-usage">Usage</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
     <li><a href="#-contributing">Contributing</a></li>
     <li><a href="#-license">License</a></li>
@@ -81,12 +81,33 @@
 <!-- ABOUT THE PROJECT -->
 ## 🧩 About The Project
 <div align="center">
-  <img src="./.github/ProjectBanner.png">
-
-
-**Gorgeous Core** is a foundational plugin designed to provide essential utilities and tools for enhancing programming workflows. It serves as the **backbone for other plugins** in the **Gorgeous Things family**, offering core functionalities that can be extended and customized.
-
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="./.github/ProjectBanner-light.svg">
+    <img src="./.github/ProjectBanner.svg" alt="Gorgeous Core — Build games, not infrastructure." width="100%">
+  </picture>
 </div>
+
+**Gorgeous Core is the architectural foundation of the Gorgeous Things ecosystem.** It exists because game teams should not have to rebuild the same invisible work for every project: networking, object systems, replication, developer tooling, build infrastructure, project architecture, and the contracts that let plugins work together.
+
+> [!IMPORTANT]
+> Gorgeous Core is not another feature plugin. It is the shared architecture every Gorgeous Things capability is designed to build upon.
+
+It is intentionally not the exciting plugin. It is intentionally the dependable part underneath every other Gorgeous Things plugin—the part that makes new capabilities feel native to the same project instead of bolted on beside it.
+
+When it is doing its job, the reaction should not be “wow.” It should be: **good, I never have to solve this again.**
+
+### One foundation. Many games.
+
+Gorgeous Things is an ecosystem, not a collection of isolated plugins. Core establishes a shared language for data, signals, tooling, UI, and gameplay foundations. Each plugin can then solve its own problem without bringing a second architecture, a new communication model, or another round of integration work with it.
+
+<div align="center">
+  <a href="https://gorgeous.simsalabim.studio/docs">
+    <img src="./.github/ArchitectureFlow.svg" alt="Object Variables flow through Signal Bridge to UI and gameplay systems." width="100%">
+  </a>
+  <br>
+  <sub>Click to explore the Gorgeous Things documentation.</sub>
+</div>
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
@@ -96,13 +117,69 @@
 <!-- USAGE EXAMPLES -->
 ## 🛠️ Usage
 
-You’ll find practical usage examples inside the plugin’s ```Content``` **folder**. These demonstrate how to integrate and work with the features offered by Gorgeous Core.
+Core is not a monolith you have to adopt all at once. Start with the system that removes work from the game you are making; the shared foundation keeps the next system from becoming a second integration project.
 
-Examples include:
+<div align="center">
+  <a href="#blueprint-systems"><img src="./.github/cards/BlueprintSystems.svg" alt="Build visually — Blueprint systems" width="31%"></a>
+  <a href="#cpp-systems"><img src="./.github/cards/NativeSystems.svg" alt="Extend natively — C++ systems" width="31%"></a>
+  <a href="#project-implementations"><img src="./.github/cards/FoundationSystems.svg" alt="Ship consistently — project foundations" width="31%"></a>
+</div>
 
-  - 📁 **Blueprint utilities**
-  - 🧪 **Test scenes**
-  - 🔧 **Core systems usage**
+### Choose your first problem
+
+| I need to… | Start with |
+| --- | --- |
+| Keep structured game state consistent | [Object Variables](#blueprint-systems) |
+| Let systems communicate without hard references | [Signal Bridge](#blueprint-systems) |
+| Give UI a shared project language | [Common UI Foundation](#project-implementations) |
+| Reuse player interactions across the game | [Interaction Foundation](#general-systems) |
+
+<a id="blueprint-systems"></a>
+### 🟦 Blueprint systems
+
+Built for visually composing project behavior while Core handles the connective architecture underneath.
+
+| System | Description |
+| --- | --- |
+| **Object Variables** | Persistent, structured object state with hierarchy, lifecycle and replication-aware foundations. |
+| **Data Migration Mapping** | Declarative mappings and transforms for moving data from one schema or source shape to another. |
+| **Signal Bridge** | Gameplay-tagged signals with typed payloads, so systems can communicate without hard references. |
+| **Conditional Object Choosers** | Data-driven object selection through reusable conditions instead of a growing web of branches. |
+| **Visual Data Gathering** | Editor-facing tools for collecting, inspecting and shaping data where designers work. |
+
+<a id="cpp-systems"></a>
+### 🟪 C++ systems
+
+Native extension points and engineering tools for teams shaping the architecture at the code level.
+
+| System | Description |
+| --- | --- |
+| **Debug Assist** | Runtime debug helpers—such as in-world beacons and diagnostic support—when a system needs to become visible. |
+| **Insight Matrix** | A focused panel for running, observing and understanding registered Core insight and test scenarios. |
+
+<a id="project-implementations"></a>
+### 🟨 Project implementations
+
+Practical building blocks that establish a consistent solution for a project concern, then leave room for the game to make it its own.
+
+| System | Description |
+| --- | --- |
+| **Common UI Foundation** | A policy-led UI base for layouts, input, theming and CommonUI-compatible widgets. |
+
+<a id="general-systems"></a>
+### 🟩 General systems
+
+Small, composable gameplay foundations. Use one when it solves the problem; combine them when the game asks for more.
+
+| System | Description |
+| --- | --- |
+| **Team System** | Shared team identity and relationship rules for actors and gameplay decisions. |
+| **Playlist System** | Data-driven selection and management of playable modes, content sets or rotations. |
+| **Interaction Foundation** | A common contract for discovering, presenting and executing player interactions. |
+| **Stats Foundation** | Replicated stat storage, modifiers and change notifications that can connect to the Signal Bridge. |
+| **Feedback Effects** | A consistent path for triggering gameplay feedback without binding the caller to a specific presentation. |
+
+You’ll find practical usage examples inside the plugin’s `Content` **folder**, including Blueprint utilities, test scenes, and Core system references.
 
 *For more documentation and advanced scenarios, check the [Documentation](https://gorgeous.simsalabim.studio/docs).*
 
@@ -213,35 +290,10 @@ Big thanks to:
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[Contributors-Shield-URL]: https://img.shields.io/github/contributors/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[Contributors-URL]: https://github.com/Epic-Nova/Gorgeous-Core/graphs/contributors
-
-[Forks-Shield-URL]: https://img.shields.io/github/forks/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[Forks-URL]: https://github.com/Epic-Nova/Gorgeous-Core/network/members
-
-[Stars-Shield-URL]: https://img.shields.io/github/stars/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[Stars-URL]: https://github.com/Epic-Nova/Gorgeous-Core/stargazers
-
-[Issues-Shield-URL]: https://img.shields.io/github/issues/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[Issues-URL]: https://github.com/Epic-Nova/Gorgeous-Core/issues
-
-[License-Shield-URL]: https://img.shields.io/github/license/Epic-Nova/Gorgeous-Core.svg?style=for-the-badge
-[License-URL]: https://github.com/Epic-Nova/Gorgeous-Core/blob/master/LICENSE
-
-[UnrealEngine-Shield-URL]: https://img.shields.io/badge/unrealengine-%23313131.svg?style=for-the-badge&logo=unrealengine&logoColor=white
-[Unreal-URL]: https://unrealengine.com
-
-[CPP-Shield-URL]: https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white
-[CSharp-Shield-URL]: https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white
-
-[Plugin-Screenshot-URL]: https://example.com
-
 [Discord-Invite-URL]: https://discord.gg/AQuez8fwFG
 
 [Developer-Mail]: mailto:nils.bergemann@employee.epicnova.net
 [LinkedIn-URL]: https://linkedin.com/in/nils-bergemann-6398a5280
 
-[Discord-URL]: https://discord.com/
 [Readme-Template-URL]: https://github.com/othneildrew/Best-README-Template
 [EpicNova-URL]: https://epicnova.net?utm_source=gt_repo&utm_medium=markdown&utm_campaign=gt_readme&utm_content=readme
-

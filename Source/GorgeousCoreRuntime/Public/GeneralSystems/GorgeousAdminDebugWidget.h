@@ -33,6 +33,7 @@
 | Base class for all Gorgeous runtime admin and debug widgets. Integrates
 | directly with the Gorgeous Permission System to check access rights for
 | the local player.
+| This is a precursor to the upcoming Supportstrative console
 <--------------------------------------------------------------------------->
 <==========================================================================>
 */

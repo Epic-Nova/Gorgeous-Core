@@ -53,6 +53,8 @@ public struct GorgeousBuildSettings
 	public string[]? IncludePathsToExclude;
 	public List<string>? AdditionalLibraries;
 	public List<string>? AdditionalDynamicLibraries;
+	// Disables include-based dependency inference for this module when true.
+	public bool bDisableInferredDependencies;
 }
 
 public abstract class GorgeousModuleRules : ModuleRules
@@ -97,10 +99,36 @@ public abstract class GorgeousModuleRules : ModuleRules
 		PublicDefinitions.Add("GORGEOUS_WITH_" + moduleName + "_MODULE=1"); //@TODO: Do we really need this?
 
 		ApplyAutoDependencies(Settings);
-		ApplyInferredDependencies(Settings);
+		// Make foreign macro providers available before parsing conditional includes.
+		InjectForeignPluginMacros();
+		if (IsInferredDependencyScanEnabled(Settings))
+		{
+			ApplyInferredDependencies(Settings);
+		}
+		else
+		{
+			// Opt-out freezes the last resolved dependency graph instead of removing
+			// dependencies from Build.cs. A missing cache is generated exactly once.
+		ApplyFrozenInferredDependencies(Settings);
+		}
 		ApplyAutoIncludePaths(Settings);
 
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
+	}
+
+	/// <summary>
+	/// Resolves whether the include-based dependency scan is enabled for this module and target.
+	/// A module can set GorgeousBuildSettings.bDisableInferredDependencies to true. A target can
+	/// disable it project-wide with GlobalDefinitions.Add("GORGEOUS_ENABLE_INFERRED_DEPENDENCIES=0").
+	/// </summary>
+	private bool IsInferredDependencyScanEnabled(GorgeousBuildSettings Settings)
+	{
+		if (Settings.bDisableInferredDependencies)
+		{
+			return false;
+		}
+
+		return GetDefinitionValue(Target.GlobalDefinitions, "GORGEOUS_ENABLE_INFERRED_DEPENDENCIES", true);
 	}
 
 	protected void AddPublicDependency(IEnumerable<string> Modules)
@@ -296,7 +324,14 @@ public abstract class GorgeousModuleRules : ModuleRules
 					if (method.GetCustomAttribute<GorgeousMacroProviderAttribute>() != null)
 					{
 						// Method must return IEnumerable<string>
-						var result = method.Invoke(null, null) as IEnumerable<string>;
+						var parameters = method.GetParameters();
+						var result = parameters.Length switch
+						{
+							0 => method.Invoke(null, null) as IEnumerable<string>,
+							1 when parameters[0].ParameterType == typeof(ReadOnlyTargetRules)
+								=> method.Invoke(null, new object[] { Target }) as IEnumerable<string>,
+							_ => null
+						};
 						if (result != null)
 						{
 							foreach (var macro in result)
@@ -373,7 +408,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 	/// <summary>
 	/// Generic helper to find all plugins and inject macros.
 	/// </summary>
-	public static IEnumerable<string> InjectPluginMacros(string PluginsDirectory)
+	public static IEnumerable<string> InjectPluginMacros(string PluginsDirectory, string? ProjectDescriptorPath = null)
 	{
 		var results = new List<string>();
 		if (!Directory.Exists(PluginsDirectory)) return results;
@@ -383,7 +418,13 @@ public abstract class GorgeousModuleRules : ModuleRules
 			var upluginFiles = Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories);
 			foreach (var uplugin in upluginFiles)
 			{
-				var pluginName = Path.GetFileNameWithoutExtension(uplugin).ToUpper();
+				var descriptorPluginName = Path.GetFileNameWithoutExtension(uplugin);
+				if (!IsPluginDescriptorActive(descriptorPluginName, uplugin, PluginsDirectory, ProjectDescriptorPath))
+				{
+					continue;
+				}
+
+				var pluginName = descriptorPluginName.ToUpper();
 				
 				bool isNative = false;
 				if (pluginName.StartsWith("GORGEOUS-")) 
@@ -420,6 +461,71 @@ public abstract class GorgeousModuleRules : ModuleRules
 		catch (Exception) { /* Fail silently */ }
 
 		return results;
+	}
+
+	/// <summary>
+	/// Applies the StructUtils module dependency only while the engine still exposes
+	/// InstancedStruct through the legacy StructUtils plugin. UE 5.6 moved the
+	/// required headers into the engine, so later versions must not load the
+	/// deprecated plugin merely for those types.
+	/// </summary>
+	protected void ApplyLegacyStructUtilsRequirement(bool bRequiresStructUtilsEngine = false)
+	{
+		var bUsesLegacyStructUtils = Target.Version.MajorVersion < 5
+			|| (Target.Version.MajorVersion == 5 && Target.Version.MinorVersion < 6);
+
+		PublicDefinitions.Add($"GORGEOUS_WITH_LEGACY_STRUCTUTILS={(bUsesLegacyStructUtils ? 1 : 0)}");
+		if (!bUsesLegacyStructUtils)
+		{
+			return;
+		}
+
+		AddPublicDependency(new[] { "StructUtils" });
+		if (bRequiresStructUtilsEngine)
+		{
+			AddPublicDependency(new[] { "StructUtilsEngine" });
+		}
+	}
+
+	/// <summary>
+	/// Returns whether a plugin is enabled by the project descriptor, by an enabled descriptor
+	/// reference, or by its own EnabledByDefault setting. This intentionally distinguishes an
+	/// installed plugin from one that UBT may load for the active target.
+	/// </summary>
+	private static bool IsPluginDescriptorActive(
+		string PluginName,
+		string PluginDescriptorPath,
+		string PluginsDirectory,
+		string? ProjectDescriptorPath)
+	{
+		var descriptorPaths = Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories).ToList();
+		if (!string.IsNullOrWhiteSpace(ProjectDescriptorPath) && File.Exists(ProjectDescriptorPath))
+		{
+			descriptorPaths.Add(ProjectDescriptorPath);
+		}
+
+		var escapedPluginName = Regex.Escape(PluginName);
+		var enabledReferencePattern = $"\\\"Name\\\"\\s*:\\s*\\\"{escapedPluginName}\\\".*?\\\"Enabled\\\"\\s*:\\s*true";
+		foreach (var descriptorPath in descriptorPaths)
+		{
+			try
+			{
+				if (Regex.IsMatch(File.ReadAllText(descriptorPath), enabledReferencePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
+				{
+					return true;
+				}
+			}
+			catch (Exception) { }
+		}
+
+		try
+		{
+			return Regex.IsMatch(File.ReadAllText(PluginDescriptorPath), "\\\"EnabledByDefault\\\"\\s*:\\s*true", RegexOptions.IgnoreCase);
+		}
+		catch (Exception)
+		{
+			return false;
+		}
 	}
 
 	/// <summary>
@@ -465,16 +571,37 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 	private void ApplyInferredDependencies(GorgeousBuildSettings Settings)
 	{
-		var cache = LoadOrGenerateDependencyCache(Settings);
+		var preprocessorDefinitions = BuildPreprocessorDefinitions();
+		var cache = LoadOrGenerateDependencyCache(Settings, preprocessorDefinitions);
 		var exclusions = new HashSet<string>(Settings.ModulesToExclude ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
 		AddPublicDependency(cache.PublicDependencies.Where(dep => !exclusions.Contains(dep)));
 		AddPrivateDependency(cache.PrivateDependencies.Where(dep => !exclusions.Contains(dep)));
 	}
 
-	private DependencyCache LoadOrGenerateDependencyCache(GorgeousBuildSettings Settings)
+	/// <summary>
+	/// Applies a stable dependency snapshot while inference is disabled. This prevents
+	/// toggling a module/target opt-out from silently dropping required link inputs.
+	/// The snapshot is not refreshed from source changes; delete its cache or re-enable
+	/// inference deliberately when the module's include graph should change.
+	/// </summary>
+	private void ApplyFrozenInferredDependencies(GorgeousBuildSettings Settings)
+	{
+		var preprocessorDefinitions = BuildPreprocessorDefinitions();
+		var cache = LoadOrCreateFrozenDependencyCache(Settings, preprocessorDefinitions);
+		var exclusions = new HashSet<string>(Settings.ModulesToExclude ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+
+		AddPublicDependency(cache.PublicDependencies.Where(dep => !exclusions.Contains(dep)));
+		AddPrivateDependency(cache.PrivateDependencies.Where(dep => !exclusions.Contains(dep)));
+	}
+
+	private DependencyCache LoadOrGenerateDependencyCache(
+		GorgeousBuildSettings Settings,
+		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
 	{
 		var cachePath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousDepsCache.json");
+		var sourceSignature = BuildSourceSignature();
+		var preprocessorSignature = BuildPreprocessorSignature(PreprocessorDefinitions);
 		var regenerate = Target.bGenerateProjectFiles;
 
 		if (!regenerate && File.Exists(cachePath))
@@ -497,8 +624,15 @@ public abstract class GorgeousModuleRules : ModuleRules
 					var items = Regex.Matches(privMatch.Groups[1].Value, "\"([^\"]+)\"");
 					foreach (Match m in items) cache.PrivateDependencies.Add(m.Groups[1].Value);
 				}
+
+				var sourceSignatureMatch = Regex.Match(text, "\"SourceSignature\"\\s*:\\s*\"(?<value>[^\"]*)\"");
+				cache.SourceSignature = sourceSignatureMatch.Success ? sourceSignatureMatch.Groups["value"].Value : string.Empty;
+				var preprocessorSignatureMatch = Regex.Match(text, "\"PreprocessorSignature\"\\s*:\\s*\"(?<value>[^\"]*)\"");
+				cache.PreprocessorSignature = preprocessorSignatureMatch.Success ? preprocessorSignatureMatch.Groups["value"].Value : string.Empty;
 				
-				if (cache.PublicDependencies.Count > 0 || cache.PrivateDependencies.Count > 0)
+				if ((cache.PublicDependencies.Count > 0 || cache.PrivateDependencies.Count > 0)
+					&& cache.SourceSignature == sourceSignature
+					&& cache.PreprocessorSignature == preprocessorSignature)
 					return cache;
 			}
 			catch (Exception) { /* Fall through to regenerate */ }
@@ -506,7 +640,9 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 		var dirName = Path.GetDirectoryName(cachePath);
 		if (dirName != null) Directory.CreateDirectory(dirName);
-		var generated = GenerateDependencyCache(Settings);
+		var generated = GenerateDependencyCache(Settings, PreprocessorDefinitions);
+		generated.SourceSignature = sourceSignature;
+		generated.PreprocessorSignature = preprocessorSignature;
 		
 		var output = new List<string>();
 		output.Add("{");
@@ -525,14 +661,78 @@ public abstract class GorgeousModuleRules : ModuleRules
 			var comma = (i < generated.PrivateDependencies.Count - 1) ? "," : "";
 			output.Add($"    \"{generated.PrivateDependencies[i]}\"{comma}");
 		}
-		output.Add("  ]");
+		output.Add("  ],");
+		output.Add($"  \"SourceSignature\": \"{generated.SourceSignature}\",");
+		output.Add($"  \"PreprocessorSignature\": \"{generated.PreprocessorSignature}\"");
 		
 		output.Add("}");
 		File.WriteAllLines(cachePath, output);
 		return generated;
 	}
 
-	private DependencyCache GenerateDependencyCache(GorgeousBuildSettings Settings)
+	/// <summary>
+	/// Loads a dependency snapshot without checking signatures. If no snapshot exists,
+	/// performs one initial scan and persists it for all later opt-out builds.
+	/// </summary>
+	private DependencyCache LoadOrCreateFrozenDependencyCache(
+		GorgeousBuildSettings Settings,
+		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
+	{
+		var cachePath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousDepsCache.json");
+		if (File.Exists(cachePath))
+		{
+			try
+			{
+				var text = File.ReadAllText(cachePath);
+				var cache = new DependencyCache();
+				var pubMatch = Regex.Match(text, "\\\"PublicDependencies\\\"\\s*:\\s*\\[(.*?)\\]", RegexOptions.Singleline);
+				if (pubMatch.Success)
+				{
+					foreach (Match match in Regex.Matches(pubMatch.Groups[1].Value, "\\\"([^\\\"]+)\\\"")) cache.PublicDependencies.Add(match.Groups[1].Value);
+				}
+				var privMatch = Regex.Match(text, "\\\"PrivateDependencies\\\"\\s*:\\s*\\[(.*?)\\]", RegexOptions.Singleline);
+				if (privMatch.Success)
+				{
+					foreach (Match match in Regex.Matches(privMatch.Groups[1].Value, "\\\"([^\\\"]+)\\\"")) cache.PrivateDependencies.Add(match.Groups[1].Value);
+				}
+
+				// A valid cache may legitimately contain no inferred dependencies. Its
+				// signature fields distinguish that state from an unreadable empty file.
+				if (Regex.IsMatch(text, "\\\"SourceSignature\\\"\\s*:\\s*\\\"[^\\\"]*\\\""))
+				{
+					return cache;
+				}
+			}
+			catch (Exception) { /* Build a first stable snapshot below. */ }
+		}
+
+		var generated = GenerateDependencyCache(Settings, PreprocessorDefinitions);
+		generated.SourceSignature = BuildSourceSignature();
+		generated.PreprocessorSignature = BuildPreprocessorSignature(PreprocessorDefinitions);
+		var cacheDirectory = Path.GetDirectoryName(cachePath);
+		if (cacheDirectory != null) Directory.CreateDirectory(cacheDirectory);
+		WriteDependencyCache(cachePath, generated);
+		Console.WriteLine($"Gorgeous inferred dependency scan is disabled for {Name}; created initial frozen cache at {cachePath}.");
+		return generated;
+	}
+
+	private static void WriteDependencyCache(string CachePath, DependencyCache Cache)
+	{
+		var output = new List<string> { "{", "  \"PublicDependencies\": [" };
+		for (int i = 0; i < Cache.PublicDependencies.Count; i++) output.Add($"    \"{Cache.PublicDependencies[i]}\"{(i < Cache.PublicDependencies.Count - 1 ? "," : "")}");
+		output.Add("  ],");
+		output.Add("  \"PrivateDependencies\": [");
+		for (int i = 0; i < Cache.PrivateDependencies.Count; i++) output.Add($"    \"{Cache.PrivateDependencies[i]}\"{(i < Cache.PrivateDependencies.Count - 1 ? "," : "")}");
+		output.Add("  ],");
+		output.Add($"  \"SourceSignature\": \"{Cache.SourceSignature}\",");
+		output.Add($"  \"PreprocessorSignature\": \"{Cache.PreprocessorSignature}\"");
+		output.Add("}");
+		File.WriteAllLines(CachePath, output);
+	}
+
+	private DependencyCache GenerateDependencyCache(
+		GorgeousBuildSettings Settings,
+		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
 	{
 		var exclusions = new HashSet<string>(Settings.ModulesToExclude ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 		var publicPath = Path.Combine(ModuleDirectory, "Public");
@@ -543,8 +743,10 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var headerMapCachePath = Path.Combine(projectDir, "Intermediate", "GorgeousHeaderMapCache.json");
 		var headerMap = GetOrGenerateHeaderMap(headerMapCachePath);
 
-		var publicDeps = ScanForModules(publicPath, exclusions, headerMap);
-		var privateDeps = ScanForModules(privatePath, exclusions, headerMap);
+		var diagnostics = new List<string>();
+		var publicDeps = ScanForModules(publicPath, exclusions, headerMap, PreprocessorDefinitions, diagnostics).ToList();
+		var privateDeps = ScanForModules(privatePath, exclusions, headerMap, PreprocessorDefinitions, diagnostics).ToList();
+		WriteInferenceReport(publicDeps, privateDeps, diagnostics);
 
 		return new DependencyCache
 		{
@@ -554,7 +756,12 @@ public abstract class GorgeousModuleRules : ModuleRules
 		};
 	}
 
-	private IEnumerable<string> ScanForModules(string Root, HashSet<string> Exclusions, Dictionary<string, string> HeaderMap)
+	private IEnumerable<string> ScanForModules(
+		string Root,
+		HashSet<string> Exclusions,
+		Dictionary<string, string> HeaderMap,
+		IReadOnlyDictionary<string, bool> PreprocessorDefinitions,
+		List<string> Diagnostics)
 	{
 		if (!Directory.Exists(Root)) yield break;
 
@@ -567,20 +774,322 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var discovered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var file in files)
 		{
+			var definitions = new Dictionary<string, bool>(PreprocessorDefinitions, StringComparer.OrdinalIgnoreCase);
+			var conditionStack = new Stack<PreprocessorConditionFrame>();
 			foreach (var line in File.ReadLines(file))
 			{
+				if (TryProcessPreprocessorDirective(line, definitions, conditionStack))
+				{
+					continue;
+				}
+
+				if (!IsPreprocessorBranchActive(conditionStack))
+				{
+					continue;
+				}
+
 				var headerName = ExtractHeaderCandidate(line);
-				if (headerName == null) continue;
+				if (headerName == null)
+				{
+					if (line.Contains("#include", StringComparison.Ordinal)) Diagnostics.Add($"Skipped macro or malformed include: {file}: {line.Trim()}");
+					continue;
+				}
 
 				if (HeaderMap.TryGetValue(headerName, out var moduleName))
 				{
-					if (moduleName == "COLLISION" || Exclusions.Contains(moduleName) || string.Equals(moduleName, Name, StringComparison.OrdinalIgnoreCase)) continue;
+					if (moduleName == "COLLISION")
+					{
+						Diagnostics.Add($"Skipped '{headerName}' because its header name collides between modules.");
+						continue;
+					}
+					if (Exclusions.Contains(moduleName) || string.Equals(moduleName, Name, StringComparison.OrdinalIgnoreCase)) continue;
+					if (!IsModuleCompatibleWithTarget(moduleName))
+					{
+						Diagnostics.Add($"Skipped '{moduleName}' because its name is editor-classed for target '{Target.Name}'.");
+						continue;
+					}
+					if (WouldCreateInferredCycle(moduleName))
+					{
+						Diagnostics.Add($"Skipped '{moduleName}' because inferred dependency would create a cycle back to '{Name}'.");
+						continue;
+					}
 					discovered.Add(moduleName);
 				}
 			}
 		}
 
 		foreach (var module in discovered) yield return module;
+	}
+
+	private bool IsModuleCompatibleWithTarget(string ModuleName)
+	{
+		if (Target.bBuildEditor) return true;
+		return !ModuleName.Contains("Editor", StringComparison.OrdinalIgnoreCase)
+			&& !string.Equals(ModuleName, "UnrealEd", StringComparison.OrdinalIgnoreCase);
+	}
+
+	private bool WouldCreateInferredCycle(string CandidateModule)
+	{
+		var projectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : Directory.GetCurrentDirectory();
+		var graph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var cachePath in Directory.GetFiles(projectDir, "GorgeousDepsCache.json", SearchOption.AllDirectories))
+		{
+			try
+			{
+				var moduleDir = Directory.GetParent(Directory.GetParent(cachePath)!.FullName)!.Name;
+				var dependencies = Regex.Matches(File.ReadAllText(cachePath), "\"(?:Public|Private)Dependencies\"\\s*:\\s*\\[(?<items>.*?)\\]", RegexOptions.Singleline)
+					.Cast<Match>().SelectMany(match => Regex.Matches(match.Groups["items"].Value, "\"([^\"]+)\"").Cast<Match>().Select(item => item.Groups[1].Value)).ToList();
+				graph[moduleDir] = dependencies;
+			}
+			catch (Exception) { }
+		}
+
+		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var pending = new Stack<string>();
+		pending.Push(CandidateModule);
+		while (pending.Count > 0)
+		{
+			var current = pending.Pop();
+			if (!visited.Add(current)) continue;
+			if (string.Equals(current, Name, StringComparison.OrdinalIgnoreCase)) return true;
+			if (graph.TryGetValue(current, out var dependencies))
+			{
+				foreach (var dependency in dependencies) pending.Push(dependency);
+			}
+		}
+		return false;
+	}
+
+	private void WriteInferenceReport(IEnumerable<string> PublicDependencies, IEnumerable<string> PrivateDependencies, IEnumerable<string> Diagnostics)
+	{
+		var reportPath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousInferredDependencies.json");
+		Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+		var lines = new List<string> { "{", $"  \"Module\": \"{Name}\",", "  \"PublicDependencies\": [" };
+		var publicItems = PublicDependencies.OrderBy(item => item).ToList();
+		for (var index = 0; index < publicItems.Count; ++index) lines.Add($"    \"{publicItems[index]}\"{(index + 1 < publicItems.Count ? "," : string.Empty)}");
+		lines.Add("  ],");
+		lines.Add("  \"PrivateDependencies\": [");
+		var privateItems = PrivateDependencies.OrderBy(item => item).ToList();
+		for (var index = 0; index < privateItems.Count; ++index) lines.Add($"    \"{privateItems[index]}\"{(index + 1 < privateItems.Count ? "," : string.Empty)}");
+		lines.Add("  ],");
+		lines.Add("  \"Diagnostics\": [");
+		var diagnostics = Diagnostics.Distinct().OrderBy(item => item).ToList();
+		for (var index = 0; index < diagnostics.Count; ++index)
+		{
+			var escapedDiagnostic = diagnostics[index].Replace("\\", "\\\\").Replace("\"", "\\\"");
+			lines.Add($"    \"{escapedDiagnostic}\"{(index + 1 < diagnostics.Count ? "," : string.Empty)}");
+		}
+		lines.Add("  ]");
+		lines.Add("}");
+		File.WriteAllLines(reportPath, lines);
+	}
+
+	private sealed class PreprocessorConditionFrame
+	{
+		public bool bParentActive;
+		public bool bAnyBranchMatched;
+		public bool bCurrentBranchActive;
+	}
+
+	private static bool IsPreprocessorBranchActive(IEnumerable<PreprocessorConditionFrame> ConditionStack)
+	{
+		return ConditionStack.All(Frame => Frame.bCurrentBranchActive);
+	}
+
+	private static bool TryProcessPreprocessorDirective(
+		string Line,
+		Dictionary<string, bool> Definitions,
+		Stack<PreprocessorConditionFrame> ConditionStack)
+	{
+		var directiveMatch = Regex.Match(Line, @"^\s*#\s*(?<directive>if|ifdef|ifndef|elif|else|endif|define|undef)\b(?<argument>.*)$");
+		if (!directiveMatch.Success)
+		{
+			return false;
+		}
+
+		var directive = directiveMatch.Groups["directive"].Value;
+		var argument = StripPreprocessorComment(directiveMatch.Groups["argument"].Value).Trim();
+		switch (directive)
+		{
+			case "if":
+			case "ifdef":
+			case "ifndef":
+			{
+				var parentActive = IsPreprocessorBranchActive(ConditionStack);
+				var condition = directive switch
+				{
+					"ifdef" => Definitions.TryGetValue(argument, out var ifdefValue) && ifdefValue,
+					"ifndef" => !Definitions.TryGetValue(argument, out var ifndefValue) || !ifndefValue,
+					_ => EvaluatePreprocessorExpression(argument, Definitions)
+				};
+				ConditionStack.Push(new PreprocessorConditionFrame
+				{
+					bParentActive = parentActive,
+					bAnyBranchMatched = condition,
+					bCurrentBranchActive = parentActive && condition
+				});
+				return true;
+			}
+			case "elif":
+				if (ConditionStack.Count > 0)
+				{
+					var frame = ConditionStack.Peek();
+					var condition = !frame.bAnyBranchMatched && EvaluatePreprocessorExpression(argument, Definitions);
+					frame.bAnyBranchMatched |= condition;
+					frame.bCurrentBranchActive = frame.bParentActive && condition;
+				}
+				return true;
+			case "else":
+				if (ConditionStack.Count > 0)
+				{
+					var frame = ConditionStack.Peek();
+					frame.bCurrentBranchActive = frame.bParentActive && !frame.bAnyBranchMatched;
+					frame.bAnyBranchMatched = true;
+				}
+				return true;
+			case "endif":
+				if (ConditionStack.Count > 0) ConditionStack.Pop();
+				return true;
+			case "define":
+				if (IsPreprocessorBranchActive(ConditionStack))
+				{
+					var definition = Regex.Match(argument, @"^(?<name>[A-Za-z_]\w*)(?:\s+(?<value>\S+))?");
+					if (definition.Success)
+					{
+						Definitions[definition.Groups["name"].Value] = !definition.Groups["value"].Success
+							|| !string.Equals(definition.Groups["value"].Value, "0", StringComparison.Ordinal);
+					}
+				}
+				return true;
+			case "undef":
+				if (IsPreprocessorBranchActive(ConditionStack)) Definitions.Remove(argument);
+				return true;
+			default:
+				return false;
+		}
+	}
+
+	private static bool EvaluatePreprocessorExpression(string Expression, IReadOnlyDictionary<string, bool> Definitions)
+	{
+		Expression = Regex.Replace(Expression, @"defined\s*\(\s*(?<name>[A-Za-z_]\w*)\s*\)", Match =>
+			Definitions.TryGetValue(Match.Groups["name"].Value, out var value) && value ? "1" : "0");
+		Expression = Regex.Replace(Expression, @"defined\s+(?<name>[A-Za-z_]\w*)", Match =>
+			Definitions.TryGetValue(Match.Groups["name"].Value, out var value) && value ? "1" : "0");
+		Expression = Regex.Replace(Expression, @"\b[A-Za-z_]\w*\b", Match =>
+			Definitions.TryGetValue(Match.Value, out var value) && value ? "1" : "0");
+
+		return new PreprocessorExpressionParser(Expression).Parse();
+	}
+
+	private sealed class PreprocessorExpressionParser
+	{
+		private readonly string Expression;
+		private int Position;
+
+		public PreprocessorExpressionParser(string InExpression) => Expression = InExpression;
+
+		public bool Parse()
+		{
+			var value = ParseOr();
+			SkipWhitespace();
+			return Position == Expression.Length && value;
+		}
+
+		private bool ParseOr()
+		{
+			var value = ParseAnd();
+			while (TryConsume("||")) value |= ParseAnd();
+			return value;
+		}
+
+		private bool ParseAnd()
+		{
+			var value = ParseUnary();
+			while (TryConsume("&&")) value &= ParseUnary();
+			return value;
+		}
+
+		private bool ParseUnary()
+		{
+			if (TryConsume("!")) return !ParseUnary();
+			if (TryConsume("("))
+			{
+				var value = ParseOr();
+				return TryConsume(")") && value;
+			}
+
+			SkipWhitespace();
+			var start = Position;
+			while (Position < Expression.Length && char.IsDigit(Expression[Position])) ++Position;
+			return start != Position && !string.Equals(Expression.Substring(start, Position - start), "0", StringComparison.Ordinal);
+		}
+
+		private bool TryConsume(string Token)
+		{
+			SkipWhitespace();
+			if (!Expression.AsSpan(Position).StartsWith(Token, StringComparison.Ordinal)) return false;
+			Position += Token.Length;
+			return true;
+		}
+
+		private void SkipWhitespace()
+		{
+			while (Position < Expression.Length && char.IsWhiteSpace(Expression[Position])) ++Position;
+		}
+	}
+
+	private Dictionary<string, bool> BuildPreprocessorDefinitions()
+	{
+		var definitions = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+		AddDefinitions(definitions, Target.GlobalDefinitions);
+		AddDefinitions(definitions, PublicDefinitions);
+		AddDefinitions(definitions, PrivateDefinitions);
+		return definitions;
+	}
+
+	private static void AddDefinitions(Dictionary<string, bool> Definitions, IEnumerable<string> RawDefinitions)
+	{
+		foreach (var rawDefinition in RawDefinitions)
+		{
+			var match = Regex.Match(rawDefinition, @"^(?<name>[A-Za-z_]\w*)(?:=(?<value>.*))?$");
+			if (!match.Success) continue;
+			Definitions[match.Groups["name"].Value] = !match.Groups["value"].Success
+				|| !string.Equals(match.Groups["value"].Value, "0", StringComparison.Ordinal);
+		}
+	}
+
+	private static bool GetDefinitionValue(IEnumerable<string> RawDefinitions, string Name, bool DefaultValue)
+	{
+		var definitions = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+		AddDefinitions(definitions, RawDefinitions);
+		return definitions.TryGetValue(Name, out var value) ? value : DefaultValue;
+	}
+
+	private string BuildSourceSignature()
+	{
+		var files = new[] { Path.Combine(ModuleDirectory, "Public"), Path.Combine(ModuleDirectory, "Private") }
+			.Where(Directory.Exists)
+			.SelectMany(root => Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories))
+			.Where(file => file.EndsWith(".h", StringComparison.OrdinalIgnoreCase)
+				|| file.EndsWith(".hpp", StringComparison.OrdinalIgnoreCase)
+				|| file.EndsWith(".inl", StringComparison.OrdinalIgnoreCase)
+				|| file.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase))
+			.OrderBy(file => file, StringComparer.OrdinalIgnoreCase)
+			.Select(file => $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}");
+		return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", files))));
+	}
+
+	private static string BuildPreprocessorSignature(IReadOnlyDictionary<string, bool> Definitions)
+	{
+		var text = string.Join("\n", Definitions.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+			.Select(pair => $"{pair.Key}={Convert.ToInt32(pair.Value)}"));
+		return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
+	}
+
+	private static string StripPreprocessorComment(string Value)
+	{
+		var lineComment = Value.IndexOf("//", StringComparison.Ordinal);
+		return lineComment >= 0 ? Value.Substring(0, lineComment) : Value;
 	}
 
 	private string? ExtractHeaderCandidate(string Line)
@@ -690,5 +1199,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		public DateTime GeneratedUtc { get; set; }
 		public List<string> PublicDependencies { get; set; } = new List<string>();
 		public List<string> PrivateDependencies { get; set; } = new List<string>();
+		public string SourceSignature { get; set; } = string.Empty;
+		public string PreprocessorSignature { get; set; } = string.Empty;
 	}
 }
