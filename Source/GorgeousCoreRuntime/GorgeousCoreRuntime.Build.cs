@@ -21,6 +21,8 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
             ModulesToExclude = new[] { "GorgeousCoreRuntime" }
         });
 
+        ApplyLegacyStructUtilsRequirement();
+
         var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
         var privateIncludePath = Path.Combine(ModuleDirectory, "Private");
         
@@ -103,13 +105,13 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
     }
 
     [GorgeousMacroProvider]
-    public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros()
+    public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros(ReadOnlyTargetRules Target)
     {
         var moduleDir = GetModuleDir();
         var pluginsDir = Path.GetFullPath(Path.Combine(moduleDir, "..", "..", "..", ".."));
         
         var macros = new System.Collections.Generic.List<string>();
-        macros.AddRange(InjectPluginMacros(pluginsDir));
+        macros.AddRange(InjectPluginMacros(pluginsDir, Target.ProjectFile?.FullName));
         macros.AddRange(InjectGeneralSystemMacros("Core", moduleDir, true));
         
         return macros;

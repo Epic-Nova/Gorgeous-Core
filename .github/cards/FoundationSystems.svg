@@ -1,0 +1,21 @@
+<svg width="480" height="240" viewBox="0 0 480 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Ship consistently</title><desc id="desc">Project foundations and general systems for a shared project base.</desc>
+  <defs>
+    <linearGradient id="bg" x1="22" y1="9" x2="460" y2="237" gradientUnits="userSpaceOnUse"><stop stop-color="#112D2B"/><stop offset="1" stop-color="#1D3C30"/></linearGradient>
+    <linearGradient id="floor" x1="289" y1="193" x2="461" y2="104" gradientUnits="userSpaceOnUse"><stop stop-color="#34D399" stop-opacity="0.04"/><stop offset="1" stop-color="#FCD34D" stop-opacity="0.22"/></linearGradient>
+  </defs>
+  <rect width="480" height="240" rx="20" fill="url(#bg)"/>
+  <path d="M284 211L395 91L480 179V240H284V211Z" fill="url(#floor)"/>
+  <path d="M286 203L390 96L476 185M312 240L390 160L446 217" stroke="#86EFAC" stroke-opacity="0.28" stroke-width="1.5"/>
+  <rect x="26" y="25" width="184" height="27" rx="13.5" fill="#34D399" fill-opacity="0.16" stroke="#A7F3D0" stroke-opacity="0.40"/>
+  <text x="118" y="43" text-anchor="middle" fill="#D1FAE5" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="1.4">PROJECT FOUNDATIONS</text>
+  <text x="26" y="98" fill="#F3FFF9" font-family="Inter, Arial, sans-serif" font-size="27" font-weight="700">Ship consistently.</text>
+  <text x="26" y="128" fill="#B2D5C4" font-family="Inter, Arial, sans-serif" font-size="15">Adopt the project base once.</text>
+  <text x="26" y="150" fill="#B2D5C4" font-family="Inter, Arial, sans-serif" font-size="15">Make it your game from there.</text>
+  <g>
+    <path d="M350 190V154L390 131L430 154V190L390 213L350 190Z" fill="#173F36" stroke="#86EFAC" stroke-width="2"/>
+    <path d="M350 154L390 177L430 154M390 177V213" stroke="#86EFAC" stroke-opacity="0.7" stroke-width="1.5"/>
+    <circle cx="390" cy="131" r="7" fill="#FCD34D"/>
+  </g>
+  <text x="26" y="207" fill="#A7F3D0" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">EXPLORE SYSTEMS  →</text>
+</svg>

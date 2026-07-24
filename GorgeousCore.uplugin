@@ -85,11 +85,11 @@
 			"Enabled": true
 		},
 		{
-			"Name": "EnhancedInput",
+			"Name": "Niagara",
 			"Enabled": true
 		},
 		{
-			"Name": "StructUtils",
+			"Name": "EnhancedInput",
 			"Enabled": true
 		},
 		{
@@ -99,6 +99,11 @@
 		{
 			"Name": "PlatformCrypto",
 			"Enabled": true
+		},
+		{
+			"Name": "StructUtils",
+			"Enabled": true
 		}
-	]
+	],
+	"IsBetaVersion": false
 }

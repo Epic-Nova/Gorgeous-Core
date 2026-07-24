@@ -933,6 +933,7 @@ void SGorgeousLibraryView::RefreshAssetsForParticipant(TSharedPtr<IGorgeousLibra
 	{
 		TArray<FAssetData> RawAssets;
 		AssetRegistry.GetAssetsByClass(Category.AssetClassPath, RawAssets, /* bSearchSubClasses = */ true);
+		Participant->AppendLibraryAssets(Category, RawAssets);
 
 		TArray<TSharedPtr<FAssetData>>& CachedAll      = CategoryAssets.FindOrAdd(Category.CategoryId);
 		TArray<TSharedPtr<FAssetData>>& CachedFiltered = FilteredCategoryAssets.FindOrAdd(Category.CategoryId);

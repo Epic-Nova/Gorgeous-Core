@@ -1,0 +1,72 @@
+<svg width="1600" height="560" viewBox="0 0 1600 560" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Gorgeous Core — Build games, not infrastructure</title>
+  <desc id="desc">A dark architectural banner with glowing blue and violet structures, representing the shared foundation beneath a game ecosystem.</desc>
+  <defs>
+    <linearGradient id="bg" x1="86" y1="46" x2="1495" y2="530" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="0.52" stop-color="#0B1930"/>
+      <stop offset="1" stop-color="#130E2B"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="268" y1="430" x2="1336" y2="105" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0"/>
+      <stop offset="0.48" stop-color="#58D8FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#A78BFA" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="line" x1="203" y1="440" x2="1394" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#9F7AEA"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(814 311) rotate(90) scale(302 602)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-150" y="-150" width="1900" height="860" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="38"/>
+    </filter>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#020617" flood-opacity="0.8"/>
+    </filter>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse" patternTransform="rotate(30)">
+      <path d="M 64 0 L 0 0 0 64" fill="none" stroke="#94A3B8" stroke-opacity="0.07"/>
+    </pattern>
+  </defs>
+
+  <rect width="1600" height="560" rx="28" fill="url(#bg)"/>
+  <rect width="1600" height="560" rx="28" fill="url(#grid)"/>
+  <ellipse cx="814" cy="311" rx="602" ry="302" fill="url(#glow)"/>
+
+  <g opacity="0.7" filter="url(#blur)">
+    <path d="M258 459L801 135L1352 459H258Z" fill="#0EA5E9" fill-opacity="0.12"/>
+    <path d="M536 432L804 221L1079 432H536Z" fill="#8B5CF6" fill-opacity="0.16"/>
+  </g>
+
+  <g stroke="url(#line)" stroke-width="1.5" stroke-opacity="0.72">
+    <path d="M138 452L800 58L1462 452"/>
+    <path d="M265 452L800 133L1335 452"/>
+    <path d="M397 452L800 211L1203 452"/>
+    <path d="M138 452H1462"/>
+    <path d="M265 452H1335"/>
+    <path d="M397 452H1203"/>
+  </g>
+  <path d="M211 451L800 100L1389 451H211Z" fill="url(#beam)" fill-opacity="0.11"/>
+
+  <g filter="url(#shadow)">
+    <path d="M755 394V299L800 272L845 299V394L800 421L755 394Z" fill="#0B1D35" stroke="#69D8FF" stroke-width="2"/>
+    <path d="M755 299L800 326L845 299M800 326V421" stroke="#69D8FF" stroke-opacity="0.7" stroke-width="1.5"/>
+    <circle cx="800" cy="272" r="9" fill="#D9F5FF"/>
+    <circle cx="800" cy="272" r="19" fill="#38BDF8" fill-opacity="0.25"/>
+  </g>
+
+  <g fill="#82E6FF">
+    <circle cx="265" cy="452" r="4"/><circle cx="397" cy="452" r="4"/><circle cx="1203" cy="452" r="4"/><circle cx="1335" cy="452" r="4"/>
+    <circle cx="800" cy="133" r="4" fill="#C4B5FD"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="426" y="82" width="748" height="124" rx="12" fill="#081524" fill-opacity="0.88" stroke="#67E8F9" stroke-opacity="0.22"/>
+    <text x="800" y="132" text-anchor="middle" fill="#DDF7FF" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="6">GORGEOUS CORE</text>
+    <text x="800" y="177" text-anchor="middle" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="700" letter-spacing="-1">BUILD GAMES, NOT INFRASTRUCTURE.</text>
+  </g>
+
+  <text x="800" y="510" text-anchor="middle" fill="#B4C7DC" font-family="Inter, Arial, sans-serif" font-size="17" letter-spacing="0.5">THE SHARED FOUNDATION FOR GORGEOUS THINGS</text>
+</svg>
