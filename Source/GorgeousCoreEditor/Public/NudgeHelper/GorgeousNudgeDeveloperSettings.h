@@ -74,7 +74,7 @@ public:
 	#pragma region UAT/UBT Exposed Variables
 public:
 
-	// Enables periodic checks and automatic carousel popups.
+	// Enables periodic checks and deferred update, news, and tutorial presentation.
 	UPROPERTY(EditAnywhere, Config, Category = "Nudges")
 	bool bEnableAutomaticNudges = true;
 

@@ -241,12 +241,20 @@ void UGorgeousNudgeSubsystem::Deinitialize()
 	if (CarouselWindow.IsValid())
 	{
 		CarouselWindow->RequestDestroyWindow();
+		CarouselWindow.Reset();
 	}
 	Super::Deinitialize();
 }
 
 bool UGorgeousNudgeSubsystem::Tick(float DeltaTime)
 {
+	SecondsSinceInitialization += DeltaTime;
+	if (bAutomaticCarouselQueued && SecondsSinceInitialization >= 10.0f && FSlateApplication::IsInitialized() && FSlateApplication::Get().GetActiveTopLevelWindow().IsValid())
+	{
+		bAutomaticCarouselQueued = false;
+		ShowNudgeCarousel();
+	}
+
 	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
 	if (!Settings || !Settings->bEnableAutomaticNudges)
 	{
@@ -363,9 +371,15 @@ void UGorgeousNudgeSubsystem::RegisterNudges(const TArray<FGorgeousNudgeEntry>& 
 			VisibleNudges.Add(Entry);
 		}
 	}
-	if (UGorgeousNudgeDeveloperSettings::Get()->bEnableAutomaticNudges && VisibleNudges.Num() > 0)
+	QueueAutomaticCarousel();
+}
+
+void UGorgeousNudgeSubsystem::QueueAutomaticCarousel()
+{
+	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	if (Settings != nullptr && Settings->bEnableAutomaticNudges && !VisibleNudges.IsEmpty())
 	{
-		ShowNudgeCarousel();
+		bAutomaticCarouselQueued = true;
 	}
 }
 
@@ -428,6 +442,7 @@ void UGorgeousNudgeSubsystem::ShowNudgeCarousel()
 		[
 			SNew(SGorgeousNudgeCarousel).NudgeSubsystem(this)
 		];
+	CarouselWindow->SetOnWindowClosed(FOnWindowClosed::CreateUObject(this, &UGorgeousNudgeSubsystem::HandleCarouselWindowClosed));
 	ResizeCarouselForEntry(VisibleNudges[0]);
 	FSlateApplication::Get().AddWindow(CarouselWindow.ToSharedRef());
 	// A popup is considered delivered when it is shown, not only when its link is opened.
@@ -436,6 +451,17 @@ void UGorgeousNudgeSubsystem::ShowNudgeCarousel()
 		AcknowledgedNudgeIds.Add(Entry.Id);
 	}
 	SaveAcknowledgements();
+}
+
+void UGorgeousNudgeSubsystem::HandleCarouselWindowClosed(const TSharedRef<SWindow>& ClosedWindow)
+{
+	if (CarouselWindow == ClosedWindow)
+	{
+		CarouselWindow.Reset();
+	}
+
+	// The embedded browser may retain native pointer capture while Slate destroys its host window.
+	FSlateApplication::Get().ReleaseAllPointerCapture();
 }
 
 void UGorgeousNudgeSubsystem::ResizeCarouselForEntry(const FGorgeousNudgeEntry& Entry)
