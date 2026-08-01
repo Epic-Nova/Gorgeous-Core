@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
@@ -15,11 +15,6 @@
 |                                    USE ONLY FOR INCLUDES THAT ARE FOR THIS MODULE.                                    |
 <======================================================================================================================*/
 #pragma once
-
-// Std Includes
-#if PLATFORM_WINDOWS
-#include <functional>
-#endif
 
 // Engine Includes
 #include "CoreMinimal.h"
@@ -32,6 +27,7 @@
 #include "UObject/UnrealTypePrivate.h"
 
 #include "Engine/DataAsset.h"
+#include "Engine/Texture2D.h"
 
 #include "Misc/MonolithicHeaderBoilerplate.h"
 
@@ -52,3 +48,13 @@
 #include "GameFramework/Info.h"
 
 #include "GameFramework/Controller.h"
+
+// System Specific Includes
+
+#ifdef PLATFORM_WINDOWS
+#include <functional>
+#endif
+
+#include <utility>
+#include <map>
+#include <tuple>

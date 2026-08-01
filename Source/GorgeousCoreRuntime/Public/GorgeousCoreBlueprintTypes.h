@@ -6,18 +6,38 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Engine/Blueprint.h"
-//<--------------------------=== Module Includes ===------------------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCoreBlueprintTypes.generated.h"
 //<-------------------------------------------------------------------------->
 
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Object Variable Blueprint
+| Functional Name: UGorgeousObjectVariableBlueprint
+| Parent Class: UBlueprint
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Object Variable Blueprint.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//GorgeousObjectVariableBlueprint",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableBlueprint : public UBlueprint
 {
 	GENERATED_BODY()
@@ -85,6 +105,12 @@ class GORGEOUSCORERUNTIME_API UGorgeousPlayerStateBlueprint : public UBlueprint
 
 UCLASS()
 class GORGEOUSCORERUNTIME_API UGorgeousWorldSettingsBlueprint : public UBlueprint
+{
+	GENERATED_BODY()
+};
+
+UCLASS()
+class GORGEOUSCORERUNTIME_API UGorgeousHUDBlueprint : public UBlueprint
 {
 	GENERATED_BODY()
 };

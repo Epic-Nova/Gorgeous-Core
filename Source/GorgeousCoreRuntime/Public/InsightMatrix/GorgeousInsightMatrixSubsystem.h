@@ -1,32 +1,54 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Subsystems/EngineSubsystem.h"
 #include "InsightMatrix/GorgeousInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "Slate/GorgeousInsightDebugPanel.h"
 #include "Widgets/SWindow.h"
+#include "Features/IModularFeatures.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightMatrixSubsystem.generated.h"
+//<-------------------------------------------------------------------------->
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightProviderChanged, IGorgeousInsightMatrixProvider*);
 
-/**
- * Runtime registry and execution layer for the Insight Matrix.
- * Editor modules can bridge into this subsystem.
- * TODO: Add hooks into Unreal Automation, Insights/Trace, Gauntlet, and profiler pipelines.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Insight Matrix Subsystem
+| Functional Name: UGorgeousInsightMatrixSubsystem
+| Parent Class: UEngineSubsystem
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Runtime registry and execution layer for the Insight Matrix. Editor
+| modules can bridge into this subsystem. TODO: Add hooks into Unreal
+| Automation, Insights/Trace, Gauntlet, and profiler pipelines.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightMatrixSubsystem",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInsightMatrixSubsystem : public UEngineSubsystem
 {
 	GENERATED_BODY()
@@ -36,6 +58,9 @@ public:
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	void OnModularFeatureRegistered(const FName& FeatureName, IModularFeature* Feature);
+	void OnModularFeatureUnregistered(const FName& FeatureName, IModularFeature* Feature);
 
 	struct FGorgeousInsightQueuedTestResult
 	{
@@ -101,8 +126,8 @@ public:
 	TArray<IGorgeousInsightMatrixProvider*> GetProviders() const;
 	IGorgeousInsightMatrixProvider* FindProvider(FName ProviderName) const;
 
-	void GatherAllStats(TArray<FGorgeousInsightStat>& OutStats) const;
-	void GatherProviderStats(FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const;
+	void GatherAllStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const;
+	void GatherProviderStats(const FGorgeousInsightGatherContext& Context, FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const;
 	void GatherProviderCharts(FName ProviderName, TArray<FGorgeousInsightChartDefinition>& OutCharts) const;
 
 	void GatherAllActions(TArray<FGorgeousInsightAction>& OutActions) const;
@@ -134,6 +159,9 @@ public:
 	/** Returns the number of queued scenarios. */
 	int32 GetQueuedScenarioCount() const;
 
+	/** Manually inject stats into the persistent Baseline context. */
+	void AddBaselineStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats);
+	void RemoveBaselineStat(FName ProviderName, FName StatId);
 	/** Run the filtered scenario matrix in one call. */
 	TArray<FGorgeousInsightScenarioRunResult> RunMatrix(const FString& Parameters = TEXT(""), UObject* WorldContextObject = nullptr);
 
@@ -145,6 +173,10 @@ public:
 
 	/** Returns the number of queued tests. */
 	int32 GetQueuedTestCount() const;
+
+	/** Trigger all GameTest-style functional tests within the current local world. */
+	UFUNCTION(BlueprintCallable, Category="Insight Matrix", meta=(WorldContext="WorldContextObject"))
+	void RunAllLocalFunctionalTests(UObject* WorldContextObject);
 
 	FOnGorgeousInsightProviderChanged OnProviderRegistered;
 	FOnGorgeousInsightProviderChanged OnProviderUnregistered;
@@ -160,6 +192,18 @@ private:
 	void ApplyPanelStateToAll(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
 	void HandlePanelStateChanged(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
 	void UpdateLastRunStats(FName ProviderName, FName TestId, const FGorgeousInsightTestResult& Result, double DurationSeconds);
+public:
+	struct FGorgeousInsightEditorSnapshot
+	{
+		FDateTime Timestamp;
+		TMap<FName, TArray<FGorgeousInsightStat>> ProviderStats;
+	};
+
+	const TArray<FGorgeousInsightEditorSnapshot>& GetEditorHistory() const { return EditorHistory; }
+	int32 GetActiveHistoryIndex() const { return ActiveHistoryIndex; }
+	void SetActiveHistoryIndex(int32 Index) { ActiveHistoryIndex = Index; }
+	void ApplyHistorySnapshot(int32 Index);
+
 	void LoadCachedStats();
 	void SaveCachedStats() const;
 	void CacheProviderStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats) const;
@@ -191,7 +235,10 @@ private:
 	TMap<FString, FGorgeousInsightTestResult> BaselineResultsCache;
 	FGorgeousInsightLastRunStats LastRunStats;
 	TMap<FName, TMap<FName, FGorgeousInsightLastActionStats>> LastActionStats;
+	mutable TMap<FName, TArray<FGorgeousInsightStat>> ProviderBaselineStats;
 	mutable FCriticalSection StatsCacheMutex;
+	mutable TArray<FGorgeousInsightEditorSnapshot> EditorHistory;
+	mutable int32 ActiveHistoryIndex = -1;
 	mutable TMap<FName, TArray<FGorgeousInsightStat>> CachedProviderStats;
 	mutable bool bStatsCacheLoaded = false;
 	mutable bool bStatsCacheDirty = false;

@@ -1,18 +1,21 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Profiling Helpers (Runtime)                |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "HAL/PreprocessorHelpers.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
 #if __has_include("ProfilingDebugging/CpuProfilerTrace.h")
 #include "ProfilingDebugging/CpuProfilerTrace.h"
@@ -43,7 +46,7 @@
 #endif
 
 #if defined(CSV_PROFILER) && CSV_PROFILER
-CSV_DECLARE_CATEGORY_EXTERN(Gorgeous);
+CSV_DECLARE_CATEGORY_MODULE_EXTERN(GORGEOUSCORERUNTIMEUTILITIES_API, Gorgeous);
 
 #define GORGEOUS_PROFILE_SCOPE(StatName) \
 	TRACE_CPUPROFILER_EVENT_SCOPE(StatName); \

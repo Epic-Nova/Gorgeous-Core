@@ -89,9 +89,9 @@ set(VAULT_SOURCES
     Source/AutoReplication/GorgeousAutoReplicationSettings_Impl.cpp
     Source/AutoReplication/GorgeousReplicationBeacon_Impl.cpp
     Source/AutoReplication/ObjectVariables/GorgeousRPC_OV_Impl.cpp
-    Source/AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationNetworkingLibrary_Impl.cpp
-    Source/AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCExamples_Impl.cpp
-    Source/AutoReplication/BlueprintFunctionLibraries/GorgeousAutoReplicationRPCPayloadLibrary_Impl.cpp
+    Source/AutoReplication/Globals/GorgeousAutoReplicationNetworkingLibrary_Impl.cpp
+    Source/AutoReplication/Globals/GorgeousAutoReplicationRPCExamples_Impl.cpp
+    Source/AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadLibrary_Impl.cpp
 
     # ── License Helper (drawn from GorgeousCoreLicenseHelper) ──
     Source/LicenseHelper/GorgeousLicenseHelper_Impl.cpp

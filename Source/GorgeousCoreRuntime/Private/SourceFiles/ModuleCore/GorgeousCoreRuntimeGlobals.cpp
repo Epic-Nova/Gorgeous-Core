@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "ModuleCore/GorgeousAutoReplicationSettings.h"
@@ -19,6 +19,7 @@
 #include "QualityOfLife/GorgeousLocalPlayerRegistry_GIS.h"
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
+#include "GameFeaturesSubsystem.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
@@ -176,6 +177,7 @@ UObject* UGorgeousCoreRuntimeGlobals::GetNamedObjectReference(const FName Displa
 
 UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* WorldContextObject, const TSubclassOf<UObject> QualityOfLifeClass)
 {
+	//@TODO: Broken as for current version
 	const TArray<UObject*> All = GetQualityOfLifeReferences(WorldContextObject, QualityOfLifeClass);
 	return All.Num() > 0 ? All[0] : nullptr;
 }
@@ -575,5 +577,32 @@ void UGorgeousCoreRuntimeGlobals::InitializeAutoReplicationForWorld(UWorld* Worl
 	// Touch the coordinator to ensure desired backends (Iris/ReplicationGraph) spin up.
 	FGorgeousAutoReplicationCoordinator::Get(World);
 }
+
+bool UGorgeousCoreRuntimeGlobals::IsGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName)
+{
+	if (!WorldContextObject)
+	{
+		GT_W_LOG("GT.RuntimeGlobals.GameFeaturePlugin.NoContext", TEXT("Cannot enable game feature plugin %s because WorldContextObject is null."), *PluginName.ToString());
+		return false;
+	}
+	
+	return UGameFeaturesSubsystem::Get().IsGameFeaturePluginActive(PluginName.ToString());
+}
+
+void UGorgeousCoreRuntimeGlobals::SetGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName, const bool bNewActive)
+{
+	if ((bNewActive && IsGameFeaturePluginActive(WorldContextObject, PluginName)) || (!bNewActive && !IsGameFeaturePluginActive(WorldContextObject, PluginName)))
+		return;
+	
+	if (bNewActive)
+	{
+		UGameFeaturesSubsystem::Get().LoadAndActivateGameFeaturePlugin(PluginName.ToString(), FGameFeaturePluginLoadComplete());
+	}
+	else
+	{
+		UGameFeaturesSubsystem::Get().DeactivateGameFeaturePlugin(PluginName.ToString());
+	}
+}
+
 
 #pragma endregion AutoReplication_Networking_Functions

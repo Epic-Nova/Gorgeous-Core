@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousFunctionalStructurePropertyTypeCustomization.h"
 
@@ -42,7 +42,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
 	//@TODO: Maybe add the case of when SimpleDisplay is added to a property, where its parent property has AdvancedDisplay that the Property with SimpleDisplay gets its simple display form. => At this point it would just be a flex
-	
+	/* @TODO: fix the crash issue*/
 	TArray<TSharedRef<IPropertyHandle>> AdvancedHandles;
 	
 	auto AddToGroup = [&](const TSharedRef<IPropertyHandle>& Handle)
@@ -67,10 +67,18 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	{
 		const TSharedRef<IPropertyHandle> ChildHandle = PropertyHandle->GetChildHandle(i).ToSharedRef();
 		
+		// PREVENT INFINITE RECURSION: Do not draw the OwnerObject pointer.
+		// If drawn, the property editor will recursively evaluate the Outer object and loop forever.
+		if (ChildHandle->GetProperty()->GetFName() == FName("OwnerObject"))
+		{
+			continue;
+		}
+		
 		if (ChildHandle->GetBoolMetaData(TEXT("ShowOnlyInnerProperties"))) // Promote inner properties into this level
 		{
-			ChildHandle->GetNumChildren(NumChildren);
-			for (uint32 j = 0; j < NumChildren; j++)
+			uint32 InnerNumChildren = 0;
+			ChildHandle->GetNumChildren(InnerNumChildren);
+			for (uint32 j = 0; j < InnerNumChildren; j++)
 			{
 				const TSharedRef<IPropertyHandle> GrandChildHandle = ChildHandle->GetChildHandle(j).ToSharedRef();
 				AddToGroup(GrandChildHandle);
@@ -85,7 +93,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 			TDelegate<void(const FPropertyChangedEvent&)>::CreateSP(this, &FGorgeousFunctionalStructurePropertyTypeCustomization::OnChildPropertyChangedWithData);
 		ChildHandle->SetOnPropertyValueChangedWithData(PropertyChangedDelegate);
 		ChildHandle->SetOnChildPropertyValueChangedWithData(PropertyChangedDelegate);
-
+		
 		FSimpleDelegate PrePropertyChangedDelegate = FSimpleDelegate::CreateSP(this, &FGorgeousFunctionalStructurePropertyTypeCustomization::OnPreChildPropertyChanged, PropertyHandle);
 		ChildHandle->SetOnPropertyValuePreChange(PrePropertyChangedDelegate);
 		ChildHandle->SetOnChildPropertyValuePreChange(PrePropertyChangedDelegate);
@@ -99,7 +107,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 		GORGEOUS_54_LOWER(
 			IDetailGroup& AdvancedGroup = ChildBuilder.AddGroup("Advanced", FText::FromString("Advanced"));
 		)
-		for (const auto AdvancedHandle : AdvancedHandles)
+		for (const auto& AdvancedHandle : AdvancedHandles)
 		{
 			AdvancedGroup.AddPropertyRow(AdvancedHandle);
 		}
@@ -129,10 +137,12 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 				PropertyHandle->GetOuterObjects(OuterObjects);
 				if (OuterObjects.Num() > 0)
 				{
-					FunctionalStructureInstance->OwnerObject = OuterObjects[0];
+					if (FunctionalStructureInstance->OwnerObject != OuterObjects[0])
+					{
+						FunctionalStructureInstance->OwnerObject = OuterObjects[0];
+						FunctionalStructureInstance->AllocateDefaultValues(FunctionalStructureInstance->OwnerObject);
+					}
 				}
-
-				FunctionalStructureInstance->AllocateDefaultValues(FunctionalStructureInstance->OwnerObject);
 			}
 		}
 	}

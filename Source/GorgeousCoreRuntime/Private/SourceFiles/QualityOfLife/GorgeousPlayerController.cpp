@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "QualityOfLife/GorgeousPlayerController.h"
 
@@ -15,11 +15,19 @@
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
 #include "AutoReplication//GorgeousAutoReplicationHelperMacros.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
+#include "GeneralSystems/SignalBridge/GorgeousSignalBridgeCheatManagerExtension.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundationCheatManagerExtension.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundationCheatManagerExtension.h"
+#include "GeneralSystems/GorgeousPermissionCheatManagerExtension.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/GameInstance.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/CheatManager.h"
+#include "Framework/Application/SlateApplication.h"
 //<-------------------------------------------------------------------------->
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousPlayerController, Log, All);
@@ -37,7 +45,39 @@ AGorgeousPlayerController::AGorgeousPlayerController()
 
 UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousPlayerController)
 
-UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY(AGorgeousPlayerController)
+UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
+	if (CheatManager)
+	{
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousSignalBridgeCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousInteractionFoundationCheatManagerExtension>(CheatManager));
+		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousPermissionCheatManagerExtension>(CheatManager));
+	}
+	// temp for debugging so that the mouse pointer gets not stuck (linux issue)
+	// Delay input mode setup and reset any early suspension to frame 1.
+	// This ensures the Slate viewport is fully initialized and can capture keyboard/mouse focus correctly,
+	// and clears any desynchronized ignore-input flags caused by startup widget transitions.
+	/*if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			if (IsValid(this))
+			{
+				ResetIgnoreInputFlags();
+				
+				FInputModeGameAndUI InputMode;
+				InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+				InputMode.SetHideCursorDuringCapture(false);
+				SetInputMode(InputMode);
+				bShowMouseCursor = true;
+				// Ensure game captures focus without needing a click
+				FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
+				
+				UE_LOG(LogGorgeousPlayerController, Log, TEXT("PlayerController: Next-tick input initialization complete. Viewport focused and input ignore flags reset."));
+			}
+		}));
+	}*/
+)
 
 UE_QOL_DEFINE_REGISTER_AUTOREPLICATION_ENTRY(AGorgeousPlayerController)
 
@@ -144,6 +184,10 @@ void AGorgeousPlayerController::Automation_HandleRPC_WithReturnOV(UInteger_SOV* 
 #endif
 }
 
-
-
-
+void AGorgeousPlayerController::Client_ReceiveSignal_Implementation(FGameplayTag Tag, const FInstancedStruct& Payload)
+{
+	if (USignalBridgeStorage_OV* Storage = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(this))
+	{
+		Storage->FireLocalSignal(Tag, Payload);
+	}
+}

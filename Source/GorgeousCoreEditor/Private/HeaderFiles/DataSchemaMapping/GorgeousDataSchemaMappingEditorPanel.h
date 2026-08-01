@@ -6,20 +6,21 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Input/Reply.h"
 #include "Types/SlateEnums.h"
 #include "UObject/Object.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/SCompoundWidget.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "SCheckBoxList.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 struct FPropertyChangedEvent;
 enum class EGorgeousDataSchemaTransformKind_E : uint8;
 class FProperty;

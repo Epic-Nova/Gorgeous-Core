@@ -6,17 +6,20 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationNetworkingTypes.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class APlayerController;
-/** Identifies which endpoint produced an AutoReplication RPC result. */
+//<------------------------------------------------------------->/** Identifies which endpoint produced an AutoReplication RPC result. */
 USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResponderHandle
 {
@@ -28,23 +31,23 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResponderHandle
 	{
 	}
 
-	/** True when the responder executed on the authority role. */
+	// True when the responder executed on the authority role.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	bool bIsServer;
 
-	/** Stable key that uniquely identifies the responding connection. */
+	// Stable key that uniquely identifies the responding connection.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FString ConnectionKey;
 
-	/** Friendly label for debug/UI purposes. */
+	// Friendly label for debug/UI purposes.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FString PlayerDisplayName;
 
-	/** PlayerController Id captured when available (otherwise -1). */
+	// PlayerController Id captured when available (otherwise -1).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	int32 PlayerControllerId;
 
-	/** Optional debug label describing the responder. */
+	// Optional debug label describing the responder.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FString DebugLabel;
 
@@ -89,7 +92,7 @@ enum class EGorgeousObjectVariableReplicationMode : uint8
 {
 	EFullAutoReplication UMETA(DisplayName = "Full Auto Replication", ToolTip = "Full Auto Replication mode."),
 	EHybrid UMETA(DisplayName = "Hybrid (Auto + Legacy)", ToolTip = "Hybrid mode that leverages both Auto Replication and legacy replication."),
-	EManual UMETA(DisplayName = "Manual (Legacy Only)", ToolTip = "Manual mode that only uses legacy replication.")
+	EManual UMETA(BlueprintHidden, DisplayName = "Manual (Legacy Only)", ToolTip = "Manual mode that only uses legacy replication.")
 };
 
 /** Specifies which endpoint should handle a queued AutoReplication action. */
@@ -110,10 +113,10 @@ enum class EGorgeousAutoReplicationTargetKind : uint8
  * state is forwarded to the RPC debug tracker so the inspector panel can show
  * per-responder progress in real time.
  *
- * NotReadyToCollect          — default; the handler has not finished processing yet.
- * ReadyForSingleResponderCallback — the return value has been produced and will be
+ * NotReadyToCollect         , default; the handler has not finished processing yet.
+ * ReadyForSingleResponderCallback, the return value has been produced and will be
  *                                   delivered via OnSingleResponderCompleted shortly.
- * Ready                      — the handler is fully done; results may be collected.
+ * Ready                     , the handler is fully done; results may be collected.
  */
 UENUM(BlueprintType)
 enum class EGorgeousRPCReadyState : uint8
@@ -147,7 +150,7 @@ struct FGorgeousRPCArgumentContainer
 	{
 	}
 
-	/** Name must match the handler function parameter exactly (case-insensitive FName compare). */
+	// Name must match the handler function parameter exactly (case-insensitive FName compare).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Auto Replication")
 	FName ArgumentName;
 
@@ -188,11 +191,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousRPCPayload
 	{
 	}
 
-	/** Blueprint/Native handler invoked when the payload arrives. */
+	// Blueprint/Native handler invoked when the payload arrives.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Auto Replication")
 	FName HandlerName;
 
-	/** Named arguments passed into the handler. */
+	// Named arguments passed into the handler.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Auto Replication", meta = (ShowOnlyInnerProperties))
 	TArray<FGorgeousRPCArgumentContainer> Arguments;
 
@@ -232,14 +235,14 @@ struct GORGEOUSCORERUNTIME_API FGorgeousQueuedRPC
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	EGorgeousAutoReplicationRPCType Type;
 
-	/** Indicates whether this RPC should be handled by a variable entry or the owning QoL class. */
+	// Indicates whether this RPC should be handled by a variable entry or the owning QoL class.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	EGorgeousAutoReplicationTargetKind TargetKind;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FGorgeousRPCPayload Payload;
 
-	/** Correlation identifier assigned when the RPC is queued so async nodes can await completion. */
+	// Correlation identifier assigned when the RPC is queued so async nodes can await completion.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FGuid RequestGuid;
 };
@@ -266,11 +269,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCHandlerContext
 {
 	GENERATED_BODY()
 
-	/** Opaque RPC descriptor — pass directly to MarkAutoReplicationRPCResponderReady. */
+	// Opaque RPC descriptor, pass directly to MarkAutoReplicationRPCResponderReady.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	FGorgeousQueuedRPC QueuedRPC;
 
-	/** Name of the handler function being invoked (useful for logging / assertions). */
+	// Name of the handler function being invoked (useful for logging / assertions).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|AutoReplication|Networking")
 	FName HandlerName;
 
@@ -295,7 +298,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResult
 	{
 	}
 
-	/** Handle describing which endpoint produced this result. */
+	// Handle describing which endpoint produced this result.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FGorgeousAutoReplicationRPCResponderHandle Responder;
 
@@ -311,12 +314,12 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResult
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	TObjectPtr<UObject> TargetOwner;
 
-	/** Unique identifier of the resolved target variable (when available). */
+	// Unique identifier of the resolved target variable (when available).
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FGuid TargetVariableIdentifier;
-	
+
 	bool WasHandledByObjectVariable() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EObjectVariable && TargetVariable != nullptr; }
-	
+
 	bool WasHandledByOwner() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EOwner && TargetOwner != nullptr; }
 
 	bool WasHandledByActorComponent() const { return TargetKind == EGorgeousAutoReplicationTargetKind::EActorComponent && TargetOwner != nullptr; }
@@ -328,11 +331,11 @@ struct GORGEOUSCORERUNTIME_API FGorgeousOVPropertyCapture
 {
 	GENERATED_BODY()
 
-	/** Property name as returned by FProperty::GetName(). */
+	// Property name as returned by FProperty::GetName().
 	UPROPERTY()
 	FString PropertyName;
 
-	/** Value serialized via FProperty::ExportTextItem. */
+	// Value serialized via FProperty::ExportTextItem.
 	UPROPERTY()
 	FString ExportedValue;
 };
@@ -347,15 +350,15 @@ struct GORGEOUSCORERUNTIME_API FGorgeousSerializedOVNode
 {
 	GENERATED_BODY()
 
-	/** This OV's GUID — preserved on the reconstructed instance. */
+	// This OV's GUID, preserved on the reconstructed instance.
 	UPROPERTY()
 	FGuid Identifier;
 
-	/** Parent OV's GUID. Invalid for the root node. */
+	// Parent OV's GUID. Invalid for the root node.
 	UPROPERTY()
 	FGuid ParentIdentifier;
 
-	/** Full class path for reconstruction (e.g. "/Script/MyModule.UInteger_SOV"). */
+	// Full class path for reconstruction (e.g. "/Script/MyModule.UInteger_SOV").
 	UPROPERTY()
 	FString ClassPath;
 
@@ -396,7 +399,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 	FGorgeousAutoReplicationRPCResponderHandle Responder;
 
 	/**
-	 * GUID of the root return OV — kept for backwards-compat / same-machine optimisation
+	 * GUID of the root return OV, kept for backwards-compat / same-machine optimisation
 	 * (when the OV already lives in the receiver's registry, the tree is not re-created).
 	 */
 	UPROPERTY()
@@ -414,8 +417,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 
 	/**
 	 * The ready state under which this result was relayed.
-	 *   Ready (default) — result is final; server should call NotifyRequestCompleted.
-	 *   ReadyForSingleResponderCallback — interim signal; server should fire
+	 *   Ready (default), result is final; server should call NotifyRequestCompleted.
+	 *   ReadyForSingleResponderCallback, interim signal; server should fire
 	 *     ExecuteSingleResponderCallback without completing the overall request.
 	 */
 	UPROPERTY()
@@ -435,15 +438,15 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationContext
 	{
 	}
 
-	/** Actor/object that owns this variable instance. */
+	// Actor/object that owns this variable instance.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	TObjectPtr<UObject> OwningObject;
 
-	/** Key of the AdditionalGorgeousData entry this variable belongs to. */
+	// Key of the AdditionalGorgeousData entry this variable belongs to.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	FName EntryKey;
 
-	/** Replication slot index assigned by the mixin. */
+	// Replication slot index assigned by the mixin.
 	UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Auto Replication")
 	int32 ReplicationIndex;
 };

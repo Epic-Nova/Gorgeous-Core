@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
 
@@ -20,7 +20,7 @@ namespace
 	 * Best-effort placeholder detection without depending on private engine headers.
 	 * Linker placeholders usually carry PLACEHOLDER in their name or outer name.
 	 */
-	static bool IsLikelyPlaceholder(const UObject* Obj)
+	bool IsLikelyPlaceholder(const UObject* Obj)
 	{
 		if (!IsValid(Obj))
 		{

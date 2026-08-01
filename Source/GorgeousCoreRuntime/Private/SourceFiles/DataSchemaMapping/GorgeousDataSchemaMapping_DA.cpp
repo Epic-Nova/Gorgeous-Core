@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
 
@@ -18,6 +18,10 @@
 #include "Misc/PackageName.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
+
+//=============================================================================
+// Helpers
+//=============================================================================
 
 namespace
 {
@@ -132,6 +136,10 @@ namespace
 		return SchemaMap->TargetDefinition.TargetClass.LoadSynchronous();
 	}
 }
+
+//=============================================================================
+// UGorgeousDataSchemaMapping_DA Implementation
+//=============================================================================
 
 bool UGorgeousDataSchemaMapping_DA::IsMigrationActionEnabled() const
 {

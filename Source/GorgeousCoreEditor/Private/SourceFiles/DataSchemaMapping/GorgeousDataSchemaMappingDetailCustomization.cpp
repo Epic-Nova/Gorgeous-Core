@@ -6,14 +6,14 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "DataSchemaMapping/GorgeousDataSchemaMappingDetailCustomization.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "DataSchemaMapping/GorgeousDataSchemaMapping_DA.h"
-#include "DataSchemaMapping/GorgeousDataSchemaMappingStructures.h"
+#include "DataSchemaMapping/GorgeousDataSchemaMappingTypes.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetData.h"
 #include "ContentBrowserModule.h"

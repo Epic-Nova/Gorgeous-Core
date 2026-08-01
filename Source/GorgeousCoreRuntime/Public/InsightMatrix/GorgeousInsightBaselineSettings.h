@@ -1,19 +1,23 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "InsightMatrix/GorgeousInsightMatrixTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightBaselineSettings.generated.h"
+//<-------------------------------------------------------------------------->
 
 USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousInsightBaselineEntry
@@ -39,7 +43,27 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightBaselineEntry
 	FGorgeousInsightTestResult ToResult() const;
 };
 
-UCLASS(config = GorgeousInsightMatrix, defaultconfig)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Insight Baseline Settings
+| Functional Name: UGorgeousInsightBaselineSettings
+| Parent Class: UObject
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Insight Baseline Settings.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(config = GorgeousInsightMatrix, defaultconfig,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightBaselineSettings",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousInsightBaselineSettings : public UObject
 {
 	GENERATED_BODY()

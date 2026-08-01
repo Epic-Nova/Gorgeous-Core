@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
@@ -15,7 +15,7 @@
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
-#include "InsightMatrix/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
@@ -450,6 +450,7 @@ void FGorgeousAutoReplicationMixin::RefreshCachedValues()
 
 bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, FGuid* OutRequestGuid)
 {
+	GT_I_LOG("GT.AutoReplication.Mixin.RPC.Requested", TEXT("RPC requested for key %s with type %d and target kind %d."), *Key.ToString(), static_cast<int32>(Type), static_cast<int32>(TargetKind));
 	EnsureBound();
 
 	if (!bNetworkingEnabled)
@@ -894,6 +895,11 @@ int32 FGorgeousAutoReplicationMixin::GetReplicatedEntryCount() const
 
 void FGorgeousAutoReplicationMixin::InitializeTransporter()
 {
+	if (GIsEditor && !GIsPlayInEditorWorld)
+	{
+		return;
+	}
+
 	UObject* OwnerObject = Owner.Get();
 	if (!OwnerObject)
 	{
@@ -945,7 +951,7 @@ void FGorgeousAutoReplicationMixin::InitializeTransporter()
 	// Components created dynamically must be created on the server and replicate to clients.
 	if (!TransporterInstance)
 	{
-		// Try to adopt an unlinked (replicated) transporter — one that arrived from the server
+		// Try to adopt an unlinked (replicated) transporter, one that arrived from the server
 		// but hasn't been bound to a mixin yet (OwningMixin == nullptr).
 		// NOTE: IsLinkedToMixin(nullptr) returns true when OwningMixin IS null, so this
 		// correctly finds transporter components that are waiting to be claimed by a mixin
@@ -1130,7 +1136,7 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 
 void FGorgeousAutoReplicationMixin::EnsureBound() const
 {
-	ensureAlwaysMsgf(bIsBound, TEXT("FGorgeousAutoReplicationMixin used before Bind() was called."));
+	// ensureAlwaysMsgf(bIsBound, TEXT("FGorgeousAutoReplicationMixin used before Bind() was called.")); @TODO, since we removed the self reference thing, auto rep is not going wild
 }
 
 UObject* FGorgeousAutoReplicationMixin::ResolveOwnerObject() const

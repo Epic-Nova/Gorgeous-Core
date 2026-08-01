@@ -1,0 +1,307 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
+#pragma once
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Kismet/BlueprintFunctionLibrary.h"
+#include "GeneralSystems/DebugAssist/DebugAssistStructures.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+#include "Engine/EngineTypes.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GorgeousDebugAssistBlueprintFunctionLibrary.generated.h"
+//<-------------------------------------------------------------------------->
+
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Debug Assist Blueprint Function Library
+| Functional Name: UGorgeousDebugAssistBlueprintFunctionLibrary
+| Parent Class: UBlueprintFunctionLibrary
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Debug Assist Blueprint
+| Function Library.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/Examples/"
+		)
+)
+class GORGEOUSCORERUNTIME_API UGorgeousDebugAssistBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
+{
+	GENERATED_BODY()
+
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
+public:
+    /**
+     * Draws a debug line between Start and End with the specified Color, Duration, Thickness, and persistence.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Start - Starting point of the line.
+     * @param End - Ending point of the line.
+     * @param Color - Color of the line (default is Blue).
+     * @param Duration - How long the line should be visible in seconds (default is 1.0f).
+     * @param Thickness - Thickness of the line (default is 2.0f).
+     * @param bPersistentLines - If true, the line will stay visible indefinitely (default is false).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistLine(const UObject* WorldContextObject, const FVector& Start, const FVector& End, const FLinearColor& Color = FLinearColor::Blue, const float Duration = 1.0f, const float Thickness = 2.0f, const bool bPersistentLines = false);
+
+
+    /** Draws a debug point at the specified Location with the given Color, Size, Duration, and persistence.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Location of the point to draw.
+     * @param Color - Color of the point (default is Red).
+     * @param Size - Size of the point (default is 10.0f).
+     * @param Duration - How long the point should be visible in seconds (default is 1.0f).
+     * @param bPersistentLines - If true, the point will stay visible indefinitely (default is false).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistPoint(const UObject* WorldContextObject, const FVector& Location, const FLinearColor& Color = FLinearColor::Red, const float Size = 10.0f, const float Duration = 1.0f, const bool bPersistentLines = false);
+
+	/**
+	 * Draws a debug text block at the specified Location with the given parameters.
+	 * 
+	 * @param WorldContextObject - Context object to get the world from.
+	 * @param Location - Location of the text block to draw.
+	 * @param TextBlockParameters - Parameters that define the appearance and content of the text block.
+	 * @param Duration - How long the text block should be visible in seconds (default is 0.0f, meaning it will persist until cleared).
+	 * @param bPersistentLines - If true, the text block will stay visible indefinitely (default is false).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistTextBlock(const UObject* WorldContextObject, const FVector& Location, const FGorgeousDebugAssistTextBlockParameters& TextBlockParameters, const float Duration = 0.0f, const bool bPersistentLines = false);
+
+    /** Draws a debug sphere at the specified Center with the given Radius, Color, Duration, and persistence.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Center - Center of the sphere to draw.
+     * @param Radius - Radius of the sphere (default is 30.0f).
+     * @param Color - Color of the sphere (default is White).
+     * @param bWireframe - If true, draws a wireframe sphere (default is true).
+     * @param bFilled - If true, draws a solid/filled sphere (default is false).
+     * @param Duration - How long the sphere should be visible in seconds (default is 1.0f).
+     * @param bPersistentLines - If true, the sphere will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the wireframe lines (default is 2.0f).
+     * @param FillColor - Color used for the filled sphere (default is semi-transparent gray).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistSphere(const UObject* WorldContextObject, const FVector& Center, const float Radius, const FLinearColor& Color = FLinearColor::White, const bool bWireframe = true, const bool bFilled = false, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FLinearColor& FillColor = FLinearColor(0.5f, 0.5f, 0.5f, 0.2f));
+
+    /**
+     * Draws a debug line between Start and End with the specified Color, Duration, Thickness, and persistence.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Center - Center of the box to draw.
+     * @param Extent - Extent of the box to draw (half-size in each
+     * @param Color - Color of the line (default is Blue).
+     * @param bWireframe - If true, draws a wireframe box (default is true).
+     * @param bFilled - If true, draws a solid/filled box (default is
+     * @param Duration - How long the line should be visible in seconds (default is 1.0f).
+     * @param Thickness - Thickness of the line (default is 2.0f)
+     * @param FillColor - Color used for the filled box (default is semi-transparent green).
+     * @param bPersistentLines - If true, the line will stay visible indefinitely (default is false).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistBox(const UObject* WorldContextObject, const FVector& Center, const FVector& Extent, const FLinearColor& Color = FLinearColor::Green, const bool bWireframe = true, const bool bFilled = false, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FLinearColor& FillColor = FLinearColor(0.0f, 1.0f, 0.0f, 0.2f));
+
+    /**
+     * Draws debug visualizations for a trace based on the provided hit result and visual parameters.
+     * This can include the trace path, hit point, hit normal, and swept sphere along the trace.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param TraceStart - Starting point of the trace.
+     * @param TraceEnd - Ending point of the trace.
+     * @param HitResult - The hit result from the trace to visualize.
+     * @param VisualParameters - Parameters that control which debug visuals to draw and their appearance.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistHitResult(const UObject* WorldContextObject, const FVector& TraceStart, const FVector& TraceEnd, const FHitResult& HitResult, const FGorgeousDebugAssistVisualParameters& VisualParameters);
+
+
+    /**
+     * Draws a debug line between Start and End with visual parameters for the trace path and swept sphere.
+     * The appearance of the trace can be customized based on the provided visual parameters.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Start - Starting point of the trace.
+     * @param End - Ending point of the trace.
+     * @param Radius - Radius of the swept sphere (for sphere traces).
+     * @param TraceColor - Color of the trace path line.
+     * @param VisualParameters - Parameters that control which debug visuals to draw and their appearance for the trace.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistTrace(const UObject* WorldContextObject, const FVector& Start, const FVector& End, const float Radius, const FLinearColor& TraceColor, const FGorgeousDebugAssistVisualParameters& VisualParameters);
+
+    /**
+     * Draws a debug circle at the specified Location with the given Radius, Color, Duration, and persistence.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the circle to draw.
+     * @param Radius - Radius of the circle (default is 50.0f).
+     * @param Color - Color of the circle (default is Green).
+     * @param bWireframe - If true, draws a wireframe circle (default is true).
+     * @param Duration - How long the circle should be visible in seconds (default is 1.0f).
+     * @param bPersistentLines - If true, the circle will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the circle line (default is 2.0f).
+     * @param Normal - Normal vector of the circle (default is Up).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius = 50.0f, const FLinearColor& Color = FLinearColor::Green, const bool bWireframe = true, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1));
+
+    /**
+     * Draws a debug ring with a hollow center using InnerRadius and OuterRadius.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the ring to draw.
+     * @param InnerRadius - Inner radius of the ring (hole size).
+     * @param OuterRadius - Outer radius of the ring.
+     * @param Color - Color of the ring.
+     * @param bWireframe - If true, draws only ring outlines.
+     * @param Duration - How long the ring should be visible in seconds.
+     * @param bPersistentLines - If true, the ring stays visible indefinitely.
+     * @param Thickness - Thickness of the ring line.
+     * @param Normal - Normal vector of the ring plane.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color = FLinearColor::Green, const bool bWireframe = true, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1));
+
+    /** 
+     * Draws a debug circle that projects onto geometry faces to "wrap" around corners.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the circle to draw.
+     * @param Radius - Radius of the circle.
+     * @param Color - Color of the circle.
+     * @param Duration - How long the circle should be visible.
+     * @param bPersistentLines - If true, the circle stays indefinitely.
+     * @param Thickness - Thickness of the circle lines.
+     * @param Normal - Normal vector of the projection plane.
+	 * @param IgnoreActor Optional actor excluded from the projection query.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistProjectedCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius, const FLinearColor& Color, const float Duration = 0.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1), const AActor* IgnoreActor = nullptr);
+
+    /**
+     * Draws a projected debug ring with a hollow center using InnerRadius and OuterRadius.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the ring to draw.
+     * @param InnerRadius - Inner radius of the ring (hole size).
+     * @param OuterRadius - Outer radius of the ring.
+     * @param Color - Color of the ring.
+     * @param bWireframe - If true, draws only ring outlines.
+     * @param Duration - How long the ring should be visible.
+     * @param bPersistentLines - If true, the ring stays indefinitely.
+     * @param Thickness - Thickness of the ring lines.
+     * @param Normal - Normal vector of the projection plane.
+     * @param IgnoreActor - Actor to ignore for projection traces.
+     * @param bUseFillColor - If true, use FillColor for ring fill instead of Color.
+     * @param FillColor - Fill color used when bUseFillColor is true.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistProjectedRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color, const bool bWireframe = true, const float Duration = 0.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1), const AActor* IgnoreActor = nullptr, const bool bUseFillColor = false, const FLinearColor& FillColor = FLinearColor::White);
+
+    /** 
+     * Draws a debug diamond shape at the specified Location with the given Size, Color, Duration, and persistence.
+     * The diamond is oriented to face the camera for better visibility.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the diamond to draw.
+     * @param Size - Size of the diamond (default is 10.0f).
+     * @param Color - Color of the diamond (default is White).
+     * @param Duration - How long the diamond should be visible in seconds (default is 1.0f).
+     * @param bPersistent - If true, the diamond will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the diamond lines (default is 2.0f).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistDiamond(const UObject* WorldContextObject, const FVector& Location, float Size = 10.0f, const FLinearColor& Color = FLinearColor::White, float Duration = 1.0f, bool bPersistent = false, float Thickness = 2.0f);
+
+    /**
+     * Draws a debug point with different visual states based on the provided EGorgeousDebugAssistPointState.
+     * This allows for quick visual differentiation of points based on their state (e.g., success, failure, warning).
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Location of the point to draw.
+     * @param State - The state of the point which determines its visual appearance.
+     * @param VisualParameters - Parameters that control the appearance of the point for different states.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistPointWithState(const UObject* WorldContextObject, const FVector& Location, EGorgeousDebugAssistPointState State, const FGorgeousDebugAssistVisualParameters& VisualParameters);
+
+    /**
+     * Draws a debug arrow from Start to End with the specified Size, Color, Duration, and persistence.
+     * The arrowhead is drawn at the End point, pointing back towards the Start.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Start - Starting point of the arrow.
+     * @param End - Ending point of the arrow (where the arrowhead is).
+     * @param Size - Size of the arrowhead (default is 20.0f).
+     * @param Color - Color of the arrow (default is Yellow).
+     * @param Duration - How long the arrow should be visible in seconds (default is 1.0f).
+     * @param bPersistent - If true, the arrow will stay visible indefinitely (default is false).
+     * @param Thickness - Thickness of the arrow line (default is 2.0f).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistArrow(const UObject* WorldContextObject, const FVector& Start, const FVector& End, float Size, const FLinearColor& Color, float Duration = 1.0f, bool bPersistent = false, float Thickness = 2.0f);
+
+    /**
+     * Clears all debug assist visuals that have been drawn. This will remove any lines, points, shapes, or other debug drawings created by the debug assist functions.
+     * Use this function to clean up the debug visuals after they are no longer needed, especially if you have drawn persistent visuals.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist")
+    static void ClearDebugAssistGhosts();
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
+
+
+	//<============================--- C++ Only ---=============================>
+	#pragma region C++ Only
+public:
+
+	/**
+	 * Returns the number of active debug beacons tracked for the Insight Matrix.
+	 *
+	 * @return The number of active debug beacons.
+	 */
+	static int32 GetTotalActiveDebugBeacons();
+
+	// Increments the active debug beacon count.
+	static void IncrementActiveDebugBeacons();
+
+	// Decrements the active debug beacon count.
+	static void DecrementActiveDebugBeacons();
+
+	/**
+	 * Returns the debug rendering overhead tracked for the Insight Matrix.
+	 *
+	 * @return The tracked rendering overhead in milliseconds.
+	 */
+	static double GetDebugAssistRenderOverheadMS();
+
+	/**
+	 * Updates the debug rendering overhead tracked for the Insight Matrix.
+	 *
+	 * @param InOverhead The rendering overhead in milliseconds.
+	 */
+	static void SetDebugAssistRenderOverheadMS(double InOverhead);
+	//<------------------------------------------------------------------------->
+	#pragma endregion C++ Only
+};

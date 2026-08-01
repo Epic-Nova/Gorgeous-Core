@@ -1,21 +1,27 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Misc/AutomationTest.h"
+#include "InsightMatrix/GorgeousInsightMatrixTypes.h"
 #include "Templates/Function.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class FAutomationTestBase;
-
+//<------------------------------------------------------------->
 /**
  * Base request shared by every Insight Matrix test run.
  * Provides scenario filtering, parameter parsing, and shared harness toggles.
@@ -135,14 +141,14 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScenarioContext
 	FGorgeousInsightScenarioContext(const FGorgeousInsightMatrixRequest& InRequest,
 		const FString& InParameterString,
 		int32 InVariantIndex,
-		FAutomationTestBase& InTest,
+		class FAutomationTestBase* InTest,
 		const struct FGorgeousInsightScenarioDescriptor& InDescriptor,
 		UObject* InWorldContextObject = nullptr);
 
 	const FGorgeousInsightMatrixRequest& Request;
 	const FString ParameterString;
 	const int32 VariantIndex;
-	FAutomationTestBase& Test;
+	class FAutomationTestBase* Test;
 	const struct FGorgeousInsightScenarioDescriptor& Descriptor;
 	UObject* WorldContextObject = nullptr;
 
@@ -167,6 +173,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInsightScenarioDescriptor
 	int32 Priority = 0;
 	bool bEnabledByDefault = true;
 	FGorgeousInsightScenarioRunner Runner;
+
+	/** UI inputs for parametrized tests */
+	TArray<FGorgeousInsightTest::FGorgeousInsightTestInput> Inputs;
 
 	FString GetDisplayName() const
 	{
@@ -238,7 +247,7 @@ private:
  *     depend on a full game session stack. Alternatively, a dedicated UDP control socket
  *     could be used for ultra-low-overhead metric reporting.
  *   - The orchestrator collects FGorgeousInsightScenarioResult fragments from each
- *     participant, merges them, and calls SaveScenarioResult — identical output format
+ *     participant, merges them, and calls SaveScenarioResult, identical output format
  *     to the current PIE path so the Insight Matrix panel can display results unchanged.
  *   - Scenario descriptors need a new bSupportsStandalone flag so the panel / Gauntlet
  *     launcher can filter and route them appropriately.

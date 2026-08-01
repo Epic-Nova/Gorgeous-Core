@@ -6,18 +6,20 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
 using System.IO;
 using UnrealBuildTool;
 
-public class GorgeousCoreEditor : ModuleRules
+public class GorgeousCoreEditor : GorgeousModuleRules
 {
     public GorgeousCoreEditor(ReadOnlyTargetRules Target) : base(Target)
     {
-        var publicIncludePath = Path.Combine(ModuleDirectory, "Public");
-        var privateIncludePath = Path.Combine(ModuleDirectory, "Private", "HeaderFiles");
+        ApplyGorgeousBuildSettings(new GorgeousBuildSettings {
+            TargetModuleType = GorgeousModuleType.Editor,
+            ModulesToExclude = new[] { "GorgeousCoreEditor" }
+        });
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
@@ -26,61 +28,19 @@ public class GorgeousCoreEditor : ModuleRules
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
 
-        PublicIncludePaths.AddRange(new string[]
-        {
-            publicIncludePath,
-            Path.Combine(publicIncludePath, "FunctionalStructures"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations"),
-        });
-        
-        PrivateIncludePaths.AddRange(new string[]
-        {
-            Path.Combine(privateIncludePath),
-            Path.Combine(privateIncludePath, "CodeGenerators"),
-            Path.Combine(privateIncludePath, "ExtensionResourceGuards"),
-            Path.Combine(privateIncludePath, "Factories"),
-            Path.Combine(privateIncludePath, "K2Nodes"),
-            Path.Combine(privateIncludePath, "PropertyTypeCustomizations") // Public Export Path for the Macros
-        });
-        
-        PublicDependencyModuleNames.AddRange(new[]
-        {
-            "Core", 
-            "PropertyEditor" 
-        });
-        
-        PrivateDependencyModuleNames.AddRange(
-            new[] 
-            {
-                "Engine",
-                "CoreUObject",
-                "InputCore", 
-                "GameplayTags",
-                "MessageLog",
-                "Slate", 
-                "ToolMenus",
-                "SlateCore", 
-                "Projects",
-                "UnrealEd", 
-                "BlueprintGraph",
-                "AssetTools",
-                "AssetRegistry",
-                "ContentBrowser"
-            });
-        
-        /* Planned for 2.0
-            "HTTP",
-            "Json",
-            "JsonUtilities",
-            AddEngineThirdPartyPrivateStaticDependencies(Target, "libcurl");
-         */
-        
-        
+        // The base class handles core Unreal dependencies automatically based on headers.
+        // We explicitly include non-header dependencies or third-party crypto here:
         PrivateDependencyModuleNames.AddRange(new[]
         {
-            "GorgeousCoreRuntime", 
-            "GorgeousCoreRuntimeUtilities",
-            "GorgeousCoreEditorUtilities"
+            "PlatformCryptoContext", 
+            "OpenSSL",
+            "HTTP",
+            "ToolWidgets",
+            "ContentBrowser",
+            "InputCore",
+            "GameplayTags",
+            "DeveloperSettings",
+            "WebBrowser"
         });
     }
 }

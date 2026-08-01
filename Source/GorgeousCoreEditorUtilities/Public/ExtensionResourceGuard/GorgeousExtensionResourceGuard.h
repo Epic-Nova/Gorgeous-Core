@@ -6,12 +6,12 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousExtensionResourceGuard.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -26,7 +26,7 @@
 <--------------------------------------------------------------------------->
 <--------------------------=== Class Description ===------------------------>
 | Base definition for Extension Resource Guards.
-| 
+|
 | An Extension Resource Guard is a Data Asset that declares the plugin
 | dependencies required by a specific extension content pack (e.g. Playlist,
 | Team). When the guard asset is validated, a companion validator checks
@@ -44,7 +44,14 @@ UCLASS(BlueprintType)
 class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuard : public UDataAsset
 {
 	GENERATED_BODY()
-	
+
+	//<============================--- Overrides ---=============================>
+
+	virtual bool IsEditorOnly() const override { return true; }
+
+	//<-------------------------------------------------------------------------->
+
+
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 public:
 
@@ -68,14 +75,24 @@ public:
 	 * The validator will check each entry against IPluginManager and report
 	 * any missing plugins with a hyperlink to enable them.
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (GetOptions = "GetPluginOptions"))
 	TArray<FName> RequiredPlugins;
+
+	/**
+	 * Blueprint extension packs (referenced by system identifier) that must be
+	 * present on disk for this guard to function.
+	 * If the referenced pack cannot be found, the validator will toast a user
+	 * message instructing the user to download it from the Gorgeous plugin
+	 * website resource section.
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	TArray<FName> RequiredBlueprintPacks;
 
 	/**
 	 * The name of the plugin whose Content directory owns this system's
 	 * content pack, e.g. "GorgeousCore".
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (GetOptions = "GetPluginOptions"))
 	FName OwningPluginName;
 
 	/**
@@ -102,7 +119,17 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (EditCondition = "bIsContentPackGuard", EditConditionHides))
 	FString ContentSubPath;
+
+	/**
+	 * (Optional) Blueprint assets that are part of this system and should be
+	 * automatically loaded and executed at editor startup if the guard is active.
+	 * Only used for content packs that include editor utility blueprints.
+	 */
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
+	//TArray<TSoftClassPtr<class UEditorUtilityObject>> UtilityBlueprintsToExecute;
+
 	//<------------------------------------------------------------------------->
+
 
 	//<============================--- C++ Only ---=============================>
 
@@ -145,5 +172,8 @@ public:
 	 *  are not yet listed in the owning plugin's .uplugin descriptor.
 	 */
 	static void ReconcilePluginDependencies();
+
+	UFUNCTION()
+	TArray<FString> GetPluginOptions() const;
 	//<------------------------------------------------------------------------->
 };

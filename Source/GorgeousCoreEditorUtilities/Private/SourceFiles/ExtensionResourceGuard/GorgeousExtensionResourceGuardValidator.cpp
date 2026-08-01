@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuardValidator.h"
 
@@ -16,6 +16,7 @@
 #define GT_DURATION 15.0f
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
+#include "Helpers/GorgeousLoggingHelper.h"
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
 #include "Validation/GorgeousValidationHelpers.h"
 //<--------------------------=== Engine Includes ===------------------------->
@@ -37,6 +38,11 @@ UGorgeousExtensionResourceGuardValidator::UGorgeousExtensionResourceGuardValidat
 		FName("HandleEnableRequiredPlugin"));
 }
 
+UGorgeousExtensionResourceGuardValidator::~UGorgeousExtensionResourceGuardValidator()
+{
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.ExtensionGuard.EnablePlugin");
+}
+
 bool UGorgeousExtensionResourceGuardValidator::CanValidateAsset_Implementation(
 	const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {
@@ -53,7 +59,7 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 	}
 
 	// Skip entirely if the content pack is not present on disk
-	// The system is optional — if it was removed, the guard is inert.
+	// The system is optional, if it was removed, the guard is inert.
 	if (!Guard->IsContentPresent())
 	{
 		AssetPasses(Guard);
@@ -91,11 +97,11 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 				*PluginName.ToString(),
 				*Guard->SystemDisplayName.ToString());
 
-			// Hard validation error — this goes to the Data Validation message log.
+			// Hard validation error, this goes to the Data Validation message log.
 			AssetFails(Guard, FText::FromString(ErrorMessage));
 			bHasErrors = true;
 
-			// Begin enforcement immediately — the user may never click the
+			// Begin enforcement immediately, the user may never click the
 			// hyperlink. If they do click it and accept the restart,
 			// HandleEnableRequiredPlugin will call StopEnforcement().
 			if (GEditor)
@@ -107,6 +113,75 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 						PluginName.ToString(), Guard->SystemDisplayName.ToString());
 				}
 			}
+		}
+	}
+
+
+	// Check required blueprint extension packs.
+	if (!Guard->RequiredBlueprintPacks.IsEmpty())
+	{
+		TArray<FAssetData> AllGuardAssets;
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get()
+			.GetAssetsByClass(UGorgeousExtensionResourceGuard::StaticClass()->GetClassPathName(),
+				AllGuardAssets,
+				/*bSearchSubClasses=*/ true);
+
+		TArray<FName> MissingPacks;
+		for (const FName& PackIdentifier : Guard->RequiredBlueprintPacks)
+		{
+			if (PackIdentifier.IsNone())
+			{
+				if (GorgeousValidation::ReportWarningOrError(this, Guard,
+					TEXT("RequiredBlueprintPacks contains an empty entry.")))
+				{
+					bHasErrors = true;
+				}
+				continue;
+			}
+
+			bool bPackFound = false;
+			for (const FAssetData& OtherAsset : AllGuardAssets)
+			{
+				if (const UGorgeousExtensionResourceGuard* OtherGuard =
+					Cast<UGorgeousExtensionResourceGuard>(OtherAsset.GetAsset()))
+				{
+					if (OtherGuard->SystemIdentifier == PackIdentifier && OtherGuard->IsContentPresent())
+					{
+						bPackFound = true;
+						break;
+					}
+				}
+			}
+
+			if (!bPackFound)
+			{
+				MissingPacks.AddUnique(PackIdentifier);
+			}
+		}
+
+		if (MissingPacks.Num() > 0)
+		{
+			const FString PackList = FString::JoinBy(MissingPacks, TEXT(", "), [](const FName& Name) { return Name.ToString(); });
+			const FText ErrorMessage = FText::Format(
+				NSLOCTEXT("GorgeousExtensionResourceGuard", "MissingBlueprintPacks",
+					"Blueprint extension pack(s) '{0}' are required by system '{1}' but were not found. Download them from the Resources section of the Gorgeous plugin website."),
+				FText::FromString(PackList), Guard->SystemDisplayName);
+
+			AssetFails(Guard, ErrorMessage);
+			bHasErrors = true;
+
+			GT_E_LOG_FULL_EX(
+				"GT.ExtensionResourceGuard.MissingBlueprintPacks",
+				TEXT("Missing required blueprint extension pack(s) '%s' for system '%s'."),
+				3.0f,
+				true,
+				true,
+				true,
+				true,
+				nullptr,
+				nullptr,
+				*PackList,
+				*Guard->SystemDisplayName.ToString());
 		}
 	}
 
@@ -182,7 +257,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 		return;
 	}
 
-	// Already enabled — nothing to do
+	// Already enabled, nothing to do
 	if (Plugin->IsEnabled())
 	{
 		GT_I_LOG("GT.ExtensionResourceGuard",
@@ -199,7 +274,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 
 	if (Result == EAppReturnType::Yes)
 	{
-		// User accepted — stop enforcement if it was running
+		// User accepted, stop enforcement if it was running
 		if (GEditor)
 		{
 			if (UGorgeousExtensionResourceGuardEnforcer* Enforcer =
@@ -213,7 +288,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 	}
 	else
 	{
-		// User rejected — begin enforcement countdown
+		// User rejected, begin enforcement countdown
 		if (GEditor)
 		{
 			if (UGorgeousExtensionResourceGuardEnforcer* Enforcer =

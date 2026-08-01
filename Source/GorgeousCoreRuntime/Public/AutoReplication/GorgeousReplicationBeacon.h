@@ -6,20 +6,23 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "OnlineBeaconHostObject.h"
 #include "OnlineBeaconClient.h"
-
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousReplicationBeacon.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
 class UGorgeousRootObjectVariable;
-
+//<------------------------------------------------------------->
 //@TODO: This is a highly theoretical concept, this will probably introduced in v1.3
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -44,7 +47,27 @@ class UGorgeousRootObjectVariable;
 //  context (CachedOwner / FallbackOwner).
 // ════════════════════════════════════════════════════════════════════════════
 
-UCLASS(Transient, NotPlaceable, Config = Engine)
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Replication Beacon Client
+| Functional Name: AGorgeousReplicationBeaconClient
+| Parent Class: AOnlineBeaconClient
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Provides runtime functionality for Gorgeous Replication Beacon Client.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Transient, NotPlaceable, Config = Engine,
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/AGorgeousReplicationBeaconClient",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API AGorgeousReplicationBeaconClient : public AOnlineBeaconClient
 {
 	GENERATED_BODY()
@@ -57,7 +80,7 @@ public:
 	/** Called when the beacon connection is fully established. */
 	virtual void OnConnected() override;
 
-	/** Called on connection failure — releases ownership claims. */
+	/** Called on connection failure, releases ownership claims. */
 	virtual void OnFailure() override;
 
 	// ── HTTP ↔ Object Variable RPCs ────────────────────────────────────────
@@ -78,13 +101,13 @@ public:
 
 	// ── Root ownership ─────────────────────────────────────────────────────
 
-	/** The root names this beacon has claimed ownership of. */
+	// The root names this beacon has claimed ownership of.
 	UPROPERTY()
 	TArray<FName> ClaimedRootNames;
 
 	/** Releases any root registry ownership this beacon held. */
 	void ReleaseManagedRoots();
-	
+
 protected:
 	/** Claims root registry ownership for all configured roots. */
 	void ClaimManagedRoots();
@@ -120,7 +143,7 @@ public:
 	/** Override: spawn our custom beacon client for the incoming connection. */
 	virtual AOnlineBeaconClient* SpawnBeaconActor(UNetConnection* ClientConnection) override;
 
-	/** Override: called after handshake — track the connected client. */
+	/** Override: called after handshake, track the connected client. */
 	virtual void OnClientConnected(AOnlineBeaconClient* NewClientActor, UNetConnection* ClientConnection) override;
 
 	/** Override: called when a client disconnects. */
@@ -128,7 +151,7 @@ public:
 
 	// ── Configuration ──────────────────────────────────────────────────────
 
-	/** Root names that connected beacons should claim ownership of. */
+	// Root names that connected beacons should claim ownership of.
 	UPROPERTY(Config)
 	TArray<FName> ManagedRootNames;
 };

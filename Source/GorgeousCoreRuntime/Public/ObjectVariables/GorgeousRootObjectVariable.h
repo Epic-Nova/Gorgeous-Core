@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,16 +6,15 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
-
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousObjectVariable.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousRootObjectVariable.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -37,34 +36,44 @@ struct FGorgeousRootRegistryOwnerHandle
    {
    }
 
-   /** Root registry this handle refers to. */
+   // Root registry this handle refers to.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FName RootName;
 
-   /** Stable token assigned when ownership was first granted. */
+   // Stable token assigned when ownership was first granted.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FGuid OwnerToken;
 
-   /** Stable identifier provided by the original owner (typically a connection key). */
+   // Stable identifier provided by the original owner, typically a connection key.
    UPROPERTY(BlueprintReadOnly, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    FString StableIdentifier;
 
    bool IsValid() const { return OwnerToken.IsValid(); }
 };
 
-/**
- * The root object variable, serving as the central registry for all object variables.
- *
- * Key features include:
- * - Singleton pattern for global access.
- * - Registry for tracking all object variables.
- * - Hierarchy management for nested variables.
- * - Universal getter and setter functions for dynamic property access.
- * - Cleanup functionality for removing variables from the registry.
- *
- * @note This class provides a centralized and efficient way to manage object variables within the game.
- */
-UCLASS()
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Root Object Variable
+| Functional Name: UGorgeousRootObjectVariable
+| Parent Class: UGorgeousObjectVariable
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| The root object variable is the central registry for all object variables.
+| It provides global access, hierarchy management, property access, and
+| registry cleanup.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousRootObjectVariable",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousRootObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
@@ -129,7 +138,7 @@ public:
 
     /**
      * Checks if a given object variable is already registered with the registry
-     * 
+     *
      * @param Variable The variable to check for existance in the registry
      * @return True if the variable is contained either in the root registry ot the registry of any other variable, false otherwise.
      */
@@ -151,7 +160,7 @@ public:
    /** Lookup helper that resolves a variable by its registered display name. */
    UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables")
    static UGorgeousObjectVariable* FindVariableByDisplayName(FName InDisplayName);
-   
+
    template<typename VariableType>
    static VariableType* FindVariableByDisplayNameTyped(const FName InDisplayName)
    {
@@ -174,6 +183,12 @@ public:
    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
    static void PromoteRootRegistryOwner(FName RootName, UObject* CachedOwner);
 
+   /** Enables/disables creation of new root instances (used to block late teardown re-entry). */
+   static void SetRootCreationAllowed(bool bAllowed);
+
+   /** Returns whether new root instances are currently allowed to be created. */
+   static bool IsRootCreationAllowed();
+
 	/** Resolves an explicit root name against the developer settings to produce a canonical entry key. */
 	static FName ResolveRootName(FName RequestedRootName);
 
@@ -193,19 +208,20 @@ public:
      *
      * @param DyingWorld     The world that is about to be garbage-collected.
      * @param bSessionEnded  true when the game session is ending (PIE close, game exit)
-     *                       — performs a full purge including root OVs outered to the
+     *                      , performs a full purge including root OVs outered to the
      *                       GameInstance and the GI itself.  false during a level switch
-     *                       — only purges non-persistent OVs directly outered to the
+     *                      , only purges non-persistent OVs directly outered to the
      *                       dying world, preserving persistent root OVs and the GI.
      */
-    //static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);
+    static void PurgeWorldOwnedRegistryEntries(UWorld* DyingWorld, bool bSessionEnded);
+
 
     /**
      * Sets the value of a property with any type for an object variable identified by its unique identifier.
      *
      * This function is not intended to be called from C++, it should only be used in Blueprint.
      * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
-     * 
+     *
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to set.
      * @param Value The value to set.
@@ -216,58 +232,14 @@ public:
     UFUNCTION(BlueprintCallable, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "Value"))
     static void SetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, const int32& Value);
 
-    DECLARE_FUNCTION(execSetUniversalVariable)
-    {
-       P_GET_STRUCT(FGuid, Identifier);
-       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-       Stack.StepCompiledIn<FProperty>(nullptr);
-       const FProperty* SourceProperty  = Stack.MostRecentProperty;
-       const void* SourcePropertyAddress  = Stack.MostRecentPropertyAddress;
-       P_FINISH;
-
-       if (OptionalPropertyName.IsNone())
-       {
-          OptionalPropertyName = "Value";
-       }
-
-       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-       {
-          if (ObjectVariable->UniqueIdentifier == Identifier)
-          {
-             FoundObjectVariable = ObjectVariable;
-             break;
-          }
-       }
-
-       if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
-       {
-          if (const FProperty* TargetProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-          {
-             if (TargetProperty->SameType(SourceProperty))
-             {
-               if (!FoundObjectVariable->ValidateVariableAssignment(OptionalPropertyName, SourceProperty, SourcePropertyAddress))
-               {
-                  GT_E_LOG("GT.ObjectVariables.Universal.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *OptionalPropertyName.ToString(), *GetNameSafe(FoundObjectVariable));
-                  return;
-               }
-               TargetProperty->SetValue_InContainer(FoundObjectVariable, SourcePropertyAddress);
-             }
-             else
-             {
-               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
-             }
-          }
-       }
-    }
+    DECLARE_FUNCTION(execSetUniversalVariable);
 
     /**
      * Gets the value of a property with any type from an object variable identified by its unique identifier.
      *
      * This function is not intended to be called from C++, it should only be used in Blueprint.
      * For a C++ version if this function, check out the equivalent function in UGorgeousObjectVariable.
-     * 
+     *
      * @param Identifier The unique identifier of the object variable.
      * @param OptionalPropertyName The name of the property to get.
      * @param OutValue The output value.
@@ -278,46 +250,7 @@ public:
     UFUNCTION(BlueprintPure, CustomThunk, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (CustomStructureParam = "OutValue"))
     static void GetUniversalVariable(FGuid Identifier, FName OptionalPropertyName, int32& OutValue);
 
-    DECLARE_FUNCTION(execGetUniversalVariable)
-    {
-       P_GET_STRUCT(FGuid, Identifier);
-       P_GET_PROPERTY(FNameProperty, OptionalPropertyName);
-       Stack.StepCompiledIn<FProperty>(nullptr);
-       void* OutValueAddress = Stack.MostRecentPropertyAddress;
-       const FProperty* OutValueProperty = Stack.MostRecentProperty;
-       P_FINISH;
-
-       if (OptionalPropertyName.IsNone())
-       {
-          OptionalPropertyName = "Value";
-       }
-
-       UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-       for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-       {
-          if (ObjectVariable->UniqueIdentifier == Identifier)
-          {
-             FoundObjectVariable = ObjectVariable;
-             break;
-          }
-       }
-
-       if (FoundObjectVariable)
-       {
-          if (const FProperty* SourceProperty = FindFProperty<FProperty>(FoundObjectVariable->GetClass(), OptionalPropertyName))
-          {
-             if (SourceProperty->SameType(OutValueProperty))
-             {
-                SourceProperty->CopyCompleteValue(OutValueAddress, SourceProperty->ContainerPtrToValuePtr<void>(FoundObjectVariable));
-             }
-             else
-             {
-               GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
-             }
-          }
-       }
-    }
+    DECLARE_FUNCTION(execGetUniversalVariable);
 
     /**
      * Registers a new object variable with the registry.
@@ -341,9 +274,9 @@ private:
 public:
    /** Named root instances keyed by the identifier configured in settings. */
    static TMap<FName, TObjectPtr<UGorgeousRootObjectVariable>> NamedRootInstances;
-   
+
 protected:
-   /** Name key this root was registered with (None for legacy fallback). */
+   // Name key this root was registered with (None for legacy fallback).
    UPROPERTY(VisibleInstanceOnly, Category = "Gorgeous Core|Gorgeous Object Variables")
    FName RegisteredRootName;
 

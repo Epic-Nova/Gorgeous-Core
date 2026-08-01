@@ -1,16 +1,50 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #pragma once
 
-#include "CoreMinimal.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Subsystems/WorldSubsystem.h"
 #include "UObject/ObjectKey.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousRootNetworkStackSubsystem.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
 class AController;
-
-/** Lightweight world subsystem that tracks root network stack registrations. */
-UCLASS()
+//<------------------------------------------------------------->
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Gorgeous Root Network Stack Subsystem
+| Functional Name: UGorgeousRootNetworkStackSubsystem
+| Parent Class: UWorldSubsystem
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Lightweight world subsystem that tracks root network stack registrations.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(
+	meta = (
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousRootNetworkStackSubsystem",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		)
+)
 class GORGEOUSCORERUNTIME_API UGorgeousRootNetworkStackSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
@@ -54,7 +88,7 @@ private:
 	void AddControllerSubscription(AController* Controller, FName ChannelName) const;
 	void RemoveControllerSubscription(AController* Controller, FName ChannelName) const;
 
-	/** Registered variables that requested exposure through the root network stack. */
+	// Registered variables that requested exposure through the root network stack.
 	UPROPERTY()
 	TSet<TWeakObjectPtr<UGorgeousObjectVariable>> RegisteredVariables;
 

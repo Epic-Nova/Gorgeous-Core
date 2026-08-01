@@ -1,0 +1,67 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
+#pragma once
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "DetailExtensions/GorgeousDetailExtension.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GorgeousTestDetailExtension.generated.h"
+//<-------------------------------------------------------------------------->
+
+/**
+ * A test detail extension that adds a "Gorgeous!" button to a property row.
+ * @note: Can be used for e.g. Inventory Icon Generator Adapter Pack to define besides the Icon property capture an icon
+ */
+UCLASS()
+class UGorgeousTestDetailExtension : public UGorgeousDetailExtension
+{
+	GENERATED_BODY()
+
+public:
+	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow) override
+	{
+		HeaderRow.NameContent()
+		[
+			PropertyHandle->CreatePropertyNameWidget()
+		]
+		.ValueContent()
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			[
+				PropertyHandle->CreatePropertyValueWidget()
+			]
+			+ SHorizontalBox::Slot()
+			.Padding(5, 0)
+			.AutoWidth()
+			[
+				SNew(SButton)
+				.OnClicked_Lambda([]() {
+					GT_S_LOG("GT.Editor.Test", TEXT("Gorgeous! Button Clicked!"));
+					return FReply::Handled();
+				})
+				[
+					SNew(STextBlock)
+					.Text(FText::FromString(TEXT("✨ Gorgeous!")))
+				]
+			]
+		];
+	}
+
+	virtual FName GetExtensionName() const override { return FName("Test"); }
+};

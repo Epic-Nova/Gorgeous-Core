@@ -6,10 +6,12 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "InsightMatrix/GorgeousInsightFunctionalTest.h"
+#include "EngineUtils.h"
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -21,9 +23,13 @@
 #include "InsightMatrix/GorgeousInsightHarness.h"
 #include "InsightMatrix/GorgeousInsightBaselineSettings.h"
 #include "Helpers/Macros/GorgeousProfilingHelperMacros.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/UObjectIterator.h"
 #include "Misc/FileHelper.h"
+#include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/ConfigCacheIni.h"
 #include "HAL/PlatformTime.h"
@@ -53,6 +59,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 namespace
 {
+
 	class FGorgeousInsightRuntimeAutomationTest final : public FAutomationTestBase
 	{
 	public:
@@ -107,6 +114,37 @@ namespace
 
 namespace
 {
+static FString GetBaselineIniPath(FName ProviderName)
+{
+	FString PluginName;
+	FString FileName = TEXT("BaseInsightMatrixExt.ini");
+	if (ProviderName == TEXT("GorgeousCore"))
+	{
+		FileName = TEXT("BaseInsightMatrix.ini");
+	}
+
+	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
+	{
+		if (IGorgeousInsightMatrixProvider* Provider = Subsystem->FindProvider(ProviderName))
+		{
+			PluginName = Provider->GetPluginName();
+		}
+	}
+
+	if (PluginName.IsEmpty())
+	{
+		PluginName = TEXT("Gorgeous-Core");
+	}
+
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName);
+	if (Plugin.IsValid())
+	{
+		return Plugin->GetBaseDir() / TEXT("Config") / FileName;
+	}
+
+	return FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / PluginName / TEXT("Config") / FileName;
+}
+
 	static FString MakeBaselineKey(FName ProviderName, FName TestId)
 	{
 		return UGorgeousInsightBaselineSettings::MakeKey(ProviderName, TestId);
@@ -148,14 +186,14 @@ namespace
 	{
 		if (Args.Num() < 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Usage: Gorgeous.Insight.SetBaseline <TestId> [ProviderName]"));
+			GT_W_LOG("GT.Core.Insight", TEXT("Usage: Gorgeous.Insight.SetBaseline <TestId> [ProviderName]"));
 			return;
 		}
 
 		UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get();
 		if (!Subsystem)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Insight Matrix subsystem not available."));
+			GT_W_LOG("GT.Core.Insight", TEXT("Insight Matrix subsystem not available."));
 			return;
 		}
 
@@ -170,19 +208,19 @@ namespace
 			TArray<IGorgeousInsightMatrixProvider*> Providers = Subsystem->GetProviders();
 			if (!ResolveProviderForTestId(Providers, TestId, ProviderName))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Could not resolve provider for test '%s'. Provide the provider name as second argument."), *TestId.ToString());
+				GT_W_LOG("GT.Core.Insight", TEXT("Could not resolve provider for test '%s'. Provide the provider name as second argument."), *TestId.ToString());
 				return;
 			}
 		}
 
 		if (!Subsystem->SetBaselineFromLastResult(ProviderName, TestId))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("No last result found for test '%s' (%s). Run the test first."), *TestId.ToString(), *ProviderName.ToString());
+			GT_W_LOG("GT.Core.Insight", TEXT("No last result found for test '%s' (%s). Run the test first."), *TestId.ToString(), *ProviderName.ToString());
 			return;
 		}
 
 		Subsystem->RefreshDebugPanel();
-		UE_LOG(LogTemp, Display, TEXT("Baseline updated for test '%s' (%s)."), *TestId.ToString(), *ProviderName.ToString());
+		GT_I_LOG("GT.Core.Insight", TEXT("Baseline updated for test '%s' (%s)."), *TestId.ToString(), *ProviderName.ToString());
 	}
 
 	static FAutoConsoleCommand GInsightSetBaselineCmd(
@@ -408,6 +446,18 @@ void UGorgeousInsightMatrixSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	RegisterInputPreProcessor();
 	FCoreDelegates::OnPostEngineInit.AddUObject(this, &UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor);
+	
+	// --- Modular Feature Integration ---
+	IModularFeatures::Get().OnModularFeatureRegistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered);
+	IModularFeatures::Get().OnModularFeatureUnregistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureUnregistered);
+	
+	// Scan for already registered providers
+	TArray<IGorgeousInsightMatrixProvider*> ExistingProviders = IModularFeatures::Get().GetModularFeatureImplementations<IGorgeousInsightMatrixProvider>(IGorgeousInsightMatrixProvider::GetFeatureName());
+	for (IGorgeousInsightMatrixProvider* Provider : ExistingProviders)
+	{
+		RegisterProvider(Provider);
+	}
+	
 	LoadCachedStats();
 	LoadPanelState();
 }
@@ -416,12 +466,31 @@ void UGorgeousInsightMatrixSubsystem::Deinitialize()
 {
 	UnregisterInputPreProcessor();
 
+	IModularFeatures::Get().OnModularFeatureRegistered().RemoveAll(this);
+	IModularFeatures::Get().OnModularFeatureUnregistered().RemoveAll(this);
+
 	HideInGamePanel();
 	HideDebugPanel();
 	SaveCachedStats();
 	SavePanelState();
 
 	Super::Deinitialize();
+}
+
+void UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered(const FName& FeatureName, IModularFeature* Feature)
+{
+	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
+	{
+		RegisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
+	}
+}
+
+void UGorgeousInsightMatrixSubsystem::OnModularFeatureUnregistered(const FName& FeatureName, IModularFeature* Feature)
+{
+	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
+	{
+		UnregisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
+	}
 }
 
 void UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor()
@@ -822,7 +891,7 @@ IGorgeousInsightMatrixProvider* UGorgeousInsightMatrixSubsystem::FindProvider(co
 	return nullptr;
 }
 
-void UGorgeousInsightMatrixSubsystem::GatherAllStats(TArray<FGorgeousInsightStat>& OutStats) const
+void UGorgeousInsightMatrixSubsystem::GatherAllStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const
 {
 	GORGEOUS_PROFILE_SCOPE(GIM_GatherAllStats);
 	FScopeLock Lock(&ProviderMutex);
@@ -833,7 +902,19 @@ void UGorgeousInsightMatrixSubsystem::GatherAllStats(TArray<FGorgeousInsightStat
 			continue;
 		}
 		TArray<FGorgeousInsightStat> ProviderStats;
-		Provider->GatherStats(ProviderStats);
+		
+		if (Context.Mode == EGorgeousInsightContextMode::Baseline)
+		{
+			if (const TArray<FGorgeousInsightStat>* Baseline = ProviderBaselineStats.Find(Provider->GetProviderName()))
+			{
+				ProviderStats = *Baseline;
+			}
+		}
+		else
+		{
+			Provider->GatherStats(Context, ProviderStats);
+		}
+
 		if (!ProviderStats.IsEmpty())
 		{
 			OutStats.Append(ProviderStats);
@@ -852,19 +933,72 @@ void UGorgeousInsightMatrixSubsystem::GatherAllStats(TArray<FGorgeousInsightStat
 	GORGEOUS_CSV_CUSTOM_STAT_SET(InsightStats, OutStats.Num());
 }
 
-void UGorgeousInsightMatrixSubsystem::GatherProviderStats(const FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const
+void UGorgeousInsightMatrixSubsystem::GatherProviderStats(const FGorgeousInsightGatherContext& Context, const FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const
 {
 	GORGEOUS_PROFILE_SCOPE(GIM_GatherProviderStats);
 	TArray<FGorgeousInsightStat> ProviderStats;
-	if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName))
+	
+	if (Context.Mode == EGorgeousInsightContextMode::Baseline)
 	{
-		Provider->GatherStats(ProviderStats);
+		if (const TArray<FGorgeousInsightStat>* Baseline = ProviderBaselineStats.Find(ProviderName))
+		{
+			ProviderStats = *Baseline;
+		}
+		else
+		{
+			// Lazy load from INI
+			const FString IniPath = GetBaselineIniPath(ProviderName);
+			const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
+			TArray<FString> Keys;
+			if (GConfig->GetSection(*SectionName, Keys, IniPath))
+			{
+				TArray<FGorgeousInsightStat>& LoadedStats = ProviderBaselineStats.FindOrAdd(ProviderName);
+				for (const FString& KeyStr : Keys)
+				{
+					FString StatLine;
+					if (GConfig->GetString(*SectionName, *KeyStr, StatLine, IniPath))
+					{
+						TArray<FString> Parts;
+						StatLine.ParseIntoArray(Parts, TEXT("|"), false);
+						if (Parts.Num() >= 8)
+						{
+							FGorgeousInsightStat Stat;
+							Stat.Id = FName(*Parts[0]);
+							Stat.DisplayName = FText::FromString(Parts[1]);
+							Stat.Description = FText::FromString(Parts[2]);
+							Stat.Category = FName(*Parts[3]);
+							Stat.ValueType = (EGorgeousInsightStatValueType)FCString::Atoi(*Parts[4]);
+							Stat.NumericValue = FCString::Atof(*Parts[5]);
+							Stat.TextValue = FText::FromString(Parts[6]);
+							Stat.Unit = FText::FromString(Parts[7]);
+							LoadedStats.Add(Stat);
+						}
+					}
+				}
+				ProviderStats = LoadedStats;
+			}
+		}
+	}
+	else if (Context.Mode == EGorgeousInsightContextMode::Editor)
+	{
+		FScopeLock CacheLock(&StatsCacheMutex);
+		if (const TArray<FGorgeousInsightStat>* Cached = CachedProviderStats.Find(ProviderName))
+		{
+			ProviderStats = *Cached;
+		}
+	}
+	else if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName))
+	{
+		Provider->GatherStats(Context, ProviderStats);
 	}
 
 	if (!ProviderStats.IsEmpty())
 	{
 		OutStats = ProviderStats;
-		CacheProviderStats(ProviderName, ProviderStats);
+		if (Context.Mode == EGorgeousInsightContextMode::Live)
+		{
+			CacheProviderStats(ProviderName, ProviderStats);
+		}
 	}
 	else
 	{
@@ -894,69 +1028,96 @@ void UGorgeousInsightMatrixSubsystem::LoadCachedStats()
 		return;
 	}
 
-	const FString FilePath = FPaths::ProjectSavedDir() / TEXT("GorgeousInsightMatrix") / TEXT("ProviderStats.json");
-	FString Contents;
-	if (!FFileHelper::LoadFileToString(Contents, *FilePath))
-	{
-		bStatsCacheLoaded = true;
-		return;
-	}
-
-	TSharedPtr<FJsonObject> Root;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-	if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
-	{
-		bStatsCacheLoaded = true;
-		return;
-	}
-
-	const TArray<TSharedPtr<FJsonValue>>* ProvidersArray = nullptr;
-	if (!Root->TryGetArrayField(TEXT("providers"), ProvidersArray) || !ProvidersArray)
-	{
-		bStatsCacheLoaded = true;
-		return;
-	}
-
+	const FString Directory = FPaths::ProjectSavedDir() / TEXT("GorgeousThings");
+	const FString FilePath = Directory / TEXT("EditorHistory.json");
+	
+	EditorHistory.Reset();
+	ActiveHistoryIndex = -1;
 	CachedProviderStats.Reset();
-	for (const TSharedPtr<FJsonValue>& ProviderValue : *ProvidersArray)
-	{
-		const TSharedPtr<FJsonObject> ProviderObj = ProviderValue.IsValid() ? ProviderValue->AsObject() : nullptr;
-		if (!ProviderObj.IsValid())
-		{
-			continue;
-		}
-		const FString ProviderName = ProviderObj->GetStringField(TEXT("provider"));
-		const TArray<TSharedPtr<FJsonValue>>* StatsArray = nullptr;
-		if (!ProviderObj->TryGetArrayField(TEXT("stats"), StatsArray) || !StatsArray)
-		{
-			continue;
-		}
 
-		TArray<FGorgeousInsightStat> Stats;
-		for (const TSharedPtr<FJsonValue>& StatValue : *StatsArray)
+	FString Contents;
+	if (FFileHelper::LoadFileToString(Contents, *FilePath))
+	{
+		TSharedPtr<FJsonObject> Root;
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
+		if (FJsonSerializer::Deserialize(Reader, Root) && Root.IsValid())
 		{
-			const TSharedPtr<FJsonObject> StatObj = StatValue.IsValid() ? StatValue->AsObject() : nullptr;
-			if (!StatObj.IsValid())
+			const TArray<TSharedPtr<FJsonValue>>* HistoryArray = nullptr;
+			if (Root->TryGetArrayField(TEXT("history"), HistoryArray) && HistoryArray)
 			{
-				continue;
+				for (const TSharedPtr<FJsonValue>& SnapValue : *HistoryArray)
+				{
+					const TSharedPtr<FJsonObject> SnapObj = SnapValue.IsValid() ? SnapValue->AsObject() : nullptr;
+					if (!SnapObj.IsValid()) continue;
+					
+					FGorgeousInsightEditorSnapshot Snapshot;
+					FString TimeStr;
+					if (SnapObj->TryGetStringField(TEXT("timestamp"), TimeStr))
+					{
+						FDateTime::ParseIso8601(*TimeStr, Snapshot.Timestamp);
+					}
+					else
+					{
+						Snapshot.Timestamp = FDateTime::UtcNow();
+					}
+
+					const TArray<TSharedPtr<FJsonValue>>* ProvidersArray = nullptr;
+					if (SnapObj->TryGetArrayField(TEXT("providers"), ProvidersArray) && ProvidersArray)
+					{
+						for (const TSharedPtr<FJsonValue>& ProviderValue : *ProvidersArray)
+						{
+							const TSharedPtr<FJsonObject> ProviderObj = ProviderValue.IsValid() ? ProviderValue->AsObject() : nullptr;
+							if (!ProviderObj.IsValid()) continue;
+							
+							const FString ProviderName = ProviderObj->GetStringField(TEXT("provider"));
+							const TArray<TSharedPtr<FJsonValue>>* StatsArray = nullptr;
+							if (!ProviderObj->TryGetArrayField(TEXT("stats"), StatsArray) || !StatsArray) continue;
+
+							TArray<FGorgeousInsightStat> Stats;
+							for (const TSharedPtr<FJsonValue>& StatValue : *StatsArray)
+							{
+								const TSharedPtr<FJsonObject> StatObj = StatValue.IsValid() ? StatValue->AsObject() : nullptr;
+								if (!StatObj.IsValid()) continue;
+								
+								FGorgeousInsightStat Stat;
+								Stat.Id = FName(*StatObj->GetStringField(TEXT("id")));
+								Stat.DisplayName = FText::FromString(StatObj->GetStringField(TEXT("displayName")));
+								Stat.Description = FText::FromString(StatObj->GetStringField(TEXT("description")));
+								Stat.Category = FName(*StatObj->GetStringField(TEXT("category")));
+								Stat.ValueType = static_cast<EGorgeousInsightStatValueType>(StatObj->GetIntegerField(TEXT("valueType")));
+								Stat.NumericValue = StatObj->GetNumberField(TEXT("numericValue"));
+								Stat.TextValue = FText::FromString(StatObj->GetStringField(TEXT("textValue")));
+								Stat.Unit = FText::FromString(StatObj->GetStringField(TEXT("unit")));
+								Stats.Add(Stat);
+							}
+							Snapshot.ProviderStats.Add(FName(*ProviderName), Stats);
+						}
+					}
+					EditorHistory.Add(Snapshot);
+				}
 			}
-			FGorgeousInsightStat Stat;
-			Stat.Id = FName(*StatObj->GetStringField(TEXT("id")));
-			Stat.DisplayName = FText::FromString(StatObj->GetStringField(TEXT("displayName")));
-			Stat.Description = FText::FromString(StatObj->GetStringField(TEXT("description")));
-			Stat.Category = FName(*StatObj->GetStringField(TEXT("category")));
-			Stat.ValueType = static_cast<EGorgeousInsightStatValueType>(StatObj->GetIntegerField(TEXT("valueType")));
-			Stat.NumericValue = StatObj->GetNumberField(TEXT("numericValue"));
-			Stat.TextValue = FText::FromString(StatObj->GetStringField(TEXT("textValue")));
-			Stat.Unit = FText::FromString(StatObj->GetStringField(TEXT("unit")));
-			Stats.Add(Stat);
 		}
-		CachedProviderStats.Add(FName(*ProviderName), Stats);
+	}
+	
+	if (EditorHistory.Num() > 0)
+	{
+		ActiveHistoryIndex = EditorHistory.Num() - 1;
+		CachedProviderStats = EditorHistory.Last().ProviderStats;
 	}
 
 	bStatsCacheLoaded = true;
 }
 
+
+void UGorgeousInsightMatrixSubsystem::ApplyHistorySnapshot(int32 Index)
+{
+	FScopeLock CacheLock(&StatsCacheMutex);
+	if (EditorHistory.IsValidIndex(Index))
+	{
+		ActiveHistoryIndex = Index;
+		CachedProviderStats = EditorHistory[Index].ProviderStats;
+	}
+}
 void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 {
 	FScopeLock CacheLock(&StatsCacheMutex);
@@ -964,32 +1125,42 @@ void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 	{
 		return;
 	}
-
-	TArray<TSharedPtr<FJsonValue>> ProviderArray;
-	for (const TPair<FName, TArray<FGorgeousInsightStat>>& Pair : CachedProviderStats)
+	
+	TArray<TSharedPtr<FJsonValue>> HistoryJsonArray;
+	for (const FGorgeousInsightEditorSnapshot& Snapshot : EditorHistory)
 	{
-		TArray<TSharedPtr<FJsonValue>> StatArray;
-		for (const FGorgeousInsightStat& Stat : Pair.Value)
+		TSharedRef<FJsonObject> SnapObj = MakeShared<FJsonObject>();
+		SnapObj->SetStringField(TEXT("timestamp"), Snapshot.Timestamp.ToIso8601());
+		
+		TArray<TSharedPtr<FJsonValue>> ProviderArray;
+		for (const TPair<FName, TArray<FGorgeousInsightStat>>& Pair : Snapshot.ProviderStats)
 		{
-			TSharedRef<FJsonObject> StatObj = MakeShared<FJsonObject>();
-			StatObj->SetStringField(TEXT("id"), Stat.Id.ToString());
-			StatObj->SetStringField(TEXT("displayName"), Stat.DisplayName.ToString());
-			StatObj->SetStringField(TEXT("description"), Stat.Description.ToString());
-			StatObj->SetStringField(TEXT("category"), Stat.Category.ToString());
-			StatObj->SetNumberField(TEXT("valueType"), static_cast<int32>(Stat.ValueType));
-			StatObj->SetNumberField(TEXT("numericValue"), Stat.NumericValue);
-			StatObj->SetStringField(TEXT("textValue"), Stat.TextValue.ToString());
-			StatObj->SetStringField(TEXT("unit"), Stat.Unit.ToString());
-			StatArray.Add(MakeShared<FJsonValueObject>(StatObj));
+			TArray<TSharedPtr<FJsonValue>> StatArray;
+			for (const FGorgeousInsightStat& Stat : Pair.Value)
+			{
+				TSharedRef<FJsonObject> StatObj = MakeShared<FJsonObject>();
+				StatObj->SetStringField(TEXT("id"), Stat.Id.ToString());
+				StatObj->SetStringField(TEXT("displayName"), Stat.DisplayName.ToString());
+				StatObj->SetStringField(TEXT("description"), Stat.Description.ToString());
+				StatObj->SetStringField(TEXT("category"), Stat.Category.ToString());
+				StatObj->SetNumberField(TEXT("valueType"), static_cast<int32>(Stat.ValueType));
+				StatObj->SetNumberField(TEXT("numericValue"), Stat.NumericValue);
+				StatObj->SetStringField(TEXT("textValue"), Stat.TextValue.ToString());
+				StatObj->SetStringField(TEXT("unit"), Stat.Unit.ToString());
+				StatArray.Add(MakeShared<FJsonValueObject>(StatObj));
+			}
+			TSharedRef<FJsonObject> ProviderObj = MakeShared<FJsonObject>();
+			ProviderObj->SetStringField(TEXT("provider"), Pair.Key.ToString());
+			ProviderObj->SetArrayField(TEXT("stats"), StatArray);
+			ProviderArray.Add(MakeShared<FJsonValueObject>(ProviderObj));
 		}
-		TSharedRef<FJsonObject> ProviderObj = MakeShared<FJsonObject>();
-		ProviderObj->SetStringField(TEXT("provider"), Pair.Key.ToString());
-		ProviderObj->SetArrayField(TEXT("stats"), StatArray);
-		ProviderArray.Add(MakeShared<FJsonValueObject>(ProviderObj));
+		
+		SnapObj->SetArrayField(TEXT("providers"), ProviderArray);
+		HistoryJsonArray.Add(MakeShared<FJsonValueObject>(SnapObj));
 	}
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
-	Root->SetArrayField(TEXT("providers"), ProviderArray);
+	Root->SetArrayField(TEXT("history"), HistoryJsonArray);
 
 	FString Output;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
@@ -998,9 +1169,9 @@ void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 		return;
 	}
 
-	const FString Directory = FPaths::ProjectSavedDir() / TEXT("GorgeousInsightMatrix");
+	const FString Directory = FPaths::ProjectSavedDir() / TEXT("GorgeousThings");
 	IFileManager::Get().MakeDirectory(*Directory, true);
-	const FString FilePath = Directory / TEXT("ProviderStats.json");
+	const FString FilePath = Directory / TEXT("EditorHistory.json");
 	if (FFileHelper::SaveStringToFile(Output, *FilePath))
 	{
 		bStatsCacheDirty = false;
@@ -1010,7 +1181,39 @@ void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 void UGorgeousInsightMatrixSubsystem::CacheProviderStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats) const
 {
 	FScopeLock CacheLock(&StatsCacheMutex);
+	
+	// Create a new snapshot if there isn't one from the last few seconds
+	const FDateTime Now = FDateTime::UtcNow();
+	
+	// We want to avoid creating a new snapshot for every single provider that updates during a frame/tick.
+	// We'll bundle them if they happen within a 5 second window of the active snapshot.
+	bool bCreateNewSnapshot = true;
+	if (EditorHistory.Num() > 0)
+	{
+		FGorgeousInsightEditorSnapshot& LastSnap = EditorHistory.Last();
+		if ((Now - LastSnap.Timestamp).GetTotalSeconds() < 5.0)
+		{
+			LastSnap.ProviderStats.FindOrAdd(ProviderName) = Stats;
+			bCreateNewSnapshot = false;
+		}
+	}
+	
+	if (bCreateNewSnapshot)
+	{
+		FGorgeousInsightEditorSnapshot NewSnap;
+		NewSnap.Timestamp = Now;
+		NewSnap.ProviderStats.Add(ProviderName, Stats);
+		EditorHistory.Add(NewSnap);
+		// Keep history reasonably sized
+		if (EditorHistory.Num() > 100)
+		{
+			EditorHistory.RemoveAt(0, EditorHistory.Num() - 100);
+		}
+	}
+	
+	ActiveHistoryIndex = EditorHistory.Num() - 1;
 	CachedProviderStats.FindOrAdd(ProviderName) = Stats;
+	
 	bStatsCacheLoaded = true;
 	bStatsCacheDirty = true;
 }
@@ -1172,8 +1375,18 @@ bool UGorgeousInsightMatrixSubsystem::SetBaselineFromLastResult(FName ProviderNa
 	}
 
 	const FString Key = MakeBaselineKey(ProviderName, TestId);
-	Settings->Baselines.Add(Key, FGorgeousInsightBaselineEntry::FromResult(*LastResult));
-	Settings->SaveConfig();
+	FGorgeousInsightBaselineEntry Entry = FGorgeousInsightBaselineEntry::FromResult(*LastResult);
+	Settings->Baselines.Add(Key, Entry);
+	
+	// Write to specific INI file
+	const FString IniPath = GetBaselineIniPath(ProviderName);
+	FString SectionName = TEXT("BaselineTest_") + Key;
+	GConfig->SetBool(*SectionName, TEXT("bSuccess"), Entry.bSuccess, IniPath);
+	// We use standard Config array formats for simplicity, but saving the full Baseline entry 
+	// via standard UE config paths is complex.
+	// Actually, UObject::SaveConfig(CPF_Config, *IniPath) saves ALL properties on the object!
+	// So we can just use Settings->SaveConfig(CPF_Config, *IniPath);
+	Settings->SaveConfig(CPF_Config, *IniPath);
 	BaselineResultsCache.Add(Key, *LastResult);
 	return true;
 }
@@ -1188,13 +1401,14 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFi
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsoluteFilePath), true);
 
 	TArray<FGorgeousInsightStat> Stats;
+	FGorgeousInsightGatherContext Context;
 	if (ProviderName.IsNone())
 	{
-		GatherAllStats(Stats);
+		GatherAllStats(Context, Stats);
 	}
 	else
 	{
-		GatherProviderStats(ProviderName, Stats);
+		GatherProviderStats(Context, ProviderName, Stats);
 	}
 
 	FString Csv = TEXT("Id,DisplayName,Category,ValueType,NumericValue,TextValue,Unit\n");
@@ -1230,13 +1444,14 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteF
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsoluteFilePath), true);
 
 	TArray<FGorgeousInsightStat> Stats;
+	FGorgeousInsightGatherContext Context;
 	if (ProviderName.IsNone())
 	{
-		GatherAllStats(Stats);
+		GatherAllStats(Context, Stats);
 	}
 	else
 	{
-		GatherProviderStats(ProviderName, Stats);
+		GatherProviderStats(Context, ProviderName, Stats);
 	}
 
 	TArray<TSharedPtr<FJsonValue>> StatArray;
@@ -1348,7 +1563,7 @@ FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByNam
 
 #if WITH_DEV_AUTOMATION_TESTS
 	FGorgeousInsightRuntimeAutomationTest RuntimeTest;
-	FGorgeousInsightScenarioContext ScenarioContext(Request, Parameters, VariantIndex, RuntimeTest, Descriptor, WorldContextObject);
+	FGorgeousInsightScenarioContext ScenarioContext(Request, Parameters, VariantIndex, &RuntimeTest, Descriptor, WorldContextObject);
 	ScenarioResult = FGorgeousInsightTestMatrix::ExecuteScenario(Descriptor, ScenarioContext);
 	ScenarioResult.AddNote(TEXT("Executed via Insight Matrix runtime"));
 #else
@@ -1362,6 +1577,26 @@ FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByNam
 	}
 
 	FGorgeousInsightHarness::SaveScenarioResult(Descriptor, ScenarioResult, TEXT("Runtime"));
+
+#if GORGEOUS_SYSTEM_INSTALLED_DEBUGASSIST
+	if (WorldContextObject && WorldContextObject->GetWorld())
+	{
+		const FLinearColor BeaconColor = ScenarioResult.bSuccess ? FLinearColor::Green : FLinearColor::Red;
+		const FVector DefaultLocation(0.0f, 0.0f, 100.0f); 
+		// If there is an instigator or target, we would draw it there. For now, draw a central beacon.
+		
+		FGorgeousDebugAssistVisualParameters DebugParams;
+		DebugParams.Duration = 10.0f;
+		DebugParams.bEnabled = true;
+		
+		UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPointWithState(
+			WorldContextObject, 
+			DefaultLocation, 
+			ScenarioResult.bSuccess ? EGorgeousDebugAssistPointState::InBounds : EGorgeousDebugAssistPointState::OutOfBounds, 
+			DebugParams
+		);
+	}
+#endif
 
 	return ScenarioResult;
 }
@@ -1438,6 +1673,85 @@ int32 UGorgeousInsightMatrixSubsystem::GetQueuedScenarioCount() const
 {
 	FScopeLock QueueLock(&QueueMutex);
 	return ScenarioQueue.Num();
+}
+
+void UGorgeousInsightMatrixSubsystem::AddBaselineStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats)
+{
+	FScopeLock CacheLock(&StatsCacheMutex);
+	TArray<FGorgeousInsightStat>& ProviderStats = ProviderBaselineStats.FindOrAdd(ProviderName);
+	
+	// Add or update
+	for (const FGorgeousInsightStat& NewStat : Stats)
+	{
+		bool bFound = false;
+		for (FGorgeousInsightStat& ExistingStat : ProviderStats)
+		{
+			if (ExistingStat.Id == NewStat.Id)
+			{
+				ExistingStat = NewStat;
+				bFound = true;
+				break;
+			}
+		}
+		if (!bFound)
+		{
+			ProviderStats.Add(NewStat);
+		}
+	}
+	
+	// Save to custom INI
+	if (UGorgeousInsightBaselineSettings* Settings = GetMutableDefault<UGorgeousInsightBaselineSettings>())
+	{
+		// Note: Provider Baseline Stats (not test results) are not tracked in Settings!
+		// Wait, we need a way to track Provider Baseline stats in Settings or write them manually.
+		// For now, let's write them manually to the INI via GConfig.
+		const FString IniPath = GetBaselineIniPath(ProviderName);
+		const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
+		
+		GConfig->EmptySection(*SectionName, IniPath);
+		for (const FGorgeousInsightStat& Stat : ProviderStats)
+		{
+			FString StatLine = FString::Printf(TEXT("%s|%s|%s|%s|%d|%f|%s|%s"),
+				*Stat.Id.ToString(),
+				*Stat.DisplayName.ToString(),
+				*Stat.Description.ToString(),
+				*Stat.Category.ToString(),
+				(int32)Stat.ValueType,
+				Stat.NumericValue,
+				*Stat.TextValue.ToString(),
+				*Stat.Unit.ToString());
+			GConfig->SetString(*SectionName, *Stat.Id.ToString(), *StatLine, IniPath);
+		}
+		GConfig->Flush(false, IniPath);
+	}
+}
+
+void UGorgeousInsightMatrixSubsystem::RemoveBaselineStat(FName ProviderName, FName StatId)
+{
+	FScopeLock CacheLock(&StatsCacheMutex);
+	if (TArray<FGorgeousInsightStat>* ProviderStats = ProviderBaselineStats.Find(ProviderName))
+	{
+		ProviderStats->RemoveAll([StatId](const FGorgeousInsightStat& Stat) { return Stat.Id == StatId; });
+		
+		const FString IniPath = GetBaselineIniPath(ProviderName);
+		const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
+		
+		GConfig->EmptySection(*SectionName, IniPath);
+		for (const FGorgeousInsightStat& Stat : *ProviderStats)
+		{
+			FString StatLine = FString::Printf(TEXT("%s|%s|%s|%s|%d|%f|%s|%s"),
+				*Stat.Id.ToString(),
+				*Stat.DisplayName.ToString(),
+				*Stat.Description.ToString(),
+				*Stat.Category.ToString(),
+				(int32)Stat.ValueType,
+				Stat.NumericValue,
+				*Stat.TextValue.ToString(),
+				*Stat.Unit.ToString());
+			GConfig->SetString(*SectionName, *Stat.Id.ToString(), *StatLine, IniPath);
+		}
+		GConfig->Flush(false, IniPath);
+	}
 }
 
 TArray<FGorgeousInsightScenarioRunResult> UGorgeousInsightMatrixSubsystem::RunMatrix(const FString& Parameters, UObject* WorldContextObject)
@@ -1863,4 +2177,25 @@ void UGorgeousInsightMatrixSubsystem::SavePanelState() const
 	
 	ConfigFile.Dirty = true;
 	ConfigFile.Write(IniPath);
+}
+
+void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldContextObject)
+{
+	if (!WorldContextObject)
+	{
+		return;
+	}
+
+	if (UWorld* World = WorldContextObject->GetWorld())
+	{
+		for (TActorIterator<AGorgeousInsightFunctionalTest> It(World); It; ++It)
+		{
+			AGorgeousInsightFunctionalTest* TestActor = *It;
+			if (TestActor)
+			{
+				// Triggers the functional test logic, allowing the beacon to process state.
+				TestActor->RunTest(TArray<FString>());
+			}
+		}
+	}
 }
