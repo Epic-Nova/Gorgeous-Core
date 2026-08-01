@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
@@ -36,4 +36,5 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "StyleRegistration/GorgeousStyleRegistrationHelpers.h"
 
 // Validation Includes
+#include "Validation/GorgeousAssetValidationHelper.h"
 #include "Validation/GorgeousValidationHelpers.h"

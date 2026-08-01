@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,19 +6,23 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #if 0
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousObjectVariableEnums.h"
-#include "PropertyHandle.h"
 #include "Templates/SharedPointer.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Input/SComboBox.h"
 #include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SSearchBox.h"
 #include "Widgets/Views/SListView.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "PropertyHandle.h"
+//<-------------------------------------------------------------------------->
 
 class SComboButton;
 class SVerticalBox;

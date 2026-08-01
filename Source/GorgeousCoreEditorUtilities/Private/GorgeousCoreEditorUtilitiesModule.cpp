@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreEditorUtilitiesModule.h"
 
@@ -32,6 +32,7 @@
 namespace GorgeousEditorLogging
 {
 	void ExecuteLogHyperlinkAction(const FGorgeousLogHyperlink& Hyperlink);
+	bool EvaluateLogHyperlinkCondition(const FName& ConditionName, const FString& ActionPayload);
 }
 
 static EMessageSeverity::Type ToMessageSeverity(const EGorgeousLoggingImportance Importance)
@@ -127,7 +128,12 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 		Tokenized->AddToken(FActionToken::Create(
 			FText::FromString(Entry.Hyperlink.LinkText),
 			FText::FromString(Entry.Message),
-			FOnActionTokenExecuted::CreateLambda(ExecuteHyperlink)
+			FOnActionTokenExecuted::CreateLambda(ExecuteHyperlink),
+			FCanExecuteActionToken::CreateLambda([Entry]()
+			{
+				return GorgeousEditorLogging::EvaluateLogHyperlinkCondition(Entry.Hyperlink.ConditionName, Entry.Hyperlink.ActionPayload);
+			}),
+			Entry.Hyperlink.bSingleUse
 		));
 
 		FNotificationInfo Info(FText::FromString(Entry.Message));

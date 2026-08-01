@@ -6,24 +6,28 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Engine/TimerHandle.h"
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationTypes.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
-
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+#include "Engine/TimerHandle.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationMixin.generated.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class UGorgeousObjectVariable;
 class UGorgeousAutoReplicationRPCTransporter;
 class AController;
-
+//<------------------------------------------------------------->
 /**
  * Handle that maps a AutoReplication key to a replicated array index and optional cached value.
  */
@@ -81,19 +85,19 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication", meta = (GorgeousObjectVariableTrunk = "DefaultObjectVariableTrunk"))
 	TObjectPtr<UGorgeousObjectVariable> DefaultValue;
 
-	/** If true, this entry will register itself with the replicated array when networking is enabled. */
+	// If true, this entry will register itself with the replicated array when networking is enabled.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Gorgeous AutoReplication")
 	uint8 bReplicate : 1;
 
-	/** If true, StreamConfigOverride will be applied on top of the developer defaults for this entry. */
+	// If true, StreamConfigOverride will be applied on top of the developer defaults for this entry.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Gorgeous AutoReplication")
 	uint8 bOverrideStreamConfig : 1;
 
-	/** Optional per-entry stream configuration that selects Iris/Replication Graph behavior. */
+	// Optional per-entry stream configuration that selects Iris/Replication Graph behavior.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Gorgeous AutoReplication", meta = (EditCondition = "bOverrideStreamConfig"))
 	FGorgeousAutoReplicationStreamConfig StreamConfigOverride;
 
-	/** Internal handle that keeps track of replicated slot + cached pointer. */
+	// Internal handle that keeps track of replicated slot + cached pointer.
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "Gorgeous AutoReplication")
 	FGorgeousAutoReplicationHandle Handle;
 };
@@ -118,11 +122,11 @@ public:
 	UPROPERTY(Instanced)
 	TObjectPtr<UGorgeousObjectVariable> Value;
 
-	/** Class used to instantiate the variable when the instance is not yet available. */
+	// Class used to instantiate the variable when the instance is not yet available.
 	UPROPERTY()
 	TSubclassOf<UGorgeousObjectVariable> ValueClass;
 
-	/** Stable identifier mirrored from the authoritative instance so remote lookups can resolve the same variable. */
+	// Stable identifier mirrored from the authoritative instance so remote lookups can resolve the same variable.
 	UPROPERTY()
 	FGuid VariableIdentifier;
 
@@ -137,8 +141,8 @@ public:
  * AdditionalGorgeousData map of a QoL class (e.g. GorgeousPlayerController, GorgeousPlayerState).
  * A replication slot is only allocated when InitializeAdditionalData() iterates entries with
  * bReplicate=true.  We plan to extend this so that replication is also available for object
- * variables that are NOT registered in AdditionalGorgeousData — e.g. standalone variables
- * created at runtime or owned by non-QoL actors — by allowing direct slot allocation through
+ * variables that are NOT registered in AdditionalGorgeousData, e.g. standalone variables
+ * created at runtime or owned by non-QoL actors, by allowing direct slot allocation through
  * the mixin without requiring an AdditionalGorgeousData entry.
  *
  * @TODO NOTE (future plan): We also plan to support runtime registration of individual
@@ -237,4 +241,3 @@ private:
 	/** One-shot timer used to introduce a brief dispatch delay (see EnqueueRPCInternal). */
 	FTimerHandle PendingDispatchTimerHandle;
 };
-

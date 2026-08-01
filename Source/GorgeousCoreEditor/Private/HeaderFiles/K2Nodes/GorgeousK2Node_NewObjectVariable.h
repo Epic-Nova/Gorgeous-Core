@@ -6,16 +6,18 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #if 0
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "K2Node_ConstructObjectFromClass.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousK2Node_NewObjectVariable.generated.h"
+//<-------------------------------------------------------------------------->
 
 class UGorgeousObjectVariable;
 

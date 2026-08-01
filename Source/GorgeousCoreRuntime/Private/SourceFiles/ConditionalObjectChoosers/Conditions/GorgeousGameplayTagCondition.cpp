@@ -6,19 +6,18 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserTypes.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
 // UGorgeousGameplayTagCondition Implementation
 //=============================================================================
-
 
 uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 {

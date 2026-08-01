@@ -1,17 +1,51 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+#include "InstancedStruct.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GorgeousInsightMatrixTypes.generated.h"
+//<-------------------------------------------------------------------------->
+
+//<=================--- Forward Declarations ---=================>
+class UWorld;
+//<------------------------------------------------------------->
+UENUM(BlueprintType)
+enum class EGorgeousInsightContextMode : uint8
+{
+	Live,
+	Editor,
+	Baseline
+};
+
+USTRUCT(BlueprintType)
+struct FGorgeousInsightGatherContext
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	EGorgeousInsightContextMode Mode = EGorgeousInsightContextMode::Editor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	UWorld* WorldContext = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	FString InstanceName;
+};
 
 /** Basic stat value type hints for the UI layer. */
 enum class EGorgeousInsightStatValueType : uint8
@@ -66,13 +100,20 @@ struct FGorgeousInsightTest
 			String,
 			Number,
 			Bool,
-			Class
+			Class,
+			Dropdown
 		} Type = EGorgeousInsightTestInputType::String;
 
 		FString DefaultValue;
 		bool bRequired = false;
 		/** Optional allowed base class path for Class inputs. */
 		FString AllowedClassPath;
+
+		/** Options for Dropdown inputs. */
+		TArray<FString> DropdownOptions;
+
+		/** Internal array of pointers required by SComboBox. */
+		TArray<TSharedPtr<FString>> DropdownOptionPtrs;
 	};
 
 	TArray<FGorgeousInsightTestInput> Inputs;
@@ -154,6 +195,22 @@ struct FGorgeousInsightTableRow
 	FText Category;
 };
 
+
+USTRUCT(BlueprintType)
+struct FGorgeousInsightChartPayload
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, FString> Labels;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, float> Values;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Insight Matrix")
+	TMap<FName, FLinearColor> Colors;
+};
+
 enum class EGorgeousInsightChartType : uint8
 {
 	Bar,
@@ -167,9 +224,15 @@ enum class EGorgeousInsightChartType : uint8
 	Table
 };
 
+USTRUCT(BlueprintType)
 struct FGorgeousInsightChartDefinition
 {
+	GENERATED_BODY()
+
 	FName Id = NAME_None;
+	FName CustomChartType = NAME_None;
+	FGorgeousInsightChartPayload Payload;
+	FInstancedStruct InstancedPayload;
 	EGorgeousInsightChartType Type = EGorgeousInsightChartType::Bar;
 	FText Title;
 	FText Subtitle;

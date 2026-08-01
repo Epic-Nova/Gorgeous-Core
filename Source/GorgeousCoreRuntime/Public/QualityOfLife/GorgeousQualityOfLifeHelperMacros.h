@@ -6,27 +6,41 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Misc/Guid.h"
+#include "UObject/UObjectThreadContext.h"
+//<-------------------------------------------------------------------------->
 
+//<=================--- Forward Declarations ---=================>
 class AActor;
 class AGorgeousPlayerState;
 class AGorgeousGameState;
-
+//<------------------------------------------------------------->
 /** Common helper dropped into QoL class constructors to bind the mixin and ensure the self reference entry exists. */
-#define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
-	if (HasAnyFlags(RF_ClassDefaultObject)) \
+#define UE_QOL_INITIALIZE_ADDITIONAL_DATA_NEEDS_REWORK() \
+	if (HasAnyFlags(RF_ClassDefaultObject) || HasAnyFlags(RF_ArchetypeObject)) \
 	{ \
 		FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 	} \
+	if (GIsEditor) \
+	{ \
+		FCoreUObjectDelegates::PreLoadMap.AddStatic(&FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalDataOnLevelSwitch); \
+	} \
 	AutoReplicationMixin.Bind(this, &AdditionalGorgeousData, &ReplicatedAutoReplicationVariables); \
-	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities);
+	if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+	{ \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+	}
+
+#define UE_QOL_INITIALIZE_ADDITIONAL_DATA() \
+	AutoReplicationMixin.Bind(this, &AdditionalGorgeousData, &ReplicatedAutoReplicationVariables);
 
 /** Declares a standard QoL constructor that wires the networking default and self-reference bootstrap. */
 #define UE_QOL_DEFINE_CONSTRUCTOR(Class, bDefaultNetworking) \
@@ -54,7 +68,10 @@ class AGorgeousGameState;
 			FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 			return; \
 		} \
-		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+		{ \
+			FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		} \
 	}
 
 /** Defines PostLoad so deserialized assets re-establish their self reference. */
@@ -67,7 +84,10 @@ class AGorgeousGameState;
 			FGorgeousQualityOfLifeStatics::SanitizeCDOAdditionalData(this, AdditionalGorgeousData); \
 			return; \
 		} \
-		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		if (!FUObjectThreadContext::Get().IsRoutingPostLoad) \
+		{ \
+			FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		} \
 	}
 
 /** Convenience macro that declares both PostInitProperties and PostLoad overrides. */
@@ -112,6 +132,18 @@ class AGorgeousGameState;
 		Super::BeginPlay(); \
 	}
 
+/** Extended version of BeginPlay for PlayerController that allows injecting extra code at the end of the function. */
+#define UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(Class, ExtraCode) \
+	void Class::BeginPlay() \
+	{ \
+		FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, bActivateNetworkingCapabilities); \
+		UE_DECLARE_AUTOREPLICATION_CLASS_INIT_INVOKE_ADDITIONAL_DATA_WITH_RELAY \
+		Super::BeginPlay(); \
+		{ \
+			ExtraCode \
+		} \
+	}
+
 /**
  * Defines EndPlay to remove the owner from the shared SelfReference OV the moment the actor
  * is destroyed on any machine.  Used by both AGorgeousPlayerController and AGorgeousPlayerState.
@@ -131,7 +163,7 @@ class AGorgeousGameState;
  * AGorgeousPlayerController and does NOT need to be done here.
  */
 // UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS requires AGorgeousPlayerState to be a complete type
-// at the instantiation site — include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
+// at the instantiation site, include "QualityOfLife/GorgeousPlayerState.h" before using this macro.
 #define UE_QOL_DEFINE_GAME_MODE_LOGIN_CALLBACKS(Class) \
 	void Class::PostLogin(APlayerController* NewPlayer) \
 	{ \

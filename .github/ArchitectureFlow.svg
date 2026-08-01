@@ -1,0 +1,54 @@
+<svg width="1600" height="340" viewBox="0 0 1600 340" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">How Gorgeous Core connects systems</title>
+  <desc id="desc">Object Variables provide state to Signal Bridge, which connects Common UI Foundation and general gameplay systems.</desc>
+  <defs>
+    <linearGradient id="background" x1="72" y1="21" x2="1511" y2="334" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071321"/>
+      <stop offset="0.55" stop-color="#0B1A32"/>
+      <stop offset="1" stop-color="#161033"/>
+    </linearGradient>
+    <linearGradient id="wire" x1="220" y1="170" x2="1364" y2="170" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38BDF8"/>
+      <stop offset="0.51" stop-color="#D8B4FE"/>
+      <stop offset="1" stop-color="#86EFAC"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-70%" width="140%" height="240%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1600" height="340" rx="22" fill="url(#background)"/>
+  <g opacity="0.18" stroke="#6EA8D5"><path d="M0 68H1600M0 170H1600M0 272H1600"/><path d="M160 0V340M480 0V340M800 0V340M1120 0V340M1440 0V340"/></g>
+  <text x="800" y="50" text-anchor="middle" fill="#C9DAEC" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="4">ONE SHARED LANGUAGE</text>
+  <path d="M386 174H565M795 174H985M1203 174H1338" stroke="url(#wire)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+  <g fill="#BFEAFF"><circle cx="470" cy="174" r="4"/><circle cx="875" cy="174" r="4"/><circle cx="1287" cy="174" r="4"/></g>
+  <path d="M546 165L565 174L546 183" stroke="#A5E7FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M966 165L985 174L966 183" stroke="#D8B4FE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1319 165L1338 174L1319 183" stroke="#BBF7D0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g>
+    <rect x="120" y="111" width="266" height="126" rx="16" fill="#0B2941" stroke="#38BDF8" stroke-opacity="0.8"/>
+    <text x="253" y="153" text-anchor="middle" fill="#DDF7FF" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Object Variables</text>
+    <text x="253" y="184" text-anchor="middle" fill="#89A8C4" font-family="Inter, Arial, sans-serif" font-size="14">shared state</text>
+    <text x="253" y="205" text-anchor="middle" fill="#89A8C4" font-family="Inter, Arial, sans-serif" font-size="14">lifecycle · replication</text>
+  </g>
+  <g>
+    <rect x="565" y="94" width="230" height="160" rx="18" fill="#29194A" stroke="#C4B5FD" stroke-opacity="0.9"/>
+    <circle cx="680" cy="127" r="10" fill="#D8B4FE"/>
+    <text x="680" y="171" text-anchor="middle" fill="#F4EEFF" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Signal Bridge</text>
+    <text x="680" y="202" text-anchor="middle" fill="#C4B5FD" font-family="Inter, Arial, sans-serif" font-size="14">typed, decoupled signals</text>
+    <text x="680" y="223" text-anchor="middle" fill="#C4B5FD" font-family="Inter, Arial, sans-serif" font-size="14">between systems</text>
+  </g>
+  <g>
+    <rect x="985" y="111" width="218" height="126" rx="16" fill="#123B37" stroke="#6EE7B7" stroke-opacity="0.9"/>
+    <text x="1094" y="153" text-anchor="middle" fill="#E5FFF4" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">UI Foundation</text>
+    <text x="1094" y="184" text-anchor="middle" fill="#9BD5C0" font-family="Inter, Arial, sans-serif" font-size="14">layout · input</text>
+    <text x="1094" y="205" text-anchor="middle" fill="#9BD5C0" font-family="Inter, Arial, sans-serif" font-size="14">presentation</text>
+  </g>
+  <g>
+    <rect x="1338" y="111" width="188" height="126" rx="16" fill="#3E2A12" stroke="#FCD34D" stroke-opacity="0.85"/>
+    <text x="1432" y="153" text-anchor="middle" fill="#FFF8DD" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">Gameplay</text>
+    <text x="1432" y="184" text-anchor="middle" fill="#F3CC78" font-family="Inter, Arial, sans-serif" font-size="14">teams · stats</text>
+    <text x="1432" y="205" text-anchor="middle" fill="#F3CC78" font-family="Inter, Arial, sans-serif" font-size="14">interactions</text>
+  </g>
+  <text x="800" y="301" text-anchor="middle" fill="#829AB5" font-family="Inter, Arial, sans-serif" font-size="15">Every system gets a stable boundary. Your game keeps the freedom.</text>
+</svg>

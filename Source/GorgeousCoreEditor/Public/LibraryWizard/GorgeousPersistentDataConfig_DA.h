@@ -1,0 +1,56 @@
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
+#pragma once
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/GorgeousPluginHelper.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GorgeousPersistentDataConfig_DA.generated.h"
+//<-------------------------------------------------------------------------->
+
+/**
+ * Memory-only proxy asset that allows viewing and editing the GorgeousPersistentData.json
+ * directly from the Gorgeous Library UI.
+ */
+UCLASS(BlueprintType)
+class GORGEOUSCOREEDITOR_API UGorgeousPersistentDataConfig_DA : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+
+public:
+	virtual bool IsEditorOnly() const override { return true; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Validation", meta = (ClampMin = "1"))
+	int32 ValidationInterval = 10;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Validation")
+	int32 ValidationCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Validation")
+	bool bHasRunInitialValidation = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Developer")
+	bool bForceDevMode = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cache")
+	TArray<FGorgeousOfflineSystemCacheEntry> OfflineSystemCache;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cache")
+	TArray<FGorgeousPluginUpdateCacheEntry> PluginUpdateCache;
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+};

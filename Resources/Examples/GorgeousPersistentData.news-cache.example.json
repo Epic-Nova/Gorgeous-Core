@@ -1,0 +1,42 @@
+{
+  "NudgeFeedCacheSchemaVersion": 1,
+  "NudgeFeedCacheUpdatedAt": "2026-07-17T12:00:00Z",
+  "NudgeFeedCache": [
+    {
+      "id": "ecosystem-news-summer-2026",
+      "type": "ecosystem_news",
+      "title": "Gorgeous Things Summer Briefing",
+      "description": "A short overview of the newest ecosystem changes.",
+      "content": {
+        "type": "markdown",
+        "markdown": "# Gorgeous Things Summer Briefing\n\nNew improvements are available across the ecosystem.\n\n- New plugin and General System update notifications\n- Contextual documentation in the Editor Help menu"
+      },
+      "window": {
+        "width": 1180,
+        "height": 820
+      },
+      "action": {
+        "label": "Read online",
+        "url": "https://gorgeous.simsalabim.studio/news"
+      }
+    },
+    {
+      "id": "plugin-update-gorgeous-core-1.1.0",
+      "type": "plugin_update",
+      "targetId": "GorgeousCore",
+      "version": "1.1.0",
+      "title": "Gorgeous Core 1.1.0 is ready",
+      "description": "An update is available for the installed Gorgeous Core plugin.",
+      "content": {
+        "type": "url",
+        "url": "https://gorgeous.simsalabim.studio/changelog/gorgeous-core/1.1.0"
+      },
+      "action": {
+        "label": "Download update",
+        "kind": "download_plugin",
+        "downloadToken": "server-issued-download-token",
+        "url": "https://gorgeous.simsalabim.studio/changelog/gorgeous-core/1.1.0"
+      }
+    }
+  ]
+}

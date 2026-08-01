@@ -7,14 +7,20 @@
 	"Category": "Gorgeous Things",
 	"CreatedBy": "Simsalabim Studios",
 	"CreatedByURL": "https://simsalabim.studio",
-	"DocsURL": "https://c.docs.gt.simsalabim.studio",
+	"DocsURL": "https://gorgeous.simsalabim.studio/docs/gorgeous-core/",
 	"MarketplaceURL": "",
 	"SupportURL": "https://support.simsalabim.studio",
 	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
-	"IsBetaVersion": false,
+	"IsExperimentalVersion": true,
+	"Installed": true,
 	"Modules": [
+		{
+			"Name": "GorgeousBuildPipeline",
+			"Type": "Runtime",
+			"LoadingPhase": "None"
+		},
 		{
 			"Name": "GorgeousCoreRuntime",
 			"Type": "Runtime",
@@ -36,17 +42,30 @@
 		{
 			"Name": "GorgeousCoreEditor",
 			"Type": "Editor",
-			"LoadingPhase": "PostDefault"
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"Name": "GorgeousCoreEditorUtilities",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "GorgeousCoreStartupHook",
+			"Type": "Editor",
+			"LoadingPhase": "PostConfigInit"
 		}
 	],
 	"Plugins": [
 		{
 			"Name": "DataValidation",
+			"Enabled": true
+		},
+		{
+			"Name": "GameFeatures",
+			"Enabled": true
+		},
+		{
+			"Name": "DataRegistry",
 			"Enabled": true
 		},
 		{
@@ -64,8 +83,27 @@
 		{
 			"Name": "CommonUI",
 			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemUtils",
+			"Enabled": true
+		},
+		{
+			"Name": "PlatformCrypto",
+			"Enabled": true
+		},
+		{
+			"Name": "StructUtils",
+			"Enabled": true
 		}
 	],
-	"IsExperimentalVersion": false,
-	"Installed": false
+	"IsBetaVersion": false
 }

@@ -6,13 +6,16 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuardEnforcer.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
+#ifdef GT_DURATION
+#undef GT_DURATION
+#endif
 #define GT_DURATION 15.0f
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->

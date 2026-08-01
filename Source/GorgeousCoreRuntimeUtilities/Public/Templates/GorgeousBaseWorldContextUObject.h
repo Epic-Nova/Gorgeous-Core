@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,16 +6,15 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//----------------=== Third Party & Miscellaneous Includes ===--------------->
+//--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousBaseWorldContextUObject.generated.h"
 //<-------------------------------------------------------------------------->
 
-//<===========--- Forward Declarations ---===========>
 class UWorld;
 //<-------------------------------------------------->
 
@@ -42,17 +41,25 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousBaseWorldContextUObject : public
 	GENERATED_BODY()
 
 public:
-	
+
 	/**
 	 * Sets the cached owner of this object. This is used as an absolute failsafe to ensure the consistent availability of the world to the current active instance.
-	 * 
+	 *
 	 * @param NewFallbackOwner the new chaced owner that has the capability to a valid GetWorld() call.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
 	void SetFallbackOwner(UObject* NewFallbackOwner) const { FallbackOwner = MakeWeakObjectPtr(NewFallbackOwner); }
 
+	/**
+	 * Gets the cached owner of this object.
+	 *
+	 * @return The cached owner object.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Base World Context UObject")
+	UObject* GetFallbackOwner() const { return FallbackOwner.Get(); }
+
 protected:
-	
+
 	/**
 	 * Gets the world context for this object.
 	 *

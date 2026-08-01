@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
@@ -15,6 +15,7 @@
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
+#include "AutoReplication/Interfaces/GorgeousAutoReplicationSpawnHook_I.h"
 #include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
@@ -102,12 +103,26 @@ UGorgeousObjectVariable::FReplicatedPropertyDeclaration::FReplicatedPropertyDecl
 	, RepNotifyFunction(NAME_None)
 	, RepNotifyPolicy(EGorgeousRepNotifyPolicy::OnChanged)
 	, bFireInitialNotify(true)
+	, bInitializeNullReferences(false)
 	, bDeliveredInitialNotify(false)
 	, bShadowInitialized(false)
 	, bChangeShadowInitialized(false)
 	, bHasValidatedRepNotifySignature(false)
 	, bIsRepNotifySignatureValid(true)
 {
+}
+
+void UGorgeousObjectVariable::PostInitProperties()
+{
+	Super::PostInitProperties();
+	if (!HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
+	{
+		INC_DWORD_STAT(STAT_GOV_Created);
+		INC_DWORD_STAT(STAT_GOV_Alive);
+		const int32 AliveCount = GObjectVariableAliveCounter.Increment();
+		GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
+		GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
+	}
 }
 
 UGorgeousObjectVariable::FReplicatedPropertyDeclaration::~FReplicatedPropertyDeclaration()
@@ -199,7 +214,16 @@ namespace GorgeousObjectVariable_Private
 	static const FName GorgeousRPCResultsDisplayName(TEXT("GorgeousRPCResults"));
 	static TWeakObjectPtr<UGorgeousObjectVariable> CachedRPCResultsParent;
 
-	static bool SerializePropertyValue(const FProperty* Property, void* ValuePtr, const EGorgeousReplicationMode Mode, UPackageMap* PackageMap, TArray<uint8>& OutBytes)
+	// Forward-declare the Snapshot helpers so they are visible to SerializePropertyValue /
+	// DeserializePropertyValue which are defined before the full namespace Snapshot block.
+	namespace Snapshot
+	{
+		static bool  ShouldCaptureProperty(const FProperty* Property);
+		static void  WriteByteArray(FArchive& Ar, const TArray<uint8>& Data);
+		static void  ReadByteArray(FArchive& Ar, TArray<uint8>& Data);
+	}
+
+	static bool SerializePropertyValue(UGorgeousObjectVariable* Context, const FProperty* Property, void* ValuePtr, const EGorgeousReplicationMode Mode, UPackageMap* PackageMap, TArray<uint8>& OutBytes, bool bDeepInitialize = false)
 	{
 		if (!Property || !ValuePtr)
 		{
@@ -208,15 +232,88 @@ namespace GorgeousObjectVariable_Private
 
 		OutBytes.Reset();
 
+		auto DeepSerializeObject = [&](UObject* Obj, FArchive& Ar)
+		{
+			// 1. Write the standard name string for resolving existing objects
+			FObjectAndNameAsStringProxyArchive Proxy(Ar, true);
+			Proxy << Obj;
+
+			if (bDeepInitialize)
+			{
+				bool bHasDeepData = false;
+				UGorgeousObjectVariable* AsOV = Cast<UGorgeousObjectVariable>(Obj);
+				// We only deep-initialize for OVs (for now) and we skip Actors/Components
+				if (Obj && AsOV && !Obj->IsA<AActor>() && !Obj->IsA<UActorComponent>())
+				{
+					bHasDeepData = true;
+				}
+
+				Ar << bHasDeepData;
+				if (bHasDeepData)
+				{
+					TArray<uint8> Snapshot;
+					Context->BuildRPCResultSnapshot(AsOV, Snapshot);
+					Snapshot::WriteByteArray(Ar, Snapshot);
+				}
+			}
+		};
+
 		switch (Mode)
 		{
 		case EGorgeousReplicationMode::EProperty:
 		{
-			// Serialize via the structured binary path.  Use FObjectAndNameAsStringProxyArchive so
-			// that UObject references (FObjectProperty, FSoftObjectProperty, etc.) inside structs or
-			// arrays are written as portable string paths rather than raw pointers, which would crash
-			// FMemoryArchive.  Path-based serialization is safe across connections without PackageMap.
 			FMemoryWriter Writer(OutBytes, true);
+			if (bDeepInitialize)
+			{
+				if (const FObjectProperty* ObjProp = CastField<FObjectProperty>(Property))
+				{
+					UObject* Obj = ObjProp->GetObjectPropertyValue(ValuePtr);
+					DeepSerializeObject(Obj, Writer);
+					return !Writer.IsError();
+				}
+				else if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Property))
+				{
+					if (const FObjectProperty* InnerObjProp = CastField<FObjectProperty>(ArrayProp->Inner))
+					{
+						FScriptArrayHelper Helper(ArrayProp, ValuePtr);
+						int32 Count = Helper.Num();
+						Writer << Count;
+						for (int32 i = 0; i < Count; ++i)
+						{
+							UObject* Obj = InnerObjProp->GetObjectPropertyValue(Helper.GetRawPtr(i));
+							DeepSerializeObject(Obj, Writer);
+						}
+						return !Writer.IsError();
+					}
+				}
+				else if (const FMapProperty* MapProp = CastField<FMapProperty>(Property))
+				{
+					const FObjectProperty* ValueObjProp = CastField<FObjectProperty>(MapProp->ValueProp);
+					if (ValueObjProp)
+					{
+						FScriptMapHelper Helper(MapProp, ValuePtr);
+						int32 Count = Helper.Num();
+						Writer << Count;
+						for (int32 i = 0; i < Count; ++i)
+						{
+							if (Helper.IsValidIndex(i))
+							{
+								// Serialize Key (normal structured path)
+								FBinaryArchiveFormatter Formatter(Writer);
+								FStructuredArchive StructAr(Formatter);
+								MapProp->KeyProp->SerializeItem(StructAr.Open(), Helper.GetKeyPtr(i));
+								StructAr.Close();
+
+								// Serialize Value (Deep)
+								UObject* Obj = ValueObjProp->GetObjectPropertyValue(Helper.GetValuePtr(i));
+								DeepSerializeObject(Obj, Writer);
+							}
+						}
+						return !Writer.IsError();
+					}
+				}
+			}
+
 			FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, true);
 			FBinaryArchiveFormatter Formatter(ProxyWriter);
 			FStructuredArchive Archive(Formatter);
@@ -227,33 +324,15 @@ namespace GorgeousObjectVariable_Private
 		}
 		case EGorgeousReplicationMode::ENetSerialize:
 		{
-			// FArrayProperty::NetSerializeItem, FMapProperty::NetSerializeItem, and
-			// FSetProperty::NetSerializeItem are unconditionally deprecated in UE5.7+ (they
-			// checkf(false) regardless of the archive type).  Only call NetSerializeItem on
-			// properties that are known to support it — i.e. FStructProperty whose struct has a
-			// custom WithNetSerializer implementation, or FObjectProperty / FEnumProperty etc.
-			// For collection types fall back to the string-proxy structured path so we don't crash.
+			// ... existing fallback ...
 			const bool bIsCollection =
 				CastField<FArrayProperty>(Property) != nullptr ||
 				CastField<FMapProperty>(Property) != nullptr ||
 				CastField<FSetProperty>(Property) != nullptr;
 			if (bIsCollection)
 			{
-				GT_W_LOG("GT.ObjectVariables.Replication.CollectionNetSerializeFallback",
-					TEXT("Property %s is a collection type — NetSerializeItem is deprecated in UE5.7+ for collections. Falling back to structured serialization."),
-					*Property->GetName());
-				FMemoryWriter Writer(OutBytes, true);
-				FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, true);
-				FBinaryArchiveFormatter Formatter(ProxyWriter);
-				FStructuredArchive Archive(Formatter);
-				FStructuredArchive::FSlot Slot = Archive.Open();
-				Property->SerializeItem(Slot, ValuePtr, nullptr);
-				Archive.Close();
-				return !ProxyWriter.IsError();
+				return SerializePropertyValue(Context, Property, ValuePtr, EGorgeousReplicationMode::EProperty, PackageMap, OutBytes, bDeepInitialize);
 			}
-			// Non-collection path: use FBitWriter which is required by FStructProperty types that
-			// have WithNetSerializer (e.g. FVector_NetQuantize, custom net structs, FObjectProperty).
-			// Store a uint32 bit-count prefix so the deserializer can reconstruct an exact FBitReader.
 			FBitWriter BitWriter(0, true);
 			const bool bNetSerialized = Property->NetSerializeItem(BitWriter, PackageMap, ValuePtr);
 			if (!bNetSerialized || BitWriter.IsError())
@@ -262,7 +341,6 @@ namespace GorgeousObjectVariable_Private
 			}
 			const uint32 NumBits = (uint32)BitWriter.GetNumBits();
 			OutBytes.Append(reinterpret_cast<const uint8*>(&NumBits), sizeof(uint32));
-			// GetBuffer() returns TArray<uint8>* — dereference to get the TArray for Append.
 			OutBytes.Append(*BitWriter.GetBuffer());
 			return true;
 		}
@@ -272,20 +350,103 @@ namespace GorgeousObjectVariable_Private
 		}
 	}
 
-	static bool DeserializePropertyValue(FProperty* Property, void* ValuePtr, const EGorgeousReplicationMode Mode, UPackageMap* PackageMap, const TArray<uint8>& InBytes)
+	static bool DeserializePropertyValue(UGorgeousObjectVariable* Context, FProperty* Property, void* ValuePtr, const EGorgeousReplicationMode Mode, UPackageMap* PackageMap, const TArray<uint8>& InBytes, bool bDeepInitialize = false)
 	{
 		if (!Property || !ValuePtr || InBytes.Num() == 0)
 		{
 			return false;
 		}
 
+		auto DeepDeserializeObject = [&](UObject*& OutObj, FArchive& Ar)
+		{
+			FObjectAndNameAsStringProxyArchive Proxy(Ar, true);
+			Proxy << OutObj;
+
+			if (bDeepInitialize)
+			{
+				bool bHasDeepData = false;
+				Ar << bHasDeepData;
+				if (bHasDeepData)
+				{
+					TArray<uint8> Snapshot;
+					Snapshot::ReadByteArray(Ar, Snapshot);
+
+					if (!OutObj && Snapshot.Num() > 0)
+					{
+						OutObj = Context->DeserializeOVFromRPCArgumentBytes(Snapshot);
+						if (OutObj)
+						{
+							if (OutObj->GetClass()->ImplementsInterface(UGorgeousAutoReplicationSpawnHook_I::StaticClass()))
+							{
+								IGorgeousAutoReplicationSpawnHook_I::Execute_OnSpawnedThroughAutoReplication(OutObj);
+							}
+						}
+					}
+				}
+			}
+		};
+
 		switch (Mode)
 		{
 		case EGorgeousReplicationMode::EProperty:
 		{
-			// Use the same string-proxy path as the serializer so object references round-trip
-			// correctly as portable path strings.
 			FMemoryReader Reader(InBytes, true);
+			if (bDeepInitialize)
+			{
+				if (const FObjectProperty* ObjProp = CastField<FObjectProperty>(Property))
+				{
+					UObject* Obj = nullptr;
+					DeepDeserializeObject(Obj, Reader);
+					ObjProp->SetObjectPropertyValue(ValuePtr, Obj);
+					return !Reader.IsError();
+				}
+				else if (const FArrayProperty* ArrayProp = CastField<FArrayProperty>(Property))
+				{
+					if (const FObjectProperty* InnerObjProp = CastField<FObjectProperty>(ArrayProp->Inner))
+					{
+						FScriptArrayHelper Helper(ArrayProp, ValuePtr);
+						int32 Count = 0;
+						Reader << Count;
+						Helper.Resize(Count);
+						for (int32 i = 0; i < Count; ++i)
+						{
+							UObject* Obj = nullptr;
+							DeepDeserializeObject(Obj, Reader);
+							InnerObjProp->SetObjectPropertyValue(Helper.GetRawPtr(i), Obj);
+						}
+						return !Reader.IsError();
+					}
+				}
+				else if (const FMapProperty* MapProp = CastField<FMapProperty>(Property))
+				{
+					const FObjectProperty* ValueObjProp = CastField<FObjectProperty>(MapProp->ValueProp);
+					if (ValueObjProp)
+					{
+						FScriptMapHelper Helper(MapProp, ValuePtr);
+						int32 Count = 0;
+						Reader << Count;
+						Helper.EmptyValues();
+						for (int32 i = 0; i < Count; ++i)
+						{
+							int32 NewIdx = Helper.AddDefaultValue_Invalid_NeedsRehash();
+
+							// Deserialize Key
+							FBinaryArchiveFormatter Formatter(Reader);
+							FStructuredArchive StructAr(Formatter);
+							MapProp->KeyProp->SerializeItem(StructAr.Open(), Helper.GetKeyPtr(NewIdx));
+							StructAr.Close();
+
+							// Deserialize Value (Deep)
+							UObject* Obj = nullptr;
+							DeepDeserializeObject(Obj, Reader);
+							ValueObjProp->SetObjectPropertyValue(Helper.GetValuePtr(NewIdx), Obj);
+						}
+						Helper.Rehash();
+						return !Reader.IsError();
+					}
+				}
+			}
+
 			FObjectAndNameAsStringProxyArchive ProxyReader(Reader, true);
 			FBinaryArchiveFormatter Formatter(ProxyReader);
 			FStructuredArchive Archive(Formatter);
@@ -296,32 +457,18 @@ namespace GorgeousObjectVariable_Private
 		}
 		case EGorgeousReplicationMode::ENetSerialize:
 		{
-			// Mirror the collection-type fallback from the serializer: use the string-proxy structured
-			// path for array/map/set, FBitReader for non-collection structs with WithNetSerializer.
 			const bool bIsCollection =
 				CastField<FArrayProperty>(Property) != nullptr ||
 				CastField<FMapProperty>(Property) != nullptr ||
 				CastField<FSetProperty>(Property) != nullptr;
 			if (bIsCollection)
 			{
-				FMemoryReader Reader(InBytes, true);
-				FObjectAndNameAsStringProxyArchive ProxyReader(Reader, true);
-				FBinaryArchiveFormatter Formatter(ProxyReader);
-				FStructuredArchive Archive(Formatter);
-				FStructuredArchive::FSlot Slot = Archive.Open();
-				Property->SerializeItem(Slot, ValuePtr, nullptr);
-				Archive.Close();
-				return !ProxyReader.IsError();
+				return DeserializePropertyValue(Context, Property, ValuePtr, EGorgeousReplicationMode::EProperty, PackageMap, InBytes, bDeepInitialize);
 			}
-			// Deserialize the bit-count prefix written by the serializer and construct a FBitReader
-			// so that struct types with WithNetSerializer (e.g. FVector_NetQuantize) work correctly.
-			if (InBytes.Num() < (int32)sizeof(uint32))
-			{
-				return false;
-			}
+			// ... existing bit reader path ...
+			if (InBytes.Num() < (int32)sizeof(uint32)) return false;
 			uint32 NumBits = 0;
 			FMemory::Memcpy(&NumBits, InBytes.GetData(), sizeof(uint32));
-			// FBitReader constructor takes uint8* (non-const) — const_cast is safe here as it only reads.
 			uint8* PayloadData = const_cast<uint8*>(InBytes.GetData()) + sizeof(uint32);
 			FBitReader BitReader(PayloadData, (int64)NumBits);
 			return Property->NetSerializeItem(BitReader, PackageMap, ValuePtr) && !BitReader.IsError();
@@ -475,8 +622,8 @@ namespace GorgeousObjectVariable_Private
 
 	namespace Snapshot
 	{
+		// Constants and definitions of the helpers forward-declared at the top of this namespace.
 		constexpr uint32 SnapshotVersion = 1;
-
 		static constexpr uint64 BlockedPropertyFlags = CPF_Transient | CPF_DuplicateTransient | CPF_TextExportTransient | CPF_NonPIEDuplicateTransient | CPF_DisableEditOnInstance | CPF_EditConst;
 
 		static bool ShouldCaptureProperty(const FProperty* Property)
@@ -638,8 +785,8 @@ namespace GorgeousObjectVariable_Private
 					break;
 				// Use GetTransientPackage() as Outer, NOT TargetObject.
 				// If we used TargetObject (a PIE-world OV), then after PIE ends the
-				// return OV — stored in CachedResults.TargetVariable (TObjectPtr) on the
-				// async action — would anchor the full Outer chain all the way up to the
+				// return OV, stored in CachedResults.TargetVariable (TObjectPtr) on the
+				// async action, would anchor the full Outer chain all the way up to the
 				// PIE UWorld, causing EndPlayMap to assert "still referenced".
 				// GetTransientPackage() breaks that chain: the return OV lives in the
 				// transient package and cannot anchor any PIE actors or worlds.
@@ -728,7 +875,7 @@ namespace GorgeousObjectVariable_Private
 		}
 		else
 		{
-			// Failed to fill params — the pre-constructed OV was never seen by the handler
+			// Failed to fill params, the pre-constructed OV was never seen by the handler
 			ConstructedReturnOV = nullptr;
 		}
 
@@ -775,7 +922,7 @@ UGorgeousObjectVariable::~UGorgeousObjectVariable()
 {
 }
 
-UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist, const FString& DisplayNameOverride, const bool bInSupportsNetworking)
+UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* InParent, const bool bShouldPersist, const FString& DisplayNameOverride)
 {
 	GORGEOUS_PROFILE_SCOPE(GOV_NewObjectVariable);
 	if (!Class && Class.Get() == nullptr)
@@ -801,8 +948,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	UGorgeousObjectVariable* NewObjectVariable = NewObject<UGorgeousObjectVariable>(InParent, Class);
 	NewObjectVariable->SetFallbackOwner(InParent);
 	
-	INC_DWORD_STAT(STAT_GOV_Created);
-	INC_DWORD_STAT(STAT_GOV_Alive);
 	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
 	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
 	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
@@ -810,7 +955,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::NewObjectVariable(const TSubcl
 	const FGuid NewObjectVariableIdentifier = FGuid::NewGuid();
 	Identifier = NewObjectVariableIdentifier;
 	NewObjectVariable->UniqueIdentifier = NewObjectVariableIdentifier;
-	NewObjectVariable->bSupportsNetworking = bInSupportsNetworking;
 	NewObjectVariable->Parent = InParent;
 	NewObjectVariable->bPersistent = bShouldPersist;
 	// Priority: DisplayNameOverride (explicit) → random name (generated when empty) → GUID (unreachable here, kept as final safety net).
@@ -857,10 +1001,6 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::InstantiateTransactionalObject
 	NewInstance->UniqueIdentifier = FGuid::NewGuid();
 	NewInstance->Parent = InParent;
 	NewInstance->SetDisplayName(Class ? Class->GetName() : FString());
-	INC_DWORD_STAT(STAT_GOV_Created);
-	INC_DWORD_STAT(STAT_GOV_Alive);
-	const int32 AliveCount = GObjectVariableAliveCounter.Increment();
-	GORGEOUS_CSV_CUSTOM_STAT_SET(ObjectVariablesAlive, AliveCount);
 	GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(ObjectVariablesCreated, 1);
 	
 	if (NewInstance)
@@ -1046,6 +1186,11 @@ void UGorgeousObjectVariable::SetParent(UGorgeousObjectVariable* NewParent)
 	const FName DesiredName = GetFName();
 	const FName UniqueName = MakeUniqueObjectName(Parent, GetClass(), DesiredName);
 	Rename(*UniqueName.ToString(), Parent, REN_DontCreateRedirectors);
+}
+
+void UGorgeousObjectVariable::SetParentRefOnly(UGorgeousObjectVariable* NewParent)
+{
+	Parent = NewParent;
 }
 
 void UGorgeousObjectVariable::SetSharedNetworkStackEnabled(const bool bEnable)
@@ -1234,6 +1379,12 @@ void UGorgeousObjectVariable::SetDisplayName(const FString& InDisplayName)
 
 void UGorgeousObjectVariable::NotifyDisplayNameChanged()
 {
+	MarkPropertyDirty(GET_MEMBER_NAME_CHECKED(UGorgeousObjectVariable, DisplayName));
+}
+
+
+void UGorgeousObjectVariable::MarkPropertyDirty(const FName PropertyName)
+{
 	if (!SupportsAutoReplicationFeatures() || !bReplicates)
 	{
 		return;
@@ -1243,6 +1394,8 @@ void UGorgeousObjectVariable::NotifyDisplayNameChanged()
 	{
 		if (World->GetNetMode() == NM_Client)
 		{
+			// Client-to-Server property pushing is handled by the coordinator's C2S path
+			// which typically uses a different mechanism, but for local tracking this is fine.
 			return;
 		}
 
@@ -1351,9 +1504,9 @@ void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewO
 	{
 		// Derive a stable map key following the priority chain:
 		//   1. Explicit RegistryKey passed by the caller.
-		//   2. DisplayName — set before this call to either the user-supplied DisplayNameOverride or a
+		//   2. DisplayName, set before this call to either the user-supplied DisplayNameOverride or a
 		//      randomly generated name (see SetDisplayName), so this branch is taken in virtually all cases.
-		//   3. GUID string — final safety net for any code path that bypasses SetDisplayName.
+		//   3. GUID string, final safety net for any code path that bypasses SetDisplayName.
 		FName Key = RegistryKey;
 		if (Key == NAME_None)
 		{
@@ -1367,11 +1520,11 @@ void UGorgeousObjectVariable::RegisterWithRegistry(UGorgeousObjectVariable* NewO
 		{
 			if (*ExistingSlot && IsValid(ExistingSlot->Get()))
 			{
-				// Genuine collision with a live variable — append GUID fragment
+				// Genuine collision with a live variable, append GUID fragment
 				Key = FName(*FString::Printf(TEXT("%s_%s"), *Key.ToString(),
 					*NewObjectVariable->UniqueIdentifier.ToString().Left(8)));
 			}
-			// else: stale / null slot — replace in-place without suffix
+			// else: stale / null slot, replace in-place without suffix
 		}
 		VariableRegistry.Add(Key, NewObjectVariable);
 		UGorgeousRootObjectVariable::TrackRegisteredVariable(NewObjectVariable);
@@ -1387,7 +1540,7 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::FindInRegistry(FName Key, cons
 		return !Class || Variable->IsA(Class);
 	};
 
-	// Exact is a direct TMap lookup — O(1)
+	// Exact is a direct TMap lookup, O(1)
 	if (MatchCase == EFindInRegistryMatchCase::Exact)
 	{
 		const TObjectPtr<UGorgeousObjectVariable>* Found = VariableRegistry.Find(Key);
@@ -1590,6 +1743,7 @@ void UGorgeousObjectVariable::RegisterReplicatedProperty(const FName PropertyNam
 	Declaration.RepNotifyFunction = AdvancedConfig.RepNotifyFunction;
 	Declaration.RepNotifyPolicy = AdvancedConfig.RepNotifyPolicy;
 	Declaration.bFireInitialNotify = AdvancedConfig.bFireInitialNotify;
+	Declaration.bInitializeNullReferences = AdvancedConfig.bInitializeNullReferences;
 	Declaration.bDeliveredInitialNotify = false;
 
 	if (Declaration.HasRepNotify())
@@ -1660,14 +1814,14 @@ bool UGorgeousObjectVariable::BuildAutoReplicationPropertyPayload(const FGorgeou
 
 		if (Declaration.Mode == EGorgeousReplicationMode::ECustomPayload)
 		{
-			if (!const_cast<UGorgeousObjectVariable*>(this)->BuildCustomAutoReplicationPayload(Declaration.PropertyName, SerializedValue.Payload, ConditionContext.bIsInitialState))
+			if (!const_cast<UGorgeousObjectVariable*>(this)->BuildCustomAutoReplicationPayload(Declaration.PropertyName, SerializedValue.Payload, ConditionContext))
 			{
 				GT_I_LOG("GT.ObjectVariables.Payload.CustomSkipped", TEXT("Custom AutoReplication payload for property %s on %s was skipped because no handler provided data."),
 					*Declaration.PropertyName.ToString(), *GetName());
 				continue;
 			}
 		}
-		else if (!GorgeousObjectVariable_Private::SerializePropertyValue(Declaration.CachedProperty, PropertyData, Declaration.Mode, ConditionContext.PackageMap, SerializedValue.Payload))
+		else if (!GorgeousObjectVariable_Private::SerializePropertyValue(const_cast<UGorgeousObjectVariable*>(this), Declaration.CachedProperty, PropertyData, Declaration.Mode, ConditionContext.PackageMap, SerializedValue.Payload, Declaration.bInitializeNullReferences))
 		{
 			GT_W_LOG("GT.ObjectVariables.Payload.SerializeFailed", TEXT("Failed to serialize auto-replicated property %s on %s."), *Declaration.PropertyName.ToString(), *GetName());
 			continue;
@@ -1702,33 +1856,38 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 			continue;
 		}
 
-		if (Declaration->Mode == EGorgeousReplicationMode::ECustomPayload)
-		{
-			const bool bHandled = ApplyCustomAutoReplicationPayload(SerializedProperty.PropertyName, SerializedProperty.Payload, SerializedProperty.bIsInitialState != 0);
-			if (!bHandled)
-			{
-				GT_W_LOG("GT.ObjectVariables.Payload.CustomApplyFailed", TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
-				continue;
-			}
-			bAppliedAny = true;
-			continue;
-		}
-
-		if (SerializedProperty.Payload.Num() == 0)
-		{
-			continue;
-		}
-
 		void* PropertyData = Declaration->CachedProperty->ContainerPtrToValuePtr<void>(this);
 		if (!PropertyData)
 		{
 			continue;
 		}
 
-		if (!GorgeousObjectVariable_Private::DeserializePropertyValue(Declaration->CachedProperty, PropertyData, Declaration->Mode, PackageMap, SerializedProperty.Payload))
+		bool bApplied = false;
+		if (Declaration->Mode == EGorgeousReplicationMode::ECustomPayload)
 		{
-			GT_W_LOG("GT.ObjectVariables.Payload.DeserializeFailed", TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
-			continue;
+			FGorgeousAutoReplicationConditionContext ConditionContext;
+			ConditionContext.PackageMap = PackageMap;
+			ConditionContext.bIsInitialState = SerializedProperty.bIsInitialState != 0;
+			bApplied = ApplyCustomAutoReplicationPayload(Declaration->PropertyName, SerializedProperty.Payload, ConditionContext);
+			if (!bApplied)
+			{
+				GT_W_LOG("GT.ObjectVariables.Payload.CustomApplyFailed", TEXT("Custom AutoReplication payload for property %s on %s was not applied."), *SerializedProperty.PropertyName.ToString(), *GetName());
+				continue;
+			}
+		}
+		else
+		{
+			if (SerializedProperty.Payload.Num() == 0)
+			{
+				continue;
+			}
+
+			if (!GorgeousObjectVariable_Private::DeserializePropertyValue(this, Declaration->CachedProperty, PropertyData, Declaration->Mode, PackageMap, SerializedProperty.Payload, Declaration->bInitializeNullReferences))
+			{
+				GT_W_LOG("GT.ObjectVariables.Payload.DeserializeFailed", TEXT("Failed to deserialize AutoReplication payload for property %s on %s."), *SerializedProperty.PropertyName.ToString(), *GetName());
+				continue;
+			}
+			bApplied = true;
 		}
 
 		// On the CLIENT: sync the change shadow to the freshly applied value.  Without
@@ -1752,13 +1911,13 @@ bool UGorgeousObjectVariable::ApplyAutoReplicationPropertyPayload(const FGorgeou
 	return bAppliedAny;
 }
 
-bool UGorgeousObjectVariable::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, bool bIsInitialState)
+bool UGorgeousObjectVariable::BuildCustomAutoReplicationPayload_Implementation(FName PropertyName, TArray<uint8>& OutPayload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	OutPayload.Reset();
 	return false;
 }
 
-bool UGorgeousObjectVariable::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, bool bIsInitialState)
+bool UGorgeousObjectVariable::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
 	return false;
 }
@@ -2227,7 +2386,9 @@ bool UGorgeousObjectVariable::SerializeRPCSnapshotRecursive(UGorgeousObjectVaria
 		TArray<uint8> Payload;
 		if (uint8* PropertyData = Property->ContainerPtrToValuePtr<uint8>(Variable))
 		{
-			GorgeousObjectVariable_Private::SerializePropertyValue(Property, PropertyData, EGorgeousReplicationMode::EProperty, nullptr, Payload);
+			// Deep-init is false here — the RPC snapshot path uses its own class-path + property capture,
+			// not the auto-replication deep-init format. Context is 'this' (const cast for the helper).
+			GorgeousObjectVariable_Private::SerializePropertyValue(const_cast<UGorgeousObjectVariable*>(this), Property, PropertyData, EGorgeousReplicationMode::EProperty, nullptr, Payload, false);
 		}
 		GorgeousObjectVariable_Private::Snapshot::WriteByteArray(Ar, Payload);
 	}
@@ -2358,7 +2519,9 @@ UGorgeousObjectVariable* UGorgeousObjectVariable::DeserializeRPCSnapshotRecursiv
 		{
 			if (uint8* PropertyData = Property->ContainerPtrToValuePtr<uint8>(NewInstance))
 			{
-				GorgeousObjectVariable_Private::DeserializePropertyValue(Property, PropertyData, EGorgeousReplicationMode::EProperty, nullptr, SerializedProperty.Payload);
+				// Deep-init is false here — the RPC snapshot path handles class instantiation itself;
+				// this call only applies property values to an already-created NewInstance.
+				GorgeousObjectVariable_Private::DeserializePropertyValue(NewInstance, Property, PropertyData, EGorgeousReplicationMode::EProperty, nullptr, SerializedProperty.Payload, false);
 			}
 		}
 	}
@@ -3187,14 +3350,17 @@ bool UGorgeousObjectVariable::HandleServerPropertyPollingTick(float DeltaSeconds
 	if (DirtyProperties.Num() > 0)
 	{
 		GT_I_LOG("GT.ObjectVariables.ServerPoll.AttemptReplicate", TEXT("%s: Attempting to replicate %d dirty properties to clients."), *GetName(), DirtyProperties.Num());
-		if (TryServerReplicateProperties(DirtyProperties))
+		
+		// We attempt replication, but regardless of whether any clients were reached, 
+		// we MUST update the shadows on the server to prevent a permanent dirty-detection loop.
+		// New clients will receive the current state via the discovery/initial-sync path.
+		TryServerReplicateProperties(DirtyProperties);
+		
+		for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
 		{
-			for (FReplicatedPropertyDeclaration& Declaration : RegisteredReplicatedProperties)
+			if (DirtyProperties.Contains(Declaration.PropertyName))
 			{
-				if (DirtyProperties.Contains(Declaration.PropertyName))
-				{
-					UpdateChangeShadowForProperty(Declaration);
-				}
+				UpdateChangeShadowForProperty(Declaration);
 			}
 		}
 	}
@@ -3492,6 +3658,12 @@ bool UGorgeousObjectVariable::IsExecutingOnReplicationOwner() const
 	return false;
 }
 
+bool UGorgeousObjectVariable::HasAuthority() const
+{
+	UWorld* World = GetWorld();
+	return World && World->GetNetMode() != NM_Client;
+}
+
 void UGorgeousObjectVariable::SetIsReplicated(bool InIsReplicated)
 {
 	const bool bRootForcesNetworking = DoesRootEnforceNetworking();
@@ -3633,3 +3805,10 @@ void UGorgeousObjectVariable::PostEditChangeProperty(FPropertyChangedEvent& Prop
 }
 #endif // WITH_EDITOR
 
+
+
+
+int32 UGorgeousObjectVariable::GetTotalAliveObjectVariables()
+{
+	return GObjectVariableAliveCounter.GetValue();
+}

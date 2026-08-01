@@ -6,15 +6,16 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
+//<--------------------------=== Module Includes ===------------------------->
 #include "Templates/Casts.h"
-#include "Runtime/Launch/Resources/Version.h"
 #include "Misc/EngineVersion.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "Runtime/Launch/Resources/Version.h"
 //<-------------------------------------------------------------------------->
 
 /*======================================================================================================================>
@@ -38,7 +39,7 @@
 #if GORGEOUS_ENGINE_VERSION < 423
 #define GORGEOUS_23_HIGHER(...)
 #else
-#define GORGEOUS_23_HIGHER(...) __VA_ARGS__	
+#define GORGEOUS_23_HIGHER(...) __VA_ARGS__
 #endif
 
 #if GORGEOUS_ENGINE_VERSION < 424

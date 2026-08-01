@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
@@ -21,7 +21,7 @@
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
-#include "InsightMatrix/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 #include "Algo/Sort.h"
 #include "Engine/World.h"
 
@@ -179,7 +179,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(const
 	UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(Result.QueuedRPC.RequestGuid);
 	if (!PendingState || PendingState->bCompleted)
 	{
-		// No local pending state — this machine processed an RPC that was initiated on a
+		// No local pending state, this machine processed an RPC that was initiated on a
 		// different (client) machine. Relay the result back to the originating client so
 		// its async action can complete normally.
 		UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(Result);
@@ -202,7 +202,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(const
 	const FString ResponderKey = BuildResponderKey(ResultCopy.Responder);
 	PendingState->CollectedResults.Add(ResponderKey, ResultCopy);
 	// Remove any deferred entry that was injected by NotifyDeferredSingleResponderCallback
-	// (ReadyForSingleResponderCallback relay path) — it's now promoted to CollectedResults.
+	// (ReadyForSingleResponderCallback relay path), it's now promoted to CollectedResults.
 	PendingState->DeferredResults.Remove(ResponderKey);
 	if (!ResponderKey.IsEmpty())
 	{
@@ -530,7 +530,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::CompleteRequest(const TMap<F
 	}
 
 	RequestGuid.Invalidate();
-	// Clear the timeout timer — the request completed successfully.
+	// Clear the timeout timer, the request completed successfully.
 	if (UObject* Context = WeakContext.Get())
 	{
 		if (UWorld* World = Context->GetWorld())
@@ -639,7 +639,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyDeferredSingleResponde
 	FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(RequestGuid);
 	if (!PendingState || PendingState->bCompleted)
 	{
-		// No local pending state — relay back to the originating client (deferred/interim path).
+		// No local pending state, relay back to the originating client (deferred/interim path).
 		UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(
 			Result, EGorgeousRPCReadyState::ReadyForSingleResponderCallback);
 		return;
@@ -884,7 +884,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::MarkAutoReplicationRPCRespon
 	}
 	else if (World->GetAuthGameMode() != nullptr)
 	{
-		// On authority without a player controller — treat as Server.
+		// On authority without a player controller, treat as Server.
 		ResponderKey = TEXT("Server");
 	}
 
@@ -933,7 +933,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::MarkAutoReplicationRPCRespon
 						Result = *Cached;
 					}
 					// Only consume from the cache on final Ready.
-					// ReadyForSingleResponderCallback is interim — the entry must stay so
+					// ReadyForSingleResponderCallback is interim, the entry must stay so
 					// the subsequent Ready relay can still find and consume it.
 					if (ReadyState == EGorgeousRPCReadyState::Ready)
 					{
@@ -969,7 +969,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::MarkAutoReplicationRPCRespon
 	const FGorgeousAutoReplicationRPCResult* DeferredEntry = PendingState->DeferredResults.Find(ResponderKey);
 	if (!DeferredEntry)
 	{
-		// The handler called MarkReady synchronously — RegisterDeferredResult has not run yet.
+		// The handler called MarkReady synchronously, RegisterDeferredResult has not run yet.
 		// Queue the signal so it is processed immediately when the deferred entry is registered.
 		if (!ResponderKey.IsEmpty())
 		{

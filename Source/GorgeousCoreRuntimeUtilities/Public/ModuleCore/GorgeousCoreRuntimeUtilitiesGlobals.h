@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
@@ -15,7 +15,6 @@
 #include "GorgeousCoreRuntimeUtilitiesStructures.h"
 //<-------------------------------------------------------------------------->
 
-//<=================--- Delegates ---=================>
 DECLARE_MULTICAST_DELEGATE_OneParam(FGorgeousLogEntryDelegate, const FGorgeousLogEntry&);
 //<--------------------------------------------------->
 

@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 /*======================================================================================================================>
 | --------------------------------------------------------------------------------------------------------------------- |
@@ -45,8 +45,7 @@ MONOLITHIC_HEADER_BOILERPLATE()
 
 //Conditional Object Chooser Includes
 #include "ConditionalObjectChoosers/GorgeousConditionalObjectChooser.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserEnums.h"
-#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserStructures.h"
+#include "ConditionalObjectChoosers/GorgeousConditionalObjectChooserTypes.h"
 #include "ConditionalObjectChoosers/Conditions/GorgeousCondition.h"
 #include "ConditionalObjectChoosers/Conditions/GorgeousBooleanCondition.h"
 #include "ConditionalObjectChoosers/Conditions/GorgeousGameplayTagCondition.h"

@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "DataSchemaMapping/GorgeousDataSchemaMapper.h"
 
@@ -18,6 +18,10 @@
 #include "String/LexFromString.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
+
+//=============================================================================
+// FGorgeousDataSchemaMapper Implementation
+//=============================================================================
 
 bool FGorgeousDataSchemaMapper::ApplySnapshotToObject(
 	const FGorgeousDataSchemaSourceSnapshot_S& SourceSnapshot,

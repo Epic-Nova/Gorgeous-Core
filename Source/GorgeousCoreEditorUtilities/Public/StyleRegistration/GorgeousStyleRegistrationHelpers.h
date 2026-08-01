@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,24 +6,29 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Styling/SlateStyle.h"
 #include "Fonts/CompositeFont.h"
 #include "Fonts/SlateFontInfo.h"
+#include "Styling/SlateStyle.h"
+//<-------------------------------------------------------------------------->
 
 namespace GorgeousStyleRegistration
 {
 	// Shorthand constants for icon sizes (16px)
 	const FVector2D Icon16(16.0f, 16.0f);
-	
+
 	// Shorthand constants for thumbnail sizes (128px)
 	const FVector2D Thumb128(128.0f, 128.0f);
-	
+
 	// The shared pointer to the style set that will hold all the brushes for Gorgeous Core editor utilities.
 	static TSharedPtr<FSlateStyleSet> GGorgeousStyleSet;
-	
+
 	/**
 	 * Helper function to set both icon and thumbnail brushes for a given key and class name, using the same file name for both.
 	 *
@@ -34,9 +39,9 @@ namespace GorgeousStyleRegistration
 	 */
 	FORCEINLINE void SetBrushes(const TSharedPtr<FSlateStyleSet>& Style, const FString& Key, const FString& FileName, const FString& ClassName)
 	{
-		Style->Set(*FString::Printf(TEXT("GorgeousCore.%s.Icon"), *Key),
+		Style->Set(*FString::Printf(TEXT("Gorgeous.%s.Icon"), *Key),
 			new FSlateImageBrush(Style->RootToContentDir(FileName, TEXT(".png")), Icon16));
-		Style->Set(*FString::Printf(TEXT("GorgeousCore.%s.Thumbnail"), *Key),
+		Style->Set(*FString::Printf(TEXT("Gorgeous.%s.Thumbnail"), *Key),
 			new FSlateImageBrush(Style->RootToContentDir(FileName, TEXT(".png")), Thumb128));
 
 		Style->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),

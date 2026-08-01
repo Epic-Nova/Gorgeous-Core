@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,11 +6,12 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/GorgeousLoggingHelper.h"
 //<-------------------------------------------------------------------------->
 
@@ -284,7 +285,7 @@
 
 /**
  * Logs an error message if ensure failes.
- * 
+ *
  * @param Condition The condition to check.
  * @param LoggingKey A unique key to manage the log message.
  * @param MessageFormat The format string for the message.
@@ -302,7 +303,7 @@
 
 /**
  * Logs an error message if verify failes.
- * 
+ *
  * @param Condition The condition to check.
  * @param LoggingKey A unique key to manage the log message.
  * @param MessageFormat The format string for the message.
@@ -373,7 +374,7 @@
 
 /**
  * Logs a fatal message if checkf failes.
- * 
+ *
  * @param Condition The condition to check.
  * @param LoggingKey A unique key to manage the log message.
  * @param MessageFormat The format string for the message.

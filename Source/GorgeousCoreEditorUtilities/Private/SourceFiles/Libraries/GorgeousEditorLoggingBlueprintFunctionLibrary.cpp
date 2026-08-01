@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
 
@@ -24,6 +24,9 @@ struct FGorgeousHyperlinkActionBinding
 
 // Global map of action name to handler binding. This is populated by calls to RegisterLogHyperlinkAction.
 static TMap<FName, FGorgeousHyperlinkActionBinding> GHyperlinkActionBindings;
+
+// Global map of condition name to handler binding. This is populated by calls to RegisterLogHyperlinkCondition.
+static TMap<FName, FGorgeousHyperlinkActionBinding> GHyperlinkConditionBindings;
 
 // Helper function to instantiate a handler object from a given class. Logs errors if instantiation fails.
 UObject* InstantiateHandler(const TSubclassOf<UObject> HandlerClass)
@@ -81,12 +84,57 @@ static void ExecuteHyperlinkAction(const FGorgeousLogHyperlink& Hyperlink)
 	HandlerObject->ProcessEvent(Function, &Params);
 }
 
-// Expose for editor module.
+/**
+ * Evaluates a hyperlink condition. Returns true if the condition is met (or if no condition is specified).
+ */
+static bool EvaluateHyperlinkCondition(const FName& ConditionName, const FString& ActionPayload)
+{
+	if (ConditionName.IsNone())
+	{
+		return true;
+	}
+
+	const FGorgeousHyperlinkActionBinding* Binding = GHyperlinkConditionBindings.Find(ConditionName);
+	if (!Binding || !Binding->Handler)
+	{
+		return true;
+	}
+
+	UObject* HandlerObject = InstantiateHandler(Binding->Handler);
+	if (!HandlerObject)
+	{
+		return true;
+	}
+
+	UFunction* Function = HandlerObject->GetClass()->FindFunctionByName(Binding->FunctionName);
+	if (!Function)
+	{
+		return true;
+	}
+
+	struct FConditionParams
+	{
+		FString Payload;
+		bool bResult;
+	};
+
+	FConditionParams Params{ ActionPayload, true };
+	HandlerObject->ProcessEvent(Function, &Params);
+
+	return Params.bResult;
+}
+
 namespace GorgeousEditorLogging
 {
+	// Expose for editor module.
 	void ExecuteLogHyperlinkAction(const FGorgeousLogHyperlink& Hyperlink)
 	{
 		ExecuteHyperlinkAction(Hyperlink);
+	}
+
+	bool EvaluateLogHyperlinkCondition(const FName& ConditionName, const FString& ActionPayload)
+	{
+		return EvaluateHyperlinkCondition(ConditionName, ActionPayload);
 	}
 }
 
@@ -115,15 +163,42 @@ void UGorgeousEditorLoggingBlueprintFunctionLibrary::RegisterLogHyperlinkAction(
 	GHyperlinkActionBindings.Add(ActionName, { HandlerClass, FunctionName });
 }
 
+void UGorgeousEditorLoggingBlueprintFunctionLibrary::UnregisterLogHyperlinkAction(const FName ActionName)
+{
+	if (ActionName.IsNone()) 
+		return;
+	
+	GHyperlinkActionBindings.Remove(ActionName);
+}
+
+void UGorgeousEditorLoggingBlueprintFunctionLibrary::RegisterLogHyperlinkCondition(const TSubclassOf<UObject> HandlerClass, const FName ConditionName, const FName FunctionName)
+{
+	if (!HandlerClass || ConditionName.IsNone() || FunctionName.IsNone())
+	{
+		return;
+	}
+
+	GHyperlinkConditionBindings.Add(ConditionName, { HandlerClass, FunctionName });
+}
+
+void UGorgeousEditorLoggingBlueprintFunctionLibrary::UnregisterLogHyperlinkCondition(const FName ConditionName)
+{
+	if (ConditionName.IsNone())
+		return;
+
+	GHyperlinkConditionBindings.Remove(ConditionName);
+}
+
 void UGorgeousEditorLoggingBlueprintFunctionLibrary::LogMessageWithActionHyperlink(const FString Message, const FString LoggingKey,
-	const EGorgeousLoggingImportance Importance, const FName ActionName, const FString ActionPayload,
-	const FString LinkText, UObject* WorldContextObject)
+                                                                                    const EGorgeousLoggingImportance Importance, const FName ActionName, const FString ActionPayload,
+                                                                                    const FString LinkText, const bool bSingleUse, const FName ConditionName, UObject* WorldContextObject)
 {
 	FGorgeousLogHyperlink Hyperlink;
 	Hyperlink.LinkText = LinkText.IsEmpty() ? TEXT("Run Action") : LinkText;
 	Hyperlink.ActionName = ActionName;
 	Hyperlink.ActionPayload = ActionPayload;
+	Hyperlink.bSingleUse = bSingleUse;
+	Hyperlink.ConditionName = ConditionName;
 
 	GT_LOG_MESSAGE_FULL_EX(Importance, Message, LoggingKey, 5.0f, true, true, true, false, WorldContextObject, &Hyperlink);
 }
-

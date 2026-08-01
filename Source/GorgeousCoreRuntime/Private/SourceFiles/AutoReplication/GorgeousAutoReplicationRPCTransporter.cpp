@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
@@ -19,6 +19,8 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/NetConnection.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationTransporter, Log, All);
@@ -247,7 +249,7 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 	APlayerController* TargetController = nullptr;
 
 	// 1. When the owning actor IS a PlayerController (e.g. a PC subclass receiving a
-	//    server→client RPC), use it directly — GetNetOwningPlayer() is often null for
+	//    server→client RPC), use it directly, GetNetOwningPlayer() is often null for
 	//    a PC instance that lives on the server side before the connection is fully set.
 	if (APlayerController* DirectPC = Cast<APlayerController>(OwnerActor))
 	{
@@ -389,13 +391,32 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToClient(cons
 		return false;
 	}
 
+	FGorgeousAutoReplicationPropertyEnvelope FinalEnvelope = Envelope;
+	if (OwningMixin)
+	{
+		if (UGorgeousObjectVariable* Variable = OwningMixin->ResolveVariableForKey(Envelope.EntryKey))
+		{
+			if (Variable->SupportsAutoReplicationFeatures())
+			{
+				FGorgeousAutoReplicationConditionContext ConditionContext;
+				ConditionContext.TargetController = Cast<AGorgeousPlayerController>(TargetController);
+				if (TargetController->GetNetConnection())
+				{
+					ConditionContext.PackageMap = TargetController->GetNetConnection()->PackageMap;
+				}
+				
+				Variable->BuildAutoReplicationPropertyPayload(ConditionContext, FinalEnvelope.Payload);
+			}
+		}
+	}
+
 	if (GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType))
 	{
-		ClientReceivePropertyPayloadReliable(Envelope, RouteType);
+		ClientReceivePropertyPayloadReliable(FinalEnvelope, RouteType);
 	}
 	else
 	{
-		ClientReceivePropertyPayloadUnreliable(Envelope, RouteType);
+		ClientReceivePropertyPayloadUnreliable(FinalEnvelope, RouteType);
 	}
 
 	return true;
@@ -429,7 +450,7 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 					}
 				}
 
-				// UE multicast RPCs deliver to ALL connections unconditionally — the engine provides no
+				// UE multicast RPCs deliver to ALL connections unconditionally, the engine provides no
 				// per-connection filtering hook. Pivot to per-PC unicasts via each PC's relay component
 				// so that CanControllerReceivePropertyPayload is enforced for every individual client,
 				// identical to the access enforcement done in TryServerReplicateProperties.
@@ -451,16 +472,36 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 
 					if (UGorgeousAutoReplicationRPCRelayComponent* RelayComponent = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
 					{
-						RelayComponent->RelayPropertyPayloadToClient(Envelope);
+						// Re-build the envelope with the target controller context if custom payload is used
+						FGorgeousAutoReplicationPropertyEnvelope TargetEnvelope = Envelope;
+						if (TargetVariable->SupportsAutoReplicationFeatures())
+						{
+							FGorgeousAutoReplicationConditionContext TargetContext;
+							TargetContext.TargetController = Cast<AGorgeousPlayerController>(PC);
+							
+							if (const AActor* OwnerActor = Cast<AActor>(TargetVariable->GetAutoReplicationOwner()))
+							{
+								TargetContext.bIsOwnerConnection = PC->GetNetConnection() && (OwnerActor->GetNetConnection() == PC->GetNetConnection());
+							}
+
+							if (PC->GetNetConnection())
+							{
+								TargetContext.PackageMap = PC->GetNetConnection()->PackageMap;
+							}
+							
+							TargetVariable->BuildAutoReplicationPropertyPayload(TargetContext, TargetEnvelope.Payload);
+						}
+
+						RelayComponent->RelayPropertyPayloadToClient(TargetEnvelope);
 					}
 				}
-				// Do not fall through to the UE multicast RPC — all eligible clients were served above.
+				// Do not fall through to the UE multicast RPC, all eligible clients were served above.
 				return;
 			}
 		}
 	}
 
-	// No root network stack restrictions — all connections are eligible. Use the UE multicast RPC.
+	// No root network stack restrictions, all connections are eligible. Use the UE multicast RPC.
 	if (GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType))
 	{
 		MulticastReceivePropertyPayloadReliable(Envelope, RouteType);
@@ -622,7 +663,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnrelia
 {
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
-	// Same sender validation as the reliable variant — see comment above.
+	// Same sender validation as the reliable variant, see comment above.
 	if (RouteType == EGorgeousAutoReplicationRPCType::EReliableServer
 		|| RouteType == EGorgeousAutoReplicationRPCType::EUnreliableServer)
 	{

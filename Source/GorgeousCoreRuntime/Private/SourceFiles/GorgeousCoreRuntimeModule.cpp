@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -6,7 +6,7 @@
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeModule.h"
 
@@ -17,6 +17,14 @@
 #include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "Interfaces/IPluginManager.h"
+#include "CoreMinimal.h"
+
+// Set to 1 to enable experimental memory leak fixes for PIE teardown and replication crashes.
+#ifndef GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+#define GORGEOUS_EXPERIMENTAL_MEMORY_FIXES 0
+#endif
+
+#include "GameplayTagsManager.h"
 #include "Misc/CoreDelegates.h"
 #include "Misc/Paths.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
@@ -24,6 +32,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "GeneralSystems/GorgeousCheatCommandAliases.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
@@ -33,10 +42,14 @@
 // FGorgeousCoreRuntimeModule Implementation
 //=============================================================================
 
+
+
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
+
+
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
-	const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+	/*const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 	
 	// During module loading, the plugin may not yet be fully registered in the Plugin Manager.
 	// If FindPlugin fails, we calculate the path relative to this module's location.
@@ -51,34 +64,28 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 		// The module DLL is in <PluginDir>/Binaries/<Platform>/, so go up 3 levels
 		const FString ModulePath = FModuleManager::Get().GetModuleFilename(TEXT("GorgeousCoreRuntime"));
 		PluginBaseDir = FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(ModulePath)));
-		UE_LOG(LogGorgeousThings, Warning, TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
+		GT_W_LOG("GT.Core.Lifecycle", TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
 	}
 
-	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));
+	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));*/
+	
+	GT_REGISTER_TAG_SOURCE("GorgeousCore")
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
+	FGorgeousCheatCommandAliases::RegisterConsoleCommands();
+
+	// Register a world-cleanup hook that removes all registry entries belonging to a dying world
+	// from the immortal Root OV registries. This MUST fire before UEditorEngine::CheckForWorldGCLeaks
+	// to break the strong reference chain (Root → TObjectPtr → OV → Outer → World) that would
+	// otherwise cause a "World Memory Leaks: 2 leaked objects" fatal error at editor startup and PIE teardown.
+#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
+	FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool bSessionEnded, bool /*bCleanupResources*/)
+	{
+		UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(World, bSessionEnded);
+	});
+#endif
 	
 	InsightProvider = new FGorgeousCoreInsightMatrixProvider();
-
-	// Try immediate registration first; if subsystem not ready, defer to post-engine init
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		Subsystem->RegisterProvider(InsightProvider);
-	}
-	else
-	{
-		// Defer registration until engine subsystems are initialized
-		FCoreDelegates::OnPostEngineInit.AddLambda([this]()
-		{
-			if (UGorgeousInsightMatrixSubsystem* Sub = UGorgeousInsightMatrixSubsystem::Get())
-			{
-				if (InsightProvider)
-				{
-					Sub->RegisterProvider(InsightProvider);
-				}
-			}
-		});
-	}
 
 #if WITH_DEV_AUTOMATION_TESTS
 	// Ensure scenarios defined inside this module register with the Insight Matrix once all statics are loaded.
@@ -88,15 +95,9 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 
 void FGorgeousCoreRuntimeModule::GorgeousShutdownModule()
 {
-	UE_LOG(LogTemp, Warning, TEXT("FGorgeousCoreRuntimeModule has shut down!"));
+	GT_W_LOG("GT.Core.Lifecycle", TEXT("FGorgeousCoreRuntimeModule has shut down!"));
 
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		if (InsightProvider)
-		{
-			Subsystem->UnregisterProvider(InsightProvider);
-		}
-	}
+	delete InsightProvider;
 	InsightProvider = nullptr;
 
 #if WITH_DEV_AUTOMATION_TESTS

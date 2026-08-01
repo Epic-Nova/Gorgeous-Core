@@ -1,35 +1,43 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|               Gorgeous Core - Insight Matrix (Runtime)                   |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
 | ------------------------------------------------------------------------- |
 |                    Epic Nova is an independent entity,                    |
-|        that has nothing in common with Epic Games in any capacity.        |
+|          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-
 #pragma once
 
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousInsightMatrixTypes.h"
+//<-------------------------------------------------------------------------->
 
 /**
  * Runtime provider interface for the unified debug panel.
  * Each plugin should implement a single provider instance and register it.
  */
-class GORGEOUSCORERUNTIME_API IGorgeousInsightMatrixProvider : IModularFeature
+class GORGEOUSCORERUNTIME_API IGorgeousInsightMatrixProvider : public IModularFeature
 {
 public:
 	virtual ~IGorgeousInsightMatrixProvider() = default;
 
+	/** Returns the feature name used for modular feature registration. */
+	static FName GetFeatureName() { return FName(TEXT("GorgeousInsightMatrixProvider")); }
+
 	/** Stable provider key (typically plugin name). */
 	virtual FName GetProviderName() const = 0;
+
+	/** Returns the exact plugin name (from the .uplugin) this provider belongs to, used for locating Configs. */
+	virtual FString GetPluginName() const = 0;
 
 	/** Describes the provider for display. */
 	virtual FText GetProviderDisplayName() const { return FText::FromName(GetProviderName()); }
 
-	/** Gather current stat snapshots. */
-	virtual void GatherStats(TArray<FGorgeousInsightStat>& OutStats) const {}
+	/** Gather current stat snapshots based on the given context. */
+	virtual void GatherStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const {}
 
 	/** Gather provider-defined charts. */
 	virtual void GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const {}
