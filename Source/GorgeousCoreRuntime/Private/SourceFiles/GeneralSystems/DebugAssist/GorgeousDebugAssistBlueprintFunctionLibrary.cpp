@@ -277,6 +277,37 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPoint(const UO
 }
 
 
+void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTextBlock(const UObject* WorldContextObject, const FVector& Location, const FGorgeousDebugAssistTextBlockParameters& TextBlockParameters, const float Duration, const bool bPersistentLines)
+{
+    if (!WorldContextObject || !TextBlockParameters.bDraw)
+    {
+        return;
+    }
+
+    (void)bPersistentLines;
+
+    UWorld* World = WorldContextObject->GetWorld();
+    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters()))
+    {
+        return;
+    }
+
+    const float LineStep = FMath::Max(0.1f, TextBlockParameters.LineStep);
+    const float LineDuration = TextBlockParameters.bFollowTrace ? 0.0f : FMath::Max(0.0f, Duration);
+    for (int32 Index = 0; Index < TextBlockParameters.Lines.Num(); ++Index)
+    {
+        const FGorgeousDebugAssistTextLineParameters& Line = TextBlockParameters.Lines[Index];
+        if (Line.Text.IsEmpty())
+        {
+            continue;
+        }
+
+        const FVector LineLocation = Location + FVector(0.0f, 0.0f, -LineStep * static_cast<float>(Index));
+        DrawDebugString(World, LineLocation, Line.Text, nullptr, Line.Color.ToFColor(true), LineDuration, bPersistentLines);
+    }
+}
+
+
 static void DrawDebugAssistSolidSphereMesh(UWorld* World, const FVector& Center, float Radius, int32 LatitudeSegments, int32 LongitudeSegments, const FLinearColor& Color, bool bPersistentLines, float LifeTime, uint8 DepthPriority)
 {
     if (!World || Radius <= 0.0f || LatitudeSegments < 3 || LongitudeSegments < 3)
@@ -387,6 +418,48 @@ static void DrawDebugAssistSolidBoxMesh(UWorld* World, const FVector& Center, co
 
     DrawDebugMesh(World, Vertices, Indices, Color.ToFColor(true), bPersistentLines, LifeTime, DepthPriority);
 
+}
+
+static void DrawDebugAssistSolidRingMesh(UWorld* World, const FVector& Center, float InnerRadius, float OuterRadius, const FVector& AxisX, const FVector& AxisY, const FLinearColor& Color, bool bPersistentLines, float LifeTime, uint8 DepthPriority)
+{
+    if (!World || OuterRadius <= 0.0f || OuterRadius <= InnerRadius)
+    {
+        return;
+    }
+
+    const int32 Segments = FMath::Clamp(FMath::CeilToInt(OuterRadius / 500.0f), 24, 128);
+
+    TArray<FVector> Vertices;
+    TArray<int32> Indices;
+    Vertices.Reserve(Segments * 2);
+    Indices.Reserve(Segments * 6);
+
+    for (int32 Index = 0; Index < Segments; ++Index)
+    {
+        const float Angle = (static_cast<float>(Index) / static_cast<float>(Segments)) * 2.0f * PI;
+        const FVector Direction = (AxisX * FMath::Cos(Angle) + AxisY * FMath::Sin(Angle)).GetSafeNormal();
+        Vertices.Add(Center + Direction * OuterRadius);
+        Vertices.Add(Center + Direction * InnerRadius);
+    }
+
+    for (int32 Index = 0; Index < Segments; ++Index)
+    {
+        const int32 NextIndex = (Index + 1) % Segments;
+        const int32 Outer0 = Index * 2;
+        const int32 Inner0 = Outer0 + 1;
+        const int32 Outer1 = NextIndex * 2;
+        const int32 Inner1 = Outer1 + 1;
+
+        Indices.Add(Outer0);
+        Indices.Add(Outer1);
+        Indices.Add(Inner1);
+
+        Indices.Add(Outer0);
+        Indices.Add(Inner1);
+        Indices.Add(Inner0);
+    }
+
+    DrawDebugMesh(World, Vertices, Indices, Color.ToFColor(true), bPersistentLines, LifeTime, DepthPriority);
 }
 
 void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistSphere(const UObject* WorldContextObject, const FVector& Center, const float Radius, const FLinearColor& Color, const bool bWireframe, const bool bFilled, const float Duration, const bool bPersistentLines, const float Thickness, const FLinearColor& FillColor)
@@ -720,6 +793,42 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistCircle(const U
     DrawDebugCircle(World, Location, Radius, 32, Color.ToFColor(true), bPersistentLines, Duration, 0, Thickness, Normal, AxisX, false);
 }
 
+void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color, const bool bWireframe, const float Duration, const bool bPersistentLines, const float Thickness, const FVector& Normal)
+{
+    if (!WorldContextObject)
+    {
+        return;
+    }
+
+    UWorld* World = WorldContextObject->GetWorld();
+    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters()))
+    {
+        return;
+    }
+
+    const float SafeInnerRadius = FMath::Max(0.0f, InnerRadius);
+    const float SafeOuterRadius = FMath::Max(SafeInnerRadius, OuterRadius);
+    if (SafeOuterRadius <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    const FVector AxisX = FMath::Abs(Normal.Z) < 0.99f ? FVector::VectorPlaneProject(FVector::UpVector, Normal).GetSafeNormal() : FVector::ForwardVector;
+    const FVector AxisY = FVector::CrossProduct(Normal, AxisX);
+
+    DrawDebugCircle(World, Location, SafeOuterRadius, 32, Color.ToFColor(true), bPersistentLines, Duration, 0, Thickness, AxisX, AxisY, false);
+
+    if (SafeInnerRadius > KINDA_SMALL_NUMBER)
+    {
+        DrawDebugCircle(World, Location, SafeInnerRadius, 32, Color.ToFColor(true), bPersistentLines, Duration, 0, Thickness, AxisX, AxisY, false);
+    }
+
+    if (!bWireframe)
+    {
+        DrawDebugAssistSolidRingMesh(World, Location, SafeInnerRadius, SafeOuterRadius, AxisX, AxisY, Color, bPersistentLines, Duration, 0);
+    }
+}
+
 void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistProjectedCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius, const FLinearColor& Color, const float Duration, const bool bPersistentLines, const float Thickness, const FVector& Normal, const AActor* IgnoreActor)
 {
     if (!WorldContextObject) return;
@@ -785,6 +894,197 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistProjectedCircl
             if (FVector::DistSquared(Points[i], Points[NextIndex]) < MaxEdgeDistSq)
             {
                 DrawDebugLine(World, Points[i], Points[NextIndex], DrawColor, bPersistentLines, Duration, 0, Thickness);
+            }
+        }
+    }
+}
+
+void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistProjectedRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color, const bool bWireframe, const float Duration, const bool bPersistentLines, const float Thickness, const FVector& Normal, const AActor* IgnoreActor, const bool bUseFillColor, const FLinearColor& FillColor)
+{
+    if (!WorldContextObject) return;
+    UWorld* World = WorldContextObject->GetWorld();
+    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters()))
+    {
+        return;
+    }
+
+    const float ProjectedLift = FMath::Max(25.0f, Thickness * 6.0f);
+
+    const float SafeInnerRadius = FMath::Max(0.0f, InnerRadius);
+    const float SafeOuterRadius = FMath::Max(SafeInnerRadius, OuterRadius);
+    if (SafeOuterRadius <= KINDA_SMALL_NUMBER)
+    {
+        return;
+    }
+
+    const float TraceHalfHeight = FMath::Max(1000.0f, SafeOuterRadius * 0.1f);
+
+    FVector AxisX, AxisY;
+    if (Normal.Equals(FVector::UpVector, 0.1f))
+    {
+        AxisX = FVector::ForwardVector;
+        AxisY = FVector::RightVector;
+    }
+    else
+    {
+        AxisX = FVector::VectorPlaneProject(FVector::ForwardVector, Normal).GetSafeNormal();
+        if (AxisX.IsNearlyZero()) AxisX = FVector::VectorPlaneProject(FVector::RightVector, Normal).GetSafeNormal();
+        AxisY = FVector::CrossProduct(Normal, AxisX);
+    }
+
+    const int32 Segments = 32;
+    TArray<FVector> OuterPoints;
+    TArray<FVector> InnerPoints;
+    TArray<bool> OuterHits;
+    TArray<bool> InnerHits;
+    OuterPoints.AddZeroed(Segments);
+    InnerPoints.AddZeroed(Segments);
+    OuterHits.AddZeroed(Segments);
+    InnerHits.AddZeroed(Segments);
+
+    FCollisionQueryParams Params;
+    Params.bTraceComplex = true;
+    Params.AddIgnoredActor(WorldContextObject->GetTypedOuter<AActor>());
+    if (IgnoreActor)
+    {
+        Params.AddIgnoredActor(IgnoreActor);
+    }
+
+    for (int32 i = 0; i < Segments; ++i)
+    {
+        const float Angle = (static_cast<float>(i) / Segments) * 2.0f * PI;
+        const FVector Direction = AxisX * FMath::Cos(Angle) + AxisY * FMath::Sin(Angle);
+
+        const FVector OuterOffset = Direction * SafeOuterRadius;
+        const FVector InnerOffset = Direction * SafeInnerRadius;
+
+        const FVector OuterTraceStart = Location + OuterOffset + (Normal * TraceHalfHeight);
+        const FVector OuterTraceEnd = Location + OuterOffset - (Normal * TraceHalfHeight);
+        const FVector InnerTraceStart = Location + InnerOffset + (Normal * TraceHalfHeight);
+        const FVector InnerTraceEnd = Location + InnerOffset - (Normal * TraceHalfHeight);
+
+        FHitResult OuterHit;
+        if (World->LineTraceSingleByChannel(OuterHit, OuterTraceStart, OuterTraceEnd, ECC_Visibility, Params))
+        {
+            OuterPoints[i] = OuterHit.ImpactPoint + Normal * ProjectedLift;
+            OuterHits[i] = true;
+        }
+
+        if (SafeInnerRadius > KINDA_SMALL_NUMBER)
+        {
+            FHitResult InnerHit;
+            if (World->LineTraceSingleByChannel(InnerHit, InnerTraceStart, InnerTraceEnd, ECC_Visibility, Params))
+            {
+                InnerPoints[i] = InnerHit.ImpactPoint + Normal * ProjectedLift;
+                InnerHits[i] = true;
+            }
+        }
+    }
+
+    const FColor DrawColor = Color.ToFColor(true);
+    const FLinearColor EffectiveFillColor = bUseFillColor ? FillColor : Color;
+    const FColor FillDrawColor = EffectiveFillColor.ToFColor(true);
+    const float OuterMaxEdgeDistSq = FMath::Square(SafeOuterRadius * 2.0f * PI / Segments * 2.5f);
+    const float InnerMaxEdgeDistSq = FMath::Square(SafeInnerRadius * 2.0f * PI / Segments * 2.5f);
+
+    if (!bWireframe)
+    {
+        TArray<FVector> Vertices;
+        TArray<int32> Indices;
+
+        if (SafeInnerRadius > KINDA_SMALL_NUMBER)
+        {
+            Vertices.Reserve(Segments * 4);
+            Indices.Reserve(Segments * 12);
+
+            for (int32 i = 0; i < Segments; ++i)
+            {
+                const int32 NextIndex = (i + 1) % Segments;
+                if (!InnerHits[i] || !OuterHits[i] || !InnerHits[NextIndex] || !OuterHits[NextIndex])
+                {
+                    continue;
+                }
+
+                const int32 BaseIndex = Vertices.Num();
+                Vertices.Add(OuterPoints[i]);
+                Vertices.Add(OuterPoints[NextIndex]);
+                Vertices.Add(InnerPoints[NextIndex]);
+                Vertices.Add(InnerPoints[i]);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 1);
+                Indices.Add(BaseIndex + 2);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 2);
+                Indices.Add(BaseIndex + 3);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 2);
+                Indices.Add(BaseIndex + 1);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 3);
+                Indices.Add(BaseIndex + 2);
+            }
+        }
+        else
+        {
+            FVector CenterPoint = Location + Normal * ProjectedLift;
+            FHitResult CenterHit;
+            if (World->LineTraceSingleByChannel(CenterHit, Location + (Normal * TraceHalfHeight), Location - (Normal * TraceHalfHeight), ECC_Visibility, Params))
+            {
+                CenterPoint = CenterHit.ImpactPoint + Normal * ProjectedLift;
+            }
+
+            Vertices.Reserve(Segments * 3);
+            Indices.Reserve(Segments * 6);
+
+            for (int32 i = 0; i < Segments; ++i)
+            {
+                const int32 NextIndex = (i + 1) % Segments;
+                if (!OuterHits[i] || !OuterHits[NextIndex])
+                {
+                    continue;
+                }
+
+                const int32 BaseIndex = Vertices.Num();
+                Vertices.Add(CenterPoint);
+                Vertices.Add(OuterPoints[i]);
+                Vertices.Add(OuterPoints[NextIndex]);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 1);
+                Indices.Add(BaseIndex + 2);
+
+                Indices.Add(BaseIndex);
+                Indices.Add(BaseIndex + 2);
+                Indices.Add(BaseIndex + 1);
+            }
+        }
+
+        if (Vertices.Num() >= 3)
+        {
+            DrawDebugMesh(World, Vertices, Indices, FillDrawColor, bPersistentLines, Duration, 0);
+        }
+    }
+
+    for (int32 i = 0; i < Segments; ++i)
+    {
+        const int32 NextIndex = (i + 1) % Segments;
+        if (OuterHits[i] && OuterHits[NextIndex])
+        {
+            if (FVector::DistSquared(OuterPoints[i], OuterPoints[NextIndex]) < OuterMaxEdgeDistSq)
+            {
+                DrawDebugLine(World, OuterPoints[i], OuterPoints[NextIndex], DrawColor, bPersistentLines, Duration, 0, Thickness);
+            }
+        }
+
+        if (SafeInnerRadius > KINDA_SMALL_NUMBER && InnerHits[i] && InnerHits[NextIndex])
+        {
+            if (FVector::DistSquared(InnerPoints[i], InnerPoints[NextIndex]) < InnerMaxEdgeDistSq)
+            {
+                DrawDebugLine(World, InnerPoints[i], InnerPoints[NextIndex], DrawColor, bPersistentLines, Duration, 0, Thickness);
             }
         }
     }

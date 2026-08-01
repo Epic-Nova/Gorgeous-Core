@@ -602,7 +602,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var cachePath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousDepsCache.json");
 		var sourceSignature = BuildSourceSignature();
 		var preprocessorSignature = BuildPreprocessorSignature(PreprocessorDefinitions);
-		var regenerate = Target.bGenerateProjectFiles;
+		var regenerate = ShouldForceDependencyRescan();
 
 		if (!regenerate && File.Exists(cachePath))
 		{
@@ -1106,7 +1106,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 	private Dictionary<string, string> GetOrGenerateHeaderMap(string CachePath)
 	{
-		var regenerate = Target.bGenerateProjectFiles;
+		var regenerate = ShouldForceDependencyRescan();
 		if (!regenerate && File.Exists(CachePath))
 		{
 			try
@@ -1153,44 +1153,57 @@ public abstract class GorgeousModuleRules : ModuleRules
 		return map;
 	}
 
+	/// <summary>
+	/// Project-file generation uses the normal signature-validated dependency and
+	/// header-map caches. Define GORGEOUS_FORCE_DEPENDENCY_RESCAN=1 on a target,
+	/// or set the environment variable to 1, to deliberately rebuild both caches.
+	/// </summary>
+	private bool ShouldForceDependencyRescan()
+	{
+		return GetDefinitionValue(Target.GlobalDefinitions, "GORGEOUS_FORCE_DEPENDENCY_RESCAN", false)
+			|| string.Equals(Environment.GetEnvironmentVariable("GORGEOUS_FORCE_DEPENDENCY_RESCAN"), "1", StringComparison.Ordinal);
+	}
 	private void ScanDirectoryForHeaders(string RootDir, Dictionary<string, string> Map)
 	{
 		if (!Directory.Exists(RootDir)) return;
 
-		var directories = Directory.EnumerateDirectories(RootDir, "*", SearchOption.AllDirectories);
-		foreach (var dir in directories)
+		try
 		{
-			// Check if this directory contains a .Build.cs file
-			var buildCsFiles = Directory.GetFiles(dir, "*.Build.cs");
-			if (buildCsFiles.Length > 0)
+			// Discover module roots in one pass. The previous implementation enumerated
+			// every directory and then probed each one for a Build.cs file, which makes
+			// an explicit refresh especially expensive for engine and plugin trees.
+			foreach (var buildCsFile in Directory.EnumerateFiles(RootDir, "*.Build.cs", SearchOption.AllDirectories))
 			{
-				var moduleName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(buildCsFiles[0]));
-				
-				// Scan all headers inside this module (Public/Private/Classes)
+				var moduleDirectory = Path.GetDirectoryName(buildCsFile);
+				if (string.IsNullOrEmpty(moduleDirectory)) continue;
+
+				var moduleName = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(buildCsFile));
 				foreach (var subdir in new[] { "Public", "Private", "Classes" })
 				{
-					var subPath = Path.Combine(dir, subdir);
-					if (Directory.Exists(subPath))
+					var subPath = Path.Combine(moduleDirectory, subdir);
+					if (!Directory.Exists(subPath)) continue;
+
+					foreach (var header in Directory.EnumerateFiles(subPath, "*.h", SearchOption.AllDirectories))
 					{
-						var headers = Directory.EnumerateFiles(subPath, "*.h", SearchOption.AllDirectories);
-						foreach (var header in headers)
+						var headerName = Path.GetFileName(header);
+						if (Map.TryGetValue(headerName, out var existingModule))
 						{
-							var headerName = Path.GetFileName(header);
-							if (Map.TryGetValue(headerName, out var existingModule))
+							if (existingModule != moduleName && existingModule != "COLLISION")
 							{
-								if (existingModule != moduleName && existingModule != "COLLISION")
-								{
-									Map[headerName] = "COLLISION";
-								}
+								Map[headerName] = "COLLISION";
 							}
-							else
-							{
-								Map[headerName] = moduleName;
-							}
+						}
+						else
+						{
+							Map[headerName] = moduleName;
 						}
 					}
 				}
 			}
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"[GorgeousBuildPipeline] Header-map scan failed for {RootDir}: {ex.Message}");
 		}
 	}
 

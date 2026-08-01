@@ -13,6 +13,9 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
+#ifdef GT_DURATION
+#undef GT_DURATION
+#endif
 #define GT_DURATION 15.0f
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->

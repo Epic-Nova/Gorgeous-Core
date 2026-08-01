@@ -157,6 +157,24 @@ Native extension points and engineering tools for teams shaping the architecture
 | **Debug Assist** | Runtime debug helpers—such as in-world beacons and diagnostic support—when a system needs to become visible. |
 | **Insight Matrix** | A focused panel for running, observing and understanding registered Core insight and test scenarios. |
 
+### ⚡ Build pipeline
+
+GorgeousBuildPipeline discovers include-driven dependencies and writes reusable manifests on its first pass. Later project-file generation runs reuse the signature-validated dependency cache and header map, so they avoid another full engine and plugin walk.
+
+> [!TIP]
+> Refresh discovery only after adding, removing or moving a module/header that another module includes. For a one-off refresh in PowerShell:
+>
+> `powershell
+> $env:GORGEOUS_FORCE_DEPENDENCY_RESCAN = '1'
+> `
+>
+> Or add this temporarily to the relevant target constructor:
+>
+> `csharp
+> GlobalDefinitions.Add("GORGEOUS_FORCE_DEPENDENCY_RESCAN=1");
+> `
+>
+> Remove either override after generating project files; leaving it enabled intentionally bypasses the fast path.
 <a id="project-implementations"></a>
 ### 🟨 Project implementations
 
