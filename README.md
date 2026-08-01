@@ -164,15 +164,15 @@ GorgeousBuildPipeline discovers include-driven dependencies and writes reusable 
 > [!TIP]
 > Refresh discovery only after adding, removing or moving a module/header that another module includes. For a one-off refresh in PowerShell:
 >
-> `powershell
+> ```powershell
 > $env:GORGEOUS_FORCE_DEPENDENCY_RESCAN = '1'
-> `
+> ```
 >
 > Or add this temporarily to the relevant target constructor:
 >
-> `csharp
+> ```csharp
 > GlobalDefinitions.Add("GORGEOUS_FORCE_DEPENDENCY_RESCAN=1");
-> `
+> ```
 >
 > Remove either override after generating project files; leaving it enabled intentionally bypasses the fast path.
 <a id="project-implementations"></a>
