@@ -159,6 +159,16 @@ private:
 	// Downloads a Markdown document referenced by a feed entry before showing it.
 	void FetchMarkdownNudge(FGorgeousNudgeEntry Entry);
 
+	// Queues the automatic carousel until the editor has completed its Slate startup.
+	void QueueAutomaticCarousel();
+
+	/**
+	 * Clears the carousel reference and releases Slate pointer capture after its window closes.
+	 *
+	 * @param ClosedWindow The carousel window that Slate is closing.
+	 */
+	void HandleCarouselWindowClosed(const TSharedRef<SWindow>& ClosedWindow);
+
 	/**
 	 * Advances the periodic nudge timer.
 	 *
@@ -178,6 +188,12 @@ private:
 
 	// Accumulates elapsed time between automatic checks.
 	float SecondsSinceLastCheck = 0.0f;
+
+	// Accumulates startup time before an automatic browser window may be created.
+	float SecondsSinceInitialization = 0.0f;
+
+	// Prevents startup and asynchronous feed work from creating a Slate window immediately.
+	bool bAutomaticCarouselQueued = false;
 
 	// Owns the active nudge carousel window.
 	TSharedPtr<SWindow> CarouselWindow;

@@ -253,9 +253,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInteractionPromptPayload_S
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
 	FName InteractionMode = NAME_None;
 
-	// Whether the actor can currently be interacted with.
+	// Requests a full widget rebuild during an ongoing focus refresh; separate from TryFocus WasRefreshRequest.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interaction")
-	bool bCanInteract = false;
+	bool bIsRefreshRequest = false;
 
 	/**
 	 * Adds a header slot to the prompt payload, routing it to the top, main or bottom section by ID.

@@ -39,25 +39,21 @@
 		virtual void InteractRelease_Implementation(AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult) override; \
 		virtual void InteractCancel_Implementation(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult) override;
 
-#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS() \
+	#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS(AttachmentPoint, OutPromptComponent) \
 		do { \
-			UClass* WidgetCompClass = GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET(); \
-			if (WidgetCompClass) \
+			UClass* WidgetCompClass = GORGEOUS_CLASS_INTERACTION_PROMPT_WIDGET(); \
+			if (WidgetCompClass && WidgetCompClass->IsChildOf(USceneComponent::StaticClass())) \
 			{ \
-				USceneComponent* NewComp = NewObject<USceneComponent>(this, WidgetCompClass, TEXT("InteractionFoundationPromptWidget")); \
-				if (NewComp) \
+				OutPromptComponent = Cast<USceneComponent>(this->CreateDefaultSubobject( \
+					TEXT("InteractionFoundationPromptWidget"), USceneComponent::StaticClass(), WidgetCompClass, true, false)); \
+				if (OutPromptComponent) \
 				{ \
-					NewComp->RegisterComponent(); \
-					NewComp->AttachToComponent(Cast<USceneComponent>(GetComponentByClass(UBillboardComponent::StaticClass())), FAttachmentTransformRules::KeepRelativeTransform); \
+					OutPromptComponent->SetupAttachment(AttachmentPoint); \
 				} \
 			} \
 		} while(0)
-
 	#define GORGEOUS_CLASS_INTERACTION_CHARACTER_HANDLER() \
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionCharacterHandler_AC.BP_InteractionCharacterHandler_AC_C"))
-
-	#define GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET() \
-		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionFoundationPromptWidget_AC.BP_InteractionFoundationPromptWidget_AC_C"))
 
 	#define GORGEOUS_CLASS_INTERACTION_BASE_HANDLER() \
 		StaticLoadClass(UActorComponent::StaticClass(), nullptr, TEXT("/GorgeousCore/Systems/InteractionFoundation/Classes/BP_InteractionBaseHandler_AC.BP_InteractionBaseHandler_AC_C"))
@@ -88,7 +84,7 @@
 		virtual void InteractRelease_Implementation(AActor* InteractingActor, const FGameplayTag& KeyTag, const FHitResult& HitResult); \
 		virtual void InteractCancel_Implementation(AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
 
-	#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS()
+	#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS(AttachmentPoint, OutPromptComponent)
 
 	#define GORGEOUS_CLASS_INTERACTION_CHARACTER_HANDLER() nullptr
 	#define GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET() nullptr
