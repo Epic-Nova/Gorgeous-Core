@@ -186,6 +186,46 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDebugAssistHitLabelParameters
 };
 
 /**
+ * Parameters for drawing a single line of debug text with a specific color.
+ * 
+ * @author Nils Bergemann
+ */
+USTRUCT(BlueprintType)
+struct GORGEOUSCORERUNTIME_API FGorgeousDebugAssistTextLineParameters
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist")
+    FString Text;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist")
+    FLinearColor Color = FLinearColor::White;
+};
+
+/**
+ * Parameters for drawing a stacked debug text block with per-line colors.
+ *
+ * @author Nils Bergemann
+ */
+USTRUCT(BlueprintType)
+struct GORGEOUSCORERUNTIME_API FGorgeousDebugAssistTextBlockParameters
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist")
+    bool bDraw = true;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist")
+    bool bFollowTrace = true;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist", meta = (EditCondition = "bDraw"))
+    float LineStep = 10.0f;
+
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Gorgeous Core|Debug Assist", meta = (EditCondition = "bDraw"))
+    TArray<FGorgeousDebugAssistTextLineParameters> Lines;
+};
+
+/**
  * Parameters for visualizing the bounds of the hit actor.
  *
  * @author Nils Bergemann

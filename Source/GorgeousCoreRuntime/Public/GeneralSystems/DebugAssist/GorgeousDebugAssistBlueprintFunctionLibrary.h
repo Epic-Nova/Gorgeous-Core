@@ -77,6 +77,18 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
     static void DrawDebugAssistPoint(const UObject* WorldContextObject, const FVector& Location, const FLinearColor& Color = FLinearColor::Red, const float Size = 10.0f, const float Duration = 1.0f, const bool bPersistentLines = false);
 
+	/**
+	 * Draws a debug text block at the specified Location with the given parameters.
+	 * 
+	 * @param WorldContextObject - Context object to get the world from.
+	 * @param Location - Location of the text block to draw.
+	 * @param TextBlockParameters - Parameters that define the appearance and content of the text block.
+	 * @param Duration - How long the text block should be visible in seconds (default is 0.0f, meaning it will persist until cleared).
+	 * @param bPersistentLines - If true, the text block will stay visible indefinitely (default is false).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistTextBlock(const UObject* WorldContextObject, const FVector& Location, const FGorgeousDebugAssistTextBlockParameters& TextBlockParameters, const float Duration = 0.0f, const bool bPersistentLines = false);
+
     /** Draws a debug sphere at the specified Center with the given Radius, Color, Duration, and persistence.
      *
      * @param WorldContextObject - Context object to get the world from.
@@ -155,6 +167,23 @@ public:
     static void DrawDebugAssistCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius = 50.0f, const FLinearColor& Color = FLinearColor::Green, const bool bWireframe = true, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1));
 
     /**
+     * Draws a debug ring with a hollow center using InnerRadius and OuterRadius.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the ring to draw.
+     * @param InnerRadius - Inner radius of the ring (hole size).
+     * @param OuterRadius - Outer radius of the ring.
+     * @param Color - Color of the ring.
+     * @param bWireframe - If true, draws only ring outlines.
+     * @param Duration - How long the ring should be visible in seconds.
+     * @param bPersistentLines - If true, the ring stays visible indefinitely.
+     * @param Thickness - Thickness of the ring line.
+     * @param Normal - Normal vector of the ring plane.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color = FLinearColor::Green, const bool bWireframe = true, const float Duration = 1.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1));
+
+    /** 
      * Draws a debug circle that projects onto geometry faces to "wrap" around corners.
      *
      * @param WorldContextObject - Context object to get the world from.
@@ -171,6 +200,26 @@ public:
     static void DrawDebugAssistProjectedCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius, const FLinearColor& Color, const float Duration = 0.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1), const AActor* IgnoreActor = nullptr);
 
     /**
+     * Draws a projected debug ring with a hollow center using InnerRadius and OuterRadius.
+     *
+     * @param WorldContextObject - Context object to get the world from.
+     * @param Location - Center of the ring to draw.
+     * @param InnerRadius - Inner radius of the ring (hole size).
+     * @param OuterRadius - Outer radius of the ring.
+     * @param Color - Color of the ring.
+     * @param bWireframe - If true, draws only ring outlines.
+     * @param Duration - How long the ring should be visible.
+     * @param bPersistentLines - If true, the ring stays indefinitely.
+     * @param Thickness - Thickness of the ring lines.
+     * @param Normal - Normal vector of the projection plane.
+     * @param IgnoreActor - Actor to ignore for projection traces.
+     * @param bUseFillColor - If true, use FillColor for ring fill instead of Color.
+     * @param FillColor - Fill color used when bUseFillColor is true.
+     */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Debug Assist", meta = (WorldContext = "WorldContextObject"))
+    static void DrawDebugAssistProjectedRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color, const bool bWireframe = true, const float Duration = 0.0f, const bool bPersistentLines = false, const float Thickness = 2.0f, const FVector& Normal = FVector(0,0,1), const AActor* IgnoreActor = nullptr, const bool bUseFillColor = false, const FLinearColor& FillColor = FLinearColor::White);
+
+    /** 
      * Draws a debug diamond shape at the specified Location with the given Size, Color, Duration, and persistence.
      * The diamond is oriented to face the camera for better visibility.
      *
