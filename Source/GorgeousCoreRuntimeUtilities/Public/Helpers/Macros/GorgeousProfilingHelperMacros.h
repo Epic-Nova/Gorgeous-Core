@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "HAL/PreprocessorHelpers.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 //<-------------------------------------------------------------------------->
@@ -45,13 +46,19 @@
 #define CSV_CUSTOM_STAT(Category, StatName, Value, Op)
 #endif
 
+#if GORGEOUS_ENGINE_VERSION >= 508
+#define GORGEOUS_PREPROCESSOR_JOIN(TokenA, TokenB) UE_JOIN(TokenA, TokenB)
+#else
+#define GORGEOUS_PREPROCESSOR_JOIN(TokenA, TokenB) PREPROCESSOR_JOIN(TokenA, TokenB)
+#endif
+
 #if defined(CSV_PROFILER) && CSV_PROFILER
 CSV_DECLARE_CATEGORY_MODULE_EXTERN(GORGEOUSCORERUNTIMEUTILITIES_API, Gorgeous);
 
 #define GORGEOUS_PROFILE_SCOPE(StatName) \
 	TRACE_CPUPROFILER_EVENT_SCOPE(StatName); \
 	TRACE_CSV_PROFILER_INLINE_STAT(#StatName, CSV_CATEGORY_INDEX(Gorgeous)); \
-	FScopedCsvStat PREPROCESSOR_JOIN(_GorgeousCsvStat_, __LINE__)(#StatName, CSV_CATEGORY_INDEX(Gorgeous), "CSV_" #StatName)
+	FScopedCsvStat GORGEOUS_PREPROCESSOR_JOIN(_GorgeousCsvStat_, __LINE__)(#StatName, CSV_CATEGORY_INDEX(Gorgeous), "CSV_" #StatName)
 
 #define GORGEOUS_CSV_CUSTOM_STAT_SET(StatName, Value) \
 	TRACE_CSV_PROFILER_INLINE_STAT(#StatName, CSV_CATEGORY_INDEX(Gorgeous)); \

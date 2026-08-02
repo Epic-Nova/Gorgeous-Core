@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "Validators/GorgeousGeneralSystemValidator.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -85,7 +86,7 @@ UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 		&UGorgeousGeneralSystemValidator::HandleAssetAdded
 	);
 
-	FCoreDelegates::OnPostEngineInit.AddLambda([this]()
+	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddLambda([this]()
 	{
 		if (!GEditor)
 			return;

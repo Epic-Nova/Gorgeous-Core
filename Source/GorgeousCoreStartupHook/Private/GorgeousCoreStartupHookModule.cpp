@@ -14,6 +14,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Internationalization/Internationalization.h"
 #include "Misc/CoreDelegates.h"
+#include "Runtime/Launch/Resources/Version.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousStartupHook, Log, All);
 
@@ -81,8 +82,11 @@ public:
 			return;
 		}
 
-		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress,
-			TEXT("Cross-checking minimum required core version against Gorgeous Plugins..."));
+		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, FText::FromString(TEXT("Cross-checking minimum required core version against Gorgeous Plugins...")));
+#else
+		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, TEXT("Cross-checking minimum required core version against Gorgeous Plugins..."));
+#endif
 
 		// --- 1. Resolve GorgeousCore dynamically via IPluginManager ---
 		// (Already done in step 0, this is just for clarity)
@@ -217,8 +221,11 @@ public:
 		// --- 6. Mismatch! Update splash and block RIGHT HERE ---
 		// We are still at PostConfigInit, GorgeousCoreRuntime has NOT loaded yet.
 		// Blocking here prevents any subsequent module from loading, enabling a clean binary swap.
-		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress,
-			TEXT("Gorgeous Installer is resolving binary offset mismatches, please wait..."));
+		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, FText::FromString(TEXT("Gorgeous Installer is resolving binary offset mismatches, please wait...")));
+#else
+		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, TEXT("Gorgeous Installer is resolving binary offset mismatches, please wait..."));
+#endif
 
 		// Build absolute installer path via GorgeousCore's actual base dir (dynamic, never hardcoded).
 		const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(
@@ -306,7 +313,11 @@ public:
 		}
 
 		// Unload this module once the engine is fully initialized
-		FCoreDelegates::OnPostEngineInit.AddLambda([]()
+		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+        FCoreDelegates::GetOnPostEngineInit().AddLambda([]()
+#else
+        FCoreDelegates::OnPostEngineInit.AddLambda([]()
+#endif
 		{
 			FModuleManager::Get().UnloadModule(TEXT("GorgeousCoreStartupHook"));
 			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Unloaded GorgeousCoreStartupHook to free memory."));

@@ -14,6 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "AssetTypeActions/AssetTypeActions_Blueprint.h"
 #include "AssetTypeActions/AssetTypeActions_DataAsset.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "Toolkits/IToolkitHost.h"
 #include "GorgeousAssetRegistrationStructures.h"
 //<-------------------------------------------------------------------------->
@@ -116,7 +117,7 @@ private:
 /**
  * Asset type action class for Gorgeous data assets.
  */
-class GORGEOUSCOREEDITORUTILITIES_API FGorgeousDataAssetTypeAction final : public FAssetTypeActions_DataAsset
+class GORGEOUSCOREEDITORUTILITIES_API FGorgeousDataAssetTypeAction final : public GORGEOUS_58_SWITCH(FAssetTypeActions_DataAsset, FAssetTypeActions_Base)
 {
 public:
 	explicit FGorgeousDataAssetTypeAction(const FGorgeousAssetTypeActionInfo_S& InAssetTypeActionInfo);

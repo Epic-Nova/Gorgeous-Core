@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Templates/Function.h"
@@ -775,7 +776,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 							*GetNameSafe(RootOuter),
 							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 						Root->Rename(nullptr, GetTransientPackage(),
-							REN_DontCreateRedirectors | REN_ForceNoResetLoaders);
+							GORGEOUS_58_SWITCH(REN_DontCreateRedirectors | REN_ForceNoResetLoaders, REN_DontCreateRedirectors));
 						UE_LOG(
 							LogGorgeousRootObjectVariable,
 							VeryVerbose,
