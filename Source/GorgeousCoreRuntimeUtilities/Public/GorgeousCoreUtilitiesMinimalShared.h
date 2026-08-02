@@ -17,6 +17,8 @@
 <======================================================================================================================*/
 #pragma once
 
+#include "Misc/MonolithicHeaderBoilerplate.h"
+
 MONOLITHIC_HEADER_BOILERPLATE()
 
 // Module Core Includes

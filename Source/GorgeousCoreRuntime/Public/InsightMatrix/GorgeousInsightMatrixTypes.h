@@ -15,7 +15,6 @@
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "InstancedStruct.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInsightMatrixTypes.generated.h"

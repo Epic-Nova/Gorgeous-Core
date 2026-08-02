@@ -10,6 +10,8 @@
 <==========================================================================*/
 #pragma once
 
+#include "CoreMinimal.h"
+
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCoreRuntimeUtilitiesEnums.generated.h"

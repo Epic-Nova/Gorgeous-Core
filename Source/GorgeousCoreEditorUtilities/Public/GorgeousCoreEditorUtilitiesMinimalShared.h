@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -16,6 +16,8 @@
 |          TO AVOID CIRCULAR DEPENDENCY ERRORS DO NOT USE THIS MINIMAL FILE IN THE "GorgeousCoreRuntime" MODULE         |
 <======================================================================================================================*/
 #pragma once
+
+#include "Misc/MonolithicHeaderBoilerplate.h"
 
 MONOLITHIC_HEADER_BOILERPLATE()
 

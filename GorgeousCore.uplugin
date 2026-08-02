@@ -99,10 +99,6 @@
 		{
 			"Name": "PlatformCrypto",
 			"Enabled": true
-		},
-		{
-			"Name": "StructUtils",
-			"Enabled": true
 		}
 	],
 	"IsBetaVersion": false
