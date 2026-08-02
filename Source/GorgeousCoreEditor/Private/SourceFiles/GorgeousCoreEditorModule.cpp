@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreEditorModule.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -661,7 +662,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 
 	GGorgeousHelpMenuStartupCallbackHandle = UToolMenus::RegisterStartupCallback(
 		FSimpleMulticastDelegate::FDelegate::CreateStatic(&RegisterGorgeousHelpMenus));
-	GPostEngineInitHandle = FCoreDelegates::OnPostEngineInit.AddStatic(&HandlePostEngineInit);
+	GPostEngineInitHandle = GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddStatic(&HandlePostEngineInit);
 }
 
 void FGorgeousCoreEditorModule::GorgeousShutdownModule()
@@ -678,7 +679,7 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	}
 	if (GPostEngineInitHandle.IsValid())
 	{
-		FCoreDelegates::OnPostEngineInit.Remove(GPostEngineInitHandle);
+		GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).Remove(GPostEngineInitHandle);
 		GPostEngineInitHandle.Reset();
 	}
 	if (GStartupValidationTickerHandle.IsValid())

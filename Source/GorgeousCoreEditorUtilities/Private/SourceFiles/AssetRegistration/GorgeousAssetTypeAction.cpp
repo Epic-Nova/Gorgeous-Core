@@ -117,7 +117,7 @@ void FGorgeousDataAssetTypeAction::OpenAssetEditor(const TArray<UObject*>& InObj
 		return;
 	}
 
-	FAssetTypeActions_DataAsset::OpenAssetEditor(InObjects, EditWithinLevelEditor);
+	GORGEOUS_58_SWITCH(FAssetTypeActions_DataAsset, FAssetTypeActions_Base)::OpenAssetEditor(InObjects, EditWithinLevelEditor);
 }
 
 //=============================================================================

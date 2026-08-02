@@ -330,8 +330,9 @@ namespace GorgeousComprehensiveReplicationTests
 				if (UNetDriver* ND = W->GetNetDriver())
 				{
 					// On the server side, this drives ServerReplicateActors
-					ND->TickDispatch(PollIntervalSeconds);
-					ND->TickFlush(PollIntervalSeconds);
+					const float PollIntervalSecondsAsFloat = static_cast<float>(PollIntervalSeconds);
+					ND->TickDispatch(PollIntervalSecondsAsFloat);
+					ND->TickFlush(PollIntervalSecondsAsFloat);
 				}
 			}
 

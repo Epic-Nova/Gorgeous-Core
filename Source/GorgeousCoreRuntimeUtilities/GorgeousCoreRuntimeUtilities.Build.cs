@@ -147,7 +147,7 @@ public class GorgeousCoreRuntimeUtilities : GorgeousModuleRules
 				if (Target.Platform == UnrealTargetPlatform.Win64)
 				{
 					ProcInfo.FileName = "powershell.exe";
-					ProcInfo.Arguments = $"-ExecutionPolicy Bypass -File \"{Path.Combine(InstallerDir, "build.ps1")}\" -SkipUPX";
+					ProcInfo.Arguments = $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Path.Combine(InstallerDir, "build.ps1")}\" -SkipUPX";
 				}
 				else if (Target.Platform == UnrealTargetPlatform.Linux)
 				{

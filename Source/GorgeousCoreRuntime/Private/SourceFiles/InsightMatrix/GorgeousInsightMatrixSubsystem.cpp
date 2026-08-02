@@ -445,7 +445,7 @@ void UGorgeousInsightMatrixSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	}
 
 	RegisterInputPreProcessor();
-	FCoreDelegates::OnPostEngineInit.AddUObject(this, &UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor);
+	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddUObject(this, &UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor);
 	
 	// --- Modular Feature Integration ---
 	IModularFeatures::Get().OnModularFeatureRegistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered);

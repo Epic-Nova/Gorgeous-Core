@@ -237,6 +237,14 @@
 #define GORGEOUS_56_SWITCH(Before, AfterEqual) Before
 #define GORGEOUS_56_ONLY(...)
 #endif
+
+#if GORGEOUS_ENGINE_VERSION >= 508
+#define GORGEOUS_58_SWITCH(Before, AfterEqual) AfterEqual
+#define GORGEOUS_58_ONLY(...) __VA_ARGS__
+#else
+#define GORGEOUS_58_SWITCH(Before, AfterEqual) Before
+#define GORGEOUS_58_ONLY(...)
+#endif
 /**
 * If the Unreal Engine version is below 4.25 then F is referred to U.
 */
