@@ -15,6 +15,9 @@
 #include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
 #include "Macros/GorgeousLoggingHelperMacros.h"
+
+#include "Misc/ConfigCacheIni.h"
+#include "Modules/ModuleManager.h"
 //<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR

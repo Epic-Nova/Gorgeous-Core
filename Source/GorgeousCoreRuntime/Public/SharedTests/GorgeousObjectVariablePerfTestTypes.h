@@ -377,7 +377,7 @@ protected:
 		const bool bNetLoading = bIsNetArchive && Ar.IsLoading();
 		Super::Serialize(Ar);
 
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 		if (!bIsNetArchive)
 		{
 			return;
@@ -417,7 +417,7 @@ public:
 	virtual bool ApplyAutoReplicationPropertyPayload(const FGorgeousAutoReplicationPropertyPayload& Payload, UPackageMap* PackageMap = nullptr, bool bSyncChangeShadow = true) override
 	{
 		const bool bApplied = Super::ApplyAutoReplicationPropertyPayload(Payload, PackageMap, bSyncChangeShadow);
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 		if (bApplied)
 		{
 			++PerfNetReceiveCount;
@@ -630,7 +630,7 @@ protected:
 		}
 
 		AGorgeousPlayerController* OwningController = nullptr;
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 		OwningController = FGorgeousObjectVariablePerfTestAccess::ResolveOwningPlayerController(this);
 #endif
 		if (Controller && Controller == OwningController)

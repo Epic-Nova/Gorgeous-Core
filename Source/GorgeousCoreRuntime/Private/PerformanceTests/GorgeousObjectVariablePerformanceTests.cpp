@@ -11,7 +11,7 @@
 
 #include "CoreMinimal.h"
 
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
 #include "Misc/Parse.h"
@@ -3258,7 +3258,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		}
 	}
 
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 	{
 		int32 ObservedReplicationVariables = 0;
 		int64 TotalSendBatches = 0;

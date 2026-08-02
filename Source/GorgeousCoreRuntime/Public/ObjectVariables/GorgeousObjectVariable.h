@@ -50,7 +50,7 @@ class AGorgeousPlayerController;
 class UGorgeousRootObjectVariable;
 class FArchive;
 class UGorgeousObjectVariable;
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 struct FGorgeousObjectVariablePerfTestAccess;
 #endif
 
@@ -243,7 +243,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	friend class UGorgeousRootNetworkStackSubsystem;
 	friend class FGorgeousObjectVariablePropertyTypeCustomization;
 	friend class UGorgeousRootObjectVariable;
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 	friend struct FGorgeousObjectVariablePerfTestAccess;
 #endif
 	//<------------------------------------------------------>
@@ -1115,7 +1115,7 @@ private:
 	virtual FGuid GetUniqueIdentifierForObjectVariable_Implementation() override;
 };
 
-#if WITH_AUTOMATION_TESTS
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 	struct FGorgeousObjectVariablePerfTestAccess
 	{
 		static AActor* ResolveReplicationOwner(const UGorgeousObjectVariable* Variable)
