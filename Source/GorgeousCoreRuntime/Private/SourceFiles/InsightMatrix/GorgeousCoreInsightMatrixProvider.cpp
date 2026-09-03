@@ -33,8 +33,6 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 
 // Tab Spawning support
-#include "WorkspaceMenuStructure.h"
-#include "WorkspaceMenuStructureModule.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "Widgets/SWindow.h"
 #include "Framework/Application/SlateApplication.h"

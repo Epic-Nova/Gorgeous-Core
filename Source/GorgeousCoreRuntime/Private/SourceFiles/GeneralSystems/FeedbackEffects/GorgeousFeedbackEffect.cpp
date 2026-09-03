@@ -178,6 +178,7 @@ FTransform UGorgeousFeedbackEffect::ResolveEffectTransform(const FGorgeousFeedba
 	return Transform;
 }
 
+#if WITH_EDITOR
 void UGorgeousFeedbackEffect::Preview()
 {
 	Preview_Internal();
@@ -195,6 +196,7 @@ void UGorgeousFeedbackEffect::Preview_Internal()
 void UGorgeousFeedbackEffect::StopPreview_Internal()
 {
 }
+#endif
 
 
 // --- Feedback Provider

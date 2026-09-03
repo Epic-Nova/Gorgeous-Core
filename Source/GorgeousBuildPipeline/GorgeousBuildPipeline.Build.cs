@@ -256,7 +256,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 	private void ApplyAutoDependencies(GorgeousBuildSettings Settings)
 	{
 		var exclusions = new HashSet<string>(Settings.ModulesToExclude ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-		var isEditor = Settings.TargetModuleType == GorgeousModuleType.Editor || Target.bBuildEditor;
+		var isEditor = Settings.TargetModuleType == GorgeousModuleType.Editor || Target.Type == TargetType.Editor;
 		var isProgram = Settings.TargetModuleType == GorgeousModuleType.Program;
 		var isServer = Settings.TargetModuleType == GorgeousModuleType.Server;
 		var isGameLike = Settings.TargetModuleType == GorgeousModuleType.Game || Settings.TargetModuleType == GorgeousModuleType.Client;
@@ -284,11 +284,6 @@ public abstract class GorgeousModuleRules : ModuleRules
 		if (!isProgram)
 		{
 			privateModules.Add("Projects");
-		}
-
-		if (Target.bBuildDeveloperTools)
-		{
-			privateModules.Add("DerivedDataCache");
 		}
 
 		AddPublicDependency(publicModules.Where(m => !exclusions.Contains(m)));
@@ -823,7 +818,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 	private bool IsModuleCompatibleWithTarget(string ModuleName)
 	{
-		if (Target.bBuildEditor) return true;
+		if (Target.Type == TargetType.Editor) return true;
 		return !ModuleName.Contains("Editor", StringComparison.OrdinalIgnoreCase)
 			&& !string.Equals(ModuleName, "UnrealEd", StringComparison.OrdinalIgnoreCase);
 	}

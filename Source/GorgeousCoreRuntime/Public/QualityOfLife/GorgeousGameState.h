@@ -82,7 +82,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 	/**
 	 * Called on ALL machines (server + clients via replication) when a new

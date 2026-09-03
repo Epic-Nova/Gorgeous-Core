@@ -45,14 +45,12 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
         // Include the VaultLoader source files
         PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousVault", "Loader"));
         
-        PublicDefinitions.Add("CSV_PROFILER=1");
-        PrivateDefinitions.Add("CSV_PROFILER=1");
         PublicDefinitions.Add("GORGEOUSCORE_WITH_PLUS=0");
 
         // Automatically inject system macros dynamically via Reflection
         InjectForeignPluginMacros();
 
-        if (Target.bBuildEditor)
+        if (Target.Type == TargetType.Editor)
         {
             PrivateDependencyModuleNames.AddRange(new[] {
                 "UnrealEd",
@@ -63,7 +61,7 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
         }
 
         // Gauntlet is only available for non-Editor program builds
-        bool bWithGauntlet = Target.Type == TargetType.Program && !Target.bBuildEditor;
+        bool bWithGauntlet = Target.Type == TargetType.Program;
         if (bWithGauntlet)
         {
             PrivateDependencyModuleNames.Add("Gauntlet");

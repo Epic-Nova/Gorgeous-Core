@@ -817,13 +817,11 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Transient, Category = "Gorgeous Object Variable")
 	UGorgeousObjectVariable* Parent;
 
-#if WITH_EDITORONLY_DATA
-	
 	// Configuration values that provides the Blueprint VM with information how to handle and display various object variables.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable", meta = (AllowPrivateAccess = true), AdvancedDisplay)
 	FObjectVariablePinConfiguration_S PinConfiguration;
 
-	
+#if WITH_EDITORONLY_DATA
 	// The Ptr to the transactional default value object of this object variable
 	UPROPERTY()
 	TWeakObjectPtr<UGorgeousObjectVariable> DefaultValuePtr;

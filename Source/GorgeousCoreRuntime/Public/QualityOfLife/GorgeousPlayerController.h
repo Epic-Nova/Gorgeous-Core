@@ -106,7 +106,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 	/** Removes this controller from the shared SelfReference OV when it is destroyed. */
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

@@ -82,7 +82,9 @@ public:
 			return;
 		}
 
-		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+		// UE 5.6+ deprecates the TCHAR* overload. Use FText on macOS now,
+		// while preserving the existing Windows behavior until UE 5.8.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && (ENGINE_MINOR_VERSION >= 8 || (PLATFORM_MAC && ENGINE_MINOR_VERSION >= 6)))
 		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, FText::FromString(TEXT("Cross-checking minimum required core version against Gorgeous Plugins...")));
 #else
 		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, TEXT("Cross-checking minimum required core version against Gorgeous Plugins..."));
@@ -221,7 +223,9 @@ public:
 		// --- 6. Mismatch! Update splash and block RIGHT HERE ---
 		// We are still at PostConfigInit, GorgeousCoreRuntime has NOT loaded yet.
 		// Blocking here prevents any subsequent module from loading, enabling a clean binary swap.
-		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+		// UE 5.6+ deprecates the TCHAR* overload. Use FText on macOS now,
+		// while preserving the existing Windows behavior until UE 5.8.
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && (ENGINE_MINOR_VERSION >= 8 || (PLATFORM_MAC && ENGINE_MINOR_VERSION >= 6)))
 		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, FText::FromString(TEXT("Gorgeous Installer is resolving binary offset mismatches, please wait...")));
 #else
 		FPlatformSplash::SetSplashText(SplashTextType::StartupProgress, TEXT("Gorgeous Installer is resolving binary offset mismatches, please wait..."));

@@ -96,6 +96,7 @@ class AGorgeousGameState;
 	UE_QOL_DEFINE_POST_LOAD(Class)
 
 /** Defines PostEditChangeProperty to guard the map against manual removals and regenerate unique IDs. */
+#if WITH_EDITOR
 #define UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(Class) \
 	void Class::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) \
 	{ \
@@ -113,6 +114,9 @@ class AGorgeousGameState;
 			} \
 		} \
 	}
+#else
+#define UE_QOL_DEFINE_POST_EDIT_CHANGE_PROPERTY(Class)
+#endif
 
 /** Declares a standard BeginPlay implementation used by QoL Actor classes. */
 #define UE_QOL_DEFINE_BEGIN_PLAY(Class) \

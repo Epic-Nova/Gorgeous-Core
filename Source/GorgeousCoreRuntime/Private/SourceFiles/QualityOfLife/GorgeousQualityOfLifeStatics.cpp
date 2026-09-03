@@ -16,7 +16,11 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
+#include "GameFramework/GameModeBase.h"
+#include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
+#include "GameFramework/WorldSettings.h"
 
 namespace
 {
@@ -375,9 +379,42 @@ namespace FGorgeousQualityOfLifeStatics
 		// sharing the same process. The OV outer is always a UGameInstance (set in
 		// EnsureSelfReference), so comparing GI pointers directly is the reliable approach —
 		// UGameInstance::GetWorld() is not stable cross-PIE-instance.
-		const UGameInstance* CallerGI = WorldContextObject && WorldContextObject->GetWorld()
-			? WorldContextObject->GetWorld()->GetGameInstance()
+		UWorld* CallerWorld = WorldContextObject ? WorldContextObject->GetWorld() : nullptr;
+		UGameInstance* CallerGI = CallerWorld
+			? CallerWorld->GetGameInstance()
 			: nullptr;
+
+		// Engine-owned QoL objects have authoritative access paths that are available
+		// before their SelfReference OV has been registered.  In particular, Blueprint
+		// pure functions are commonly evaluated during GameMode startup, while the
+		// GameInstance's object-variable registration is still being initialized.  Do
+		// not make these fundamental references depend on registry timing.
+		//
+		// The registry scan below remains necessary for custom QoL objects and also
+		// supplies stable-player filtering.  AddUnique keeps both paths compatible.
+		auto AddEngineReference = [&Result, QualityOfLifeClass, &StablePlayerId](UObject* Candidate)
+		{
+			if (StablePlayerId.IsEmpty() && IsValid(Candidate) && Candidate->IsA(*QualityOfLifeClass))
+			{
+				Result.AddUnique(Candidate);
+			}
+		};
+
+		AddEngineReference(const_cast<UObject*>(WorldContextObject));
+		AddEngineReference(CallerGI);
+		if (CallerWorld)
+		{
+			AddEngineReference(CallerWorld->GetAuthGameMode());
+			AddEngineReference(CallerWorld->GetGameState());
+			AddEngineReference(CallerWorld->GetWorldSettings());
+
+			for (FConstPlayerControllerIterator It = CallerWorld->GetPlayerControllerIterator(); It; ++It)
+			{
+				APlayerController* PlayerController = It->Get();
+				AddEngineReference(PlayerController);
+				AddEngineReference(PlayerController ? PlayerController->GetPlayerState<APlayerState>() : nullptr);
+			}
+		}
 
 		UGorgeousRootObjectVariable* Roots[] = {
 			UGorgeousRootObjectVariable::GetRootObjectVariable(ResolvePreferredRootName(false)),

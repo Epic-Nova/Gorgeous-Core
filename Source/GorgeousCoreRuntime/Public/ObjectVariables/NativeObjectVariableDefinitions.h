@@ -78,7 +78,7 @@ class GORGEOUSCORERUNTIME_API UObject_SOTOV : public USingleObjectTypeObjectVari
     UObject_SOTOV()
     {
         Value = nullptr;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -98,7 +98,7 @@ class GORGEOUSCORERUNTIME_API UClass_SOTOV : public USingleObjectTypeObjectVaria
     UClass_SOTOV()
     {
         Value = nullptr;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -118,7 +118,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_SOTOV : public USingleObjectTypeObject
     USoftObject_SOTOV()
     {
         Value = nullptr;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -138,7 +138,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_SOTOV : public USingleObjectTypeObjectV
     USoftClass_SOTOV()
     {
         Value = nullptr;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -158,7 +158,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_SOV  : public USingleObjectVariable
     UBoolean_SOV()
     {
         Value = false;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -178,7 +178,7 @@ class GORGEOUSCORERUNTIME_API UByte_SOV : public USingleObjectVariable
     UByte_SOV()
     {
         Value = 0;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -198,7 +198,7 @@ class GORGEOUSCORERUNTIME_API UFloat_SOV : public USingleObjectVariable
     UFloat_SOV()
     {
         Value = 0;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -218,7 +218,7 @@ class GORGEOUSCORERUNTIME_API UDouble_SOV : public USingleObjectVariable
     UDouble_SOV()
     {
         Value = 0;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -238,7 +238,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_SOV : public USingleObjectVariable
     UInteger64_SOV()
     {
         Value = 0;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -258,7 +258,7 @@ class GORGEOUSCORERUNTIME_API UInteger_SOV : public USingleObjectVariable
     UInteger_SOV()
     {
         Value = 0;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -278,7 +278,7 @@ class GORGEOUSCORERUNTIME_API UName_SOV : public USingleObjectVariable
     UName_SOV()
     {
         Value = NAME_None;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -298,7 +298,7 @@ class GORGEOUSCORERUNTIME_API URotator_SOV : public USingleObjectVariable
     URotator_SOV()
     {
         Value = FRotator::ZeroRotator;
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -318,7 +318,7 @@ class GORGEOUSCORERUNTIME_API UString_SOV : public USingleObjectVariable
     UString_SOV()
     {
         Value = FString();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -338,7 +338,7 @@ class GORGEOUSCORERUNTIME_API UText_SOV : public USingleObjectVariable
     UText_SOV()
     {
         Value = FText::GetEmpty();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::ESingle, false);
     }
 };
 
@@ -382,7 +382,7 @@ class GORGEOUSCORERUNTIME_API UObject_AOTOV : public UArrayObjectTypeObjectVaria
     UObject_AOTOV()
     {
         Value = TArray<UObject*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -402,7 +402,7 @@ class GORGEOUSCORERUNTIME_API UClass_AOTOV : public UArrayObjectTypeObjectVariab
     UClass_AOTOV()
     {
         Value = TArray<UClass*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -422,7 +422,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_AOTOV : public UArrayObjectTypeObjectV
     USoftObject_AOTOV()
     {
         Value = TArray<TSoftObjectPtr<UObject>>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -442,7 +442,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_AOTOV : public UArrayObjectTypeObjectVa
     USoftClass_AOTOV()
     {
         Value = TArray<TSoftClassPtr<UObject>>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -462,7 +462,7 @@ class GORGEOUSCORERUNTIME_API UBoolean_AOV : public UArrayObjectVariable
     UBoolean_AOV()
     {
         Value = TArray<bool>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -482,7 +482,7 @@ class GORGEOUSCORERUNTIME_API UByte_AOV : public UArrayObjectVariable
     UByte_AOV()
     {
         Value = TArray<uint8>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -502,7 +502,7 @@ class GORGEOUSCORERUNTIME_API UFloat_AOV : public UArrayObjectVariable
     UFloat_AOV()
     {
         Value = TArray<float>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -522,7 +522,7 @@ class GORGEOUSCORERUNTIME_API UDouble_AOV : public UArrayObjectVariable
     UDouble_AOV()
     {
         Value = TArray<double>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -542,7 +542,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_AOV : public UArrayObjectVariable
     UInteger64_AOV()
     {
         Value = TArray<int64>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -562,7 +562,7 @@ class GORGEOUSCORERUNTIME_API UInteger_AOV : public UArrayObjectVariable
     UInteger_AOV()
     {
         Value = TArray<int32>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -582,7 +582,7 @@ class GORGEOUSCORERUNTIME_API UName_AOV : public UArrayObjectVariable
     UName_AOV()
     {
         Value = TArray<FName>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -602,7 +602,7 @@ class GORGEOUSCORERUNTIME_API URotator_AOV : public UArrayObjectVariable
     URotator_AOV()
     {
         Value = TArray<FRotator>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -622,7 +622,7 @@ class GORGEOUSCORERUNTIME_API UString_AOV : public UArrayObjectVariable
     UString_AOV()
     {
         Value = TArray<FString>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -642,7 +642,7 @@ class GORGEOUSCORERUNTIME_API UText_AOV : public UArrayObjectVariable
     UText_AOV()
     {
         Value = TArray<FText>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EArray, false);
     }
 };
 
@@ -739,7 +739,7 @@ public:
 
     UObject_QOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -804,7 +804,7 @@ public:
 
     UClass_QOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -869,7 +869,7 @@ public:
 
     USoftObject_QOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -934,7 +934,7 @@ public:
 
     USoftClass_QOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1000,7 +1000,7 @@ public:
 
     UBoolean_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1065,7 +1065,7 @@ public:
 
     UByte_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1130,7 +1130,7 @@ public:
 
     UFloat_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1195,7 +1195,7 @@ public:
 
     UDouble_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1260,7 +1260,7 @@ public:
 
     UInteger64_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1325,7 +1325,7 @@ public:
 
     UInteger_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1390,7 +1390,7 @@ public:
 
     UName_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1455,7 +1455,7 @@ public:
 
     URotator_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1520,7 +1520,7 @@ public:
 
     UString_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1585,7 +1585,7 @@ public:
 
     UText_QOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EQueue, false);
     }
 };
 
@@ -1673,7 +1673,7 @@ public:
 
     UObject_SKOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -1737,7 +1737,7 @@ public:
 
     UClass_SKOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -1801,7 +1801,7 @@ public:
 
     USoftObject_SKOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -1865,7 +1865,7 @@ public:
 
     USoftClass_SKOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -1930,7 +1930,7 @@ public:
 
         UBoolean_SKOV()
         {
-            PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+            PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
         }
     };
 
@@ -1995,7 +1995,7 @@ public:
 
     UByte_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2059,7 +2059,7 @@ public:
 
     UFloat_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2123,7 +2123,7 @@ public:
 
     UDouble_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2187,7 +2187,7 @@ public:
 
     UInteger64_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2251,7 +2251,7 @@ public:
 
     UInteger_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2315,7 +2315,7 @@ public:
 
     UName_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2379,7 +2379,7 @@ public:
 
     URotator_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2443,7 +2443,7 @@ public:
 
     UString_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2507,7 +2507,7 @@ public:
 
     UText_SKOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EStack, false);
     }
 };
 
@@ -2629,7 +2629,7 @@ public:
 
     UObject_DQOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -2727,7 +2727,7 @@ public:
 
     UClass_DQOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -2825,7 +2825,7 @@ public:
 
     USoftObject_DQOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -2923,7 +2923,7 @@ public:
 
     USoftClass_DQOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3022,7 +3022,7 @@ public:
 
         UBoolean_DQOV()
         {
-            PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+            PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Boolean, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
         }
     };
 
@@ -3121,7 +3121,7 @@ public:
 
     UByte_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3219,7 +3219,7 @@ public:
 
     UFloat_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3317,7 +3317,7 @@ public:
 
     UDouble_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3415,7 +3415,7 @@ public:
 
     UInteger64_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3513,7 +3513,7 @@ public:
 
     UInteger_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3611,7 +3611,7 @@ public:
 
     UName_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3709,7 +3709,7 @@ public:
 
     URotator_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Struct, NAME_None, TBaseStructure<FRotator>::Get(), EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3807,7 +3807,7 @@ public:
 
     UString_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3905,7 +3905,7 @@ public:
 
     UText_DQOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Text, NAME_None, nullptr, EObjectVariableContainerType_E::EDeque, false);
     }
 };
 
@@ -3949,8 +3949,8 @@ class GORGEOUSCORERUNTIME_API UObject_MOTOV : public UMapObjectTypeObjectVariabl
     UObject_MOTOV()
     {
         Value = TMap<UObject*, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -3970,8 +3970,8 @@ class GORGEOUSCORERUNTIME_API UClass_MOTOV : public UMapObjectTypeObjectVariable
     UClass_MOTOV()
     {
         Value = TMap<UClass*, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -3991,8 +3991,8 @@ class GORGEOUSCORERUNTIME_API USoftObject_MOTOV : public UMapObjectTypeObjectVar
     USoftObject_MOTOV()
     {
         Value = TMap<TSoftObjectPtr<UObject>, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
     }
 };
 
@@ -4012,8 +4012,8 @@ class GORGEOUSCORERUNTIME_API USoftClass_MOTOV : public UMapObjectTypeObjectVari
     USoftClass_MOTOV()
     {
         Value = TMap<TSoftClassPtr<UObject>, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
     }
 };
 
@@ -4033,8 +4033,8 @@ class GORGEOUSCORERUNTIME_API UByte_MOV : public UMapObjectVariable
     UByte_MOV()
     {
         Value = TMap<uint8, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4054,8 +4054,8 @@ class GORGEOUSCORERUNTIME_API UFloat_MOV : public UMapObjectVariable
     UFloat_MOV()
     {
         Value = TMap<float, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4075,8 +4075,8 @@ class GORGEOUSCORERUNTIME_API UDouble_MOV : public UMapObjectVariable
     UDouble_MOV()
     {
         Value = TMap<double, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4096,8 +4096,8 @@ class GORGEOUSCORERUNTIME_API UInteger64_MOV : public UMapObjectVariable
     UInteger64_MOV()
     {
         Value = TMap<int64, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4117,8 +4117,8 @@ class GORGEOUSCORERUNTIME_API UInteger_MOV : public UMapObjectVariable
     UInteger_MOV()
     {
         Value = TMap<int32, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4138,8 +4138,8 @@ class GORGEOUSCORERUNTIME_API UName_MOV : public UMapObjectVariable
     UName_MOV()
     {
         Value = TMap<FName, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4159,8 +4159,8 @@ class GORGEOUSCORERUNTIME_API UString_MOV : public UMapObjectVariable
     UString_MOV()
     {
         Value = TMap<FString, UGorgeousObjectVariable*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4201,8 +4201,8 @@ class GORGEOUSCORERUNTIME_API UObject_MMOTOV : public UMultiMapObjectTypeObjectV
 
     UObject_MMOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4219,8 +4219,8 @@ class GORGEOUSCORERUNTIME_API UClass_MMOTOV : public UMultiMapObjectTypeObjectVa
 
     UClass_MMOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4237,8 +4237,8 @@ class GORGEOUSCORERUNTIME_API USoftObject_MMOTOV : public UMultiMapObjectTypeObj
 
     USoftObject_MMOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
     }
 };
 
@@ -4255,8 +4255,8 @@ class GORGEOUSCORERUNTIME_API USoftClass_MMOTOV : public UMultiMapObjectTypeObje
 
     USoftClass_MMOTOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass(), false, true);
     }
 };
 
@@ -4337,8 +4337,8 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
 
         UByte_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4418,8 +4418,8 @@ class GORGEOUSCORERUNTIME_API UFloat_MMOV : public UMultiMapObjectVariable
 
         UFloat_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4499,8 +4499,8 @@ class GORGEOUSCORERUNTIME_API UDouble_MMOV : public UMultiMapObjectVariable
 
         UDouble_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4580,8 +4580,8 @@ class GORGEOUSCORERUNTIME_API UInteger64_MMOV : public UMultiMapObjectVariable
 
         UInteger64_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4661,8 +4661,8 @@ class GORGEOUSCORERUNTIME_API UInteger_MMOV : public UMultiMapObjectVariable
 
         UInteger_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4742,8 +4742,8 @@ class GORGEOUSCORERUNTIME_API UName_MMOV : public UMultiMapObjectVariable
 
         UName_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4823,8 +4823,8 @@ class GORGEOUSCORERUNTIME_API UString_MMOV : public UMultiMapObjectVariable
 
         UString_MMOV()
     {
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
-            true, UEdGraphSchema_K2::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::EMultiMap, false,
+            true, GorgeousPinCategory::PC_Object, NAME_None, UGorgeousObjectVariable::StaticClass());
     }
 };
 
@@ -4868,7 +4868,7 @@ class GORGEOUSCORERUNTIME_API UObject_STOTOV : public USetObjectTypeObjectVariab
     UObject_STOTOV()
     {
         Value = TSet<UObject*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Object, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4888,7 +4888,7 @@ class GORGEOUSCORERUNTIME_API UClass_STOTOV : public USetObjectTypeObjectVariabl
     UClass_STOTOV()
     {
         Value = TSet<UClass*>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Class, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4908,7 +4908,7 @@ class GORGEOUSCORERUNTIME_API USoftObject_STOTOV : public USetObjectTypeObjectVa
     USoftObject_STOTOV()
     {
         Value = TSet<TSoftObjectPtr<UObject>>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftObject, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4928,7 +4928,7 @@ class GORGEOUSCORERUNTIME_API USoftClass_STOTOV : public USetObjectTypeObjectVar
     USoftClass_STOTOV()
     {
         Value = TSet<TSoftClassPtr<UObject>>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_SoftClass, NAME_None, UObject::StaticClass(), EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4949,7 +4949,7 @@ class GORGEOUSCORERUNTIME_API UByte_STOV : public USetObjectVariable
     UByte_STOV()
     {
         Value = TSet<uint8>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Byte, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4969,7 +4969,7 @@ class GORGEOUSCORERUNTIME_API UFloat_STOV : public USetObjectVariable
     UFloat_STOV()
     {
         Value = TSet<float>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Float, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -4989,7 +4989,7 @@ class GORGEOUSCORERUNTIME_API UDouble_STOV : public USetObjectVariable
     UDouble_STOV()
     {
         Value = TSet<double>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Double, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -5009,7 +5009,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_STOV : public USetObjectVariable
     UInteger64_STOV()
     {
         Value = TSet<int64>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int64, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -5029,7 +5029,7 @@ class GORGEOUSCORERUNTIME_API UInteger_STOV : public USetObjectVariable
     UInteger_STOV()
     {
         Value = TSet<int32>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Int, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -5049,7 +5049,7 @@ class GORGEOUSCORERUNTIME_API UName_STOV : public USetObjectVariable
     UName_STOV()
     {
         Value = TSet<FName>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_Name, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };
 
@@ -5069,6 +5069,6 @@ class GORGEOUSCORERUNTIME_API UString_STOV : public USetObjectVariable
     UString_STOV()
     {
         Value = TSet<FString>();
-        PinConfiguration = FObjectVariablePinConfiguration_S(UEdGraphSchema_K2::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
+        PinConfiguration = FObjectVariablePinConfiguration_S(GorgeousPinCategory::PC_String, NAME_None, nullptr, EObjectVariableContainerType_E::ESet, false);
     }
 };

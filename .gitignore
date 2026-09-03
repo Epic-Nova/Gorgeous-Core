@@ -2,3 +2,4 @@ Intermediate
 Binaries
 *.bak
 BaseInsightMatrix.ini
+.DS_Store

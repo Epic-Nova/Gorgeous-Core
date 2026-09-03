@@ -363,6 +363,7 @@ void UGorgeousGameInstance::PostLoad()
 	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
 }
 
+#if WITH_EDITOR
 void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -379,6 +380,7 @@ void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& Proper
 		}
 	}
 }
+#endif
 
 void UGorgeousGameInstance::HandleRootRegistryChanged()
 {

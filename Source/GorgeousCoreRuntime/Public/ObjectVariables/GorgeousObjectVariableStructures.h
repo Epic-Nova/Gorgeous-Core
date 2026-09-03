@@ -26,7 +26,25 @@
 class UGorgeousObjectVariable;
 //<-------------------------------------------------->
 
-#if WITH_EDITORONLY_DATA
+/** Runtime-safe equivalents of the K2 pin category names. */
+namespace GorgeousPinCategory
+{
+	inline const FName PC_Boolean(TEXT("bool"));
+	inline const FName PC_Byte(TEXT("byte"));
+	inline const FName PC_Class(TEXT("class"));
+	inline const FName PC_Int(TEXT("int"));
+	inline const FName PC_Int64(TEXT("int64"));
+	inline const FName PC_Float(TEXT("float"));
+	inline const FName PC_Double(TEXT("double"));
+	inline const FName PC_Name(TEXT("name"));
+	inline const FName PC_Object(TEXT("object"));
+	inline const FName PC_String(TEXT("string"));
+	inline const FName PC_Text(TEXT("text"));
+	inline const FName PC_Struct(TEXT("struct"));
+	inline const FName PC_Wildcard(TEXT("wildcard"));
+	inline const FName PC_SoftObject(TEXT("softobject"));
+	inline const FName PC_SoftClass(TEXT("softclass"));
+}
 
 /**
  * Configuration struct for defining the pin type of object variable nodes in Blueprints.
@@ -40,7 +58,7 @@ struct FObjectVariablePinConfiguration_S
 
 	// Default constructor with safe initial values.
 	FObjectVariablePinConfiguration_S()
-		: PinCategory(UEdGraphSchema_K2::PC_Wildcard)
+		: PinCategory(GorgeousPinCategory::PC_Wildcard)
 		  , PinSubCategory(NAME_None)
 		  , PinSubCategoryObject(nullptr)
 		  , ContainerType(EObjectVariableContainerType_E::ESingle)
@@ -127,6 +145,7 @@ struct FObjectVariablePinConfiguration_S
 	UPROPERTY(EditAnywhere, AdvancedDisplay, meta = (EditCondition = "bCustomGraphTerminalType", EditConditionHides))
 	bool bTerminalIsUObjectWrapper;
 
+#if WITH_EDITOR
 	FEdGraphPinType GetMappedPinType() const
 	{
 		EPinContainerType UnrealContainerType;
@@ -177,9 +196,8 @@ struct FObjectVariablePinConfiguration_S
 
 		return PinType;
 	}
-};
-
 #endif
+};
 
 /**
  * Multi-map value wrapper for object variables.

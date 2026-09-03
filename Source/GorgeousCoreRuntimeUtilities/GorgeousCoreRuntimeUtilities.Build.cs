@@ -41,9 +41,6 @@ public class GorgeousCoreRuntimeUtilities : GorgeousModuleRules
                 "JsonUtilities"
             });
 
-        PublicDefinitions.Add("CSV_PROFILER=1");
-        PrivateDefinitions.Add("CSV_PROFILER=1");
-        
         //@TODO: Also remove this one here as the build pipeline handles this way better now
 
         /*
@@ -228,7 +225,7 @@ public class GorgeousCoreRuntimeUtilities : GorgeousModuleRules
             }
         }
 
-        if (Target.bBuildEditor)
+        if (Target.Type == TargetType.Editor)
         {
             PrivateDependencyModuleNames.AddRange(new[]
             {

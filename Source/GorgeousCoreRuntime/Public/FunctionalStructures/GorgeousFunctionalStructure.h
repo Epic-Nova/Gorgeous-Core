@@ -41,7 +41,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	FGorgeousFunctionalStructure_S()
 	{
 		Identifier = FGuid::NewGuid();
+#if WITH_EDITORONLY_DATA
 		OwnerObject = nullptr;
+#endif
 	}
 
 	/**
