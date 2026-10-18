@@ -14,6 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
 #include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
+#include "Engine/EngineTypes.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousInteractionFoundation.generated.h"
 //<-------------------------------------------------------------------------->
@@ -46,6 +47,14 @@ class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
 	//<=======================--- Blueprint Functions ---=======================>
 #pragma region Blueprint Functions
 public:
+
+	/**
+	 * Resolves the project collision channel named "Interactable".
+	 *
+	 * @return The configured game trace channel, or ECC_MAX when the channel is not configured.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Interaction Foundation", meta = (DisplayName = "Get Interactables Collision Channel"))
+	static TEnumAsByte<ECollisionChannel> GetInteractableCollisionChannel();
 
 	/**
 	 * Returns the number of successful interactions executed through the foundation.

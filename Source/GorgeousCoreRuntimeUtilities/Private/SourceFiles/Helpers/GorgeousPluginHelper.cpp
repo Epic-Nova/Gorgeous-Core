@@ -1349,6 +1349,34 @@ void UGorgeousPluginHelper::SavePersistentData()
 	{
 		PersistentDataObject = MakeShared<FJsonObject>();
 	}
+
+	// Other subsystems share this file. Preserve fields written by a subsystem
+	// after this helper loaded its in-memory snapshot.
+	const FString FilePath = GetGorgeousPersistentDataFilePath();
+	FString ExistingContents;
+	TSharedPtr<FJsonObject> ExistingData;
+	if (FFileHelper::LoadFileToString(ExistingContents, *FilePath))
+	{
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ExistingContents);
+		if (FJsonSerializer::Deserialize(Reader, ExistingData) && ExistingData.IsValid())
+		{
+			for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : ExistingData->Values)
+			{
+				const bool bFieldOwnedBySharedSubsystem =
+					Pair.Key == TEXT("KnownNudgePlugins") ||
+					Pair.Key == TEXT("KnownNudgeGeneralSystems") ||
+					Pair.Key == TEXT("AcknowledgedNudges") ||
+					Pair.Key == TEXT("DismissedSystemActionPrompts") ||
+					Pair.Key == TEXT("NudgeFeedCache") ||
+					Pair.Key == TEXT("NudgeFeedCacheSchemaVersion") ||
+					Pair.Key == TEXT("NudgeFeedCacheUpdatedAt");
+				if (!PersistentDataObject->HasField(Pair.Key) || bFieldOwnedBySharedSubsystem)
+				{
+					PersistentDataObject->SetField(Pair.Key, Pair.Value);
+				}
+			}
+		}
+	}
 	
 	// Ensure circular dependencies are synced
 	TArray<TSharedPtr<FJsonValue>> PairsArray;
@@ -1358,7 +1386,6 @@ void UGorgeousPluginHelper::SavePersistentData()
 	}
 	PersistentDataObject->SetArrayField(TEXT("CircularDependencyNotifications"), PairsArray);
 
-	const FString FilePath = GetGorgeousPersistentDataFilePath();
 	const FString Directory = FPaths::GetPath(FilePath);
 	IFileManager::Get().MakeDirectory(*Directory, true);
 	

@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "IGorgeousThingsModuleInterface.h"
+#include "Delegates/Delegate.h"
 #include "Templates/UniquePtr.h"
 //<-------------------------------------------------------------------------->
 
@@ -39,6 +40,10 @@ public:
 	 * The override function of the module interface that is called to unload this module.
 	 */
 	virtual void GorgeousShutdownModule() override;
+
+private:
+
+public:
 
 	/**
 	 * Returns the functionality type of this gorgeous module.

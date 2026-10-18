@@ -33,6 +33,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "GeneralSystems/GorgeousCheatCommandAliases.h"
+#include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
@@ -46,7 +47,16 @@
 
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
-
+	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddStatic([]()
+	{
+#if WITH_EDITOR
+		if (GIsEditor)
+		{
+			return;
+		}
+#endif
+		UGeneralSystemConfiguration_PDA::ActivateAllSystemConfigurations();
+	});
 
 	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
 	/*const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));

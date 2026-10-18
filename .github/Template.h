@@ -64,7 +64,7 @@ class _API ... : public ...
 
     //<============================--- Overrides ---============================>
 public:
-s
+
     /**
      * [Description of the overridden function's purpose.]
      *

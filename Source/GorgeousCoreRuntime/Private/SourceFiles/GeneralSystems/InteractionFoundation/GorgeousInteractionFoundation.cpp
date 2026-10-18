@@ -16,6 +16,7 @@
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
+#include "Engine/CollisionProfile.h"
 #include "Stats/Stats.h"
 //<-------------------------------------------------------------------------->
 
@@ -24,6 +25,26 @@ TMap<TWeakObjectPtr<AActor>, TWeakObjectPtr<AActor>> UGorgeousInteractionFoundat
 //=============================================================================
 // Helpers
 //=============================================================================
+
+TEnumAsByte<ECollisionChannel> UGorgeousInteractionFoundation::GetInteractableCollisionChannel()
+{
+    const UCollisionProfile* CollisionProfile = UCollisionProfile::Get();
+    if (!CollisionProfile)
+    {
+        return ECC_MAX;
+    }
+
+    static const FName InteractableChannelName(TEXT("Interactable"));
+    for (int32 ChannelIndex = ECC_GameTraceChannel1; ChannelIndex <= ECC_GameTraceChannel18; ++ChannelIndex)
+    {
+        if (CollisionProfile->ReturnChannelNameFromContainerIndex(ChannelIndex) == InteractableChannelName)
+        {
+            return static_cast<ECollisionChannel>(ChannelIndex);
+        }
+    }
+
+    return ECC_MAX;
+}
 
 DECLARE_STATS_GROUP(TEXT("Gorgeous Interaction Foundation"), STATGROUP_GorgeousInteractionFoundation, STATCAT_Advanced);
 DECLARE_CYCLE_STAT(TEXT("Sphere Trace Interact"), STAT_GInteract_SphereTraceInteract, STATGROUP_GorgeousInteractionFoundation);

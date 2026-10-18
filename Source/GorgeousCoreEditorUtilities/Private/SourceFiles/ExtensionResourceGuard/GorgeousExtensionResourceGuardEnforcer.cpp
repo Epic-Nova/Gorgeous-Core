@@ -75,9 +75,10 @@ void UGorgeousExtensionResourceGuardEnforcer::Deinitialize()
 }
 
 void UGorgeousExtensionResourceGuardEnforcer::BeginEnforcement(
-	const FString& PluginName, const FString& SystemDisplayName)
+	const FString& ResourceName, const FString& SystemDisplayName, bool bIsBlueprintPack)
 {
-	if (ActiveEnforcements.Contains(PluginName))
+	const FString Key = FString::Printf(TEXT("%s:%s"), bIsBlueprintPack ? TEXT("BlueprintPack") : TEXT("Plugin"), *ResourceName);
+	if (ActiveEnforcements.Contains(Key))
 	{
 		return; // Already enforcing this plugin
 	}
@@ -88,7 +89,10 @@ void UGorgeousExtensionResourceGuardEnforcer::BeginEnforcement(
 		bool bAnyContentPresent = false;
 		for (TObjectIterator<UGorgeousExtensionResourceGuard> It; It; ++It)
 		{
-			if (It->RequiredPlugins.Contains(FName(*PluginName)) && It->IsContentPresent())
+			const bool bRequired = bIsBlueprintPack
+				? It->RequiredBlueprintPacks.Contains(FName(*ResourceName))
+				: It->RequiredPlugins.Contains(FName(*ResourceName));
+			if (bRequired && It->IsContentPresent())
 			{
 				bAnyContentPresent = true;
 				break;
@@ -98,8 +102,8 @@ void UGorgeousExtensionResourceGuardEnforcer::BeginEnforcement(
 		if (!bAnyContentPresent)
 		{
 			GT_I_LOG("GT.ExtensionResourceGuard",
-				TEXT("Skipping enforcement for plugin '%s' - no content packs requiring it are present."),
-				*PluginName);
+				TEXT("Skipping enforcement for required resource '%s' - no content packs requiring it are present."),
+				*ResourceName);
 			return;
 		}
 	}
@@ -107,18 +111,19 @@ void UGorgeousExtensionResourceGuardEnforcer::BeginEnforcement(
 	const double Now = FPlatformTime::Seconds();
 
 	FEnforcementEntry Entry;
-	Entry.PluginName = PluginName;
+	Entry.ResourceName = ResourceName;
 	Entry.SystemDisplayName = SystemDisplayName;
+	Entry.bIsBlueprintPack = bIsBlueprintPack;
 	Entry.StartTimestamp = Now;
 	Entry.LastToastTimestamp = Now;
 	Entry.bShutdownWarningShown = false;
 
-	ActiveEnforcements.Add(PluginName, MoveTemp(Entry));
+	ActiveEnforcements.Add(Key, MoveTemp(Entry));
 }
 
 void UGorgeousExtensionResourceGuardEnforcer::StopEnforcement(const FString& PluginName)
 {
-	if (ActiveEnforcements.Remove(PluginName) > 0)
+	if (ActiveEnforcements.Remove(FString::Printf(TEXT("Plugin:%s"), *PluginName)) > 0)
 	{
 		GT_S_LOG("GT.ExtensionResourceGuard",
 			TEXT("Enforcement stopped for plugin '%s'."), *PluginName);
@@ -142,15 +147,35 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 
 	for (auto& Pair : ActiveEnforcements)
 	{
-		auto& [PluginName, SystemDisplayName, StartTimestamp, LastToastTimestamp, bShutdownWarningShown] = Pair.Value;
+		FEnforcementEntry& Entry = Pair.Value;
+		const FString& ResourceName = Entry.ResourceName;
+		const FString& SystemDisplayName = Entry.SystemDisplayName;
+		const double StartTimestamp = Entry.StartTimestamp;
+		double& LastToastTimestamp = Entry.LastToastTimestamp;
+		bool& bShutdownWarningShown = Entry.bShutdownWarningShown;
 		const double ElapsedSeconds = Now - StartTimestamp;
 
-		//Check if the plugin was enabled externally
-		if (IPluginManager::Get().FindEnabledPlugin(PluginName).IsValid())
+		bool bResolved = false;
+		if (!Entry.bIsBlueprintPack)
+		{
+			bResolved = IPluginManager::Get().FindEnabledPlugin(ResourceName).IsValid();
+		}
+		else
+		{
+			for (TObjectIterator<UGorgeousExtensionResourceGuard> It; It; ++It)
+			{
+				if (It->IsContentPresent() && It->SystemIdentifier == FName(*ResourceName))
+				{
+					bResolved = true;
+					break;
+				}
+			}
+		}
+		if (bResolved)
 		{
 			ToRemove.Add(Pair.Key);
 			GT_S_LOG("GT.ExtensionResourceGuard",
-				TEXT("Plugin '%s' is now enabled. Enforcement lifted."), *PluginName);
+				TEXT("Required resource '%s' is now present. Enforcement lifted."), *ResourceName);
 			continue;
 		}
 
@@ -159,7 +184,10 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 			bool bStillNeeded = false;
 			for (TObjectIterator<UGorgeousExtensionResourceGuard> It; It; ++It)
 			{
-				if (It->RequiredPlugins.Contains(FName(*PluginName)) && It->IsContentPresent())
+				const bool bRequired = Entry.bIsBlueprintPack
+					? It->RequiredBlueprintPacks.Contains(FName(*ResourceName))
+					: It->RequiredPlugins.Contains(FName(*ResourceName));
+				if (bRequired && It->IsContentPresent())
 				{
 					bStillNeeded = true;
 					break;
@@ -170,8 +198,8 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 			{
 				ToRemove.Add(Pair.Key);
 				GT_I_LOG("GT.ExtensionResourceGuard",
-					TEXT("Content for plugin '%s' is no longer present. Enforcement lifted."),
-					*PluginName);
+					TEXT("Content for required resource '%s' is no longer present. Enforcement lifted."),
+					*ResourceName);
 				continue;
 			}
 		}
@@ -180,8 +208,8 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 		if (ElapsedSeconds >= ShutdownDeadlineSeconds)
 		{
 			GT_E_LOG("GT.ExtensionResourceGuard",
-				TEXT("10-minute deadline reached for plugin '%s'. Saving all assets and shutting down the editor."),
-				*PluginName);
+				TEXT("10-minute deadline reached for required resource '%s'. Saving all assets and shutting down the editor."),
+				*ResourceName);
 
 			SafeShutdownEditor();
 			return true; // Won't actually reach here after shutdown
@@ -195,16 +223,16 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 			// Show as toast and log via Gorgeous system
 			FGorgeousLogHyperlink ShutdownWarningLink;
 			ShutdownWarningLink.ActionName = FName("GT.ExtensionGuard.EnablePlugin");
-			ShutdownWarningLink.ActionPayload = PluginName;
+			ShutdownWarningLink.ActionPayload = ResourceName;
 			ShutdownWarningLink.LinkText = FString::Printf(TEXT("Restart now"));
 
 			GT_E_LOG_FULL_EX("GT.ExtensionResourceGuard",
-				TEXT("Plugin '%s' has been automatically added as a dependency but is not yet active. "
+				TEXT("Required resource '%s' is not yet active. "
 					"The editor will save all assets and shut down in approximately 2 minutes. "
 					"Restart now to apply the changes."),
 				GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG,
 				false, false, nullptr, &ShutdownWarningLink,
-				*PluginName);
+				*ResourceName);
 		}
 
 		// Periodic toast every 2 minutes
@@ -217,15 +245,15 @@ bool UGorgeousExtensionResourceGuardEnforcer::OnTick(float DeltaTime)
 
 			FGorgeousLogHyperlink PeriodicToastLink;
 			PeriodicToastLink.ActionName = FName("GT.ExtensionGuard.EnablePlugin");
-			PeriodicToastLink.ActionPayload = PluginName;
+			PeriodicToastLink.ActionPayload = ResourceName;
 			PeriodicToastLink.LinkText = FString::Printf(TEXT("Restart now"));
 
 			GT_W_LOG_FULL_EX("GT.ExtensionResourceGuard",
-				TEXT("Plugin '%s' was automatically added as a dependency for the '%s' system. "
+				TEXT("Required resource '%s' is required by the '%s' system. "
 					"A restart is required to activate it. ~%d minute(s) remaining before the editor shuts down."),
 				GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG,
 				false, false, nullptr, &PeriodicToastLink,
-				*PluginName, *SystemDisplayName, MinutesRemaining);
+				*ResourceName, *SystemDisplayName, MinutesRemaining);
 		}
 	}
 
@@ -299,8 +327,19 @@ void UGorgeousExtensionResourceGuardEnforcer::PerformStartupValidation()
 			continue;
 		}
 
-		for (const FName& PluginName : Guard->RequiredPlugins)
+		for (const TPair<FName, bool>& Requirement : Guard->RequiredPlugins)
 		{
+			const FName& PluginName = Requirement.Key;
+			if (Requirement.Value)
+			{
+				if (!IPluginManager::Get().FindEnabledPlugin(PluginName.ToString()).IsValid())
+				{
+					GT_W_LOG("GT.ExtensionResourceGuard.OptionalPlugin",
+						TEXT("Optional plugin '%s' is not enabled for system '%s'."),
+						*PluginName.ToString(), *Guard->SystemDisplayName.ToString());
+				}
+				continue;
+			}
 			if (PluginName.IsNone())
 			{
 				continue;
@@ -318,6 +357,35 @@ void UGorgeousExtensionResourceGuardEnforcer::PerformStartupValidation()
 
 				BeginEnforcement(PluginName.ToString(), Guard->SystemDisplayName.ToString());
 			}
+		}
+
+		for (const TPair<FName, bool>& Requirement : Guard->RequiredBlueprintPacks)
+		{
+			if (Requirement.Value || Requirement.Key.IsNone())
+			{
+				if (Requirement.Value)
+				{
+					GT_W_LOG("GT.ExtensionResourceGuard.OptionalBlueprintPack",
+						TEXT("Optional blueprint pack '%s' is declared for system '%s'."),
+						*Requirement.Key.ToString(), *Guard->SystemDisplayName.ToString());
+				}
+				continue;
+			}
+			bool bPackPresent = false;
+			for (TObjectIterator<UGorgeousExtensionResourceGuard> OtherIt; OtherIt; ++OtherIt)
+			{
+				if (OtherIt->SystemIdentifier == Requirement.Key && OtherIt->IsContentPresent())
+				{
+					bPackPresent = true;
+					break;
+				}
+			}
+			if (bPackPresent)
+			{
+				continue;
+			}
+			BeginEnforcement(Requirement.Key.ToString(), Guard->SystemDisplayName.ToString(), true);
+			++IssueCount;
 		}
 	}
 

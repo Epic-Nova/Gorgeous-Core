@@ -249,6 +249,12 @@ void UGorgeousNudgeSubsystem::Deinitialize()
 bool UGorgeousNudgeSubsystem::Tick(float DeltaTime)
 {
 	SecondsSinceInitialization += DeltaTime;
+	if (!bGeneralSystemsDetectionCompleted && SecondsSinceInitialization >= 3.0f)
+	{
+		DetectNewGorgeousGeneralSystems();
+		bGeneralSystemsDetectionCompleted = true;
+	}
+
 	if (bAutomaticCarouselQueued && SecondsSinceInitialization >= 10.0f && FSlateApplication::IsInitialized() && FSlateApplication::Get().GetActiveTopLevelWindow().IsValid())
 	{
 		bAutomaticCarouselQueued = false;
@@ -438,7 +444,7 @@ void UGorgeousNudgeSubsystem::ShowNudgeCarousel()
 		.ClientSize(DefaultCarouselSize)
 		.SizingRule(ESizingRule::UserSized)
 		.SupportsMinimize(false)
-		.SupportsMaximize(false)
+		.SupportsMaximize(true)
 		[
 			SNew(SGorgeousNudgeCarousel).NudgeSubsystem(this)
 		];
@@ -599,22 +605,22 @@ void UGorgeousNudgeSubsystem::DetectNewGorgeousPlugins()
 
 	TArray<TSharedPtr<FJsonValue>> CurrentPlugins;
 	TArray<FGorgeousNudgeEntry> Tutorials;
-	for (const TSharedRef<IPlugin>& Plugin : IPluginManager::Get().GetEnabledPlugins())
+	for (const FName& PluginName : KnownGorgeousPlugins)
 	{
-		const FString PluginName = Plugin->GetName();
-		const bool bIsKnownGorgeousPlugin = KnownGorgeousPlugins.Contains(FName(*PluginName));
-		if (!bIsKnownGorgeousPlugin && !PluginName.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase)) continue;
-		CurrentPlugins.Add(MakeShared<FJsonValueString>(PluginName));
-		if (bHasSnapshot && !PreviouslyKnown.Contains(PluginName))
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
+		if (!Plugin.IsValid()) continue;
+		const FString PluginDisplayName = PluginName.ToString();
+		CurrentPlugins.Add(MakeShared<FJsonValueString>(PluginDisplayName));
+		if (bHasSnapshot && !PreviouslyKnown.Contains(PluginDisplayName))
 		{
 			FGorgeousNudgeEntry Entry;
-			Entry.Id = FString::Printf(TEXT("plugin-tutorial:%s:%s"), *PluginName, *Plugin->GetDescriptor().VersionName);
+			Entry.Id = FString::Printf(TEXT("plugin-tutorial:%s:%s"), *PluginDisplayName, *Plugin->GetDescriptor().VersionName);
 			Entry.Scope = EGorgeousNudgeScope::NewPluginTutorial;
-			Entry.TargetId = PluginName;
-			Entry.Title = FText::Format(NSLOCTEXT("GorgeousNudges", "TutorialTitle", "Getting started with {0}"), FText::FromString(PluginName));
+			Entry.TargetId = PluginDisplayName;
+			Entry.Title = FText::Format(NSLOCTEXT("GorgeousNudges", "TutorialTitle", "Getting started with {0}"), FText::FromString(PluginDisplayName));
 			Entry.Description = NSLOCTEXT("GorgeousNudges", "TutorialDescription", "A Gorgeous Cast is available to help you get started.");
 			Entry.ActionLabel = TEXT("Watch Gorgeous Cast");
-			Entry.ActionUrl = FString::Printf(TEXT("https://gorgeous.simsalabim.studio/casts?plugin=%s"), *FGenericPlatformHttp::UrlEncode(PluginName));
+			Entry.ActionUrl = FString::Printf(TEXT("https://gorgeous.simsalabim.studio/casts?plugin=%s"), *FGenericPlatformHttp::UrlEncode(PluginDisplayName));
 			Tutorials.Add(MoveTemp(Entry));
 		}
 	}
@@ -625,6 +631,65 @@ void UGorgeousNudgeSubsystem::DetectNewGorgeousPlugins()
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
 	FFileHelper::SaveStringToFile(Output, *Path);
 	if (!Tutorials.IsEmpty()) RegisterNudges(Tutorials);
+}
+
+void UGorgeousNudgeSubsystem::DetectNewGorgeousGeneralSystems()
+{
+	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
+	FString Contents;
+	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
+	if (FFileHelper::LoadFileToString(Contents, *Path))
+	{
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
+		FJsonSerializer::Deserialize(Reader, Root);
+		if (!Root.IsValid()) Root = MakeShared<FJsonObject>();
+	}
+
+	TSet<FString> PreviouslyKnown;
+	const TArray<TSharedPtr<FJsonValue>>* SavedSystems = nullptr;
+	const bool bHasSnapshot = Root->TryGetArrayField(TEXT("KnownNudgeGeneralSystems"), SavedSystems) && SavedSystems;
+	if (bHasSnapshot)
+	{
+		for (const TSharedPtr<FJsonValue>& Value : *SavedSystems) PreviouslyKnown.Add(Value->AsString());
+	}
+
+	TArray<TSharedPtr<FJsonValue>> CurrentSystems;
+	TArray<FGorgeousNudgeEntry> Nudges;
+	TSet<FString> CurrentSystemIds;
+	if (const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton())
+	{
+		for (const FString& SystemId : PluginHelper->GetRecordedInstalledSystems())
+		{
+			if (!SystemId.StartsWith(TEXT("Plugin:"), ESearchCase::IgnoreCase))
+			{
+				CurrentSystemIds.Add(SystemId);
+			}
+		}
+	}
+
+	for (const FString& SystemId : CurrentSystemIds)
+	{
+		CurrentSystems.Add(MakeShared<FJsonValueString>(SystemId));
+		if (bHasSnapshot && !PreviouslyKnown.Contains(SystemId))
+		{
+			FGorgeousNudgeEntry Entry;
+			Entry.Id = FString::Printf(TEXT("system-tutorial:%s"), *SystemId);
+			Entry.Scope = EGorgeousNudgeScope::GeneralSystemUpdate;
+			Entry.TargetId = SystemId;
+			Entry.Title = FText::Format(NSLOCTEXT("GorgeousNudges", "SystemTutorialTitle", "New Gorgeous system: {0}"), FText::FromString(SystemId));
+			Entry.Description = NSLOCTEXT("GorgeousNudges", "SystemTutorialDescription", "Learn more about this newly installed Gorgeous system.");
+			Entry.ActionLabel = TEXT("Learn more");
+			Entry.ActionUrl = FString::Printf(TEXT("https://gorgeous.simsalabim.studio/systems/%s"), *FGenericPlatformHttp::UrlEncode(SystemId));
+			Nudges.Add(MoveTemp(Entry));
+		}
+	}
+	Root->SetArrayField(TEXT("KnownNudgeGeneralSystems"), CurrentSystems);
+	FString Output;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
+	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
+	FFileHelper::SaveStringToFile(Output, *Path);
+	if (!Nudges.IsEmpty()) RegisterNudges(Nudges);
 }
 
 void UGorgeousNudgeSubsystem::SaveAcknowledgements() const

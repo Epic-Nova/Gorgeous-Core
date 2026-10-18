@@ -345,6 +345,7 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
                             {
                                 if (MinCoreVer > CurrentCoreVersion)
                                 {
+                                    //@TODO: Replace with the gorgeous toast system
                                     FString ToastMsg = FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer);
                                     GT_W_LOG("GT.Updates", TEXT("%s"), *ToastMsg);
                                     FNotificationInfo Info(FText::FromString(ToastMsg));

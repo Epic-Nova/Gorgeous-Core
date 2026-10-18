@@ -17,6 +17,7 @@
 #include "HAL/IConsoleManager.h"
 //<-------------------------------------------------------------------------->
 
+//@We could also add data driven cvars to drive values later on
 namespace
 {
 	void ForwardCheatCommand(const TArray<FString>& Args, UWorld* World, const FString& CheatCommand)

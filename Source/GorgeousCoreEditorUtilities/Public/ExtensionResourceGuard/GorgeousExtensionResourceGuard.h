@@ -10,6 +10,8 @@
 <==========================================================================*/
 #pragma once
 
+#include "ExtensionResourceGuard/GorgeousExtensionResourceGuardRuntimeInterface.h"
+
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousExtensionResourceGuard.generated.h"
@@ -41,7 +43,7 @@
 <===========================================================================>
 */
 UCLASS(BlueprintType)
-class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuard : public UDataAsset
+class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuard : public UDataAsset, public IGorgeousExtensionResourceGuardRuntimeInterface
 {
 	GENERATED_BODY()
 
@@ -54,6 +56,11 @@ class GORGEOUSCOREEDITORUTILITIES_API UGorgeousExtensionResourceGuard : public U
 
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 public:
+
+	virtual FName GetGuardSystemIdentifier() const override { return SystemIdentifier; }
+	virtual const TMap<FName, bool>& GetGuardRequiredPlugins() const override { return RequiredPlugins; }
+	virtual const TMap<FName, bool>& GetGuardRequiredBlueprintPacks() const override { return RequiredBlueprintPacks; }
+	virtual bool IsGuardContentPresent() const override { return IsContentPresent(); }
 
 	/**
 	 * Unique identifier for the system this guard protects.
@@ -71,22 +78,19 @@ public:
 	FText SystemDisplayName;
 
 	/**
-	 * Plugin names that MUST be enabled for this system's content to function.
-	 * The validator will check each entry against IPluginManager and report
-	 * any missing plugins with a hyperlink to enable them.
+	 * Plugin names mapped to their enforcement mode. False means mandatory
+	 * and triggers enforcement when missing; true means optional and only
+	 * emits a warning.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard", meta = (GetOptions = "GetPluginOptions"))
-	TArray<FName> RequiredPlugins;
+	TMap<FName, bool> RequiredPlugins;
 
 	/**
-	 * Blueprint extension packs (referenced by system identifier) that must be
-	 * present on disk for this guard to function.
-	 * If the referenced pack cannot be found, the validator will toast a user
-	 * message instructing the user to download it from the Gorgeous plugin
-	 * website resource section.
+	 * Blueprint extension packs (referenced by system identifier) mapped to
+	 * their enforcement mode. False means mandatory; true means optional.
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Extension Resource Guard")
-	TArray<FName> RequiredBlueprintPacks;
+	TMap<FName, bool> RequiredBlueprintPacks;
 
 	/**
 	 * The name of the plugin whose Content directory owns this system's

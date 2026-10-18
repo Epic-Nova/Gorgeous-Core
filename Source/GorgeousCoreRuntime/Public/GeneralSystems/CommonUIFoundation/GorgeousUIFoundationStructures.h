@@ -462,3 +462,24 @@ struct FGorgeousUIMessageResult
 		: ResultTag(NAME_None)
 	{}
 };
+
+USTRUCT(BlueprintType)
+struct FGorgeousListViewEntry_S
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	bool bWithIcon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	bool bEnableAnimation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	FText ButtonText;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation", meta = (EditCondition = "bWithIcon", EditConditionHides))
+	TSoftObjectPtr<UTexture2D> ButtonImage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	TSoftClassPtr<class UGorgeousCommonWidget> ListViewWidget;
+};

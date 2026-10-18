@@ -19,6 +19,7 @@
 #define GORGEOUS_EXPERIMENTAL_MEMORY_FIXES 0
 #endif
 
+#include "GeneralSystemConfiguration_PDA.h"
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
 #include "QualityOfLife/GorgeousQualityOfLifeHelperMacros.h"
 #include "Containers/Set.h"
@@ -171,6 +172,10 @@ void UGorgeousGameInstance::Init()
 	}
 	
 	Super::Init();
+	
+	IAssetRegistry& AssetRegistry =
+	UAssetManager::Get().GetAssetRegistry();
+
 }
 
 void UGorgeousGameInstance::Shutdown()
@@ -178,7 +183,10 @@ void UGorgeousGameInstance::Shutdown()
 	UGorgeousRootObjectVariable::SetRootCreationAllowed(false);
 
 	GorgeousGameInstance_Private::LogNamedRootInstances(this);
-
+	
+	IAssetRegistry& AssetRegistry =
+	UAssetManager::Get().GetAssetRegistry();
+	
 	const int32 RootedBeforePurge = GorgeousGameInstance_Private::DumpRootedObjectsInGameInstanceOuterChain(this);
 	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Found %d rooted object(s) in GameInstance outer chain before purge."), RootedBeforePurge);
 
@@ -380,6 +388,7 @@ void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& Proper
 		}
 	}
 }
+
 #endif
 
 void UGorgeousGameInstance::HandleRootRegistryChanged()

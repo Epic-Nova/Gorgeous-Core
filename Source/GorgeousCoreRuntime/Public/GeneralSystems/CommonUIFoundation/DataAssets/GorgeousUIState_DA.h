@@ -90,9 +90,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
 	class UGorgeousUITheme_DA* Theme;
 
+	// An Array of List View Entries that should be pushed to the List View widget stack.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
+	TArray<FGorgeousListViewEntry_S> ListViews;
+
 	// Tag-to-Action bindings to activate with this state.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	class UGorgeousInputBinding_DA* InputBindings;
+
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
 };

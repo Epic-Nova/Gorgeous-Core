@@ -33,6 +33,7 @@
 */
 //<=================--- Forward Declarations ---=================>
 class UGeneralSystem_AC;
+class UGorgeousGeneralSystemAction;
 //<------------------------------------------------------------->
 UCLASS(BlueprintType,
 	meta = (
@@ -130,6 +131,47 @@ public:
 	 */
     UFUNCTION(BlueprintCallable, Category = "General Core System")
     static TArray<UGeneralSystemConfiguration_PDA*> GetAllSystemConfigurations();
+
+	/**
+	 * Returns the names of every registered system configuration.
+	 * 
+	 * @return An array of FName representing the names of all registered system configurations.
+	 */
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "General Core System")
+    static TArray<FName> GetAllSystemNames();
+
+	/**
+	 * Checks if a registered system configuration with the specified name exists.
+	 *
+	 * @param SystemName The name of the system configuration to check for.
+	 * @return True if a registered system configuration with the specified name exists, false otherwise.
+	 */
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "General Core System")
+    static bool IsSystemPresent(FName SystemName);
+
+    /** 
+     * Activates this system after recursively activating its required systems. 
+     * 
+     * @return True if the system was successfully activated, false otherwise.
+     */
+    UFUNCTION(BlueprintCallable, Category = "General Core System")
+    bool ActivateSystem();
+
+    /** Runs deactivation callbacks for this system's actions. */
+    UFUNCTION(BlueprintCallable, Category = "General Core System")
+    void DeactivateSystem();
+
+    /**
+     * Checks if the system is currently active.
+     * 
+     * @return True if the system is currently active, false otherwise.
+     */
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "General Core System")
+	bool IsSystemActive() const { return bIsSystemActive; }
+
+    /** Activates every discovered system configuration in dependency order. */
+    UFUNCTION(BlueprintCallable, Category = "General Core System")
+    static void ActivateAllSystemConfigurations();
 	//<------------------------------------------------------------------------->
 	#pragma endregion Blueprint Functions
 
@@ -139,12 +181,36 @@ public:
 public:
 
     // The authoritative component of this system that handles server side stuff.
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration")
-    TSubclassOf<UGeneralSystem_AC> AuthorativeComponent;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration", meta = (EditCondition = "!bIsCodeSystem", EditConditionHides))
+    TSubclassOf<UGeneralSystem_AC> AuthoritativeComponent;
 
     // The interaction component of this system that handles client side stuff
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration", meta = (EditCondition = "!bIsCodeSystem", EditConditionHides))
     TSubclassOf<UGeneralSystem_AC> InteractorComponent;
+
+    // Marks systems implemented entirely in code and without generated system components.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration")
+    bool bIsCodeSystem = false;
+
+    // Extensible lifecycle actions, patterned after Game Feature Actions.
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "General Core System Configuration|Actions")
+    TArray<TObjectPtr<UGorgeousGeneralSystemAction>> Actions;
+
+private:
+	
+    /**
+     * Recursively activates this system and its required systems, while tracking the activation stack to prevent circular dependencies.
+     * 
+	 * @param ActivationStack A set of systems currently being activated to detect circular dependencies.
+	 * @return True if the system and all its required systems were successfully activated, false otherwise.
+	 */
+    bool ActivateSystemInternal(TSet<const UGeneralSystemConfiguration_PDA*>& ActivationStack);
+	
+	// Tracks whether this system is currently active.
+    bool bIsSystemActive = false;
+	
+	// Tracks the actions that have been activated for this system configuration.
+    TSet<TObjectPtr<UGorgeousGeneralSystemAction>> ActivatedActions;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
 };

@@ -202,12 +202,15 @@ empty group is a bug — omit it). Each used group opens with its header and clo
 1. **Constructor (and destructor) come first, before any group banner.** Place them directly
    after `GENERATED_BODY()` with a one-line `//` comment, exactly as the Template shows (lines
    59-63). Do not bury them inside a group.
-2. **One access specifier per group, inside the group.** The `public:` / `protected:` /
-   `private:` keyword goes on its own line immediately after the opening group banner (with a
-   blank line between the banner and the specifier, matching `Template.h`). Do not scatter bare
-   `public:`/`protected:` blocks outside the group banners, and do not place a member's comment
+2. **Access specifiers belong inside groups.** When the access level required by a group differs
+   from the access specifier currently in effect immediately before that group, put the
+   `public:` / `protected:` / `private:` keyword on its own line immediately after the opening
+   group banner (with a blank line between the banner and the specifier, matching `Template.h`).
+   When it matches the access specifier already in effect, omit the redundant specifier. Do not
+   scatter bare access-specifier blocks outside group banners, and do not place a member's comment
    outside the group that owns it.
-3. **The `Overrides` group opens with `public:`.** Inside it, virtual overrides are organized with
+3. **The `Overrides` group uses `public:` when needed.** Emit it when the access specifier
+   currently in effect is not already `public:`. Inside it, virtual overrides are organized with
    sub-group banners (`//<----------------------=== Actor Overrides ===------------------------>`,
    `//<----------------------=== UObject Overrides ===-------------------------->`,
    `//<--------------------=== Interface Overrides ===-------------------------->`), each optionally
@@ -243,10 +246,10 @@ empty group is a bug — omit it). Each used group opens with its header and clo
      is followed by two blank lines, then the `//<===...===>` banner of group B.
    - **Inside a group (between the banner, the access specifier, members, sub-groups, and the
      close divider): single blank lines only.** Never two blank lines inside a group.
-   - **`#pragma region` is DIRECTLY followed by the access specifier — NO blank line between
-     them.** Write `#pragma region Overrides` then `public:` on the next line, with nothing in
-     between. (A blank line between the group banner and `#pragma region` is allowed; a blank
-     line between `#pragma region` and the access specifier is forbidden.)
+   - **When an access specifier is required, `#pragma region` is DIRECTLY followed by it — NO
+     blank line between them.** Write `#pragma region Overrides` then `public:` on the next line,
+     with nothing in between. (A blank line between the group banner and `#pragma region` is
+     allowed; a blank line between `#pragma region` and a required access specifier is forbidden.)
    - **A group's closing divider `//<--------...--------->` ALWAYS sticks directly to whatever is
      immediately above it** — there is NEVER a blank line between the last member (or last
      sub-group close) and the group's closing divider. The same applies to sub-group closing
@@ -255,7 +258,8 @@ empty group is a bug — omit it). Each used group opens with its header and clo
      Members inside the group keep their normal one-level indent.
 
 `public:` / `protected:` / `private:` go **inside** the group, right after the opening banner
-(one access specifier per group; do not repeat the banner per function). You may add
+when the group's required access differs from the access specifier already in effect. Omit a
+redundant matching specifier (do not repeat the banner per function). You may add
 sub-group banners such as `//<--------------------------=== FTickableGameObject ===--------------------->`
 and a matching `//<--------------------------=== End FTickableGameObject ===----------------->`.
 
@@ -304,8 +308,8 @@ UFUNCTION(BlueprintCallable, Category = "...")
 static bool TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags);
 ```
 
-- **Overrides / trivial one-liners:** a single-line `//` comment above is acceptable instead
-  of a block.
+- **Overrides / trivial one-liners:** a single-line `//` comment above is acceptable for
+  override declarations instead of a full `/** ... */` block with `@param` and `@return`.
 - **C++-only internal functions:** use the same `/** ... */` block with `@param`/`@return`
   when they take parameters or return non-void; otherwise a `//` line.
 
@@ -317,6 +321,8 @@ static bool TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer
   `//`.
 - The comment goes **above** the `UPROPERTY`/`UFUNCTION` specifier, which stays on the line
   immediately above the member.
+- Consecutive `UPROPERTY` declarations are separated by exactly one blank line. The blank line
+  goes between the preceding member declaration and the next property's comment.
 
 ```cpp
     // The condition check that should be performed.
@@ -419,9 +425,20 @@ Follow `GorgeousConditionalObjectChooser.cpp`:
 
 1. **No trailing newline at EOF.** The last line of code is the final line.
 2. **Banner** identical to the header banner (§1).
-3. **Include** the matching header first, then others:
+3. **Include** the matching header first, followed by exactly one blank line and the
+   structured include banner. The matching header is outside the banner. The `.cpp` include
+   banner contains only the sections that are used, in Module Includes and then Engine
+   Includes order; omit the Third Party & Miscellaneous section when no generated header or
+   other miscellaneous include belongs there:
    ```cpp
    #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
+
+   //<=============================--- Includes ---=============================>
+   //<--------------------------=== Module Includes ===------------------------->
+   #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperMacros.h"
+   //<--------------------------=== Engine Includes ===------------------------->
+   #include "CoreMinimal.h"
+   //<-------------------------------------------------------------------------->
    ```
 4. **`// Helpers` banner** above any anonymous `namespace` or file-scope helpers:
    ```cpp
@@ -584,6 +601,9 @@ Class := [ CLASSINFO ], UCLASS_SPEC, "class", API, ClassName, ": public", Parent
     and their first `#include`, OR a blank line after any `#include` inside the block. **There
     are zero blank lines inside the Includes block.**
 
+For `.cpp` files, the matching header include is emitted before the include block and is
+followed by exactly one blank line. The matching header is not repeated inside the block.
+
 ### 8.4 Constructor / destructor placement
 
 - They sit **directly after `GENERATED_BODY()`** (one `BLANK` line between `GENERATED_BODY()`
@@ -623,7 +643,7 @@ Class := [ CLASSINFO ], UCLASS_SPEC, "class", API, ClassName, ": public", Parent
     //<------------------------------------------------------------------------->
     #pragma endregion Overrides
 ```
-- Group opens with `public:`.
+- Group uses `public:` when the access specifier already in effect is not `public:`.
 - Immediately after the group banner: `#pragma region Overrides` (one blank line between banner
   and `#pragma region` is allowed). The matching `#pragma endregion Overrides` sits **directly
   after** the closing `//<--------...--------->` divider (no blank line).
@@ -666,15 +686,15 @@ Class := [ CLASSINFO ], UCLASS_SPEC, "class", API, ClassName, ": public", Parent
     #pragma endregion UAT/UBT Exposed Variables
 ```
 - Each `UPROPERTY` is preceded by a single-line `//` comment (never a `/** */` block for short
-  descriptions).
+  descriptions). Consecutive properties have exactly one blank line between them.
 
 ### 8.8 Group ordering (top-to-bottom, mandatory)
 
 ```
 Constructor (ungrouped)
-Overrides            (public: → Interface Overrides sub-group + protected: virtuals)
-Blueprint Functions  (public:)
-UAT/UBT Exposed Vars (public:)
+Overrides            (public: when needed → Interface Overrides sub-group + protected: virtuals)
+Blueprint Functions  (public: when needed)
+UAT/UBT Exposed Vars (public: when needed)
 [Callbacks]          (as needed)
 [C++ Only]           (as needed)
 [Variables]          (as needed)
@@ -689,9 +709,10 @@ UAT/UBT Exposed Vars (public:)
 - **Wrap every group** in `#pragma region <GroupName>` … `#pragma endregion <GroupName>`, placed
   as shown in §8.5–§8.7 (region open right after the group banner; region close right after the
   group's closing divider).
-- **`#pragma region` is DIRECTLY followed by the access specifier — no blank line between them.**
-  (`#pragma region Overrides` then `public:` next line.) A blank line between the group banner
-  and `#pragma region` is allowed; never between `#pragma region` and the access specifier.
+- **When an access specifier is required, `#pragma region` is DIRECTLY followed by it — no blank
+  line between them.** (`#pragma region Overrides` then `public:` next line.) A blank line between
+  the group banner and `#pragma region` is allowed; never between `#pragma region` and a required
+  access specifier.
 - **Two blank lines between two top-level groups.** The `#pragma endregion` of group A is followed
   by exactly two blank lines, then the `//<===...===>` banner of group B. Never one, never three.
 - **Inside a group: single blank lines only** (between banner and access spec, between members,
@@ -740,7 +761,9 @@ When in doubt, diff against its emitted shape:
      c. Blueprint Functions group                §8.6
      d. Exposed Variables group                   §8.7
      e. remaining groups                          §8.8
-7. Wrap every group in #pragma region/#pragma endregion (§8.8.1); insert access specifiers.
+7. Wrap every group in #pragma region/#pragma endregion (§8.8.1); insert an access specifier
+   only when the group's required access level differs from the access specifier already in
+   effect.
 8. Comment every member per §8.9 (behaviour, not feature list).
 9. Trim file to no trailing newline.
 10. Verify: zero blank lines inside Includes; ClassInfo adjacent to UCLASS; groups only if

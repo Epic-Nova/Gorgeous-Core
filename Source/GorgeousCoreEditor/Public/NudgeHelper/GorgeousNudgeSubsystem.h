@@ -146,6 +146,7 @@ private:
 
 	// Detects Gorgeous plugins installed since the previous editor session.
 	void DetectNewGorgeousPlugins();
+	void DetectNewGorgeousGeneralSystems();
 
 	// Loads the previously fetched Everything Gorgeous news feed from persistent data.
 	void LoadCachedNudgeFeed();
@@ -161,6 +162,9 @@ private:
 
 	// Queues the automatic carousel until the editor has completed its Slate startup.
 	void QueueAutomaticCarousel();
+
+	// Delays general-system detection until startup has recorded the active systems.
+	bool bGeneralSystemsDetectionCompleted = false;
 
 	/**
 	 * Clears the carousel reference and releases Slate pointer capture after its window closes.

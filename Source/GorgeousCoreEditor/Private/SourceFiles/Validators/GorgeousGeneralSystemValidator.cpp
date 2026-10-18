@@ -833,7 +833,7 @@ bool UGorgeousGeneralSystemValidator::TickAsyncValidation(float)
 
 bool UGorgeousGeneralSystemValidator::IsSystemComponent(const FString Name, const uint8 CheckMode) const
 {
-	TArray<FString> AuthorativeComponentNames = {
+	TArray<FString> AuthoritativeComponentNames = {
 		TEXT("Manager"),
 		TEXT("Handler"),
 		TEXT("Handling")
@@ -843,7 +843,7 @@ bool UGorgeousGeneralSystemValidator::IsSystemComponent(const FString Name, cons
 		TEXT("Interactor")
 	};
 	
-	for (const FString& Keyword : AuthorativeComponentNames)
+	for (const FString& Keyword : AuthoritativeComponentNames)
 	{
 		if (Name.Contains(Keyword))
 		{
@@ -1143,6 +1143,11 @@ void UGorgeousGeneralSystemValidator::ValidatePDA(UGeneralSystemConfiguration_PD
 
 	GLastPDAValidationTimes.Add(PDAKey, Now);
 
+	if (PDA->bIsCodeSystem)
+	{
+		return;
+	}
+
 	const FString PDA_SystemRoot = GetSystemRootPath(PDA->GetPathName());
 	
 	bool bChanged = false;
@@ -1166,7 +1171,7 @@ void UGorgeousGeneralSystemValidator::ValidatePDA(UGeneralSystemConfiguration_PD
 				const FText ErrorMsg = FText::Format(
 					NSLOCTEXT("GT.GeneralSystemValidator", "MissingComponentError", "General System PDA '{0}' is missing its {1} component and no default could be discovered in '{2}'."),
 					FText::FromString(PDA->GetName()),
-					FText::FromString(bExpectManager ? TEXT("Authorative (Manager)") : TEXT("Interactor")),
+					FText::FromString(bExpectManager ? TEXT("Authoritative (Manager)") : TEXT("Interactor")),
 					FText::FromString(PDA_SystemRoot)
 				);
 				Context.AddError(ErrorMsg);
@@ -1232,7 +1237,7 @@ void UGorgeousGeneralSystemValidator::ValidatePDA(UGeneralSystemConfiguration_PD
 	};
 
 	// Validate both components
-	FixComponent(PDA->AuthorativeComponent, true);
+	FixComponent(PDA->AuthoritativeComponent, true);
 	FixComponent(PDA->InteractorComponent, false);
 
 	// Save only if something actually changed

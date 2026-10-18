@@ -76,8 +76,10 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 	}
 
 	// Check RequiredPlugins are enabled
-	for (const FName& PluginName : Guard->RequiredPlugins)
+	for (const TPair<FName, bool>& Requirement : Guard->RequiredPlugins)
 	{
+		const FName& PluginName = Requirement.Key;
+		const bool bOptional = Requirement.Value;
 		if (PluginName.IsNone())
 		{
 			if (GorgeousValidation::ReportWarningOrError(this, Guard,
@@ -98,6 +100,12 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 				*Guard->SystemDisplayName.ToString());
 
 			// Hard validation error, this goes to the Data Validation message log.
+			if (bOptional)
+			{
+				GT_W_LOG("GT.ExtensionResourceGuard.OptionalPlugin",
+					TEXT("%s"), *ErrorMessage);
+				continue;
+			}
 			AssetFails(Guard, FText::FromString(ErrorMessage));
 			bHasErrors = true;
 
@@ -110,7 +118,7 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 					GEditor->GetEditorSubsystem<UGorgeousExtensionResourceGuardEnforcer>())
 				{
 					Enforcer->BeginEnforcement(
-						PluginName.ToString(), Guard->SystemDisplayName.ToString());
+						PluginName.ToString(), Guard->SystemDisplayName.ToString(), false);
 				}
 			}
 		}
@@ -127,8 +135,10 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 				/*bSearchSubClasses=*/ true);
 
 		TArray<FName> MissingPacks;
-		for (const FName& PackIdentifier : Guard->RequiredBlueprintPacks)
+		for (const TPair<FName, bool>& Requirement : Guard->RequiredBlueprintPacks)
 		{
+			const FName& PackIdentifier = Requirement.Key;
+			const bool bOptional = Requirement.Value;
 			if (PackIdentifier.IsNone())
 			{
 				if (GorgeousValidation::ReportWarningOrError(this, Guard,
@@ -155,7 +165,25 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 
 			if (!bPackFound)
 			{
-				MissingPacks.AddUnique(PackIdentifier);
+				if (bOptional)
+				{
+					GT_W_LOG("GT.ExtensionResourceGuard.OptionalBlueprintPack",
+						TEXT("Optional blueprint extension pack '%s' is missing for system '%s'."),
+						*PackIdentifier.ToString(), *Guard->SystemDisplayName.ToString());
+				}
+				else
+				{
+					MissingPacks.AddUnique(PackIdentifier);
+					if (GEditor)
+					{
+						if (UGorgeousExtensionResourceGuardEnforcer* Enforcer =
+							GEditor->GetEditorSubsystem<UGorgeousExtensionResourceGuardEnforcer>())
+						{
+							Enforcer->BeginEnforcement(
+								PackIdentifier.ToString(), Guard->SystemDisplayName.ToString(), true);
+						}
+					}
+				}
 			}
 		}
 

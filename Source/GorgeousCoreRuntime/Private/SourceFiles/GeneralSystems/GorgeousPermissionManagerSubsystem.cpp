@@ -16,7 +16,7 @@ FString UGorgeousPermissionManagerSubsystem::GetPlayerId(AActor* Player) const
 	{
 		if (APlayerState* PS = Pawn->GetPlayerState())
 		{
-			// In a real network implementation, you would use UniqueId.
+			// In a real network implementation, you would use UniqueId. @TODO: Use the Stable Player ID for this
 			return FString::Printf(TEXT("%d"), PS->GetPlayerId());
 		}
 	}

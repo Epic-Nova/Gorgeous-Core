@@ -188,7 +188,8 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 			continue;
 		}
 
-		if (Guard->OwningPluginName.IsNone() || Guard->RequiredPlugins.IsEmpty())
+		if (Guard->OwningPluginName.IsNone() ||
+			Guard->RequiredPlugins.IsEmpty())
 		{
 			continue;
 		}
@@ -198,9 +199,12 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 			// Content exists - record all its required plugins as still-needed.
 			TMap<FName, TArray<FString>>& ActiveMap = ActiveDependencies.FindOrAdd(Guard->OwningPluginName);
 			const FString GuardSystem = Guard->SystemDisplayName.ToString();
-			for (const FName& RequiredPlugin : Guard->RequiredPlugins)
+			for (const TPair<FName, bool>& Requirement : Guard->RequiredPlugins)
 			{
-				ActiveMap.FindOrAdd(RequiredPlugin).AddUnique(GuardSystem);
+				if (!Requirement.Value)
+				{
+					ActiveMap.FindOrAdd(Requirement.Key).AddUnique(GuardSystem);
+				}
 			}
 		}
 		else
@@ -220,8 +224,13 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 		const TMap<FName, TArray<FString>>* ActiveMap = ActiveDependencies.Find(Guard->OwningPluginName);
 
 		bool bRemovedAny = false;
-		for (const FName& RequiredPlugin : Guard->RequiredPlugins)
+		for (const TPair<FName, bool>& Requirement : Guard->RequiredPlugins)
 		{
+			const FName& RequiredPlugin = Requirement.Key;
+			if (Requirement.Value)
+			{
+				continue;
+			}
 			if (ActiveMap && ActiveMap->Contains(RequiredPlugin))
 			{
 				if (!IPluginManager::Get().FindPlugin(Guard->OwningPluginName.ToString())->GetDescriptor().Plugins.ContainsByPredicate(

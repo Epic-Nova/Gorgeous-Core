@@ -21,6 +21,7 @@
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Layout/SUniformGridPanel.h"
+#include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -33,6 +34,7 @@ void SGorgeousNudgeCarousel::Construct(const FArguments& InArgs)
 	NudgeSubsystem = InArgs._NudgeSubsystem;
 
 	TSharedRef<SUniformGridPanel> ProgressPanel = SNew(SUniformGridPanel).SlotPadding(FMargin(3.0f, 0.0f));
+	TSharedRef<SHorizontalBox> TabPanel = SNew(SHorizontalBox);
 	PageSwitcher = SNew(SWidgetSwitcher);
 	if (UGorgeousNudgeSubsystem* Subsystem = NudgeSubsystem.Get())
 	{
@@ -40,6 +42,19 @@ void SGorgeousNudgeCarousel::Construct(const FArguments& InArgs)
 		for (int32 Index = 0; Index < Entries.Num(); ++Index)
 		{
 			const FGorgeousNudgeEntry& Entry = Entries[Index];
+			TabPanel->AddSlot()
+			.AutoWidth()
+			.Padding(FMargin(2.0f, 0.0f))
+			[
+				SNew(SButton)
+				.ButtonStyle(FAppStyle::Get(), "FlatButton")
+				.OnClicked_Lambda([this, Index]() { SelectPage(Index); return FReply::Handled(); })
+				[
+					SNew(STextBlock)
+					.Text(Entry.Title)
+					.Font(FAppStyle::GetFontStyle("SmallFont"))
+				]
+			];
 			const FString HtmlPage = Entry.HtmlPage.IsEmpty()
 				? FString::Printf(TEXT("<html><head><style>body{margin:0;min-height:100vh;background:radial-gradient(circle at 70%% 12%%,#0b3545 0,#041820 36%%,#020b10 100%%);color:#eaf8fc;font-family:Segoe UI,Arial,sans-serif;display:grid;place-items:center}.card{max-width:660px;padding:52px;border:1px solid rgba(49,171,211,.2);border-radius:22px;background:rgba(4,27,36,.83);box-shadow:0 28px 90px rgba(0,0,0,.45)}.eyebrow{color:#23a8d8;text-transform:uppercase;font-size:12px;letter-spacing:2px;font-weight:700}h1{font-size:42px;margin:14px 0;color:#f2fbff}p{font-size:18px;line-height:1.6;color:#9cc5d2}a{display:inline-block;margin-top:16px;padding:12px 20px;border-radius:10px;background:#147da5;color:#f4fcff;text-decoration:none;font-weight:700;box-shadow:0 8px 24px rgba(13,124,165,.3)}</style></head><body><main class='card'><div class='eyebrow'>Gorgeous Things</div><h1>%s</h1><p>%s</p></main></body></html>"), *Entry.Title.ToString(), *Entry.Description.ToString())
 				: Entry.HtmlPage;
@@ -123,11 +138,25 @@ void SGorgeousNudgeCarousel::Construct(const FArguments& InArgs)
 			]
 			+ SVerticalBox::Slot().FillHeight(1.0f)
 			[
-				SNew(SBorder)
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+				[
+					SNew(SScrollBox)
+					.Orientation(Orient_Horizontal)
+					.ScrollBarVisibility(EVisibility::Visible)
+					+ SScrollBox::Slot()
+					[
+						TabPanel
+					]
+				]
+				+ SVerticalBox::Slot().FillHeight(1.0f)
+				[
+					SNew(SBorder)
 				.BorderBackgroundColor(FLinearColor(0.035f, 0.14f, 0.18f, 1.0f))
 				.Padding(1.0f)
 				[
 					PageSwitcher.ToSharedRef()
+				]
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 14.0f, 0.0f, 0.0f)

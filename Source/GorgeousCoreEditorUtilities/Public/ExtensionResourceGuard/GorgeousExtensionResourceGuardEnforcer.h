@@ -56,17 +56,16 @@ public:
 	//<============================--- C++ Only ---=============================>
 
 	/**
-	 * Called when the user actively rejects the plugin-enable prompt.
-	 * Starts the enforcement timer cycle for the given plugin.
+	 * Starts the enforcement timer cycle for a missing required resource.
 	 *
-	 * @param PluginName The plugin the user refused to enable.
+	 * @param ResourceName The missing plugin or blueprint-pack identifier.
 	 * @param SystemDisplayName Human-readable name of the system that needs it.
+	 * @param bIsBlueprintPack True when ResourceName identifies a blueprint pack.
 	 */
-	void BeginEnforcement(const FString& PluginName, const FString& SystemDisplayName);
+	void BeginEnforcement(const FString& ResourceName, const FString& SystemDisplayName, bool bIsBlueprintPack = false);
 
 	/**
-	 * Called when the user enables the required plugin or when the issue is otherwise resolved.
-	 * Stops the enforcement cycle for the given plugin.
+	 * Stops enforcement for a required plugin.
 	 *
 	 * @param PluginName The plugin that is now enabled/resolved.
 	 */
@@ -109,8 +108,9 @@ private:
 	// Represents a single enforcement session for one rejected plugin.
 	struct FEnforcementEntry
 	{
-		FString PluginName;
+		FString ResourceName;
 		FString SystemDisplayName;
+		bool bIsBlueprintPack = false;
 
 		// When the user rejected the prompt (seconds since GStartTime).
 		double StartTimestamp = 0.0;
@@ -122,7 +122,7 @@ private:
 		bool bShutdownWarningShown = false;
 	};
 
-	// Active enforcement entries keyed by plugin name.
+	// Active enforcement entries keyed by resource name and type.
 	TMap<FString, FEnforcementEntry> ActiveEnforcements;
 
 	// Ticker delegate handle for the periodic check. */

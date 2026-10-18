@@ -42,6 +42,8 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
             "Niagara"
         });
 
+        PublicDependencyModuleNames.Add("DataRegistry");
+
         // Include the VaultLoader source files
         PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousVault", "Loader"));
         
@@ -54,6 +56,7 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
         {
             PrivateDependencyModuleNames.AddRange(new[] {
                 "UnrealEd",
+                "BlueprintEditorLibrary",
                 "Blutility",
                 "UMGEditor",
                 "WorkspaceMenuStructure"

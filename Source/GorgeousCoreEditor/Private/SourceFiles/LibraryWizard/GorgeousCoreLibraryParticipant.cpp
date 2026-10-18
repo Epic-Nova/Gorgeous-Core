@@ -104,13 +104,12 @@ void FGorgeousCoreLibraryParticipant::OnBuildContextMenu(class FMenuBuilder& Men
 						TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 						if (CorePlugin.IsValid())
 						{
+							#if PLATFORM_WINDOWS || PLATFORM_LINUX
 							FString InstallerPath = FPaths::Combine(CorePlugin->GetBaseDir(), TEXT("Source"), TEXT("ThirdParty"), TEXT("GorgeousInstaller"), TEXT("build"));
 #if PLATFORM_WINDOWS
 							InstallerPath = FPaths::Combine(InstallerPath, TEXT("gorgeous-installer.exe"));
-#elif PLATFORM_LINUX
-							InstallerPath = FPaths::Combine(InstallerPath, TEXT("gorgeous-installer"));
 #else
-							return;
+							InstallerPath = FPaths::Combine(InstallerPath, TEXT("gorgeous-installer"));
 #endif
 							if (FPaths::FileExists(InstallerPath))
 							{
@@ -122,6 +121,7 @@ void FGorgeousCoreLibraryParticipant::OnBuildContextMenu(class FMenuBuilder& Men
 								FPlatformProcess::CreateProc(*InstallerPath, *Args, true, false, false, nullptr, 0, nullptr, nullptr);
 								FGenericPlatformMisc::RequestExit(false);
 							}
+							#endif
 						}
 					}
 				}))

@@ -30,9 +30,7 @@ public class GorgeousCoreEditorUtilities : GorgeousModuleRules
         
         // The base class will auto-inject dependencies like Core, Engine, Slate, UMG, Json, etc.
         // We explicitly add things the auto-scanner might miss or that are critical third-party dependencies:
-        PrivateDependencyModuleNames.AddRange(new[]
-        {
-            "DeveloperSettings"
-        });
+        PrivateDependencyModuleNames.Add("DeveloperSettings");
+        PublicDependencyModuleNames.Add("GorgeousCoreRuntime");
     }
 }

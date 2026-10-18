@@ -30,6 +30,7 @@
 #include "ISettingsModule.h"
 #include "LibraryWizard/GorgeousLibrarySettings.h"
 #include "LibraryWizard/GorgeousCoreLibraryParticipant.h"
+#include "LibraryWizard/GorgeousRecompilationHelper.h"
 #include "LibraryWizard/SGorgeousLibraryView.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "DataRegistry.h"
@@ -41,6 +42,7 @@
 #include "Toolkits/AssetEditorToolkit.h"
 #include "Toolkits/AssetEditorToolkitMenuContext.h"
 #include "Containers/Ticker.h"
+#include "Framework/Application/SlateApplication.h"
 #include "UnrealEdMisc.h"
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "Interfaces/IPluginManager.h"
@@ -80,6 +82,8 @@ namespace
 	static FDelegateHandle GGorgeousHelpMenuStartupCallbackHandle;
 	static FDelegateHandle GPostEngineInitHandle;
 	static FTSTicker::FDelegateHandle GStartupValidationTickerHandle;
+	static FTSTicker::FDelegateHandle GRecompilationCheckTickerHandle;
+	static FTSTicker::FDelegateHandle GGeneralSystemActivationTickerHandle;
 	static bool GBGorgeousHelpMenusRegistered = false;
 
 void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
@@ -242,6 +246,34 @@ void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
 		{
 			return;
 		}
+
+		GRecompilationCheckTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateLambda([](float)
+			{
+				if (!FSlateApplication::IsInitialized() || FSlateApplication::Get().GetTopLevelWindows().Num() == 0)
+				{
+					return true;
+				}
+
+				GRecompilationCheckTickerHandle.Reset();
+				UGorgeousRecompilationHelper::CheckRecompilationRequirement();
+				return false;
+			}),
+			0.0f);
+
+		GGeneralSystemActivationTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
+			FTickerDelegate::CreateLambda([](float)
+			{
+				if (!FSlateApplication::IsInitialized() || FSlateApplication::Get().GetTopLevelWindows().Num() == 0)
+				{
+					return true;
+				}
+
+				GGeneralSystemActivationTickerHandle.Reset();
+				UGeneralSystemConfiguration_PDA::ActivateAllSystemConfigurations();
+				return false;
+			}),
+			0.0f);
 
 		GStartupValidationTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 			FTickerDelegate::CreateLambda([](float)
@@ -686,6 +718,11 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	{
 		FTSTicker::RemoveTicker(GStartupValidationTickerHandle);
 		GStartupValidationTickerHandle.Reset();
+	}
+	if (GRecompilationCheckTickerHandle.IsValid())
+	{
+		FTSTicker::RemoveTicker(GRecompilationCheckTickerHandle);
+		GRecompilationCheckTickerHandle.Reset();
 	}
 	
 	//@TODO: Planned for version 1.1 and upwards
