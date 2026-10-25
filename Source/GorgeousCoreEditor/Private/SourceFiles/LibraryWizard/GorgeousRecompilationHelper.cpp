@@ -130,6 +130,10 @@ TArray<FString> UGorgeousRecompilationHelper::GetActiveGorgeousSystems()
 		Systems.Add(TEXT("DebugAssist"));
 	#endif
 
+	#ifdef GORGEOUS_SYSTEM_INSTALLED_FEEDBACKEFFECTS
+		Systems.Add(TEXT("FeedbackEffects"));
+	#endif
+
 	#ifdef GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
 		Systems.Add(TEXT("InteractionFoundation"));
 	#endif
