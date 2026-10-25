@@ -131,11 +131,6 @@ static FString GetBaselineIniPath(FName ProviderName)
 		}
 	}
 
-	if (PluginName.IsEmpty())
-	{
-		PluginName = TEXT("Gorgeous-Core");
-	}
-
 	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName);
 	if (Plugin.IsValid())
 	{

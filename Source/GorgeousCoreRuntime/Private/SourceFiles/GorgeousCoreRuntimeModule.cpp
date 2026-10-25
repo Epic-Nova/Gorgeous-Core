@@ -47,6 +47,12 @@
 
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
+	
+#if WITH_EDITOR
+	// Shutdown the Gorgeous Startup Hook Module, because it has already done its job
+	FModuleManager::Get().UnloadModule(TEXT("GorgeousCoreStartupHook"));
+#endif
+	
 	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddStatic([]()
 	{
 #if WITH_EDITOR

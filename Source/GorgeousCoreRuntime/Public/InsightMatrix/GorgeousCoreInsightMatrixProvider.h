@@ -22,7 +22,7 @@ public:
 	static FName ProviderName();
 
 	virtual FName GetProviderName() const override { return ProviderName(); }
-	virtual FString GetPluginName() const override { return TEXT("Gorgeous-Core"); }
+	virtual FString GetPluginName() const override { return TEXT("GorgeousCore"); }
 	virtual FText GetProviderDisplayName() const override;
 	virtual void GatherStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const override;
 	virtual void GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const override;

@@ -3,6 +3,7 @@
 #include "LibraryWizard/GorgeousLibrarySettings.h"
 
 #include "HttpModule.h"
+#include "IGorgeousThingsModuleInterface.h"
 #include "Interfaces/IPluginManager.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
@@ -609,8 +610,8 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
     {
         Helper->InvalidatePersistedChecksum();
     }
-
-    const FString InstallerPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Plugins/Gorgeous-Core/Binaries") / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer"));
+    
+    const FString InstallerPath = IPluginManager::Get().FindPlugin("GorgeousCore")->GetBaseDir() / "Binaries" / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer");
     FString FullInstallerPath = InstallerPath;
 #if PLATFORM_WINDOWS
     FullInstallerPath += TEXT(".exe");
