@@ -1,5 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "LibraryWizard/GorgeousCoreLibraryParticipant.h"
+#include "LibraryWizard/GorgeousUpdateManager.h"
+#include "Editor.h"
 #include "Helpers/GorgeousPluginHelper.h"
 #include "LibraryWizard/GorgeousRecompilationHelper.h"
 #include "Misc/Paths.h"
@@ -57,7 +59,7 @@ TArray<FGorgeousLibraryCategoryDescriptor> FGorgeousCoreLibraryParticipant::GetL
 	CoreSystems.CategoryActions.Add(FGorgeousLibraryCategoryAction(
 		"ConfigureSettings",
 		NSLOCTEXT("GorgeousCore", "ConfigureSettings", "Configure API"),
-		NSLOCTEXT("GorgeousCore", "ConfigureSettingsTooltip", "Open Project Settings to configure the Gorgeous Core API endpoints and persistent data."),
+		NSLOCTEXT("GorgeousCore", "ConfigureSettingsTooltip", "Open the Gorgeous API Configuration window to configure endpoints and persistent data."),
 		"Icons.Settings"
 	));
 
@@ -101,28 +103,9 @@ void FGorgeousCoreLibraryParticipant::OnBuildContextMenu(class FMenuBuilder& Men
 							return;
 						}
 
-						TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-						if (CorePlugin.IsValid())
-						{
-							#if PLATFORM_WINDOWS || PLATFORM_LINUX
-							FString InstallerPath = FPaths::Combine(CorePlugin->GetBaseDir(), TEXT("Source"), TEXT("ThirdParty"), TEXT("GorgeousInstaller"), TEXT("build"));
-#if PLATFORM_WINDOWS
-							InstallerPath = FPaths::Combine(InstallerPath, TEXT("gorgeous-installer.exe"));
-#else
-							InstallerPath = FPaths::Combine(InstallerPath, TEXT("gorgeous-installer"));
-#endif
-							if (FPaths::FileExists(InstallerPath))
-							{
-								FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
-								uint32 PID = FPlatformProcess::GetCurrentProcessId();
-								// Pass the zip URL to the installer!
-								FString Args = FString::Printf(TEXT("-cli -project \"%s\" --install-zip \"%s\" --wait-for-pid %d --reopen-project"), *ProjectPath, *System->DownloadUrl, PID);
-
-								FPlatformProcess::CreateProc(*InstallerPath, *Args, true, false, false, nullptr, 0, nullptr, nullptr);
-								FGenericPlatformMisc::RequestExit(false);
-							}
-							#endif
-						}
+                        if (GEditor)
+                            if (auto* Updates=GEditor->GetEditorSubsystem<UGorgeousUpdateManager>())
+                                Updates->DownloadZipAndInstall(System->DownloadUrl, System->TargetPluginName, System->ChecksumSha256, System->DownloadToken, System->Version, System->SignatureEd25519);
 					}
 				}))
 			);
@@ -216,6 +199,9 @@ void FGorgeousCoreLibraryParticipant::RefreshOfflineCache()
 			NewSystem->SystemDescription = FText::FromString(Entry.Description);
 			NewSystem->Version = Entry.Version;
 			NewSystem->DownloadUrl = Entry.DownloadUrl;
+            NewSystem->ChecksumSha256 = Entry.ChecksumSha256;
+            NewSystem->SignatureEd25519 = Entry.SignatureEd25519;
+            NewSystem->DownloadToken = Entry.DownloadToken;
 			NewSystem->SourcePaths = Entry.SourcePaths;
 			NewSystem->ContentPaths = Entry.ContentPaths;
 			NewSystem->bIsPreShipped = Entry.bIsCoreSystem;

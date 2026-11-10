@@ -18,6 +18,9 @@
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationRPCRelayComponent.generated.h"
 //<-------------------------------------------------------------------------->
@@ -45,9 +48,9 @@ class FGorgeousAutoReplicationMixin;
 */
 UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCRelayComponent",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCRelayComponent/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRelayComponent : public UActorComponent
@@ -56,6 +59,19 @@ class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRelayComponent : public
 
 public:
 	UGorgeousAutoReplicationRPCRelayComponent();
+#if WITH_DEV_AUTOMATION_TESTS
+    static UGorgeousObjectVariable* ReconstructResultTreeForAutomation(const TArray<FGorgeousSerializedOVNode>& Nodes);
+    static bool CaptureResultTreeForAutomation(const UGorgeousObjectVariable* Root,TArray<FGorgeousSerializedOVNode>& Nodes);
+#endif
+    UFUNCTION(Client, Reliable)
+    void ClientRelayRPCReliable(const FGorgeousQueuedRPC& Request);
+    UFUNCTION(Client, Unreliable)
+    void ClientRelayRPCUnreliable(const FGorgeousQueuedRPC& Request);
+
+
+    /** Signal Bridge requests travel on the controller-owned component; sender identity is derived on the server. */
+    UFUNCTION(Server, Reliable)
+    void ServerRelaySignalBridge(uint8 Operation, FGameplayTag Tag, AActor* TargetActor, const FInstancedStruct& Payload);
 
 	/** Queues a local result so it can be forwarded to the authority instance. */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|AutoReplication|Networking")
@@ -83,7 +99,11 @@ public:
 	 * NotifyRequestCompleted calls on the server can be relayed back to that client.
 	 * Must be called on the server before the RPC is dispatched.
 	 */
-	static void RegisterClientInitiatedRPCOrigin(const FGuid& RequestGuid, APlayerController* OriginPC);
+	static void RegisterClientInitiatedRPCOrigin(const FGuid& RequestGuid, APlayerController* OriginPC, float TimeoutSeconds=30.0f);
+    /** Actual authority-side sender associated with an in-progress request. */
+    static APlayerController* ResolveClientInitiatedRPCOrigin(const FGuid& RequestGuid);
+    static void RegisterClientInitiatedExpectedResponder(const FGuid& RequestGuid,const FGorgeousAutoReplicationRPCResponderHandle& Responder);
+    static bool IsClientInitiatedExpectedResponder(const FGuid& RequestGuid,const FGorgeousAutoReplicationRPCResponderHandle& Responder);
 
 	/**
 	 * If RequestGuid was registered as a client-initiated RPC, relay the result to the
@@ -151,5 +171,12 @@ private:
 	 * via ServerRelayRPCReliable/Unreliable.  Used to route result callbacks back to the
 	 * initiating client when the PendingRequests entry does not exist on the server.
 	 */
-	static TMap<FGuid, TWeakObjectPtr<APlayerController>> ClientInitiatedRPCOrigins;
+	struct FClientRPCOrigin
+    {
+        TWeakObjectPtr<APlayerController> Controller;
+        TSet<FString> Expected;
+        TSet<FString> Completed;
+        double ExpiresAt=0;
+    };
+    static TMap<FGuid,FClientRPCOrigin> ClientInitiatedRPCOrigins;
 };

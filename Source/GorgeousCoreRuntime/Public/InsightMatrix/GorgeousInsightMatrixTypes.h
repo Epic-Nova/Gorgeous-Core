@@ -125,6 +125,13 @@ struct FGorgeousInsightActionContext
 	TMap<FString, FString> Parameters;
 };
 
+enum class EGorgeousInsightActionStatus : uint8 { Dispatched, Succeeded, Failed };
+struct FGorgeousInsightActionResult
+{
+    EGorgeousInsightActionStatus Status = EGorgeousInsightActionStatus::Dispatched;
+    FString Message;
+};
+
 /** Test execution context. */
 struct FGorgeousInsightTestContext
 {
@@ -144,53 +151,89 @@ struct FGorgeousInsightTestResult
 };
 
 /** Shared chart value types for provider-defined charts. */
-struct FGorgeousInsightBarValue
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightBarValue
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FText Label;
+	UPROPERTY()
 	double Value = 0.0;
 };
 
-struct FGorgeousInsightPieSlice
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightPieSlice
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FText Label;
+	UPROPERTY()
 	double Value = 0.0;
+	UPROPERTY()
 	FLinearColor Color = FLinearColor::White;
 };
 
-struct FGorgeousInsightScatterPoint
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightScatterPoint
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FVector2D Position = FVector2D::ZeroVector;
+	UPROPERTY()
 	FLinearColor Color = FLinearColor::White;
+	UPROPERTY()
 	float Radius = 3.f;
 };
 
-struct FGorgeousInsightTimelineSegment
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightTimelineSegment
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FText Label;
+	UPROPERTY()
 	float Start = 0.f;
+	UPROPERTY()
 	float Duration = 0.f;
+	UPROPERTY()
 	FLinearColor Color = FLinearColor::White;
 };
 
-struct FGorgeousInsightFlowNode
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightFlowNode
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FText Label;
+	UPROPERTY()
 	FVector2D Position = FVector2D::ZeroVector;
+	UPROPERTY()
 	FVector2D Size = FVector2D(0.2f, 0.18f);
+	UPROPERTY()
 	FLinearColor Color = FLinearColor(0.2f, 0.4f, 0.7f, 1.f);
 };
 
-struct FGorgeousInsightFlowEdge
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightFlowEdge
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	int32 From = INDEX_NONE;
+	UPROPERTY()
 	int32 To = INDEX_NONE;
+	UPROPERTY()
 	FLinearColor Color = FLinearColor(0.7f, 0.7f, 0.7f, 1.f);
 };
 
-struct FGorgeousInsightTableRow
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightTableRow
 {
+	GENERATED_BODY()
+	UPROPERTY()
 	FText Name;
+	UPROPERTY()
 	FText Value;
+	UPROPERTY()
 	FText Category;
 };
 
@@ -210,6 +253,7 @@ struct FGorgeousInsightChartPayload
 	TMap<FName, FLinearColor> Colors;
 };
 
+UENUM()
 enum class EGorgeousInsightChartType : uint8
 {
 	Bar,
@@ -224,32 +268,51 @@ enum class EGorgeousInsightChartType : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FGorgeousInsightChartDefinition
+struct GORGEOUSCORERUNTIME_API FGorgeousInsightChartDefinition
 {
 	GENERATED_BODY()
 
+	UPROPERTY()
 	FName Id = NAME_None;
+	UPROPERTY()
 	FName CustomChartType = NAME_None;
+	UPROPERTY()
 	FGorgeousInsightChartPayload Payload;
+	UPROPERTY(Transient)
 	FInstancedStruct InstancedPayload;
+	UPROPERTY()
 	EGorgeousInsightChartType Type = EGorgeousInsightChartType::Bar;
+	UPROPERTY()
 	FText Title;
+	UPROPERTY()
 	FText Subtitle;
 
+	UPROPERTY()
 	TArray<FGorgeousInsightBarValue> Bars;
+	UPROPERTY()
 	TArray<double> LineValues;
+	UPROPERTY()
 	TArray<int32> HistogramBins;
+	UPROPERTY()
 	TArray<FGorgeousInsightPieSlice> PieSlices;
+	UPROPERTY()
 	TArray<FGorgeousInsightScatterPoint> ScatterPoints;
+	UPROPERTY()
 	TArray<float> HeatmapValues;
+	UPROPERTY()
 	int32 HeatmapRows = 0;
+	UPROPERTY()
 	int32 HeatmapColumns = 0;
+	UPROPERTY()
 	TArray<FGorgeousInsightTimelineSegment> TimelineSegments;
+	UPROPERTY()
 	TArray<FGorgeousInsightFlowNode> FlowNodes;
+	UPROPERTY()
 	TArray<FGorgeousInsightFlowEdge> FlowEdges;
+	UPROPERTY()
 	TArray<FGorgeousInsightTableRow> TableRows;
+	UPROPERTY()
 	bool bPieDonut = true;
-
 	static FGorgeousInsightChartDefinition MakeBarChart(const FName InId, const FText& InTitle, const FText& InSubtitle, const TArray<FGorgeousInsightBarValue>& InBars)
 	{
 		FGorgeousInsightChartDefinition Chart;

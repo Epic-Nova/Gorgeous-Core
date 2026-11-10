@@ -5,11 +5,13 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIInstancedValueUtils.h"
 
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "CommonActivatableWidget.h"
 
 UGorgeousPrimaryGameLayout* UGorgeousUIFoundationLibrary::GetGorgeousPrimaryLayout(const UObject* WorldContextObject)
 {
-	return UGorgeousPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(WorldContextObject);
+	if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject)) return UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(Subsystem->GetLocalPlayer());
+	return nullptr;
 }
 
 UGorgeousPrimaryGameLayout* UGorgeousUIFoundationLibrary::GetGorgeousPrimaryLayoutFromController(APlayerController* PlayerController)

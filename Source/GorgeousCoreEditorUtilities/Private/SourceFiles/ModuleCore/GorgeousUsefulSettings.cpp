@@ -213,6 +213,11 @@ void UGorgeousUsefulSettings::SyncFromEditorSettings()
 	bIsSyncing = false;
 }
 
+void UGorgeousUsefulSettings::OpenExtensionResourceProtectionDocumentation()
+{
+	FPlatformProcess::LaunchURL(TEXT("https://gorgeous.simsalabim.studio/docs/gorgeous-core/EditorUtilities/ExtensionResourceGuards/"), nullptr, nullptr);
+}
+
 void UGorgeousUsefulSettings::ApplyToEditorSettings() const
 {
 	if (UDataValidationSettings* DataSettings = GetMutableDefault<UDataValidationSettings>())
@@ -362,7 +367,38 @@ void UGorgeousUsefulSettings::PostEditChangeProperty(FPropertyChangedEvent& Prop
 	}
 
 	bIsSyncing = true;
-	ApplyToEditorSettings();
+	const FName Name = PropertyChangedEvent.GetPropertyName();
+	if (Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bValidateOnSave) || Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bLoadAssetsWhenValidatingChangelists))
+	{
+		UDataValidationSettings* Settings = GetMutableDefault<UDataValidationSettings>();
+		Settings->bValidateOnSave = bValidateOnSave;
+		Settings->bLoadAssetsWhenValidatingChangelists = bLoadAssetsWhenValidatingChangelists;
+		Settings->SaveConfig();
+	}
+	else if (Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bBreakOnExceptions))
+	{
+		UEditorExperimentalSettings* Settings = GetMutableDefault<UEditorExperimentalSettings>();
+		Settings->bBreakOnExceptions = bBreakOnExceptions;
+		Settings->SaveConfig();
+	}
+	else if (Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, CookProgressDisplayMode))
+	{
+		UCookerSettings* Settings = GetMutableDefault<UCookerSettings>();
+		Settings->CookProgressDisplayMode = CookProgressDisplayMode;
+		Settings->SaveConfig();
+	}
+	else if (Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bScriptStackOnWarnings))
+	{
+		WriteIniSettingDirect(FPaths::ProjectConfigDir() / TEXT("DefaultEngine.ini"), ScriptStackSection, ScriptStackKey, bScriptStackOnWarnings ? TEXT("True") : TEXT("False"));
+	}
+	else if (Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bVerboseLogStreaming) || Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bVerboseLogGarbage))
+	{
+		const bool bStreaming = Name == GET_MEMBER_NAME_CHECKED(UGorgeousUsefulSettings, bVerboseLogStreaming);
+		const bool bVerbose = bStreaming ? bVerboseLogStreaming : bVerboseLogGarbage;
+		const TCHAR* Key = bStreaming ? LogStreamingKey : LogGarbageKey;
+		WriteIniSettingDirect(FPaths::ProjectConfigDir() / TEXT("DefaultEngine.ini"), CoreLogSection, Key, bVerbose ? TEXT("Verbose") : TEXT("Log"));
+		if (GEngine) GEngine->Exec(nullptr, *FString::Printf(TEXT("Log %s %s"), Key, bVerbose ? TEXT("Verbose") : TEXT("Log")));
+	}
 	bIsSyncing = false;
 }
 #endif

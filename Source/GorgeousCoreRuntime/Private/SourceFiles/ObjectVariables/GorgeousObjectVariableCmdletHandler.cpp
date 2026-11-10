@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -338,7 +338,11 @@ void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FS
 
 	if (bAllRoots)
 	{
-		FGorgeousVariableHierarchyHandler::TraverseAll(Visitor);
+		for (FName Name:UGorgeousRootObjectVariable::GetRegisteredRootNames())
+        {
+            GT_I_LOG(TEXT("GT.ObjectVariables.Root"),TEXT("Root: %s"),*Name.ToString());
+            FGorgeousVariableHierarchyHandler::TraverseRoot(Name,Visitor);
+        }
 	}
 	else
 	{
@@ -380,7 +384,7 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 		*ReplicationState,
 		Result->bPersistent ? TEXT("Yes") : TEXT("No"));
 
-	GT_I_LOG(TEXT("GT.ObjectVariables.Lookup"), TEXT("Lookup successful for query '%s' under root %s."), *Query, *RootName.ToString());
+	GT_I_LOG(TEXT("GT.ObjectVariables.Lookup"), TEXT("%s"), *Report);
 }
 
 void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArray<FString>& Args)
@@ -422,7 +426,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 		Stats.ReplicationActiveCount,
 		Stats.LegacyRegisteredCount);
 	
-	GT_I_LOG("GT.ObjectVariables.Stats", TEXT("Compiled stats for scope %s."), *ScopeLabel);
+	GT_I_LOG("GT.ObjectVariables.Stats", TEXT("%s"), *Report);
 }
 
 void UGorgeousObjectVariableCmdletHandler::ConfigureOrphanBehavior(const TArray<FString>& Args)

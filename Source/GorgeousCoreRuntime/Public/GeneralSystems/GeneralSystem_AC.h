@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
+#include "Components/ActorComponent.h"
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
@@ -31,12 +32,14 @@
 */
 UCLASS(BlueprintType, Blueprintable,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GeneralSystem_AC",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Anatomy/#ugeneralsystem_ac",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGeneralSystem_AC : public UActorComponent
 {
     GENERATED_BODY()
+protected:
+    virtual void OnRegister() override;
 };

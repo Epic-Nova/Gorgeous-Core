@@ -56,33 +56,15 @@ void UGorgeousCommonLazyImage::UpdateActionIcon(const UGorgeousUITheme_DA* Theme
 	if (!ActionTag.IsValid()) return;
 	if (!UGorgeousUIProcessor::IsStylePropertyAllowed(this, "Brush")) return;
 
-	if (ThemeOverride)
+	auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this);
+	const FName Platform = Subsystem ? Subsystem->GetCurrentPlatformName() : FName(TEXT("Generic"));
+	TArray<const UGorgeousUITheme_DA*> Themes;
+	if (Subsystem) for (const auto* Theme : Subsystem->GetCurrentThemes()) Themes.Add(Theme);
+	if (ThemeOverride) Themes.AddUnique(ThemeOverride);
+	for (int32 Index = Themes.Num() - 1; Index >= 0; --Index)
 	{
-		FSlateBrush IconBrush = ThemeOverride->GetActionIcon(ActionTag, TEXT("Generic"));
-		SetBrush(IconBrush);
-		return;
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			if (ULocalPlayer* LP = PC->GetLocalPlayer())
-			{
-				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
-				{
-					// Reverse iterate to fetch resources from the most recent theme first
-					for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
-					{
-						if (const FSlateBrush ThemeBrush = Subsystem->GetCurrentThemes()[i]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName()); 
-							ThemeBrush.GetResourceName() != NAME_None)
-						{
-							SetBrush(ThemeBrush);
-							break;
-						}
-					}
-				}
-			}
-		}
+		if (!Themes[Index]) continue;
+		const FSlateBrush ThemeBrush = Themes[Index]->GetActionIcon(ActionTag, Platform);
+		if (ThemeBrush.GetResourceName() != NAME_None) { SetBrush(ThemeBrush); return; }
 	}
 }

@@ -49,9 +49,9 @@
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousPlayerState",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/PlayerState/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/#setting-up-the-classes"
 		)
 )
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
@@ -110,6 +110,12 @@ class GORGEOUSCORERUNTIME_API AGorgeousPlayerState : public APlayerState
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Player State|Player Connection")
 	void SetGorgeousStablePlayerId(const FString& NewId);
+    UPROPERTY(EditDefaultsOnly,Category="Networking|Security")
+    bool bAllowClientAssignedStableIds = false;
+    UFUNCTION(BlueprintNativeEvent,Category="Networking|Security")
+    bool ValidateStablePlayerIdRequest(const FString& NewId) const;
+    virtual bool ValidateStablePlayerIdRequest_Implementation(const FString& NewId) const;
+
 
 	//<-------------------------------------------------------------------------->
 #pragma endregion Overrides
@@ -192,7 +198,7 @@ protected:
 	void Server_SetGorgeousStablePlayerId(const FString& NewId);
 
 	/**
-	 * Called by AGorgeousGameState::AddPlayerState (friend) after the PS is fully set up
+	 * Called by AGorgeousGameMode::PostLogin after the PS is fully set up
 	 * with its owning PlayerController so the initial stable ID can be pushed into
 	 * ReplicatedGorgeousStableId and replicated to all clients.
 	 */

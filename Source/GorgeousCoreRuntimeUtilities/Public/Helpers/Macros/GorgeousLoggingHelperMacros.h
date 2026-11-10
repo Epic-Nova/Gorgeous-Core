@@ -66,7 +66,7 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_LOG_MESSAGE_FULL_EX(Importance, Message, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr) \
-{ \
+do { \
 	GorgeousLogging::LogMessage_Internal( \
 		GorgeousLogging::GT_LogToText(Message), \
 		Importance, \
@@ -79,7 +79,7 @@
 		WorldContextObject, \
 		HyperlinkPtr \
 	); \
-}
+} while (false)
 
 /**
  * Logs a message with formatted arguments and customizable parameters.
@@ -97,7 +97,7 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_LOG_FORMAT_FULL_EX(Importance, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
 	GT_LOG_MESSAGE_FULL_EX( \
 		Importance, \
@@ -111,7 +111,7 @@
 		WorldContextObject, \
 		HyperlinkPtr \
 	); \
-}
+} while (false)
 
 #if GT_I_LOG_ENABLED
 /**
@@ -122,9 +122,9 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_I_LOG(LoggingKey, MessageFormat, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN_ON_INFO, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs an information message with customizable parameters.
@@ -137,9 +137,9 @@
  * @param WorldContextObject The world context object.
  */
 #define GT_I_LOG_FULL(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs an information message with formatted arguments and customizable parameters.
@@ -155,9 +155,9 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_I_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Information, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
-}
+} while (false)
 
 #else
 #define GT_I_LOG(...) ((void)0)
@@ -175,9 +175,9 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_S_LOG(LoggingKey, MessageFormat, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a success message with customizable parameters.
@@ -190,9 +190,9 @@
  * @param WorldContextObject The world context object.
  */
 #define GT_S_LOG_FULL(MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, WorldContextObject, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a success message with formatted arguments and customizable parameters.
@@ -208,9 +208,9 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_S_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Success, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
-}
+} while (false)
 
 #else
 #define GT_S_LOG(...) ((void)0)
@@ -228,9 +228,9 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_W_LOG(LoggingKey, MessageFormat, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a warning message with customizable parameters.
@@ -241,9 +241,9 @@
  * @param WorldContextObject The world context object.
  */
 #define GT_W_LOG_FULL(MessageFormat, LoggingKey, Duration, WorldContextObject, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, Duration, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a warning message with formatted arguments and customizable parameters.
@@ -259,9 +259,9 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_W_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Warning, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
-}
+} while (false)
 
 #else
 #define GT_W_LOG(...) ((void)0)
@@ -279,9 +279,9 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_E_LOG(LoggingKey, MessageFormat, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs an error message if ensure failes.
@@ -292,14 +292,15 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_E_LOG_ENSURE(Condition, LoggingKey, MessageFormat, ...) \
-{ \
+do { \
+	const bool bGorgeousCondition = !!(Condition); \
 	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-	if(!Condition) \
+	if (!bGorgeousCondition) \
 	{ \
 		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
-	ensureMsgf(Condition, TEXT("%s"), *FormattedMessage); \
-} \
+	ensureMsgf(bGorgeousCondition, TEXT("%s"), *FormattedMessage); \
+} while (false)
 
 /**
  * Logs an error message if verify failes.
@@ -310,14 +311,15 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_E_LOG_VERIFY(Condition, LoggingKey, MessageFormat, ...) \
-{ \
+do { \
+	const bool bGorgeousCondition = !!(Condition); \
 	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-	if(!Condition) \
+	if (!bGorgeousCondition) \
 	{ \
 		GT_LOG_MESSAGE_FULL_EX(Logging_Error, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
-	verifyf(Condition, TEXT("%s"), *FormattedMessage); \
-} \
+	verifyf(bGorgeousCondition, TEXT("%s"), *FormattedMessage); \
+} while (false)
 
 /**
  * Logs an error message with customizable parameters.
@@ -328,9 +330,9 @@
  * @param WorldContextObject The world context object.
  */
 #define GT_E_LOG_FULL(MessageFormat, LoggingKey, Duration, WorldContextObject, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, Duration, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs an error message with customizable parameters.
@@ -346,9 +348,9 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_E_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Error, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
-}
+} while (false)
 
 #else
 #define GT_E_LOG(...) ((void)0)
@@ -368,9 +370,9 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_F_LOG(LoggingKey, MessageFormat, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a fatal message if checkf failes.
@@ -381,14 +383,15 @@
  * @param ... Variable arguments for the format string.
  */
 #define GT_F_LOG_CHECKF(Condition, LoggingKey, MessageFormat, ...) \
-{ \
+do { \
+	const bool bGorgeousCondition = !!(Condition); \
 	FString FormattedMessage = FString::Printf(MessageFormat, ##__VA_ARGS__); \
-	if(!Condition) \
+	if (!bGorgeousCondition) \
 	{ \
 		GT_LOG_MESSAGE_FULL_EX(Logging_Fatal, FormattedMessage, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, nullptr, nullptr); \
 	}\
-	checkf(Condition, TEXT("%s"), *FormattedMessage); \
-} \
+	checkf(bGorgeousCondition, TEXT("%s"), *FormattedMessage); \
+} while (false)
 
 /**
  * Logs a fatal message with customizable parameters.
@@ -398,9 +401,9 @@
  * @param WorldContextObject The world context object.
  */
 #define GT_F_LOG_FULL(MessageFormat, LoggingKey, WorldContextObject, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, GT_DURATION, GT_PRINT_TO_SCREEN, GT_PRINT_TO_LOG, GT_OVERRIDE_LOGGING_IF_PRESENT, GT_SHOW_AS_TOAST, WorldContextObject, nullptr, ##__VA_ARGS__); \
-}
+} while (false)
 
 /**
  * Logs a fatal message with customizable parameters.
@@ -416,9 +419,9 @@
  * @param HyperlinkPtr Optional hyperlink associated with the log message.
  */
 #define GT_F_LOG_FULL_EX(LoggingKey, MessageFormat, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ...) \
-{ \
+do { \
 	GT_LOG_FORMAT_FULL_EX(Logging_Fatal, MessageFormat, LoggingKey, Duration, bPrintToScreen, bPrintToLog, bOverrideLoggingIfPresent, bShowAsToast, WorldContextObject, HyperlinkPtr, ##__VA_ARGS__); \
-}
+} while (false)
 
 #else
 #define GT_F_LOG(...) ((void)0)

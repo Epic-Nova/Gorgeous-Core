@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/DialogueWave.h"
 #include "Sound/SoundBase.h"
+#include "Components/AudioComponent.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/SoftObjectPtr.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
@@ -74,35 +75,26 @@ public:
 			return;
 		}
 
+		const TWeakObjectPtr<AActor> WeakActor(Actor);
+		const TWeakObjectPtr<UObject> WeakWorldContext(WorldContextObject ? WorldContextObject : Actor);
 		auto HandleLoadedObject = [=](UObject* LoadedObject)
 		{
 			UAudioComponent* Audio = nullptr;
 
-			if (!LoadedObject)
+			if (!LoadedObject || !WeakActor.IsValid() || !WeakWorldContext.IsValid())
 			{
 				return Audio;
 			}
 
-			if (UDialogueWave* DialogueSoundWave = Cast<UDialogueWave>(LoadedObject))
-			{
-				const FDialogueContext DialogueContext;
-				//@TODO: Ask a runtime context provider to hand over a valid context
-				//@e.g. the Actor can be used as the speaker and the actors in the near distance could be the listeners
-
-				Audio = UGameplayStatics::SpawnDialogueAtLocation(WorldContextObject, DialogueSoundWave, DialogueContext,
-					Actor->GetActorLocation(),
-					Actor->GetActorRotation(),
-					1.f, 1.f, 0.f, nullptr);
-				//@TODO: Get the float & attenuation values from a config provider (e.g. Entertaining Audio Config Provider which would be base of Core Audio Config Provider)
-				OnVoiceLineAudioReady.ExecuteIfBound(Audio);
-				OnVoiceLineFinished.ExecuteIfBound();
-			}
 
 			if (USoundBase* LoadedSound = Cast<USoundBase>(LoadedObject))
 			{
-				Audio = UGameplayStatics::SpawnSoundAtLocation(WorldContextObject, LoadedSound, Actor->GetActorLocation());
+				Audio = UGameplayStatics::SpawnSoundAtLocation(WeakWorldContext.Get(), LoadedSound, WeakActor->GetActorLocation());
+				if (Audio)
+				{
+					Audio->OnAudioFinishedNative.AddLambda([OnVoiceLineFinished](UAudioComponent*) { OnVoiceLineFinished.ExecuteIfBound(); });
+				}
 				OnVoiceLineAudioReady.ExecuteIfBound(Audio);
-				OnVoiceLineFinished.ExecuteIfBound();
 			}
 
 			return Audio;
@@ -139,6 +131,29 @@ public:
 			}));
 		)
 	}
+    /** Dialogue-specific variant; the caller supplies the speaker/listener context. */
+    UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Audio", meta = (WorldContext = "WorldContextObject"))
+    static void PlayDialogueVoiceLineAtActorLocation(TSoftObjectPtr<UDialogueWave> Dialogue, const FDialogueContext& Context,
+        AActor* Actor, FOnVoiceLineFinishedNative OnVoiceLineFinished, FOnVoiceLineAudioReadyNative OnVoiceLineAudioReady,
+        UObject* WorldContextObject = nullptr)
+    {
+        if (Dialogue.IsNull() || !IsValid(Actor)) { return; }
+        const TWeakObjectPtr<AActor> WeakActor(Actor);
+        const TWeakObjectPtr<UObject> WeakWorldContext(WorldContextObject ? WorldContextObject : Actor);
+        UAssetManager::GetStreamableManager().RequestAsyncLoad(Dialogue.ToSoftObjectPath(), FStreamableDelegate::CreateLambda(
+            [Dialogue, Context, WeakActor, WeakWorldContext, OnVoiceLineFinished, OnVoiceLineAudioReady]
+            {
+                if (!Dialogue.IsValid() || !WeakActor.IsValid() || !WeakWorldContext.IsValid()) { return; }
+                UAudioComponent* Audio = UGameplayStatics::SpawnDialogueAtLocation(WeakWorldContext.Get(), Dialogue.Get(), Context,
+                    WeakActor->GetActorLocation(), WeakActor->GetActorRotation());
+                if (Audio)
+                {
+                    Audio->OnAudioFinishedNative.AddLambda([OnVoiceLineFinished](UAudioComponent*) { OnVoiceLineFinished.ExecuteIfBound(); });
+                }
+                OnVoiceLineAudioReady.ExecuteIfBound(Audio);
+            }));
+    }
+
 };
 
 using UGT_Audio_FL = UGorgeousAudioBlueprintFunctionLibrary;

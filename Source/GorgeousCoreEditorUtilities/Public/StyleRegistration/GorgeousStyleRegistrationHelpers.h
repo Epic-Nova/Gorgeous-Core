@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Styling/SlateStyle.h"
+#include "Styling/AppStyle.h"
+#include "Styling/StyleDefaults.h"
 #include "Fonts/CompositeFont.h"
 #include "Fonts/SlateFontInfo.h"
 #include "Styling/SlateStyle.h"
@@ -72,13 +74,18 @@ namespace GorgeousStyleRegistration
 	 * @param ClassName The name of the class for which the brushes are being set, used for class icon and thumbnail registration.
 	 * @param ParentClassName The name of the parent class from which to copy the brushes, used to retrieve the brushes for both the icon and thumbnail.
 	 */
-	FORCEINLINE void MapParentClassBrushes(const TSharedPtr<FSlateStyleSet>& Style, const FString& ClassName, const FString& ParentClassName)
-	{
-		Style->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName),
-			const_cast<FSlateBrush*>(FAppStyle::Get().GetBrush(*FString::Printf(TEXT("ClassIcon.%s"), *ParentClassName))));
-		Style->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *ClassName),
-			const_cast<FSlateBrush*>(FAppStyle::Get().GetBrush(*FString::Printf(TEXT("ClassThumbnail.%s"), *ParentClassName))));
-	};
+    FORCEINLINE void MapParentClassBrushes(const TSharedPtr<FSlateStyleSet>& Style, const FString& ClassName, const FString& ParentClassName)
+    {
+        if (!Style.IsValid()) return;
+        const ISlateStyle& ParentStyle = FAppStyle::Get();
+        const FSlateBrush* Icon = ParentStyle.GetOptionalBrush(*FString::Printf(TEXT("ClassIcon.%s"), *ParentClassName), nullptr, nullptr);
+        const FSlateBrush* Thumbnail = ParentStyle.GetOptionalBrush(*FString::Printf(TEXT("ClassThumbnail.%s"), *ParentClassName), nullptr, nullptr);
+        if (!Icon) Icon = ParentStyle.GetOptionalBrush(TEXT("ClassIcon.Object"), nullptr, FStyleDefaults::GetNoBrush());
+        if (!Thumbnail) Thumbnail = ParentStyle.GetOptionalBrush(TEXT("ClassThumbnail.Object"), nullptr, Icon);
+        // FSlateStyleSet owns and deletes every brush passed to Set. Never transfer AppStyle's pointers.
+        Style->Set(*FString::Printf(TEXT("ClassIcon.%s"), *ClassName), new FSlateBrush(*Icon));
+        Style->Set(*FString::Printf(TEXT("ClassThumbnail.%s"), *ClassName), new FSlateBrush(*Thumbnail));
+    };
 
 	/**
 	 * Helper function to set both icon and thumbnail brushes for a class, using an SVG file from the engine content directory.

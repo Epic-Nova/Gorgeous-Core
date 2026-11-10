@@ -17,6 +17,7 @@
 #include "Containers/Ticker.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+#include "AutoReplication/GorgeousReplicationBudget.h"
 //<-------------------------------------------------------------------------->
 
 //<=================--- Forward Declarations ---=================>
@@ -46,6 +47,9 @@ public:
 
 	void Initialize(UWorld* World);
 	void TearDown();
+    void ReinitializePreservingStreams(UWorld* World);
+    int32 GetActiveStreamCount() const { return ActiveStreams.Num(); }
+    bool IsIrisStreamActive(const UGorgeousObjectVariable* Variable) const;
 
 	// Explicit out-of-line destructor so that destruction of TUniquePtr<FGorgeousAutoReplicationIrisBackend>
 	// happens in the .cpp where FGorgeousAutoReplicationIrisBackend is a complete type. This avoids
@@ -57,6 +61,7 @@ public:
 	void UnregisterObjectVariable(UGorgeousObjectVariable* Variable);
 
 	void NotifyRPCBroadcast(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable* TargetVariable);
+    void QueuePropertyChanges(UGorgeousObjectVariable* Variable,const TSet<FName>& Properties);
 
 	/** Called once per frame by the internal ticker to keep deferred initialization up to date. */
 	void Tick(float DeltaSeconds);
@@ -92,6 +97,9 @@ private:
 	TWeakObjectPtr<UWorld> CachedWorld;
 	TWeakObjectPtr<UReplicationGraph> AutoReplicationGraph;
 	TMap<FObjectKey, FGorgeousAutoReplicationActiveStream> ActiveStreams;
+    struct FPendingProperties { TSet<FName> Properties; FGorgeousReplicationTokenBucket Budget; double TimeSinceDispatch=0.0; };
+    TMap<FObjectKey,FPendingProperties> PendingPropertyChanges;
+
 	bool bIrisInitialized;
 	bool bReplicationGraphInitialized;
 	bool bWarnedReplicationGraphIrisConflict;

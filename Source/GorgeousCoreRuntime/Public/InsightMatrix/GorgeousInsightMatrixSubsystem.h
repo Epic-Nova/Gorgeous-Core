@@ -15,8 +15,7 @@
 #include "Subsystems/EngineSubsystem.h"
 #include "InsightMatrix/GorgeousInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
-#include "Slate/GorgeousInsightDebugPanel.h"
-#include "Widgets/SWindow.h"
+#include "InsightMatrix/GorgeousInsightPanelState.h"
 #include "Features/IModularFeatures.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
@@ -44,17 +43,25 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnGorgeousInsightProviderChanged, IGorgeous
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightMatrixSubsystem",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#adding-your-own-scenario"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousInsightMatrixSubsystem : public UEngineSubsystem
 {
 	GENERATED_BODY()
+	friend class FGorgeousChartContextRegression;
 
 public:
 	static UGorgeousInsightMatrixSubsystem* Get();
+    /** Both optional service presence and runtime opt-in are required. */
+    static bool IsDevelopmentToolsEnabled();
+    /** Only an explicit pointer to the current native test grants automation access; null never does. */
+    static bool IsNativeAutomationExecution(const class FAutomationTestBase* Test = nullptr);
+    const FGorgeousInsightPanelState& GetPanelState() const { return CachedPanelState; }
+    bool HasPanelState() const { return bHasCachedPanelState; }
+    void SetPanelState(const FGorgeousInsightPanelState& State);
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -91,6 +98,8 @@ public:
 		FName ActionId = NAME_None;
 		double DurationSeconds = 0.0;
 		bool bSucceeded = false;
+        bool bHasExecutionResult = false;
+        FString ResultMessage;
 	};
 
 	/** Opens the unified debug panel window. */
@@ -110,6 +119,8 @@ public:
 
 	/** Opens the in-game debug panel overlay (viewport). */
 	void ShowInGamePanel(int32 ZOrder = 0);
+    /** Open for the chosen local player, preserving that player's prior viewport input state. */
+    void ShowInGamePanelForPlayer(class ULocalPlayer* LocalPlayer, int32 ZOrder = 0);
 
 	/** Hides the in-game debug panel overlay (viewport). */
 	void HideInGamePanel();
@@ -129,6 +140,7 @@ public:
 	void GatherAllStats(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightStat>& OutStats) const;
 	void GatherProviderStats(const FGorgeousInsightGatherContext& Context, FName ProviderName, TArray<FGorgeousInsightStat>& OutStats) const;
 	void GatherProviderCharts(FName ProviderName, TArray<FGorgeousInsightChartDefinition>& OutCharts) const;
+	void GatherProviderCharts(FName ProviderName, const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightChartDefinition>& OutCharts) const;
 
 	void GatherAllActions(TArray<FGorgeousInsightAction>& OutActions) const;
 	void GatherProviderActions(FName ProviderName, TArray<FGorgeousInsightAction>& OutActions) const;
@@ -140,12 +152,16 @@ public:
 	FGorgeousInsightTestResult RunTest(FName ProviderName, FName TestId, const FGorgeousInsightTestContext& Context);
 	const FGorgeousInsightLastRunStats& GetLastRunStats() const { return LastRunStats; }
 	bool GetLastActionStats(FName ProviderName, FName ActionId, FGorgeousInsightLastActionStats& OutStats) const;
-	const FGorgeousInsightTestResult* GetBaselineResult(FName ProviderName, FName TestId) const;
+	/** Record an externally completed functional test for the panel and baseline/history tools. */
+    void RecordFunctionalTestResult(FName TestId, const FText& DisplayName, const FGorgeousInsightTestResult& Result, double DurationSeconds);
+    const FGorgeousInsightTestResult* GetLastTestResult(FName ProviderName, FName TestId) const;
+    uint64 GetExternalTestResultRevision() const { return ExternalTestResultRevision; }
+    const FGorgeousInsightTestResult* GetBaselineResult(FName ProviderName, FName TestId) const;
 	bool SetBaselineFromLastResult(FName ProviderName, FName TestId);
 
 	/** Export provider or all stats to CSV/JSON. */
-	bool ExportStatsToCSV(const FString& AbsoluteFilePath, FName ProviderName = NAME_None) const;
-	bool ExportStatsToJson(const FString& AbsoluteFilePath, FName ProviderName = NAME_None) const;
+	bool ExportStatsToCSV(const FString& AbsoluteFilePath, FName ProviderName = NAME_None, const FGorgeousInsightGatherContext& Context = FGorgeousInsightGatherContext()) const;
+	bool ExportStatsToJson(const FString& AbsoluteFilePath, FName ProviderName = NAME_None, const FGorgeousInsightGatherContext& Context = FGorgeousInsightGatherContext()) const;
 
 	/** Queue a scenario by name for runtime execution. */
 	bool EnqueueScenario(FName ScenarioName, const FString& Parameters = TEXT(""), int32 VariantIndex = 0, UObject* WorldContextObject = nullptr);
@@ -182,21 +198,13 @@ public:
 	FOnGorgeousInsightProviderChanged OnProviderUnregistered;
 
 private:
-	void RegisterInputPreProcessor();
-	void UnregisterInputPreProcessor();
-	FMargin GetInGamePanelOffset() const;
-	FVector2D GetInGamePanelPosition() const;
-	void OnInGamePanelDragged(const FVector2D& NewPosition);
-	void UpdateInGameInputMode(bool bEnable) const;
-	void BindPanelState(const TSharedPtr<SGorgeousInsightDebugPanel>& Panel);
-	void ApplyPanelStateToAll(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
-	void HandlePanelStateChanged(const SGorgeousInsightDebugPanel::FInsightPanelState& State);
 	void UpdateLastRunStats(FName ProviderName, FName TestId, const FGorgeousInsightTestResult& Result, double DurationSeconds);
 public:
 	struct FGorgeousInsightEditorSnapshot
 	{
 		FDateTime Timestamp;
 		TMap<FName, TArray<FGorgeousInsightStat>> ProviderStats;
+		TMap<FName, TArray<FGorgeousInsightChartDefinition>> ProviderCharts;
 	};
 
 	const TArray<FGorgeousInsightEditorSnapshot>& GetEditorHistory() const { return EditorHistory; }
@@ -207,6 +215,10 @@ public:
 	void LoadCachedStats();
 	void SaveCachedStats() const;
 	void CacheProviderStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats) const;
+	void CacheProviderCharts(FName ProviderName, const TArray<FGorgeousInsightChartDefinition>& Charts) const;
+	void LoadChartBaselines() const;
+	void SaveChartBaselines() const;
+	static void AddReferencedObjects(UObject* Object, FReferenceCollector& Collector);
 	static FString GetInsightMatrixIniPath();
 	void LoadPanelState();
 	void SavePanelState() const;
@@ -233,6 +245,8 @@ public:
 	TArray<FGorgeousInsightQueuedTest> TestQueue;
 	TMap<FName, TMap<FName, FGorgeousInsightTestResult>> LastTestResults;
 	TMap<FString, FGorgeousInsightTestResult> BaselineResultsCache;
+    TSharedPtr<class FGorgeousFunctionalResultProvider> FunctionalResultProvider;
+    uint64 ExternalTestResultRevision = 0;
 	FGorgeousInsightLastRunStats LastRunStats;
 	TMap<FName, TMap<FName, FGorgeousInsightLastActionStats>> LastActionStats;
 	mutable TMap<FName, TArray<FGorgeousInsightStat>> ProviderBaselineStats;
@@ -240,20 +254,12 @@ public:
 	mutable TArray<FGorgeousInsightEditorSnapshot> EditorHistory;
 	mutable int32 ActiveHistoryIndex = -1;
 	mutable TMap<FName, TArray<FGorgeousInsightStat>> CachedProviderStats;
+	mutable TMap<FName, TArray<FGorgeousInsightChartDefinition>> CachedProviderCharts;
+	mutable TMap<FName, TArray<FGorgeousInsightChartDefinition>> ProviderBaselineCharts;
+	mutable bool bChartBaselinesLoaded = false;
 	mutable bool bStatsCacheLoaded = false;
 	mutable bool bStatsCacheDirty = false;
 
-	TSharedPtr<SWindow> DebugPanelWindow;
-	TSharedPtr<SGorgeousInsightDebugPanel> DebugPanelWidget;
-
-	TSharedPtr<class SConstraintCanvas> InGameCanvas;
-	TSharedPtr<class SGorgeousInsightDebugPanel> InGamePanelWidget;
-	TSharedPtr<class SWidget> InGamePanelContainer;
-	FVector2D InGamePanelPosition = FVector2D(80.f, 80.f);
-	FVector2D InGamePanelSize = FVector2D(900.f, 620.f);
-	bool bInGamePanelVisible = false;
-	TSharedPtr<class IInputProcessor> InputPreProcessor;
-	SGorgeousInsightDebugPanel::FInsightPanelState CachedPanelState;
-	bool bHasCachedPanelState = false;
-	bool bApplyingPanelState = false;
+    FGorgeousInsightPanelState CachedPanelState;
+    bool bHasCachedPanelState = false;
 };

@@ -35,9 +35,9 @@
 UCLASS(Config = EditorPerProjectUserSettings, DefaultConfig,
 	meta = (
 		DisplayName = "Nudges",
-		DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/GorgeousNudgeDeveloperSettings",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Examples"
+		DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/ProjectSettings/#nudges",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news"
 		))
 class GORGEOUSCOREEDITOR_API UGorgeousNudgeDeveloperSettings : public UDeveloperSettings
 {

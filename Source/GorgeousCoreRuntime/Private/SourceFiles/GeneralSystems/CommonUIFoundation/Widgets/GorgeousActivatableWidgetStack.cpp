@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidgetStack.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "GameplayTagContainer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
@@ -19,7 +20,8 @@ void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 
 	if (LayerTag.IsValid())
 	{
-		UGorgeousPrimaryGameLayout* RootLayout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+		auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this);
+		UGorgeousPrimaryGameLayout* RootLayout = Subsystem ? UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(Subsystem->GetLocalPlayer()) : nullptr;
 		
 		// If the global lookup fails (common during construction race), check our hierarchy
 		if (!RootLayout)
@@ -37,6 +39,6 @@ void UGorgeousActivatableWidgetStack::OnWidgetRebuilt()
 		Payload.LayerTag = LayerTag;
 		Payload.LayerWidget = this;
 
-		USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Layout_RegisterLayer, FInstancedStruct::Make(Payload));
+		if (!RootLayout) USignalBridgeBlueprintFunctionLibrary::DispatchLocal(this, TAG_Gorgeous_UI_Layout_RegisterLayer, FInstancedStruct::Make(Payload));
 	}
 }

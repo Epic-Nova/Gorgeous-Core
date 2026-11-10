@@ -155,13 +155,13 @@ void FGorgeousVaultLoader::LoadVault()
     if (!DllHandle)
     {
         // Fallback: try the plugin's Binaries directory
-        FString PluginBinariesDir = FPaths::Combine(
-            FPaths::ProjectPluginsDir(),
-            TEXT("GorgeousCore"), TEXT("Binaries"),
-            FPlatformProcess::GetBinariesSubdirectory());
-
-        FString FullPath = FPaths::Combine(PluginBinariesDir, DllName);
-        DllHandle = FPlatformProcess::GetDllHandle(*FullPath);
+        const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+        if (Plugin.IsValid())
+        {
+            const FString FullPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(
+                Plugin->GetBaseDir(), TEXT("Binaries"), FPlatformProcess::GetBinariesSubdirectory(), DllName));
+            DllHandle = FPlatformProcess::GetDllHandle(*FullPath);
+        }
     }
 
     if (!DllHandle)
@@ -481,11 +481,13 @@ void FGorgeousVaultLoader::EvaluateSiblingPluginLicenses(const FString& ProjectI
         for (int32 i = 0; i < RawNames.Num(); ++i)
         {
             // Build the expected license file path for this plugin
-            FString LicPath = FPaths::Combine(
-                FPaths::ProjectPluginsDir(),
-                TEXT("GorgeousThings"),
-                FString(SiblingNames[i]),
-                TEXT("License.lic"));
+            const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(SiblingNames[i]);
+            if (!Plugin.IsValid())
+            {
+                UE_LOG(LogGorgeousVault, Warning, TEXT("GorgeousVault: Plugin '%s' is no longer available; license path cannot be resolved."), *SiblingNames[i]);
+                continue;
+            }
+            const FString LicPath = FPaths::ConvertRelativePathToFull(FPaths::Combine(Plugin->GetBaseDir(), TEXT("License.lic")));
 
             FTCHARToUTF8 LicPathUtf8(*LicPath);
 

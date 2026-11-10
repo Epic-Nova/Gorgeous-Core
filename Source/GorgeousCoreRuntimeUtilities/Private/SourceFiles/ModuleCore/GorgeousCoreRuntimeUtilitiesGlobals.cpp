@@ -17,3 +17,12 @@ FGorgeousLogEntryDelegate& GetGorgeousLogEntryDelegate()
 {
 	return GGorgeousLogEntryDelegate;
 }
+
+namespace GorgeousLogging
+{
+	GORGEOUSCORERUNTIMEUTILITIES_API TSet<FName>& GetSuppressedLoggingKeys()
+	{
+		static TSet<FName> Keys;
+		return Keys;
+	}
+}

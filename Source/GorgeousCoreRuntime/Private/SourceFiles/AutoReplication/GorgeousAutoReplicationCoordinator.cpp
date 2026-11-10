@@ -21,12 +21,13 @@
 #include "GameFramework/Actor.h"
 #include "ReplicationGraph.h"
 #include "Containers/Ticker.h"
+#include "Algo/Sort.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationCoordinator, Log, All);
 
-// The singleton lives inside Get(); we keep a bare pointer to it so that
-// TearDownForWorld can call TearDown() without re-initializing the singleton.
-static FGorgeousAutoReplicationCoordinator* GCoordinatorInstance = nullptr;
+namespace {
+    TMap<TWeakObjectPtr<UWorld>, TUniquePtr<FGorgeousAutoReplicationCoordinator>> WorldCoordinators;
+}
 
 FGorgeousAutoReplicationCoordinator::FGorgeousAutoReplicationCoordinator()
 	: bIrisInitialized(false)
@@ -38,23 +39,20 @@ FGorgeousAutoReplicationCoordinator::FGorgeousAutoReplicationCoordinator()
 
 FGorgeousAutoReplicationCoordinator& FGorgeousAutoReplicationCoordinator::Get(UWorld* World)
 {
-	static FGorgeousAutoReplicationCoordinator Coordinator;
-	GCoordinatorInstance = &Coordinator;
-	Coordinator.Initialize(World);
-	return Coordinator;
+    static FGorgeousAutoReplicationCoordinator EmptyCoordinator;
+    if (!World) return EmptyCoordinator;
+    for (auto It=WorldCoordinators.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+    auto& Coordinator = WorldCoordinators.FindOrAdd(World);
+    if (!Coordinator) Coordinator.Reset(new FGorgeousAutoReplicationCoordinator());
+    Coordinator->Initialize(World);
+    return *Coordinator;
 }
 
 void FGorgeousAutoReplicationCoordinator::TearDownForWorld(UWorld* DyingWorld)
 {
-	if (!DyingWorld || !GCoordinatorInstance)
-	{
-		return;
-	}
-
-	if (GCoordinatorInstance->CachedWorld.Get() == DyingWorld)
-	{
-		GCoordinatorInstance->TearDown();
-	}
+    if (!DyingWorld) return;
+    if (auto* Coordinator = WorldCoordinators.Find(DyingWorld)) (*Coordinator)->TearDown();
+    WorldCoordinators.Remove(DyingWorld);
 }
 
 // QoL override API: set/clear runtime overrides that take precedence over developer settings.
@@ -139,9 +137,21 @@ void FGorgeousAutoReplicationCoordinator::Initialize(UWorld* World)
 	}
 }
 
+void FGorgeousAutoReplicationCoordinator::ReinitializePreservingStreams(UWorld* World)
+{
+    auto SavedPending=MoveTemp(PendingPropertyChanges);
+    TArray<TPair<TWeakObjectPtr<UGorgeousObjectVariable>,FGorgeousAutoReplicationStreamConfig>> Saved;
+    for (const auto& Pair:ActiveStreams) Saved.Emplace(Pair.Value.Target,Pair.Value.Config);
+    for (const auto& Pair:Saved) if (Pair.Key.IsValid()) UnregisterObjectVariable(Pair.Key.Get());
+    TearDown(); Initialize(World);
+    for (const auto& Pair:Saved) if (Pair.Key.IsValid()) RegisterObjectVariable(Pair.Key.Get(),Pair.Value);
+    PendingPropertyChanges=MoveTemp(SavedPending);
+}
+
 void FGorgeousAutoReplicationCoordinator::TearDown()
 {
 	ActiveStreams.Empty();
+    PendingPropertyChanges.Empty();
 	AutoReplicationGraph = nullptr;
 	CachedWorld = nullptr;
 	bIrisInitialized = false;
@@ -161,6 +171,12 @@ void FGorgeousAutoReplicationCoordinator::TearDown()
 	}
 }
 
+bool FGorgeousAutoReplicationCoordinator::IsIrisStreamActive(const UGorgeousObjectVariable* Variable) const
+{
+    const auto* Stream = Variable ? ActiveStreams.Find(FObjectKey(Variable)) : nullptr;
+    return Stream && Stream->IsRegisteredWithIris();
+}
+
 void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObjectVariable* Variable, const FGorgeousAutoReplicationStreamConfig& Config)
 {
 	if (!Variable)
@@ -177,6 +193,7 @@ void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObject
 	Initialize(World);
 
 	const FObjectKey StreamKey(Variable);
+    if (ActiveStreams.Contains(StreamKey)) UnregisterObjectVariable(Variable);
 	FGorgeousAutoReplicationActiveStream* Stream = ActiveStreams.Find(StreamKey);
 	if (!Stream)
 	{
@@ -190,8 +207,11 @@ void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObject
 	Stream->RefreshStreamGuid(Variable);
 	Stream->RootNetworkChannel = Variable->ShouldUseRootNetworkStack() ? Variable->GetEffectiveNetworkChannel() : NAME_None;
 
-	const bool bUsesReplicationGraph = FGorgeousAutoReplicationBackendTraits::UsesReplicationGraph(Config.Backend);
-	const bool bUsesIris = FGorgeousAutoReplicationBackendTraits::UsesIris(Config.Backend);
+    const UGorgeousAutoReplicationSettings* Settings=UGorgeousAutoReplicationSettings::Get();
+    const bool bGraphEnabled=bReplicationGraphEnabledOverrideSet ? bReplicationGraphEnabledOverrideValue : Settings && Settings->bEnableReplicationGraph;
+    const bool bIrisEnabled=bUseIrisOverrideSet ? bUseIrisOverrideValue : Settings && Settings->bEnableIris;
+	const bool bUsesReplicationGraph = bGraphEnabled && FGorgeousAutoReplicationBackendTraits::UsesReplicationGraph(Config.Backend);
+	const bool bUsesIris = bIrisEnabled && FGorgeousAutoReplicationBackendTraits::UsesIris(Config.Backend);
 
 #if GORGEOUSCORE_WITH_REPLICATION_GRAPH
 	if (bUsesReplicationGraph)
@@ -225,6 +245,8 @@ void FGorgeousAutoReplicationCoordinator::RegisterObjectVariable(UGorgeousObject
 		{
 			IrisBackend->RegisterStream(Variable, Config, Stream->GetStreamGuid());
 			Stream->SetRegisteredWithIris(true);
+            // Register before the actor's first metadata poll exports its OV pointer.
+            Variable->TryPublishNativeIrisState();
 		}
 		else
 		{
@@ -257,6 +279,7 @@ void FGorgeousAutoReplicationCoordinator::UnregisterObjectVariable(UGorgeousObje
 		bWasRegisteredWithIris = ExistingStream->IsRegisteredWithIris();
 	}
 	ActiveStreams.Remove(StreamKey);
+    PendingPropertyChanges.Remove(StreamKey);
 
 #if GORGEOUSCORE_WITH_REPLICATION_GRAPH
 	if (bWasRegisteredWithGraph && FGorgeousAutoReplicationBackendTraits::UsesReplicationGraph(PreviousConfig.Backend))
@@ -313,11 +336,30 @@ void FGorgeousAutoReplicationCoordinator::Tick(float DeltaSeconds)
 	}
 
 #if GORGEOUSCORE_WITH_IRIS
-	if (IrisBackend.IsValid())
-	{
-		IrisBackend->Tick(DeltaSeconds);
-	}
+	if (IrisBackend.IsValid()) IrisBackend->Tick(DeltaSeconds);
 #endif
+    TArray<FObjectKey> Scheduled;
+    PendingPropertyChanges.GenerateKeyArray(Scheduled);
+    Algo::Sort(Scheduled,[this](const FObjectKey& A,const FObjectKey& B) {
+        const auto* SA=ActiveStreams.Find(A); const auto* SB=ActiveStreams.Find(B);
+        return (SA ? SA->Config.Priority : 0) > (SB ? SB->Config.Priority : 0);
+    });
+    for (const FObjectKey& Key:Scheduled)
+    {
+        auto* Stream=ActiveStreams.Find(Key); auto* Pending=PendingPropertyChanges.Find(Key);
+        UGorgeousObjectVariable* Variable=Stream ? Stream->Target.Get() : nullptr;
+        if (!Variable || !Pending) { PendingPropertyChanges.Remove(Key); continue; }
+        Pending->Budget.Refill(DeltaSeconds,Stream->Config.BandwidthBudgetKB);
+        Pending->TimeSinceDispatch+=FMath::Max(0.0f,DeltaSeconds);
+        if (Pending->Properties.IsEmpty()) continue;
+        const double Frequency=Stream->Config.GetEffectiveUpdateFrequency();
+        if ((Frequency>0 && Pending->TimeSinceDispatch<1.0/Frequency) || !Pending->Budget.CanDispatch(Stream->Config.BandwidthBudgetKB)) continue;
+        int64 Bytes=0;
+        if (Variable->TryServerReplicateProperties(Pending->Properties,nullptr,&Bytes))
+        {
+            Pending->Budget.Consume(Bytes); Pending->Properties.Reset(); Pending->TimeSinceDispatch=0;
+        }
+    }
 }
 
 bool FGorgeousAutoReplicationCoordinator::HandleTickerTick(float DeltaSeconds)
@@ -381,7 +423,7 @@ UReplicationGraph* FGorgeousAutoReplicationCoordinator::GetOrCreateReplicationGr
 	}
 
 	const UGorgeousAutoReplicationSettings* Settings = UGorgeousAutoReplicationSettings::Get();
-	if (!Settings || !Settings->bEnableReplicationGraph)
+	if (!Settings || !Settings->bEnableReplicationGraph || World->GetNetMode() == NM_Client || NetDriver->GetReplicationDriver())
 	{
 		return nullptr;
 	}
@@ -495,3 +537,12 @@ void FGorgeousAutoReplicationCoordinator::RefreshReplicationGraphStreams()
 	}
 }
 #endif
+
+void FGorgeousAutoReplicationCoordinator::QueuePropertyChanges(UGorgeousObjectVariable* Variable,const TSet<FName>& Properties)
+{
+    if (!Variable || Properties.IsEmpty() || !CachedWorld.IsValid() || CachedWorld->GetNetMode()==NM_Client) return;
+    const FObjectKey Key(Variable);
+    if (!ActiveStreams.Contains(Key)) RegisterObjectVariable(Variable,Variable->GetAutoReplicationConfig());
+    auto& Pending=PendingPropertyChanges.FindOrAdd(Key);
+    Pending.Properties.Append(Properties);
+}

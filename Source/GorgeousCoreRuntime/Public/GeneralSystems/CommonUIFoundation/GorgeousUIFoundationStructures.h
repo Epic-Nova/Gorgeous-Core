@@ -130,6 +130,10 @@ struct FGorgeousFocusRequestPayload : public FGorgeousUIBaseUpdatePayload
 {
 	GENERATED_BODY()
 
+	// INDEX_NONE preserves primary-player routing for legacy callers.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Routing")
+	int32 LocalPlayerIndex = INDEX_NONE;
+
 	// The binding tag of the widget that should receive focus.
 	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FGameplayTag TargetTag;
@@ -263,6 +267,10 @@ USTRUCT(BlueprintType)
 struct FGorgeousInputActionPayload : public FGorgeousUIBaseUpdatePayload
 {
 	GENERATED_BODY()
+
+	// INDEX_NONE preserves primary-player routing for legacy callers.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Routing")
+	int32 LocalPlayerIndex = INDEX_NONE;
 
 	// The input action tag to trigger (e.g., UI.Action.Back).
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
@@ -415,8 +423,12 @@ struct FGorgeousUIMessageRequest
 {
 	GENERATED_BODY()
 
+	// INDEX_NONE preserves primary-player routing for legacy callers.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Routing")
+	int32 LocalPlayerIndex = INDEX_NONE;
+
 	// Unique ID for this specific message instance to track the result.
-	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
+	UPROPERTY(BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation", meta=(IgnoreForMemberInitializationTest))
 	FGuid RequestID;
 
 	// The title text for the dialog.
@@ -469,10 +481,10 @@ struct FGorgeousListViewEntry_S
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
-	bool bWithIcon;
+	bool bWithIcon = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
-	bool bEnableAnimation;
+	bool bEnableAnimation = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Common UI Foundation")
 	FText ButtonText;

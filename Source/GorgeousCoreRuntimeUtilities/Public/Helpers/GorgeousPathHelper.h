@@ -15,6 +15,8 @@
 #include "Interfaces/IPluginManager.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+#include "Misc/Paths.h"
+#include "Misc/PackageName.h"
 //<-------------------------------------------------------------------------->
 
 /**
@@ -29,7 +31,7 @@ static FORCEINLINE FString GetGorgeousPluginBaseDir()
 	const TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin("GorgeousCore");
 	if (CorePlugin.IsValid())
 	{
-		return FPaths::GetPath(CorePlugin->GetBaseDir());
+		return FPaths::ConvertRelativePathToFull(FPaths::GetPath(CorePlugin->GetBaseDir()));
 	}
 
 	// Fallback for non-monolithic builds or unusual structures:
@@ -39,11 +41,11 @@ static FORCEINLINE FString GetGorgeousPluginBaseDir()
 	{
 		if (Plugin->GetName().StartsWith(TEXT("Gorgeous")))
 		{
-			return FPaths::GetPath(Plugin->GetBaseDir());
+			return FPaths::ConvertRelativePathToFull(FPaths::GetPath(Plugin->GetBaseDir()));
 		}
 	}
 
-	return FPaths::ProjectPluginsDir() / TEXT("GorgeousThings");
+	return FPaths::ConvertRelativePathToFull(FPaths::ProjectPluginsDir());
 }
 
 /**
@@ -106,7 +108,7 @@ static FORCEINLINE FString RelativePathToGorgeousPath(FString RelativePath)
 		const TSharedPtr<IPlugin> FoundPlugin = IPluginManager::Get().FindPlugin(PluginName);
 		if (FoundPlugin.IsValid())
 		{
-			return FPaths::Combine(FoundPlugin->GetBaseDir(), RemainingPath);
+			return FPaths::ConvertRelativePathToFull(FPaths::Combine(FoundPlugin->GetBaseDir(), RemainingPath));
 		}
 	}
 	else
@@ -115,7 +117,7 @@ static FORCEINLINE FString RelativePathToGorgeousPath(FString RelativePath)
 		const TSharedPtr<IPlugin> FoundPlugin = IPluginManager::Get().FindPlugin(RelativePath);
 		if (FoundPlugin.IsValid())
 		{
-			return FoundPlugin->GetBaseDir();
+			return FPaths::ConvertRelativePathToFull(FoundPlugin->GetBaseDir());
 		}
 	}
 

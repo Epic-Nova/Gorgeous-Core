@@ -15,6 +15,8 @@
 #include "Algo/Sort.h"
 #include "Misc/AutomationTest.h"
 #include "Misc/ScopeExit.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -273,7 +275,7 @@ bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)
 	bool bHarnessStarted = false;
 	if (Request.bEnableSharedHarness)
 	{
-		bHarnessStarted = FGorgeousInsightHarness::StartHarness(Request);
+		bHarnessStarted = FGorgeousInsightHarness::StartHarness(Request, this);
 		if (!bHarnessStarted)
 		{
 			AddError(TEXT("[InsightMatrix] Failed to start harness."));
@@ -296,8 +298,8 @@ bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)
 	{
 		if (Registered.Num() == 0)
 		{
-			AddWarning(TEXT("[InsightMatrix] No scenarios registered. Ensure modules register their suites."));
-			return true;
+            AddError(TEXT("[InsightMatrix] No scenarios registered; no scenario executed. Ensure modules register their suites."));
+            return false;
 		}
 
 		if (Request.ScenarioWhitelist.Num() > 0 || Request.TagFilters.Num() > 0)
@@ -306,8 +308,8 @@ bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)
 			return false;
 		}
 
-		AddWarning(TEXT("[InsightMatrix] All registered scenarios are disabled."));
-		return true;
+        AddError(TEXT("[InsightMatrix] All registered scenarios are disabled; no scenario executed."));
+        return false;
 	}
 
 	const TArray<int32> Variants = Request.ResolveVariantIndices({ 0 });
@@ -317,12 +319,24 @@ bool FGorgeousInsightMatrixAutomationTest::RunTest(const FString& Parameters)
 	{
 		for (const int32 Variant : Variants)
 		{
-			FGorgeousInsightScenarioContext Context(Request, Parameters, Variant, this, Descriptor);
+			UWorld* ScenarioWorld = nullptr;
+			if (GEngine)
+			{
+				for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
+				{
+					if (UWorld* World = WorldContext.World())
+					{
+						if (!ScenarioWorld || WorldContext.WorldType == EWorldType::PIE) ScenarioWorld = World;
+						if (WorldContext.WorldType == EWorldType::PIE) break;
+					}
+				}
+			}
+			FGorgeousInsightScenarioContext Context(Request, Parameters, Variant, this, Descriptor, ScenarioWorld);
 			const FString ScenarioLabel = Context.BuildScenarioLabel();
 			AddInfo(FString::Printf(TEXT("[InsightMatrix] >>> %s"), *ScenarioLabel));
 
 			const FGorgeousInsightScenarioResult Result = FGorgeousInsightTestMatrix::ExecuteScenario(Descriptor, Context);
-			FGorgeousInsightHarness::SaveScenarioResult(Descriptor, Result, TEXT("Automation"));
+			FGorgeousInsightHarness::SaveScenarioResult(Descriptor, Result, TEXT("Automation"), this);
 			for (const FString& Note : Result.Notes)
 			{
 				AddInfo(FString::Printf(TEXT("[InsightMatrix][%s] %s"), *ScenarioLabel, *Note));

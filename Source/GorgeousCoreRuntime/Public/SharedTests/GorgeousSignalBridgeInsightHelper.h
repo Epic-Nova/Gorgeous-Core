@@ -49,9 +49,9 @@ struct FGorgeousTestSignalPayload
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/GorgeousSignalBridgeInsightHelper",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/SharedTests/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#functional-tests",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#adding-your-own-scenario",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#functional-tests"
 		)
 )
 class UGorgeousSignalBridgeInsightHelper : public UObject
@@ -62,6 +62,11 @@ public:
 	// Accumulated calculation result to prevent optimization
 	UPROPERTY()
 	int32 HitCount = 0;
+    UPROPERTY()
+    int32 SignalsReceived = 0;
+
+	// Deterministic benchmark mode; bypasses the randomized sample without changing global RNG state.
+    bool bDispatchEverySignal = false;
 
 	// Number of results sent back
 	UPROPERTY()

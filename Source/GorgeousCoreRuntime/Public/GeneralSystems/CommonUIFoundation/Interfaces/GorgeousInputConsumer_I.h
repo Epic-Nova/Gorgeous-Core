@@ -52,7 +52,7 @@ public:
 	 * @param Instance The Enhanced Input instance that carries the action state.
 	 * @return True if the input was consumed and should not propagate further.
 	 */
-	UFUNCTION(Blueprintable, BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous Core|Common UI Foundation")
 	bool HandleGorgeousInputAdvanced(FGameplayTag ActionTag, const FInputActionInstance& Instance);
 
 	/**

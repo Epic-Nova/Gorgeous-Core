@@ -62,6 +62,7 @@ void UGorgeousAutoReplicationGraph::RegisterObjectVariable(UGorgeousObjectVariab
 		return;
 	}
 
+    if (RegisteredVariables.Contains(Variable)) return;
 	RegisteredVariables.Add(Variable);
 
 	if (!AutoReplicationNode)
@@ -86,7 +87,7 @@ void UGorgeousAutoReplicationGraph::UnregisterObjectVariable(UGorgeousObjectVari
 		return;
 	}
 
-	RegisteredVariables.Remove(Variable);
+    if (RegisteredVariables.Remove(Variable) == 0) return;
 
 	if (!AutoReplicationNode)
 	{

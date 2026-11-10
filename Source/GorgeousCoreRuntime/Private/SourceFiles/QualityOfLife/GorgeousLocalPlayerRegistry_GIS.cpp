@@ -9,6 +9,7 @@
 #include "Engine/GameInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationNetworkingGlobals.h"
 
 //=============================================================================
 // UGorgeousLocalPlayerRegistry_GIS Implementation
@@ -70,7 +71,8 @@ void UGorgeousLocalPlayerRegistry_GIS::OnGameModePostLogin(AGameModeBase* /*Game
 			}
 		}
 
-		const FString DefaultId = FString::Printf(TEXT("LocalPlayer_%d"), PlayerIndex);
+		FString DefaultId = UGorgeousAutoReplicationNetworkingGlobals::MakeStablePlayerConnectionId(NewPC);
+        if (DefaultId.IsEmpty()) DefaultId=FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
 
 		// Avoid collisions by appending until the ID is free
 		FString FinalId = DefaultId;

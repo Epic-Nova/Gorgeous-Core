@@ -36,6 +36,8 @@
 #include "AutoReplication/GorgeousAutoReplicationNetworkingTypes.h"
 #include "Containers/Ticker.h"
 #include "Net/UnrealNetwork.h"
+#include "UObject/UnrealType.h"
+#include "ObjectVariables/GorgeousPropertyTypeTraits.h"
 //----------------=== Third Party & Miscellaneous Includes ===--------------->
 struct FGorgeousObjectVariableSerializedPayload;
 
@@ -153,6 +155,12 @@ public:
 	// If true, object references that resolve to null on the client will be instantiated using the server-provided class and property snapshot.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking")
 	bool bInitializeNullReferences;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Gorgeous Object Variable|Networking")
+    bool bCustomConditionActive = true;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Gorgeous Object Variable|Networking")
+    bool bDynamicConditionActive = true;
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Gorgeous Object Variable|Networking")
+    FName NetConditionGroup;
 };
 
 inline FGorgeousReplicatedPropertyConfig::FGorgeousReplicatedPropertyConfig()
@@ -220,8 +228,10 @@ public:
  * enabling a more object-oriented approach to variable handling.
  *
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousObjectVariableValueChanged,UGorgeousObjectVariable*,Variable,FName,PropertyName);
+
 UCLASS(Abstract, DefaultToInstanced, EditInlineNew, ClassGroup = "Gorgeous Core|Gorgeous Object Variables", DisplayName = "Gorgeous Object Variable", Category = "Gorgeous Core|Gorgeous Object Variables",
-	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables."))
+	meta = (ToolTip = "Used for providing a more interactive way to define variables in object form.", ShortTooltip = "The base class for all object variables.", DocumentationOverview="https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/", DocumentationAPI="https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/"))
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariable : public UGorgeousBaseWorldContextUObject,
 public IGorgeousObjectVariableInteraction_I,
 public IGorgeousSingleObjectVariablesGetter_I, public IGorgeousSingleObjectVariablesSetter_I,
@@ -241,6 +251,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 	friend class FGorgeousAutoReplicationCoordinator;
 	friend class FGorgeousAutoReplicationMixin;
 	friend class UGorgeousRootNetworkStackSubsystem;
+    friend class IGorgeousObjectVariableInteraction_I;
 	friend class FGorgeousObjectVariablePropertyTypeCustomization;
 	friend class UGorgeousRootObjectVariable;
 #if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
@@ -250,6 +261,7 @@ public IGorgeousSetObjectVariablesGetter_I, public IGorgeousSetObjectVariablesSe
 #pragma endregion Friend Classes
 
 public:
+    UPROPERTY(Transient) bool bIsQualityOfLifeSelfReference=false;
 	virtual void PostInitProperties() override;
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRPCPayloadEvent, const FGorgeousQueuedRPC&, QueuedRPC, UGorgeousObjectVariable*, TargetVariable);
@@ -259,6 +271,20 @@ protected:
 	
 	/** The Class Constructor for the Base Object Variable is used to set Default Values. */
 	UGorgeousObjectVariable();
+    UPROPERTY(BlueprintAssignable,Category="Gorgeous Core|Object Variables")
+    FGorgeousObjectVariableValueChanged OnPropertyValueChanged;
+
+    template<typename TValue> void SetNativeObjectVariableValue(TValue& Storage,const TValue& NewValue)
+    {
+        const FProperty* Property=FindFProperty<FProperty>(GetClass(),TEXT("Value"));
+        if (Property && Property->Identical(&Storage,&NewValue)) return;
+        Storage=NewValue;
+        MarkPropertyDirty(TEXT("Value"));
+    }
+
+    virtual void GetObjectVariableParameter_Implementation(int32& OutValue, FName OptionalVariableName) override;
+    virtual void SetObjectVariableParameter_Implementation(const int32& NewValue, FName OptionalVariableName) override;
+
 
 	virtual ~UGorgeousObjectVariable() override;
 
@@ -281,6 +307,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Gorgeous Object Variables", meta = (DeterminesOutputType = "Class"))
 	UGorgeousObjectVariable* NewObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "");
+    /** Factory used by the typed Blueprint construction node. */
+    UFUNCTION(BlueprintCallable, meta=(BlueprintInternalUseOnly="true", DeterminesOutputType="Class"), Category="Gorgeous Core|Object Variables")
+    static UGorgeousObjectVariable* CreateObjectVariable(TSubclassOf<UGorgeousObjectVariable> Class, FGuid& Identifier, UGorgeousObjectVariable* Parent = nullptr, bool bShouldPersist = false, const FString& DisplayNameOverride = "");
+
 
 	/**
 	 * Instantiates a new object variable of the specified class as transactional and registers it as a child of the given Parent for persistence across editor sessions.
@@ -327,7 +357,13 @@ public:
 	 * @param Bytes Snapshot bytes previously produced by SerializeOVToRPCArgumentBytes.
 	 * @return The reconstructed OV, or nullptr on failure.
 	 */
-	static UGorgeousObjectVariable* DeserializeOVFromRPCArgumentBytes(const TArray<uint8>& Bytes);
+	static UGorgeousObjectVariable* DeserializeOVFromRPCArgumentBytes(const TArray<uint8>& Bytes, bool bPreserveIdentifiers = true);
+    /** Disk snapshots are stored only in this project's Saved/Gorgeous/ObjectVariables directory. */
+    UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Object Variables|Persistence")
+    static bool SaveObjectVariableSnapshot(UGorgeousObjectVariable* Variable, const FString& SlotName);
+    UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Object Variables|Persistence")
+    static UGorgeousObjectVariable* LoadObjectVariableSnapshot(const FString& SlotName, UGorgeousObjectVariable* Parent = nullptr);
+
 
 	/**
 	 * Invokes the instanced functionality for when the ObjectVariable is contained inside a UPROPERTY with the Instanced meta specifier.
@@ -415,6 +451,11 @@ public:
 	
 	/** Serializes the registered properties into a custom payload when the native path is bypassed. */
 	bool BuildAutoReplicationPropertyPayload(const FGorgeousAutoReplicationConditionContext& ConditionContext, FGorgeousAutoReplicationPropertyPayload& OutPayload) const;
+    /** Override per-property custom/dynamic/group/replay predicates on authority. */
+    UFUNCTION(BlueprintNativeEvent,Category="Gorgeous Core|Auto Replication")
+    FGorgeousAutoReplicationConditionContext ResolvePropertyReplicationConditions(FName PropertyName,const FGorgeousAutoReplicationConditionContext& ConnectionContext) const;
+    virtual FGorgeousAutoReplicationConditionContext ResolvePropertyReplicationConditions_Implementation(FName PropertyName,const FGorgeousAutoReplicationConditionContext& ConnectionContext) const;
+
 
 	/**
 	 * Applies a previously serialized property payload on the receiving endpoint.
@@ -463,9 +504,14 @@ public:
 
 	/** Executes a previously queued AutoReplication RPC that targets this object variable instance. */
 	bool ExecuteAutoReplicationRPC(const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
+    bool IsRPCBindingAllowed(FName HandlerName, EGorgeousAutoReplicationRPCType Type) const;
 
 	/** Invokes a AutoReplication RPC handler on any UObject using the payload's named arguments. */
-	static bool InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
+	/** Explicit runtime allowlist; call on the receiving machine before exposing an owner/component handler. */
+    UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Auto Replication")
+    static bool RegisterAutoReplicationRPCHandlerOnObject(UObject* Target, FName HandlerName);
+
+    static bool InvokeNativeAutoReplicationRPCHandlerOnObject(UObject* Target, const FGorgeousQueuedRPC& QueuedRPC, UGorgeousObjectVariable** OutReturnVariable = nullptr, bool* OutIsDeferred = nullptr);
 
 	/** Creates a standalone UGorgeousRPC_OV result container when no object variable context is available. */
 	static UGorgeousRPC_OV* CreateStandaloneRPCResultContainer(UObject* OwningContext);
@@ -488,6 +534,16 @@ public:
 
 	/** Returns the currently resolved AutoReplication config (after any runtime overrides). */
 	const FGorgeousAutoReplicationStreamConfig& GetAutoReplicationConfig() const { return AutoReplicationConfig; }
+    void QueueFullAutoReplicationSnapshot();
+
+    /** Actual Iris subobject state for unrestricted, portable, unconditional streams. */
+    bool TryPublishNativeIrisState(int64* OutBytes = nullptr);
+    void ReleaseNativeIrisState();
+    bool HasNativeIrisReplicationHandle() const;
+    uint32 GetNativeIrisReceiveCount() const { return NativeIrisReceiveCount; }
+    uint32 GetNativeIrisAppliedStateCount() const { return NativeIrisAppliedStateCount; }
+    uint32 GetNativeIrisPublishCount() const { return NativeIrisPublishCount; }
+    uint32 GetLegacyPropertySendCount() const { return LegacyPropertySendCount; }
 
 	/** Returns true if this instance should use the legacy/native replication path. */
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Gorgeous Object Variables|Networking")
@@ -501,7 +557,10 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreNetReceive() override;
 	virtual void PostNetReceive() override;
-	virtual bool IsNameStableForNetworking() const override { return true; }
+	virtual bool IsNameStableForNetworking() const override { return !bEverUsedNativeIris; }
+#if UE_WITH_IRIS
+    virtual void RegisterReplicationFragments(UE::Net::FFragmentRegistrationContext& Context, UE::Net::EFragmentRegistrationFlags RegistrationFlags) override;
+#endif
 	virtual int32 GetFunctionCallspace(UFunction* Function, FFrame* Stack) override;
 	virtual bool CallRemoteFunction(UFunction* Function, void* Parameters, FOutParmRec* OutParms, FFrame* Stack) override;
 
@@ -625,6 +684,14 @@ public:
 	 * Default implementation accepts all values.
 	 */
 	virtual bool ValidateVariableAssignment(const FName PropertyName, const FProperty* ValueProperty, const void* ValueAddress) const;
+public:
+    /** A server-side explicit opt-in; read access alone never grants permission to write. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Networking|Security")
+    bool bAllowClientPropertyWrites = false;
+    UFUNCTION(BlueprintNativeEvent, Category="Networking|Security")
+    bool ValidateClientPropertyWrite(AGorgeousPlayerController* Sender, FName PropertyName) const;
+    virtual bool ValidateClientPropertyWrite_Implementation(AGorgeousPlayerController* Sender, FName PropertyName) const;
+
 
 protected:
 
@@ -667,27 +734,34 @@ protected:
 			return;
 		}
 
+        if (!TGorgeousPropertyTypeTraits<InTCppType>::Matches(Property)) return;
+        if constexpr (std::is_same_v<InTCppType,bool>)
+        {
+            if (CastFieldChecked<FBoolProperty>(Property)->GetPropertyValue_InContainer(this)==Value) return;
+        }
+        else if (Property->Identical(Property->ContainerPtrToValuePtr<void>(this),&Value)) return;
 		if (!ValidateVariableAssignment(PropertyName, Property, &Value))
 		{
 			GT_E_LOG("GT.ObjectVariables.Assignment.ValidationFailed", TEXT("Assignment rejected for '%s' on '%s'."), *PropertyName.ToString(), *GetNameSafe(this));
 			return;
 		}
     		// Handle UObject* properties separately
-    		if constexpr (std::is_base_of_v<UObject, InTCppType>)
+    		if constexpr (std::is_pointer_v<InTCppType> && std::is_base_of_v<UObject, std::remove_pointer_t<InTCppType>>)
     		{
-    			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+    			if (FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property); ObjectProperty && TGorgeousPropertyTypeTraits<InTCppType>::Matches(Property))
     			{
     				ObjectProperty->SetObjectPropertyValue_InContainer(this, Value);
     			}
     		}
-    		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+    		else if (Property && TGorgeousPropertyTypeTraits<InTCppType>::Matches(Property))
     		{
-    			if (TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
-    			{
-    				TypedProperty->SetPropertyValue_InContainer(this, Value);
-    			}
+    			if constexpr (std::is_same_v<InTCppType, bool>)
+                CastFieldChecked<FBoolProperty>(Property)->SetPropertyValue_InContainer(this, Value);
+            else
+                Property->CopyCompleteValue(Property->ContainerPtrToValuePtr<void>(this), &Value);
     		}
 
+            MarkPropertyDirty(PropertyName);
 			TryClientAutoReplicateProperty(PropertyName);
     }
 //end grepper
@@ -709,21 +783,21 @@ protected:
     	if (FProperty* Property = FindFProperty<FProperty>(GetClass(), PropertyName); Property && PropertyName.IsValid())
     	{
     		// Handle UObject* properties separately
-    		if constexpr (std::is_base_of_v<UObject, InTCppType>)
+    		if constexpr (std::is_pointer_v<InTCppType> && std::is_base_of_v<UObject, std::remove_pointer_t<InTCppType>>)
     		{
-    			if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property))
+    			if (const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property); ObjectProperty && TGorgeousPropertyTypeTraits<InTCppType>::Matches(Property))
     			{
-    				OutValue = Cast<InTCppType>(ObjectProperty->GetObjectPropertyValue_InContainer(this));
+    				OutValue = Cast<std::remove_pointer_t<InTCppType>>(ObjectProperty->GetObjectPropertyValue_InContainer(this));
     				return true;
     			}
     		}
-    		else if (Property && Property->IsA<TProperty<InTCppType, TInPropertyBaseClass>>())
+    		else if (Property && TGorgeousPropertyTypeTraits<InTCppType>::Matches(Property))
     		{
-    			if (const TProperty<InTCppType, TInPropertyBaseClass>* TypedProperty = CastField<TProperty<InTCppType, TInPropertyBaseClass>>(Property))
-    			{
-    				OutValue = TypedProperty->GetPropertyValue_InContainer(this);
-    				return true;
-    			}
+    			if constexpr (std::is_same_v<InTCppType, bool>)
+                OutValue = CastFieldChecked<FBoolProperty>(Property)->GetPropertyValue_InContainer(this);
+            else
+                Property->CopyCompleteValue(&OutValue, Property->ContainerPtrToValuePtr<void>(this));
+            return true;
     		}
     	}
     	return false;
@@ -840,6 +914,7 @@ protected:
 		void ResetChangeShadow();
 
 		FName PropertyName;
+        FGorgeousReplicatedPropertyConfig AdvancedConfig;
 		FProperty* CachedProperty;
 		EGorgeousReplicationMode Mode;
 		bool bSendInitialState;
@@ -868,6 +943,20 @@ protected:
 	bool bReplicationActivationGuard;
 	FGorgeousAutoReplicationContext ActiveReplicationContext;
 	TArray<FReplicatedPropertyDeclaration> RegisteredReplicatedProperties;
+
+    UPROPERTY(Transient, ReplicatedUsing=OnRep_NativeIrisState)
+    FGorgeousAutoReplicationPropertyPayload NativeIrisState;
+    UFUNCTION()
+    void OnRep_NativeIrisState();
+    void ApplyPendingNativeIrisState();
+    bool IsNativeIrisStateCompatible() const;
+    TWeakObjectPtr<AActor> NativeIrisOwner;
+    bool bEverUsedNativeIris = false;
+    bool bNativeIrisStatePending = false;
+    uint32 NativeIrisReceiveCount = 0;
+    uint32 NativeIrisAppliedStateCount = 0;
+    uint32 NativeIrisPublishCount = 0;
+    uint32 LegacyPropertySendCount = 0;
 	TArray<FRPCBindingDeclaration> RegisteredRPCBindings;
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Object Variable|Networking", meta = (AllowPrivateAccess = "true"))
 	TArray<FGorgeousAutoReplicationRPCResultDescriptor> BroadcastRPCResultDescriptors;
@@ -894,7 +983,8 @@ private:
 	void StartServerPropertyPolling();
 	void StopServerPropertyPolling();
 	bool HandleServerPropertyPollingTick(float DeltaSeconds);
-	bool TryServerReplicateProperties(const TSet<FName>& DirtyProperties);
+	bool TryServerReplicateProperties(const TSet<FName>& DirtyProperties, APlayerController* InitialRecipient = nullptr, int64* OutBytesSent = nullptr);
+    TSet<TWeakObjectPtr<APlayerController>> InitialPropertySyncRecipients;
 
 	/**
 	 * Evaluates whether a player controller is allowed to receive the auto-replication property payload
@@ -950,7 +1040,7 @@ public:
 	bool BuildRPCResultSnapshot(UGorgeousObjectVariable* ResultContainer, TArray<uint8>& OutSnapshot) const;
 	bool SerializeRPCSnapshotRecursive(UGorgeousObjectVariable* Variable, FArchive& Ar) const;
 	UGorgeousObjectVariable* InstantiateRPCResultFromDescriptor(const FGorgeousAutoReplicationRPCResultDescriptor& Descriptor);
-	UGorgeousObjectVariable* DeserializeRPCSnapshotRecursive(UGorgeousObjectVariable* InParent, FArchive& Ar);
+	UGorgeousObjectVariable* DeserializeRPCSnapshotRecursive(UGorgeousObjectVariable* InParent, FArchive& Ar, bool bPreserveIdentifiers = true);
 
 private:
 	

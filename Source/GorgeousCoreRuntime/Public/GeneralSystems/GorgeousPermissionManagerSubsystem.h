@@ -19,6 +19,9 @@
 //<-------------------------------------------------------------------------->
 
 class AActor;
+class APlayerController;
+class APlayerState;
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGorgeousPermissionsUpdated);
 
 /**
  * Defines the permissions granted or denied by a named role.
@@ -56,6 +59,34 @@ struct GORGEOUSCORERUNTIME_API FGorgeousPlayerPermissionData
 	TMap<FString, bool> PlayerSpecificPermissions;
 };
 
+/** RPC wire entries use arrays: Unreal RPCs cannot contain nested TMap properties. */
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousPermissionRuleWire
+{
+    GENERATED_BODY()
+    UPROPERTY() FString Permission;
+    UPROPERTY() bool bAllow=false;
+};
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousPermissionRoleWire
+{
+    GENERATED_BODY()
+    UPROPERTY() FName RoleName;
+    UPROPERTY() TArray<FGorgeousPermissionRuleWire> Rules;
+};
+/** Only the receiving controller's data; never another player's assignments. */
+USTRUCT()
+struct GORGEOUSCORERUNTIME_API FGorgeousOwnerPermissionSnapshot
+{
+    GENERATED_BODY()
+    UPROPERTY() FString PlayerKey;
+    UPROPERTY() TArray<FName> AssignedRoles;
+    UPROPERTY() TArray<FGorgeousPermissionRuleWire> PlayerOverrides;
+    UPROPERTY() TArray<FGorgeousPermissionRoleWire> AssignedRoleRules;
+};
+UENUM(BlueprintType)
+enum class EGorgeousPermissionMutation : uint8 { GrantRole,RevokeRole,GrantPermission,RevokePermission };
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -72,9 +103,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousPlayerPermissionData
 <==========================================================================>
  */
 UCLASS(meta = (
-	DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GorgeousPermissionManagerSubsystem",
-	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+	DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Permissions/#roles-overrides-and-evaluation",
+	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 	))
 class GORGEOUSCORERUNTIME_API UGorgeousPermissionManagerSubsystem : public UGameInstanceSubsystem
 {
@@ -181,6 +212,12 @@ public:
 	#pragma endregion Blueprint Functions
 
 
+public:
+    FGorgeousOwnerPermissionSnapshot BuildOwnerSnapshot(APlayerController* Controller) const;
+    void ApplyOwnerSnapshot(const FGorgeousOwnerPermissionSnapshot& Snapshot,APlayerController* ReceivingOwner);
+    void SendOwnerSnapshots();
+    UPROPERTY(BlueprintAssignable,Category="Gorgeous|Permissions") FGorgeousPermissionsUpdated OnPermissionsUpdated;
+
 	//<============================--- Variables ---============================>
 	#pragma region Variables
 protected:
@@ -202,6 +239,7 @@ protected:
 	#pragma region C++ Only
 protected:
 
+	TMap<TWeakObjectPtr<APlayerController>,FString> OwnerSnapshotKeys;
 	FString GetPlayerId(AActor* Player) const;
 	//<------------------------------------------------------------------------->
 	#pragma endregion C++ Only

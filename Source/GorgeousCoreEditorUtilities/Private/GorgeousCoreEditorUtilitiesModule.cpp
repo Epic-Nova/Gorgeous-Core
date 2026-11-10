@@ -88,8 +88,21 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 		return;
 	}
 
-	auto ExecuteHyperlink = [Entry]()
+	const TSharedRef<bool> Consumed = MakeShared<bool>(false);
+	const TSharedRef<TWeakPtr<SNotificationItem>> Notification = MakeShared<TWeakPtr<SNotificationItem>>();
+	auto CanExecuteHyperlink = [Entry, Consumed]()
 	{
+		return (!Entry.Hyperlink.bSingleUse || !*Consumed) &&
+			GorgeousEditorLogging::EvaluateLogHyperlinkCondition(Entry.Hyperlink.ConditionName, Entry.Hyperlink.ActionPayload);
+	};
+	auto ExecuteHyperlink = [Entry, Consumed, Notification, CanExecuteHyperlink]()
+	{
+		if (!CanExecuteHyperlink()) return;
+		if (Entry.Hyperlink.bSingleUse)
+		{
+			*Consumed = true;
+			if (TSharedPtr<SNotificationItem> Item = Notification->Pin()) Item->ExpireAndFadeout();
+		}
 		if (!Entry.Hyperlink.IsValid())
 		{
 			ShowMissingAssetNotification();
@@ -120,6 +133,8 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 	};
 
 	FMessageLog MessageLog(Settings->MessageLogListingName);
+	// Runtime logging independently routes Output Log; keep this UI sink from mirroring it a second time.
+	MessageLog.SuppressLoggingToOutputLog(true);
 	const TSharedRef<FTokenizedMessage> Tokenized = FTokenizedMessage::Create(ToMessageSeverity(Entry.Importance));
 	Tokenized->AddToken(FTextToken::Create(FText::FromString(Entry.Message)));
 
@@ -129,10 +144,7 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 			FText::FromString(Entry.Hyperlink.LinkText),
 			FText::FromString(Entry.Message),
 			FOnActionTokenExecuted::CreateLambda(ExecuteHyperlink),
-			FCanExecuteActionToken::CreateLambda([Entry]()
-			{
-				return GorgeousEditorLogging::EvaluateLogHyperlinkCondition(Entry.Hyperlink.ConditionName, Entry.Hyperlink.ActionPayload);
-			}),
+			FCanExecuteActionToken::CreateLambda(CanExecuteHyperlink),
 			Entry.Hyperlink.bSingleUse
 		));
 
@@ -142,7 +154,7 @@ static void EmitGorgeousLogEntry(const FGorgeousLogEntry& Entry, bool bForce)
 		Info.ExpireDuration = Entry.Duration > 0.0f ? Entry.Duration : 5.0f;
 		Info.HyperlinkText = FText::FromString(Entry.Hyperlink.LinkText);
 		Info.Hyperlink = FSimpleDelegate::CreateLambda(ExecuteHyperlink);
-		FSlateNotificationManager::Get().AddNotification(Info);
+		*Notification = FSlateNotificationManager::Get().AddNotification(Info);
 	}
 
 	MessageLog.AddMessage(Tokenized);

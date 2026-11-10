@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/StatsFoundation/GorgeousStatComponent_AC.h"
+#include "GeneralSystems/StatsFoundation/GorgeousStatFoundation.h"
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV.h"
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationSettings.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
@@ -16,8 +17,8 @@
 #include "Stats/Stats.h"
 
 DECLARE_STATS_GROUP(TEXT("Gorgeous Stats Foundation"), STATGROUP_GorgeousStatsFoundation, STATCAT_Advanced);
-DECLARE_DWORD_COUNTER_STAT(TEXT("Active Components"), STAT_GStats_ActiveComps, STATGROUP_GorgeousStatsFoundation);
-DECLARE_DWORD_COUNTER_STAT(TEXT("Modifiers Applied"), STAT_GStats_ModifiersApplied, STATGROUP_GorgeousStatsFoundation);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Active Components"), STAT_GStats_ActiveComps, STATGROUP_GorgeousStatsFoundation);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Modifiers Applied"), STAT_GStats_ModifiersApplied, STATGROUP_GorgeousStatsFoundation);
 DECLARE_CYCLE_STAT(TEXT("Process Stat Signal"), STAT_GStats_ProcessSignal, STATGROUP_GorgeousStatsFoundation);
 static int32 GStatComponentActiveCount = 0;
 static int32 GStatComponentTotalModifiersApplied = 0;
@@ -34,7 +35,8 @@ int32 UGorgeousStatComponent_AC::GetTotalModifiersApplied()
 
 UGorgeousStatComponent_AC::UGorgeousStatComponent_AC()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+    PrimaryComponentTick.bStartWithTickEnabled = false;
 	SetIsReplicatedByDefault(true);
 }
 
@@ -63,6 +65,7 @@ void UGorgeousStatComponent_AC::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeStatStorage();
+    SetComponentTickEnabled(!StatStorage);
 	
 	if (GetOwner()->HasAuthority())
 	{
@@ -74,27 +77,12 @@ void UGorgeousStatComponent_AC::InitializeStatStorage()
 {
 	if (StatStorage) return;
 
-	UWorld* World = GetWorld();
-	AGorgeousGameState* GS = World ? World->GetGameState<AGorgeousGameState>() : nullptr;
-	if (!GS) return;
+    StatStorage = UGorgeousStatFoundation::GetGorgeousStatStorage(this);
+    {
 
-	static const FName StatStorageKey = TEXT("StatStorage");
-
-	// On the server, ensure the global storage exists.
-	if (GetOwner()->HasAuthority())
-	{
-		GS->RegisterAutoReplicationEntry(StatStorageKey, UGorgeousStatFoundationStorage_OV::StaticClass(), true, false, FGorgeousAutoReplicationStreamConfig());
-		UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(World, AGorgeousGameState::StaticClass());
-	}
-
-	// Resolve the global storage
-	UGorgeousObjectVariable* ExistingVar = nullptr;
-	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World, StatStorageKey, ExistingVar))
-	{
-		StatStorage = Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar);
 		if (StatStorage)
 		{
-			StatStorage->OnStatChanged.AddDynamic(this, &UGorgeousStatComponent_AC::HandleStatChanged);
+			StatStorage->OnActorStatChanged.AddDynamic(this, &UGorgeousStatComponent_AC::HandleActorStatChanged);
 			
 			// Dispatch a "Restored" signal locally so the HUD knows to do a full refresh.
 			// This is especially important after respawn or re-connecting to a shared OV.
@@ -107,7 +95,7 @@ void UGorgeousStatComponent_AC::InitializeStatStorage()
 void UGorgeousStatComponent_AC::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(UGorgeousStatComponent_AC, StatStorage);
+    // Storage identity is resolved locally from the replicated WorldSettings payload slot.
 }
 
 void UGorgeousStatComponent_AC::RegisterSignalListeners()
@@ -131,21 +119,30 @@ void UGorgeousStatComponent_AC::RegisterSignalListeners()
 	}
 }
 
-void UGorgeousStatComponent_AC::SetStat(FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester)
+bool UGorgeousStatComponent_AC::SetStat(FGameplayTag Tag,float Value,AGorgeousPlayerController* Requester)
 {
-	if (StatStorage)
-	{
-		StatStorage->SetStatValue(GetOwner(), Tag, Value, Requester);
-	}
+    InitializeStatStorage();
+    return StatStorage && StatStorage->SetStatValue(GetOwner(),Tag,Value,Requester);
 }
-
-void UGorgeousStatComponent_AC::ModifyStat(FGameplayTag Tag, float Delta, AGorgeousPlayerController* Requester)
+bool UGorgeousStatComponent_AC::ModifyStat(FGameplayTag Tag,float Delta,AGorgeousPlayerController* Requester)
 {
-	if (StatStorage)
-	{
-		float CurrentValue = StatStorage->GetStatValue(GetOwner(), Tag);
-		StatStorage->SetStatValue(GetOwner(), Tag, CurrentValue + Delta, Requester);
-	}
+    InitializeStatStorage();
+    return StatStorage && StatStorage->SetStatValue(GetOwner(),Tag,StatStorage->GetStatValue(GetOwner(),Tag)+Delta,Requester);
+}
+void UGorgeousStatComponent_AC::TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* Function)
+{
+    Super::TickComponent(DeltaTime,TickType,Function);
+    InitializeStatStorage();
+    if (StatStorage) SetComponentTickEnabled(false);
+}
+void UGorgeousStatComponent_AC::EndPlay(const EEndPlayReason::Type Reason)
+{
+    if (StatStorage) StatStorage->OnActorStatChanged.RemoveDynamic(this,&UGorgeousStatComponent_AC::HandleActorStatChanged);
+    FSignalBridgeEventDelegate Delegate; Delegate.BindUFunction(this,TEXT("OnSignalReceived"));
+    for (const auto& Pair:GetDefault<UGorgeousStatFoundationSettings>()->StatRegistry)
+        if (Pair.Value.ModificationSignal.IsValid()) USignalBridgeBlueprintFunctionLibrary::Unlisten(this,Pair.Value.ModificationSignal,nullptr,Delegate);
+    StatStorage=nullptr;
+    Super::EndPlay(Reason);
 }
 
 float UGorgeousStatComponent_AC::GetStat(FGameplayTag Tag) const
@@ -153,18 +150,29 @@ float UGorgeousStatComponent_AC::GetStat(FGameplayTag Tag) const
 	return StatStorage ? StatStorage->GetStatValue(GetOwner(), Tag) : 0.0f;
 }
 
+void UGorgeousStatComponent_AC::HandleActorStatChanged(AActor* Actor, FGameplayTag Tag, float NewValue)
+{
+    if (Actor == GetOwner()) HandleStatChanged(Tag, NewValue);
+}
+
 void UGorgeousStatComponent_AC::HandleStatChanged(FGameplayTag Tag, float NewValue)
 {
 	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	if (Settings->bAutoDispatchChangeSignals)
 	{
-		FGameplayTag ChangeSignal = FGameplayTag::RequestGameplayTag(
-			FName(*FString::Printf(TEXT("%s.%s"), *Settings->ChangeSignalRoot.ToString(), *Tag.ToString()))
-		);
+        // Project stat tags cannot imply that every combined change tag exists.
+        // A registered specialized tag retains compatibility; otherwise dispatch
+        // the configured parent with the actual stat identity in the payload.
+        FGameplayTag ChangeSignal = FGameplayTag::RequestGameplayTag(
+            FName(*FString::Printf(TEXT("%s.%s"), *Settings->ChangeSignalRoot.ToString(), *Tag.ToString())), false);
+        if (!ChangeSignal.IsValid()) ChangeSignal=Settings->ChangeSignalRoot;
+        if (!ChangeSignal.IsValid()) return;
 
 		FGorgeousStatModificationPayload_S Payload;
 		Payload.Value = NewValue;
 		Payload.Source = GetOwner();
+        Payload.Target = GetOwner();
+        Payload.Stat = Tag;
 
 		// Use local dispatch as the state itself is already replicated
 		USignalBridgeBlueprintFunctionLibrary::DispatchLocal(this, ChangeSignal, FInstancedStruct::Make(Payload));
@@ -184,6 +192,7 @@ void UGorgeousStatComponent_AC::OnSignalReceived(FGameplayTag SignalTag, const F
 		{
 			if (const FGorgeousStatModificationPayload_S* StatPayload = Payload.GetPtr<FGorgeousStatModificationPayload_S>())
 			{
+                if (StatPayload->Target != GetOwner() || (StatPayload->Stat.IsValid() && StatPayload->Stat != Pair.Key)) continue;
 				if (Pair.Value.bSignalIsDelta)
 				{
 					ModifyStat(Pair.Key, StatPayload->Value);
@@ -197,7 +206,6 @@ void UGorgeousStatComponent_AC::OnSignalReceived(FGameplayTag SignalTag, const F
 					INC_DWORD_STAT(STAT_GStats_ModifiersApplied);
 				}
 			}
-			break;
 		}
 	}
 }

@@ -3,6 +3,10 @@
 #include "GeneralSystems/SignalBridge/GorgeousCorePermissionBridgeReceiver.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "GeneralSystems/GorgeousPermissionManagerSubsystem.h"
+#include "GeneralSystems/GorgeousPermissionProvider.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 
 UGorgeousCorePermissionBridgeReceiver::UGorgeousCorePermissionBridgeReceiver()
 {
@@ -58,18 +62,19 @@ void UGorgeousCorePermissionBridgeReceiver::OnReceivePermissionRequest(FGameplay
 
 bool UGorgeousCorePermissionBridgeReceiver::EvaluatePermissionRequest(const FGorgeousPermissionSignalPayload_S& Request) const
 {
-	// TODO: Dev Settings GUI Integration
-	// 1. Check if permission overrides exist in the graphical Dev Settings / config.
-	// 2. If present, override and return that decision.
-
-	// TODO: Team System Runtime Integration
-	// 1. Query the Team/Guild of the Interactor actor.
-	// 2. Lookup the role and associated permissions (e.g. check if role contains Request.PermissionName).
-	// 3. Evaluate if permission is allowed based on target container ownership or faction rules.
-
-	GT_I_LOG("GT.Core.Permission", TEXT("[PermissionBridgeReceiver] Evaluated permission '%s' for Interactor %s: GRANTED (Scaffold Default)"),
-		*Request.PermissionName,
-		Request.Interactor ? *Request.Interactor->GetName() : TEXT("NULL"));
-
-	return true; // Default allowed in scaffold implementation
+    if (!Request.Interactor || !Request.Interactor->HasAuthority()) return false;
+    UWorld* World = Request.Interactor->GetWorld();
+    if (!World || World->GetNetMode() == NM_Client) return false;
+    if (UGameInstance* GI = World->GetGameInstance())
+    {
+        if (auto* Permissions = GI->GetSubsystem<UGorgeousPermissionManagerSubsystem>())
+        {
+            bool bHandled = false;
+            const bool bAllowed = Permissions->EvaluatePlayerPermission(Request.Interactor, Request.PermissionName, bHandled);
+            if (bHandled) return bAllowed;
+        }
+    }
+    if (auto* Provider = UGorgeousPermissionProvider::FindProvider(Request.PermissionName))
+        return Provider->EvaluatePermission(Request.Interactor, nullptr);
+    return false;
 }

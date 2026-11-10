@@ -17,6 +17,8 @@
 #include "GorgeousForceFeedbackEffect.generated.h"
 //<-------------------------------------------------------------------------->
 
+class UForceFeedbackComponent;
+
 /*
 <=============================--- Class Info ---============================>
 <-----------------------------=== Quick Info ===---------------------------->
@@ -36,9 +38,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousForceFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#force-feedback",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousForceFeedbackEffect : public UGorgeousFeedbackEffect
@@ -55,6 +57,8 @@ public:
 	 * @param Context The runtime situation used to resolve the player controller.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual float GetPlaybackDuration(const FGorgeousFeedbackContext& Context) const override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a force feedback asset configured.
@@ -88,4 +92,8 @@ public:
 	bool bPlayWhilePaused = false;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
+private:
+	TArray<TWeakObjectPtr<APlayerController>> ActiveControllers;
+	TArray<TWeakObjectPtr<UForceFeedbackComponent>> ActiveWorldEffects;
+
 };

@@ -10,7 +10,6 @@
 <==========================================================================*/
 #include "K2Nodes/GorgeousK2Node_NewObjectVariable.h"
 
-#if 0
 
 #include "BlueprintActionDatabaseRegistrar.h"
 #include "BlueprintNodeSpawner.h"
@@ -18,6 +17,7 @@
 #include "K2Node_CallFunction.h"
 #include "KismetCompiler.h"
 #include "KismetCompilerMisc.h"
+#include "EdGraphSchema_K2.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
 #define LOCTEXT_NAMESPACE "GorgeousNewObjectVariable"
@@ -36,6 +36,7 @@ UK2Node_GorgeousNewObjectVariable::UK2Node_GorgeousNewObjectVariable(const FObje
 void UK2Node_GorgeousNewObjectVariable::AllocateDefaultPins()
 {
 	Super::AllocateDefaultPins();
+    if (UEdGraphPin* OuterPin=GetOuterPin()) RemovePin(OuterPin);
 
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Object, UGorgeousObjectVariable::StaticClass(), ParentPinName);
 	CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Boolean, nullptr, PersistPinName);
@@ -71,7 +72,7 @@ FText UK2Node_GorgeousNewObjectVariable::GetNodeTitle(const ENodeTitleType::Type
 
 void UK2Node_GorgeousNewObjectVariable::ExpandNode(FKismetCompilerContext& CompilerContext, UEdGraph* SourceGraph)
 {
-	Super::ExpandNode(CompilerContext, SourceGraph);
+	// Custom static factory performs construction and registration; do not run the base NewObject expansion.
 
 	const UEdGraphSchema_K2* Schema = CompilerContext.GetSchema();
 
@@ -93,7 +94,7 @@ void UK2Node_GorgeousNewObjectVariable::ExpandNode(FKismetCompilerContext& Compi
 		return;
 	}
 
-	UFunction* FactoryFunction = UGorgeousObjectVariable::StaticClass()->FindFunctionByName(GET_FUNCTION_NAME_CHECKED(UGorgeousObjectVariable, NewObjectVariable));
+	UFunction* FactoryFunction = UGorgeousObjectVariable::StaticClass()->FindFunctionByName(GET_FUNCTION_NAME_CHECKED(UGorgeousObjectVariable, CreateObjectVariable));
 	if (!FactoryFunction)
 	{
 		CompilerContext.MessageLog.Error(*LOCTEXT("NewObjectVariableMissingFunction", "Could not find factory function for @@.").ToString(), this);
@@ -240,4 +241,3 @@ UEdGraphPin* UK2Node_GorgeousNewObjectVariable::GetIdentifierPin() const
 #undef LOCTEXT_NAMESPACE
 
 
-#endif

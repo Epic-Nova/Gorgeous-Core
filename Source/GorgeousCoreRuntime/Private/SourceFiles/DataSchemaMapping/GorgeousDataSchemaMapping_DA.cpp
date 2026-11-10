@@ -163,22 +163,27 @@ FString UGorgeousDataSchemaMapping_DA::GetNormalizedTargetContentRootPath() cons
 		NormalizedPath = FString::Printf(TEXT("/Game/%s"), *NormalizedPath);
 	}
 
-	if (!NormalizedPath.StartsWith(TEXT("/Game")))
-	{
-		return FString();
-	}
-
 	while (NormalizedPath.EndsWith(TEXT("/")))
 	{
 		NormalizedPath.LeftChopInline(1);
 	}
 
-	if (!FPackageName::IsValidLongPackageName(NormalizedPath))
+	if (!FPackageName::IsValidLongPackageName(NormalizedPath + TEXT("/__MigrationTarget")))
 	{
 		return FString();
 	}
 
-	return NormalizedPath;
+    FString MountRoot = NormalizedPath;
+    int32 SecondSlash = INDEX_NONE;
+    if (MountRoot.FindChar(TEXT('/'), SecondSlash))
+    {
+        const int32 Separator = MountRoot.Find(TEXT("/"), ESearchCase::CaseSensitive, ESearchDir::FromStart, 1);
+        MountRoot = Separator == INDEX_NONE ? MountRoot + TEXT("/") : MountRoot.Left(Separator + 1);
+    }
+    if (MountRoot.Equals(TEXT("/Engine/")) || MountRoot.Equals(TEXT("/Script/")) || MountRoot.Equals(TEXT("/Temp/"))) return FString();
+    FString Filename;
+    if (!FPackageName::TryConvertLongPackageNameToFilename(NormalizedPath + TEXT("/__MigrationTarget"), Filename)) return FString();
+    return NormalizedPath;
 }
 
 FText UGorgeousDataSchemaMapping_DA::GetResolvedMigrationActionLabel() const

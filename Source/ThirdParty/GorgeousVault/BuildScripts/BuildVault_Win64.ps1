@@ -22,6 +22,9 @@ param(
     [Parameter()]
     [string]$UEDir = "",
 
+    # Optional project override when this script lives in an engine plugin.
+    [string]$ProjectFile = "",
+
     # Build configuration: Release or Debug
     [Parameter()]
     [ValidateSet("Release", "Debug", "RelWithDebInfo")]
@@ -60,21 +63,34 @@ Write-Host "  Config:      $Config"
 
 # ── Auto-detect UE directory ──────────────────────────────────────────────
 if ([string]::IsNullOrWhiteSpace($UEDir)) {
-    # Try to find UE from the .uproject file
-    $UProjectPath = Resolve-Path (Join-Path $VaultRoot "..\..\..\..\..\GorgeousThings.uproject") -ErrorAction SilentlyContinue
-    if ($UProjectPath) {
-        # Check for common UE locations
-        $CommonPaths = @(
-            "D:\UnrealEngine\UE_5.4",
-            "C:\UnrealEngine\UE_5.4",
-            "C:\Program Files\Epic Games\UE_5.4",
-            "$env:USERPROFILE\UnrealEngine\UE_5.4"
-        )
-        foreach ($Path in $CommonPaths) {
-            if (Test-Path (Join-Path $Path "Engine\Build\BatchFiles\Build.bat")) {
-                $UEDir = $Path
-                break
+    if ($ProjectFile) {
+        $ProjectFile = (Resolve-Path -LiteralPath $ProjectFile -ErrorAction Stop).Path
+    } else {
+        for ($Directory = Get-Item -LiteralPath $VaultRoot; $Directory; $Directory = $Directory.Parent) {
+            $Projects = @(Get-ChildItem -LiteralPath $Directory.FullName -Filter *.uproject -File)
+            if ($Projects.Count -gt 1) { throw "Several project files found; pass -ProjectFile or -UEDir explicitly." }
+            if ($Projects.Count -eq 1) { $ProjectFile = $Projects[0].FullName; break }
+            if (Test-Path -LiteralPath (Join-Path $Directory.FullName 'Engine/Build/Build.version')) { $UEDir = $Directory.FullName; break }
+        }
+    }
+    if ($ProjectFile -and !$UEDir) {
+        $Project = Get-Content -Raw -LiteralPath $ProjectFile | ConvertFrom-Json
+        $Association = [string]$Project.EngineAssociation
+        $Candidates = @()
+        if ($Association) {
+            $Candidates += [IO.Path]::GetFullPath([IO.Path]::Combine((Split-Path -Parent $ProjectFile),$Association))
+            $Builds = Get-ItemProperty -LiteralPath 'HKCU:\Software\Epic Games\Unreal Engine\Builds' -ErrorAction SilentlyContinue
+            if ($Builds -and $Builds.PSObject.Properties[$Association]) { $Candidates += $Builds.PSObject.Properties[$Association].Value }
+            foreach ($RegistryRoot in @('HKLM:\SOFTWARE\EpicGames\Unreal Engine','HKLM:\SOFTWARE\WOW6432Node\EpicGames\Unreal Engine')) {
+                $Install = Get-ItemProperty -LiteralPath (Join-Path $RegistryRoot $Association) -ErrorAction SilentlyContinue
+                if ($Install.InstalledDirectory) { $Candidates += $Install.InstalledDirectory }
             }
+            if ($Association -match '^\d+\.\d+$') {
+                $Candidates += @("D:\UnrealEngine\UE_$Association", "C:\UnrealEngine\UE_$Association", "C:\Program Files\Epic Games\UE_$Association", "$env:USERPROFILE\UnrealEngine\UE_$Association")
+            }
+        }
+        foreach ($Candidate in $Candidates) {
+            if (Test-Path -LiteralPath (Join-Path $Candidate 'Engine/Build/Build.version')) { $UEDir = [IO.Path]::GetFullPath($Candidate); break }
         }
     }
 
@@ -83,6 +99,8 @@ if ([string]::IsNullOrWhiteSpace($UEDir)) {
         exit 1
     }
 }
+
+$UEDir = (Resolve-Path -LiteralPath $UEDir -ErrorAction Stop).Path
 
 # Validate UE dir
 if (-not (Test-Path (Join-Path $UEDir "Engine\Source\Runtime\Core\Public"))) {

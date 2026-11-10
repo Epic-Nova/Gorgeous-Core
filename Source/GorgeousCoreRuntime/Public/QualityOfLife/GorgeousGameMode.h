@@ -45,9 +45,9 @@
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousGameMode",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/GameMode/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/#setting-up-the-classes"
 		)
 )
 class GORGEOUSCORERUNTIME_API AGorgeousGameMode : public AGameMode
@@ -127,8 +127,7 @@ protected:
 
 	/**
 	 * Fired on the server when a player logs out or disconnects.
-	 * The PlayerController and its self-reference OV entry have already been
-	 * cleaned up by the time this event fires.
+	 * Fires before Super::Logout; the exiting controller is still available.
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Gorgeous Game Mode|Players")
 	void OnPlayerLoggedOut(AController* ExitingController);

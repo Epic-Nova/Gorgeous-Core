@@ -9,13 +9,13 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "Validators/GorgeousGeneralSystemValidator.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
-#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/GorgeousPluginHelper.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
 #include "ModuleCore/GorgeousSystemDeveloperSettings.h"
@@ -63,20 +63,11 @@ static TMap<FName, double> GLastPDAValidationTimes;
 
 UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 {
-	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
-		StaticClass(),
-		FName("GT.GeneralSystemValidator.RegisterAsset"),
-		FName("HandleRegisterAssetRegistryEntry"));
+	
 
-	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
-		StaticClass(),
-		FName("GT.GeneralSystemValidator.RegisterDataRegistry"),
-		FName("HandleRegisterDataRegistryEntry"));
+	
 
-	UGT_EditorLogging_FL::RegisterLogHyperlinkCondition(
-		StaticClass(),
-		FName("GT.GeneralSystemValidator.RegisterDataRegistryCondition"),
-		FName("HandleCanRegisterDataRegistryEntry"));
+	
 
 	const FAssetRegistryModule& ARM =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
@@ -95,7 +86,7 @@ UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 		DiscoverAndRegisterGorgeousPluginSystems();
 
 		// If no known gorgeous plugins yet, start a short ticker to wait for registrations
-		UGorgeousPluginHelper* PluginHelper = GetMutableDefault<UGorgeousPluginHelper>();
+		UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
 		TSet<FName> Known = PluginHelper ? PluginHelper->GetKnownGorgeousPlugins() : TSet<FName>();
 		if (Known.Num() == 0 && !SystemPathsTickerHandle.IsValid())
 		{
@@ -109,148 +100,18 @@ UGorgeousGeneralSystemValidator::UGorgeousGeneralSystemValidator()
 UGorgeousGeneralSystemValidator::~UGorgeousGeneralSystemValidator()
 {
 	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.GeneralSystemValidator.RegisterAsset");
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkAction("GT.GeneralSystemValidator.RegisterDataRegistry");
+	UGT_EditorLogging_FL::UnregisterLogHyperlinkCondition("GT.GeneralSystemValidator.RegisterDataRegistryCondition");
 }
 
 void UGorgeousGeneralSystemValidator::DiscoverAndRegisterGorgeousPluginSystems()
 {
-	if (bPluginSystemsDiscovered || !GEditor)
-	{
-		return;
-	}
-
-	FAssetRegistryModule& ARM = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	IAssetRegistry& AssetRegistry = ARM.Get();
-
-	// Get Asset Manager settings
-	UAssetManagerSettings* AssetManagerSettings = GetMutableDefault<UAssetManagerSettings>();
-	if (!AssetManagerSettings)
-	{
-		return;
-	}
-
-	const FPrimaryAssetType SystemType = TEXT("GorgeousBlueprintSystems");
-
-	// Create a set of already registered paths for quick lookup
-	TSet<FString> RegisteredSearchPaths;
-	for (const FPrimaryAssetTypeInfo& TypeInfo : AssetManagerSettings->PrimaryAssetTypesToScan)
-	{
-		if (TypeInfo.PrimaryAssetType == SystemType.GetName())
-		{
-			for (const FDirectoryPath& Path : TypeInfo.GetDirectories())
-			{
-				RegisteredSearchPaths.Add(Path.Path);
-			}
-		}
-	}
-
-	bool bSettingsModified = false;
-
-	// Use PluginHelper to find all registered Gorgeous plugins
-	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
-	TSet<FName> KnownPlugins = PluginHelper->GetKnownGorgeousPlugins();
-
-	for (const FName& PluginName : KnownPlugins)
-	{
-		TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
-		if (!Plugin.IsValid())
-		{
-			continue;
-		}
-
-		// Convert plugin name to content path format
-		const FString PluginContentPath = FString::Printf(TEXT("/%s"), *PluginName.ToString());
-		const FString SystemsPath = PluginContentPath / TEXT("Systems");
-
-		if (RegisteredSearchPaths.Contains(SystemsPath))
-		{
-			continue;
-		}
-
-		// Fast disk-based check instead of Asset Registry query
-		const FString SystemsDiskPath = Plugin->GetContentDir() / TEXT("Systems");
-		if (!IFileManager::Get().DirectoryExists(*SystemsDiskPath))
-		{
-			continue;
-		}
-		
-		// Find or create the GorgeousBlueprintSystems entry
-		int32 TypeIndex = INDEX_NONE;
-		for (int32 i = 0; i < AssetManagerSettings->PrimaryAssetTypesToScan.Num(); ++i)
-		{
-			if (AssetManagerSettings->PrimaryAssetTypesToScan[i].PrimaryAssetType == SystemType.GetName())
-			{
-				TypeIndex = i;
-				break;
-			}
-		}
-
-		if (TypeIndex == INDEX_NONE)
-		{
-			// Create new entry if it doesn't exist
-			FPrimaryAssetTypeInfo NewInfo;
-			NewInfo.PrimaryAssetType = SystemType;
-			NewInfo.SetAssetBaseClass(UGeneralSystemConfiguration_PDA::StaticClass());
-			NewInfo.bHasBlueprintClasses = false;
-
-			FDirectoryPath DirPath;
-			DirPath.Path = SystemsPath;
-			NewInfo.GetDirectories().Add(DirPath);
-
-			if (!bSettingsModified) AssetManagerSettings->Modify();
-			AssetManagerSettings->PrimaryAssetTypesToScan.Add(NewInfo);
-			RegisteredSearchPaths.Add(SystemsPath);
-			bSettingsModified = true;
-
-			GT_I_LOG("GT.GeneralSystemValidator",
-				TEXT("✓ Created GorgeousBlueprintSystems entry with path for plugin '%s': %s"),
-				*PluginName.ToString(),
-				*SystemsPath);
-		}
-		else
-		{
-			// Add to existing entry
-			FPrimaryAssetTypeInfo& TypeInfo = AssetManagerSettings->PrimaryAssetTypesToScan[TypeIndex];
-			
-			FDirectoryPath DirPath;
-			DirPath.Path = SystemsPath;
-			TypeInfo.GetDirectories().Add(DirPath);
-
-			if (!bSettingsModified) AssetManagerSettings->Modify();
-			RegisteredSearchPaths.Add(SystemsPath);
-			bSettingsModified = true;
-
-			GT_I_LOG("GT.GeneralSystemValidator",
-				TEXT("✓ Added path to GorgeousBlueprintSystems for plugin '%s': %s"),
-				*PluginName.ToString(),
-				*SystemsPath);
-		}
-	}
-
+	if (bPluginSystemsDiscovered || !GEditor) return;
+	UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton();
+	if (!Helper || Helper->GetKnownGorgeousPlugins().IsEmpty()) return;
+	const TArray<FString> Paths = GetGorgeousSystemDirectories();
+	FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get().ScanPathsSynchronous(Paths, false);
 	bPluginSystemsDiscovered = true;
-
-	// Save settings if modified
-	if (bSettingsModified)
-	{
-		AssetManagerSettings->TryUpdateDefaultConfigFile();
-		AssetManagerSettings->SaveConfig(CPF_Config, *AssetManagerSettings->GetDefaultConfigFilename());
-
-		// Reinitialize Asset Manager so changes take effect in-memory immediately
-		if (UAssetManager::IsInitialized())
-		{
-			UAssetManager::Get().ReinitializeFromConfig();
-		}
-
-		GT_I_LOG("GT.GeneralSystemValidator",
-			TEXT("Asset Manager settings updated with plugin system paths. Validation scope expanded."));
-
-		// Prompt user to restart if we have a lot of changes or if it's the first time
-		// (optional, since ReinitializeFromConfig handles the immediate in-memory state)
-	}
-	else
-	{
-		GT_I_LOG("GT.GeneralSystemValidator",
-			TEXT("No new system paths to register. Found %d registered plugins."), KnownPlugins.Num());
-	}
 }
 
 bool UGorgeousGeneralSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
@@ -259,6 +120,8 @@ bool UGorgeousGeneralSystemValidator::CanValidateAsset_Implementation(const FAss
 	{
 		return false;
 	}
+
+	if (InObject->IsA<UBlueprint>() && IsGeneralSystemBlueprint(InAssetData)) return true;
 
 	// 1. Support Data Registry validation for all Gorgeous systems
 	if (InObject->GetClass()->IsChildOf(UDataRegistry::StaticClass()))
@@ -301,15 +164,7 @@ EDataValidationResult UGorgeousGeneralSystemValidator::ValidateLoadedAsset_Imple
 		
 		if (!bIsRegisteredDir)
 		{
-			UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-				FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString()),
-				FString::Printf(TEXT("GT.GeneralSystemValidator.DataRegistry_Unregistered_%s"), *InAssetData.AssetName.ToString()),
-				Logging_Warning,
-				FName("GT.GeneralSystemValidator.RegisterDataRegistry"),
-				InAssetData.PackagePath.ToString(),
-				"Add Path",
-				true,
-				FName("GT.GeneralSystemValidator.RegisterDataRegistryCondition"));
+			GT_W_LOG(TEXT("GT.Validation"), TEXT("%s"), *(FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString())));
 				
 			return EDataValidationResult::Invalid;
 		}
@@ -322,24 +177,16 @@ EDataValidationResult UGorgeousGeneralSystemValidator::ValidateLoadedAsset_Imple
 	{
 		ValidatePDA(PDA, Context);
 
-		if (IsSystemAssetManagerRegistered())
 		{
 			const UAssetManager& AssetManager = UAssetManager::Get();
 
 			if (const FPrimaryAssetId ExistingId = AssetManager.GetPrimaryAssetIdForObject(PDA); 
-				!ExistingId.IsValid())
+				!IsSystemAssetManagerRegistered() || !ExistingId.IsValid())
 			{
-				UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-					FString::Printf(
+				GT_W_LOG(TEXT("GT.Validation"), TEXT("%s"), *(FString::Printf(
 						TEXT("System '%s' is not registered in Asset Manager."),
 						*PDA->GetPathName()
-					),
-					"GT.Systems.GeneralSystem.AssetRegistryEntry",
-					Logging_Error,
-					FName("GT.GeneralSystemValidator.RegisterAsset"),
-					PDA->GetPathName(),
-					"Fix Asset Manager Config"
-				);
+					)));
 
 				return EDataValidationResult::Invalid;
 			}
@@ -355,9 +202,12 @@ EDataValidationResult UGorgeousGeneralSystemValidator::ValidateLoadedAsset_Imple
 		UGeneralSystemConfiguration_PDA* PDA = FindExistingPDA(ComponentClass);
 		if (!PDA)
 		{
-			PDA = CreatePDA(ComponentClass);
+			GT_W_LOG("GT.GeneralSystemValidator", TEXT("System component '%s' has no configuration asset. Create its PDA explicitly; validation does not create content."), *GetNameSafe(ComponentClass));
 			if (!PDA)
-				return EDataValidationResult::Valid;
+			{
+				Context.AddError(FText::FromString(TEXT("The system component has no configuration PDA. Create it explicitly; validation never creates content.")));
+				return EDataValidationResult::Invalid;
+			}
 		}
 
 		ValidatePDA(PDA, Context);
@@ -397,111 +247,12 @@ void UGorgeousGeneralSystemValidator::BeginDestroy()
 
 void UGorgeousGeneralSystemValidator::HandleRegisterAssetRegistryEntry(const FString& Payload)
 {
-	UAssetManager& AssetManager = UAssetManager::Get();
-	
-	const FPrimaryAssetType SystemType = TEXT("GorgeousBlueprintSystems");
-
-	UAssetManagerSettings* Settings = GetMutableDefault<UAssetManagerSettings>();
-
-	if (!Settings)
-	{
-		GT_E_LOG("GT.GeneralSystemValidator", TEXT("Failed to access AssetManager settings."));
-		return;
-	}
-
-	bool bAlreadyExists = false;
-
-	for (const FPrimaryAssetTypeInfo& Info : Settings->PrimaryAssetTypesToScan)
-	{
-		if (Info.PrimaryAssetType == SystemType)
-		{
-			bAlreadyExists = true;
-			break;
-		}
-	}
-
-	if (!bAlreadyExists)
-	{
-		FPrimaryAssetTypeInfo NewInfo;
-		NewInfo.PrimaryAssetType = SystemType;
-		NewInfo.SetAssetBaseClass(UGeneralSystemConfiguration_PDA::StaticClass());
-		NewInfo.bHasBlueprintClasses = true;
-
-		// Add all known gorgeous plugin system directories so AssetManager scans all plugins
-		UGorgeousPluginHelper* PluginHelper = GetMutableDefault<UGorgeousPluginHelper>();
-		TSet<FName> Known = PluginHelper ? PluginHelper->GetKnownGorgeousPlugins() : TSet<FName>();
-
-		if (Known.Num() == 0)
-		{
-			FDirectoryPath Dir;
-			Dir.Path = TEXT("/GorgeousCore/Systems");
-			NewInfo.GetDirectories().Add(Dir);
-		}
-		else
-		{
-			for (const FName& Plugin : Known)
-			{
-				FDirectoryPath Dir;
-				Dir.Path = FString::Printf(TEXT("/%s/Systems"), *Plugin.ToString());
-				NewInfo.GetDirectories().Add(Dir);
-			}
-		}
-
-		Settings->PrimaryAssetTypesToScan.Add(NewInfo);
-
-		Settings->SaveConfig(CPF_Config, *Settings->GetDefaultConfigFilename());
-
-		GT_I_LOG("GT.GeneralSystemValidator",
-			TEXT("Added PrimaryAssetType '%s' to config."),
-			*SystemType.ToString());
-	}
-
-	AssetManager.ReinitializeFromConfig();
-
-	GT_S_LOG("GT.GeneralSystemValidator",
-		TEXT("Asset Manager reinitialized."));
-
-	FMessageDialog::Open(
-		EAppMsgType::Ok,
-		FText::FromString(TEXT("Asset Manager updated and refreshed."))
-	);
+	GT_W_LOG(TEXT("GT.Validation"), TEXT("Validators only diagnose. Configure the system through a GSC Contribute Project Settings action or edit Project Settings explicitly."));
 }
 
 void UGorgeousGeneralSystemValidator::HandleRegisterDataRegistryEntry(const FString& Payload)
 {
-	if (Payload.IsEmpty())
-	{
-		return;
-	}
-
-	UDataRegistrySettings* Settings = GetMutableDefault<UDataRegistrySettings>();
-	if (!Settings)
-	{
-		return;
-	}
-
-	bool bAlreadyExists = false;
-	for (const auto& Entry : Settings->DirectoriesToScan)
-	{
-		if (Entry.Path == Payload)
-		{
-			bAlreadyExists = true;
-			break;
-		}
-	}
-
-	if (!bAlreadyExists)
-	{
-		FDirectoryPath NewPath;
-		NewPath.Path = Payload;
-		Settings->DirectoriesToScan.Add(NewPath);
-		Settings->SaveConfig(CPF_Config, *Settings->GetDefaultConfigFilename());
-
-		FMessageDialog::Open(
-			EAppMsgType::Ok,
-			FText::Format(NSLOCTEXT("GT.GeneralSystemValidator", "DataRegistryPathAdded", "Added '{0}' to Data Registry scan directories."), FText::FromString(Payload))
-		);
-	}
+	GT_W_LOG(TEXT("GT.Validation"), TEXT("Validators only diagnose. Configure the system through a GSC Contribute Project Settings action or edit Project Settings explicitly."));
 }
 
 bool UGorgeousGeneralSystemValidator::HandleCanRegisterDataRegistryEntry(const FString& Payload)
@@ -532,7 +283,7 @@ bool UGorgeousGeneralSystemValidator::HandleCanRegisterDataRegistryEntry(const F
 // Ticker callback: wait until other gorgeous plugins register, then run discovery/registration.
 bool UGorgeousGeneralSystemValidator::TickUpdateSystemPaths(float)
 {
-	UGorgeousPluginHelper* PluginHelper = GetMutableDefault<UGorgeousPluginHelper>();
+	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
 	if (!PluginHelper)
 		return true; // keep ticking
 
@@ -692,6 +443,16 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 		{
 			Module->ValidateGorgeousModule(ModuleContext);
 		}
+	}
+	TArray<FText> ModuleWarnings, ModuleErrors;
+	ModuleContext.SplitIssues(ModuleWarnings, ModuleErrors);
+	for (const FText& Error : ModuleErrors)
+	{
+		GT_E_LOG("GT.ModuleValidation", TEXT("%s"), *Error.ToString());
+	}
+	for (const FText& Warning : ModuleWarnings)
+	{
+		GT_W_LOG("GT.ModuleValidation", TEXT("%s"), *Warning.ToString());
 	}
 }
 
@@ -1027,7 +788,7 @@ UClass* UGorgeousGeneralSystemValidator::FindSystemDefaultComponent(const FStrin
 				}
 			}
 
-			return DerivedMatches[0];
+			return DerivedMatches.Num() == 1 ? DerivedMatches[0] : nullptr;
 		}
 	}
 
@@ -1111,7 +872,7 @@ void UGorgeousGeneralSystemValidator::OnSafeProcessAsset(UWorld* World, FAssetDa
 	UGeneralSystemConfiguration_PDA* PDA = FindExistingPDA(ComponentClass);
 	if (!PDA)
 	{
-		PDA = CreatePDA(ComponentClass);
+		GT_W_LOG("GT.GeneralSystemValidator", TEXT("System component '%s' has no configuration asset. Create its PDA explicitly; validation does not create content."), *GetNameSafe(ComponentClass));
 		
 		if (!PDA)
 			return;
@@ -1123,132 +884,21 @@ void UGorgeousGeneralSystemValidator::OnSafeProcessAsset(UWorld* World, FAssetDa
 
 void UGorgeousGeneralSystemValidator::ValidatePDA(UGeneralSystemConfiguration_PDA* PDA, FDataValidationContext& Context)
 {
-	if (!IsValid(PDA) || PDA->HasAnyFlags(RF_ClassDefaultObject))
-		return;
-
-	// Suppress duplicate validations for the same PDA within a short time window
-	const FName PDAKey(*PDA->GetPathName());
-	const double Now = FPlatformTime::Seconds();
-	if (double* Last = GLastPDAValidationTimes.Find(PDAKey))
+	if (!IsValid(PDA) || PDA->HasAnyFlags(RF_ClassDefaultObject) || PDA->bIsCodeSystem) return;
+	const FString Root = GetSystemRootPath(PDA->GetPathName());
+	auto ValidateComponent = [&](const TSubclassOf<UGeneralSystem_AC>& Component, bool bManager)
 	{
-		constexpr double ValidationSuppressSeconds = 5.0; // suppress repeats within 5s
-		if ((Now - *Last) < ValidationSuppressSeconds)
+		if (!Component)
 		{
-			GT_I_LOG("GT.GeneralSystemValidator",
-				TEXT("Skipping duplicate validation for '%s' (last validated %.2fs ago)."),
-				*PDA->GetPathName(), Now - *Last);
+			Context.AddError(FText::FromString(FString::Printf(TEXT("System configuration '%s' has no %s component. Assign a component explicitly; validation does not edit assets."), *PDA->GetName(), bManager ? TEXT("authoritative") : TEXT("interactor"))));
 			return;
 		}
-	}
-
-	GLastPDAValidationTimes.Add(PDAKey, Now);
-
-	if (PDA->bIsCodeSystem)
-	{
-		return;
-	}
-
-	const FString PDA_SystemRoot = GetSystemRootPath(PDA->GetPathName());
-	
-	bool bChanged = false;
-
-	auto FixComponent = [&](TSubclassOf<UGeneralSystem_AC>& Ref, const bool bExpectManager)
-	{
-		const TSubclassOf<UGeneralSystem_AC> Default = FindSystemDefaultComponent(PDA_SystemRoot, bExpectManager);
-		
-		// missing or CDO - attempt to assign default
-		if (!Ref || Ref->HasAnyFlags(RF_ClassDefaultObject))
-		{
-			if (Default)
-			{
-				Ref = Default;
-				bChanged = true;
-				return;
-			}
-			else
-			{
-				// No default found and currently null - this is a validation error
-				const FText ErrorMsg = FText::Format(
-					NSLOCTEXT("GT.GeneralSystemValidator", "MissingComponentError", "General System PDA '{0}' is missing its {1} component and no default could be discovered in '{2}'."),
-					FText::FromString(PDA->GetName()),
-					FText::FromString(bExpectManager ? TEXT("Authoritative (Manager)") : TEXT("Interactor")),
-					FText::FromString(PDA_SystemRoot)
-				);
-				Context.AddError(ErrorMsg);
-				return;
-			}
-		}
-
-		// If we actually found a default, enforce inheritance
-		if (Default)
-		{
-			// Is it already the default or a derivative of it?
-			if (Ref == Default || Ref->IsChildOf(Default))
-			{
-				return;
-			}
-
-			// secondary safety: even without a perfect default match, strictly enforce the role keywords
-			const FString Name = Ref->GetName();
-			const bool bIsCorrectRole = bExpectManager ? IsSystemComponent(Name, 1) : IsSystemComponent(Name, 2);
-
-			if (bIsCorrectRole)
-			{
-				// It has the correct keywords, and either discovery failed or it's a valid custom match
-			}
-			else
-			{
-				// Not related and wrong role - resetting to default
-				GT_W_LOG("GT.GeneralSystemValidator",
-					TEXT("PDA '%s' component '%s' is not related to the system default '%s' - resetting to default."),
-					*PDA->GetName(), *Ref->GetName(), *Default->GetName());
-				Ref = Default;
-				bChanged = true;
-				return;
-			}
-
-			// If we got here, it's a role match but NOT an inheritance match - we still prefer the system default
-			GT_W_LOG("GT.GeneralSystemValidator",
-				TEXT("PDA '%s' component '%s' is not a child of the system default '%s' - resetting to default to ensure system integrity."),
-				*PDA->GetName(), *Ref->GetName(), *Default->GetName());
-			Ref = Default;
-			bChanged = true;
-		}
-		else
-		{
-			// No default found - strictly enforce role keywords on the manual assignment
-			const FString Name = Ref->GetName();
-			const bool bIsCorrectRole = bExpectManager ? IsSystemComponent(Name, 1) : IsSystemComponent(Name, 2);
-
-			if (!bIsCorrectRole)
-			{
-				const FText ErrorMsg = FText::Format(
-					NSLOCTEXT("GT.GeneralSystemValidator", "InvalidRoleError", "PDA '{0}' component '{1}' does not match the required {2} role keywords and no default was found."),
-					FText::FromString(PDA->GetName()),
-					FText::FromString(Ref->GetName()),
-					FText::FromString(bExpectManager ? TEXT("Manager") : TEXT("Interactor"))
-				);
-				Context.AddError(ErrorMsg);
-				
-				Ref = nullptr;
-				bChanged = true;
-			}
-		}
+		const bool bCorrectRole = IsSystemComponent(Component->GetName(), bManager ? 1 : 2);
+		if (!bCorrectRole)
+			Context.AddWarning(FText::FromString(FString::Printf(TEXT("System configuration '%s' uses component '%s' without the expected %s naming role. The manual assignment was preserved."), *PDA->GetName(), *Component->GetName(), bManager ? TEXT("manager") : TEXT("interactor"))));
 	};
-
-	// Validate both components
-	FixComponent(PDA->AuthoritativeComponent, true);
-	FixComponent(PDA->InteractorComponent, false);
-
-	// Save only if something actually changed
-	if (bChanged)
-	{
-		if (PDA && PDA->IsValidLowLevelFast() && PDA->GetOutermost())
-		{
-			PDA->MarkPackageDirty();
-			UEditorAssetLibrary::SaveLoadedAsset(PDA);
-		}
-	}
+	ValidateComponent(PDA->AuthoritativeComponent, true);
+	ValidateComponent(PDA->InteractorComponent, false);
 }
 
 FString UGorgeousGeneralSystemValidator::GetSystemRootPath(const FString& Path)
@@ -1331,77 +981,8 @@ static UGorgeousExtensionResourceGuard* FindGuardForSystemName(const FString& Sy
 
 UGeneralSystemConfiguration_PDA* UGorgeousGeneralSystemValidator::CreatePDA(const UClass* ComponentClass)
 {
-	if (!ComponentClass)
-		return nullptr;
-
-	FString SystemName;
-	const FString DesiredAssetName = ConstructPDASystemName(ComponentClass, SystemName);
-
-	// Prefer explicit developer settings override first
-	if (SystemName.Len() > 0)
-	{
-		if (UGorgeousSystemDeveloperSettings* Settings = UGorgeousSystemDeveloperSettings::Get())
-		{
-			if (const TSoftObjectPtr<UGeneralSystemConfiguration_PDA>* Entry = Settings->PDAOverrides.Find(FName(*SystemName)))
-			{
-				if (Entry->IsValid())
-				{
-					return Entry->LoadSynchronous();
-				}
-			}
-		}
-	}
-
-	// Next prefer the Extension Resource Guard mapping
-	FString SystemRootPath;
-	if (SystemName.Len() > 0)
-	{
-		if (UGorgeousExtensionResourceGuard* Guard = FindGuardForSystemName(SystemName))
-		{
-			if (Guard->bIsContentPackGuard && Guard->IsContentPresent())
-			{
-				SystemRootPath = FString::Printf(TEXT("/%s/%s"), *Guard->OwningPluginName.ToString(), *Guard->ContentSubPath);
-			}
-		}
-	}
-
-	// Finally, fallback to the path where the component itself is located
-	if (SystemRootPath.IsEmpty())
-	{
-		SystemRootPath = GetSystemRootPath(ComponentClass->GetOutermost()->GetName());
-	}
-
-	const FString DesiredPackagePath = SystemRootPath / DesiredAssetName;
-
-	// Safety check: is it already there?
-	if (UObject* Existing = StaticFindObject(UGeneralSystemConfiguration_PDA::StaticClass(), nullptr, *DesiredPackagePath))
-	{
-		return Cast<UGeneralSystemConfiguration_PDA>(Existing);
-	}
-
-	if (CreatedSystems.Contains(SystemRootPath))
-		return nullptr;
-
-	CreatedSystems.Add(SystemRootPath);
-
-	UPackage* Package = CreatePackage(*DesiredPackagePath);
-
-	UGeneralSystemConfiguration_PDA* NewPDA =
-		NewObject<UGeneralSystemConfiguration_PDA>(
-			Package,
-			*DesiredAssetName,
-			RF_Public | RF_Standalone
-		);
-	
-	NewPDA->MarkPackageDirty();
-
-	FAssetRegistryModule::AssetCreated(NewPDA);
-	UEditorAssetLibrary::SaveLoadedAsset(NewPDA);
-
-	GT_I_LOG("GT.SystemValidator",
-		TEXT("Created PDA '%s'"), *DesiredPackagePath);
-
-	return NewPDA;
+	// Kept for source compatibility; validators never create or save project content.
+	return FindExistingPDA(ComponentClass);
 }
 
 UGeneralSystemConfiguration_PDA* UGorgeousGeneralSystemValidator::FindExistingPDA(const UClass* ComponentClass)
@@ -1421,7 +1002,7 @@ UGeneralSystemConfiguration_PDA* UGorgeousGeneralSystemValidator::FindExistingPD
 		{
 			if (const TSoftObjectPtr<UGeneralSystemConfiguration_PDA>* Entry = Settings->PDAOverrides.Find(FName(*SystemName)))
 			{
-				if (Entry->IsValid())
+				if (!Entry->IsNull())
 				{
 					return Entry->LoadSynchronous();
 				}

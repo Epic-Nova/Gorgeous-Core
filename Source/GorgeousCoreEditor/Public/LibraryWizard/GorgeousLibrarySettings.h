@@ -30,6 +30,13 @@ class GORGEOUSCOREEDITOR_API UGorgeousLibrarySettings : public UObject
 public:
 	UGorgeousLibrarySettings();
 
+    /** All Gorgeous API access. Disabled until explicitly enabled by this user. */
+    UPROPERTY(Config, EditAnywhere, Category="Network and Privacy")
+    bool bAllowGorgeousNetwork = false;
+
+    UPROPERTY(Config)
+    bool bNetworkConsentDecided = false;
+
 	/** Interval (in editor startups) at which the system validation will be automatically executed. */
 	UPROPERTY(EditAnywhere, Category = "Validation", meta = (ClampMin = "1"))
 	int32 ValidationInterval;

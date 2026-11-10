@@ -98,6 +98,10 @@ struct GORGEOUSCORERUNTIME_API FGorgeousSignalBridgeAccessRules_S
 	// Whether dispatches for this tag should be replicated across the network.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Bridge")
 	bool bNetworked;
+    /** Read access does not implicitly grant the ability to dispatch server signals. */
+    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Signal Bridge")
+    bool bAllowClientDispatch = false;
+
 
 	// Who is allowed to listen to or receive dispatches for this tag.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Signal Bridge")
@@ -117,7 +121,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousSignalBridgeAccessRules_S
 
 	bool operator==(const FGorgeousSignalBridgeAccessRules_S& Other) const
 	{
-		return bNetworked == Other.bNetworked &&
+		return bNetworked == Other.bNetworked && bAllowClientDispatch == Other.bAllowClientDispatch &&
 			AccessPolicy == Other.AccessPolicy &&
 			AllowedClasses == Other.AllowedClasses &&
 			AllowedControllers == Other.AllowedControllers &&

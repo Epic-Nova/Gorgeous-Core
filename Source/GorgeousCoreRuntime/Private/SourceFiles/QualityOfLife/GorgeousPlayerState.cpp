@@ -96,11 +96,14 @@ int32 AGorgeousPlayerState::GetPlayerConnectionIndex_Implementation() const
 
 void AGorgeousPlayerState::SetGorgeousStablePlayerId(const FString& NewId)
 {
+    if (NewId.IsEmpty() || NewId.Len()>128) return;
+    for (TCHAR C:NewId) if (!FChar::IsAlnum(C) && C!=TEXT('-') && C!=TEXT('_') && C!=TEXT(':') && C!=TEXT('.')) return;
+
 	if (HasAuthority())
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetOwningController()))
 		{
-			FGorgeousQualityOfLifeStatics::RegisterLocalPlayerStableId(PC, NewId);
+			if (!FGorgeousQualityOfLifeStatics::RegisterLocalPlayerStableId(PC, NewId)) return;
 		}
 		ReplicatedGorgeousStableId = NewId;
 		// Fire directly on server since OnRep only fires on clients.
@@ -114,10 +117,10 @@ void AGorgeousPlayerState::SetGorgeousStablePlayerId(const FString& NewId)
 
 void AGorgeousPlayerState::Server_SetGorgeousStablePlayerId_Implementation(const FString& NewId)
 {
-	if (NewId.IsEmpty()) { return; }
+    if (!ValidateStablePlayerIdRequest(NewId)) return;
 	if (APlayerController* PC = Cast<APlayerController>(GetOwningController()))
 	{
-		FGorgeousQualityOfLifeStatics::RegisterLocalPlayerStableId(PC, NewId);
+		if (!FGorgeousQualityOfLifeStatics::RegisterLocalPlayerStableId(PC, NewId)) return;
 	}
 	ReplicatedGorgeousStableId = NewId;
 	OnGorgeousStablePlayerIdChanged(NewId);
@@ -146,3 +149,11 @@ void AGorgeousPlayerState::RefreshReplicatedStableId()
 	}
 }
 
+
+bool AGorgeousPlayerState::ValidateStablePlayerIdRequest_Implementation(const FString& NewId) const
+{
+    if (NewId.IsEmpty() || NewId.Len()>128) return false;
+    for (TCHAR C:NewId) if (!FChar::IsAlnum(C) && C!=TEXT('-') && C!=TEXT('_') && C!=TEXT(':') && C!=TEXT('.')) return false;
+    if (GetUniqueId().IsValid()) return NewId==GetUniqueId()->ToString();
+    return bAllowClientAssignedStableIds;
+}

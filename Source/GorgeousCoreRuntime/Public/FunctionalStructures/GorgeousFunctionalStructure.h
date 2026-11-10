@@ -54,7 +54,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousFunctionalStructure_S
 	virtual ~FGorgeousFunctionalStructure_S() = default;
 
 	// Unique identifier for this functional structure instance. This can be used to track instances across editor sessions or for debugging purposes.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure", meta = (DisplayPriority = 99))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Functional Structure", meta = (DisplayPriority = 99, IgnoreForMemberInitializationTest))
 	FGuid Identifier = FGuid();
 
 #if WITH_EDITOR

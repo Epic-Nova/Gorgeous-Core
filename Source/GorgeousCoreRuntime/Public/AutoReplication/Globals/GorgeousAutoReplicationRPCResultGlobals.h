@@ -127,8 +127,8 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 
 	/**
 	 * The UGorgeousRPC_OV container that aggregates all cached results for this request.
-	 * Populated progressively, present on OnSingleResponderCompleted from the first
-	 * responder onwards, and fully populated by the time OnCompleted fires.
+	 * Aggregated during request completion. Single-responder callbacks can have a null
+	 * container; inspect ReturnOV for that callback and GetResolvedResults for the full set.
 	 * Use this when you need the full result set, persistent storage, or Blueprint inspection
 	 * of every responder result.
 	 */
@@ -160,9 +160,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCValueResult
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/GorgeousAutoReplicationRPCResultGlobals",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/NetworkingLibrary/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCResults/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/NetworkingLibrary/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCResultGlobals : public UGorgeous

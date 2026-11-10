@@ -38,9 +38,9 @@
 */
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/DataAssets/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#parts-of-the-system",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/States/#the-state-asset",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#parts-of-the-system"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousUIState_DA : public UGorgeousPrimaryDataAsset
@@ -63,11 +63,11 @@ public:
 public:
 	// Keeps existing input mapping contexts when this state is applied.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
-	bool bAdditiveToCurrentState;
+	bool bAdditiveToCurrentState = false;
 
 	// Layers this state's theme over the active themes instead of replacing them.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
-	bool bAdditiveToCurrentTheme;
+	bool bAdditiveToCurrentTheme = false;
 
 
 	// Optional animation to play when entering this state globally.
@@ -76,7 +76,7 @@ public:
 
 	// Overlay configuration for this state.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
-	class UGorgeousUIOverlayConfig_DA* OverlayConfig;
+	class UGorgeousUIOverlayConfig_DA* OverlayConfig = nullptr;
 
 	// Explicit focus routing boundaries for this UI state (e.g. escaping auto-navigation).
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State", meta = (DisplayAfter = "OverlayConfig"))
@@ -88,7 +88,7 @@ public:
 
 	// Optional theme to apply when this state is active.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
-	class UGorgeousUITheme_DA* Theme;
+	class UGorgeousUITheme_DA* Theme = nullptr;
 
 	// An Array of List View Entries that should be pushed to the List View widget stack.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI State")
@@ -96,7 +96,7 @@ public:
 
 	// Tag-to-Action bindings to activate with this state.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	class UGorgeousInputBinding_DA* InputBindings;
+	class UGorgeousInputBinding_DA* InputBindings = nullptr;
 
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables

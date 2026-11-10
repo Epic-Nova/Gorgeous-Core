@@ -9,18 +9,18 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "Validators/GorgeousPlaylistSystemValidator.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "DataRegistry.h"
 #include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
 //<--------------------------=== Engine Includes ===------------------------->
-#include "DataRegistry.h"
 #include "DataRegistrySettings.h"
 #include "UnrealEdMisc.h"
 #include "Engine/AssetManager.h"
 #include "Engine/Blueprint.h"
-#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
 
@@ -30,10 +30,7 @@
 
 UGorgeousPlaylistSystemValidator::UGorgeousPlaylistSystemValidator()
 {
-	UGT_EditorLogging_FL::RegisterLogHyperlinkAction(
-	StaticClass(),
-	FName("GT.Systems.PlaylistSystem.Validator.RegisterDirectory"),
-	FName("HandleRegisterDirectoryHyperlink"));
+	
 }
 
 UGorgeousPlaylistSystemValidator::~UGorgeousPlaylistSystemValidator()
@@ -43,21 +40,12 @@ UGorgeousPlaylistSystemValidator::~UGorgeousPlaylistSystemValidator()
 
 bool UGorgeousPlaylistSystemValidator::CanValidateAsset_Implementation(const FAssetData& InAssetData, UObject* InObject, FDataValidationContext& InContext) const
 {
-#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
-	const FString AssetNameStr = InAssetData.AssetName.ToString();
-	// Only validate Blueprints containing PlaylistObject, but skip the base abstract BP_PlaylistObject itself
-	if (AssetNameStr.Contains(TEXT("PlaylistObject")) && AssetNameStr != TEXT("BP_PlaylistObject") && InObject->IsA<UBlueprint>())
-	{
-		return true;
-	}
-	return false;
-#else
-	return false;
-#endif
+	return InObject && InObject->IsA<UDataRegistry>() && InAssetData.PackageName.ToString().StartsWith(TEXT("/GorgeousCore/Systems/Playlist/"));
 }
 
 EDataValidationResult UGorgeousPlaylistSystemValidator::ValidateLoadedAsset_Implementation(const FAssetData& InAssetData, UObject* InAsset, FDataValidationContext& Context)
 {
+#if defined(GORGEOUS_SYSTEM_INSTALLED_PLAYLIST)
 #if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
 	const UDataRegistrySettings* DataRegistrySettings = GetMutableDefault<UDataRegistrySettings>();
 	
@@ -74,54 +62,17 @@ EDataValidationResult UGorgeousPlaylistSystemValidator::ValidateLoadedAsset_Impl
 	
 	if (!bIsRegisteredDir)
 	{
-		UGT_EditorLogging_FL::LogMessageWithActionHyperlink(
-			FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings. This may prevent proper loading."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString()),
-			"GT.Systems.Playlist.DataRegistry_Entry",
-			Logging_Warning,
-			FName("GT.Systems.PlaylistSystem.Validator.RegisterDirectory"),
-			InAssetData.PackagePath.ToString(),
-			"Add Path");
+		GT_W_LOG(TEXT("GT.Validation"), TEXT("%s"), *(FString::Printf(TEXT("The DataRegistry asset %s is located in %s, but this path is not registered in the DataRegistry settings. This may prevent proper loading."), *InAssetData.AssetName.ToString(), *InAssetData.PackagePath.ToString())));
 			
 		return EDataValidationResult::Invalid;
 	}
 #endif
+#endif // defined(GORGEOUS_SYSTEM_INSTALLED_PLAYLIST)
 	
 	return EDataValidationResult::Valid;
 }
 
 void UGorgeousPlaylistSystemValidator::HandleRegisterDirectoryHyperlink(const FString& Payload)
 {
-#if GORGEOUS_GENERAL_SYSTEM_INSTALLED(PLAYLIST)
-	UDataRegistrySettings* Settings = GetMutableDefault<UDataRegistrySettings>();
-
-	Settings->Modify();
-
-	FDirectoryPath NewPath;
-	NewPath.Path = Payload;
-
-	const bool bAlreadyExists = Settings->DirectoriesToScan.ContainsByPredicate(
-		[&](const FDirectoryPath& Existing)
-		{
-			return Existing.Path == NewPath.Path;
-		});
-
-	if (!bAlreadyExists)
-	{
-		Settings->DirectoriesToScan.Add(NewPath);
-	}
-
-	// Force write to config file
-	Settings->TryUpdateDefaultConfigFile();
-	Settings->SaveConfig(CPF_Config, *Settings->GetDefaultConfigFilename());
-	
-	const EAppReturnType::Type Result = FMessageDialog::Open(
-		EAppMsgType::YesNo,
-		FText::FromString(TEXT("Directory added to DataRegistry settings. Please restart the editor for changes to take effect. \n\nRestart now?"))
-	);
-
-	if (Result == EAppReturnType::Yes)
-	{
-		FUnrealEdMisc::Get().RestartEditor(false);
-	}
-#endif
+	GT_W_LOG(TEXT("GT.Validation"), TEXT("Validators only diagnose. Configure the system through a GSC Contribute Project Settings action or edit Project Settings explicitly."));
 }

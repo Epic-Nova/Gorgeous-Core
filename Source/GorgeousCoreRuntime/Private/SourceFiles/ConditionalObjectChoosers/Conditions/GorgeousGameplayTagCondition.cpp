@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -31,58 +31,22 @@ uint8 UGorgeousGameplayTagCondition::CheckCondition_Implementation()
 		return 0;
 	}
 
-	TArray<FGameplayTag> FoundTags;
+	const FGameplayTagContainer SourceTags = GetGameplayTagContainer();
+	TArray<uint8> MatchingValues;
 	for (const auto& Pair : GameplayTagConditionMapping)
 	{
-		if (GetGameplayTagContainer().HasAny(Pair.Key.Container))
+		if (SourceTags.HasAny(Pair.Key.Container) && Pair.Value >= 0 && Pair.Value <= MAX_uint8)
 		{
-			FoundTags.Append(Pair.Key.Container.GetGameplayTagArray());
+			MatchingValues.Add(static_cast<uint8>(Pair.Value));
 		}
 	}
-
-	if (FoundTags.IsEmpty())
-	{
-		return 0;
-	}
-
+	if (MatchingValues.IsEmpty()) return 0;
 	switch (GameplayTagChooserFightMode)
 	{
-	case EConditionalGameplayTagChooserFightMode_E::FIRST:
-		{
-			for (const auto& Pair : GameplayTagConditionMapping)
-			{
-				if (Pair.Key.Container.HasTag(FoundTags[0]))
-				{
-					return Pair.Value;
-				}
-			}
-			return 0;
-		}
-	case EConditionalGameplayTagChooserFightMode_E::LAST:
-		{
-			for (auto It = GameplayTagConditionMapping.CreateIterator(); It; ++It)
-			{
-				if (It.Key().Container.HasTag(FoundTags.Last()))
-				{
-					return It.Value();
-				}
-			}
-			return 0;
-		}
-	case EConditionalGameplayTagChooserFightMode_E::RANDOM:
-		{
-			const int32 RandomIndex = FMath::RandRange(0, FoundTags.Num() - 1);
-			for (const auto& Pair : GameplayTagConditionMapping)
-			{
-				if (Pair.Key.Container.HasTag(FoundTags[RandomIndex]))
-				{
-					return Pair.Value;
-				}
-			}
-			return 0;
-		}
-	default:
-		return 0;
+	case EConditionalGameplayTagChooserFightMode_E::FIRST: return MatchingValues[0];
+	case EConditionalGameplayTagChooserFightMode_E::LAST: return MatchingValues.Last();
+	case EConditionalGameplayTagChooserFightMode_E::RANDOM: return MatchingValues[FMath::RandHelper(MatchingValues.Num())];
+	default: return 0;
 	}
 }
 

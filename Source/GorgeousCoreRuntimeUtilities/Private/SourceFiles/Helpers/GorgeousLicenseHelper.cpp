@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Misc/Base64.h"
+#include "Interfaces/IPluginManager.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -23,7 +24,8 @@ namespace
 {
 	FString GetLicenseFilePath()
 	{
-		return FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("GorgeousThings/GorgeousCore/License.lic"));
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
+		return FPaths::Combine(Plugin.IsValid() ? Plugin->GetBaseDir() : FPaths::ProjectSavedDir(), TEXT("License.lic"));
 	}
 
 	// Helper to get 32-byte AES key from ProjectId (pads or truncates as needed)
@@ -79,7 +81,7 @@ bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& Projec
 	}
 
 	TArray<uint8> EncryptedBytes;
-	if (!FBase64::Decode(Encoded, EncryptedBytes))
+	if (!FBase64::Decode(Encoded, EncryptedBytes) || EncryptedBytes.IsEmpty() || EncryptedBytes.Num() % 16 != 0)
 	{
 		return false;
 	}
@@ -90,18 +92,31 @@ bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& Projec
 	// Remove padding
 	if (EncryptedBytes.Num() == 0) return false;
 	const uint8 Pad = EncryptedBytes.Last();
-	if (Pad > 16) return false;
+	if (Pad == 0 || Pad > 16 || Pad > EncryptedBytes.Num()) return false;
+	for (int32 Index = EncryptedBytes.Num() - Pad; Index < EncryptedBytes.Num(); ++Index)
+	{
+		if (EncryptedBytes[Index] != Pad) return false;
+	}
 	EncryptedBytes.SetNum(EncryptedBytes.Num() - Pad);
 
-	const FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
+	const FUTF8ToTCHAR Decoded(reinterpret_cast<const ANSICHAR*>(EncryptedBytes.GetData()), EncryptedBytes.Num());
+	const FString Combined(Decoded.Length(), Decoded.Get());
 	TArray<FString> Lines;
 	Combined.ParseIntoArrayLines(Lines);
 	if (Lines.Num() < 1) return false;
-	if (!FDateTime::ParseIso8601(*Lines[0], OutDateTime)) return false;
+	const bool bHasHeader = FDateTime::ParseIso8601(*Lines[0], OutDateTime);
 	OutLicenseStrings.Empty();
-	for (int32 i = 1; i < Lines.Num(); ++i)
+	for (int32 i = bHasHeader ? 1 : 0; i < Lines.Num(); ++i)
 	{
-		OutLicenseStrings.Add(Lines[i]);
+		int32 Separator;
+		FDateTime EntryTimestamp;
+		if (Lines[i].FindChar('|', Separator) && FDateTime::ParseIso8601(*Lines[i].Left(Separator), EntryTimestamp))
+		{
+			if (!bHasHeader && i == 0) { OutDateTime = EntryTimestamp; }
+			OutLicenseStrings.Add(Lines[i].Mid(Separator + 1));
+		}
+		else if (bHasHeader) { OutLicenseStrings.Add(Lines[i]); }
+		else { return false; }
 	}
 	return true;
 }
@@ -122,7 +137,7 @@ bool FGorgeousCoreLicenseHelper::ReadAndDecryptLicenseFile(const FString& Projec
 bool FGorgeousCoreLicenseHelper::AddLicenseEntry(const FString& EntryString, const FString& ProjectId)
 {
 	TArray<TPair<FDateTime, FString>> Entries;
-	ReadAllLicenseEntries(ProjectId, Entries); // ignore result, file may not exist yet
+	if (!ReadAllLicenseEntries(ProjectId, Entries)) { return false; } // Preserve unreadable files instead of silently replacing them.
 
 	FDateTime Now = FDateTime::UtcNow();
 	Entries.Add(TPair<FDateTime, FString>(Now, EntryString));
@@ -132,20 +147,7 @@ bool FGorgeousCoreLicenseHelper::AddLicenseEntry(const FString& EntryString, con
 	{
 		Lines.Add(Pair.Key.ToIso8601() + TEXT("|") + Pair.Value);
 	}
-	const FString Combined = FString::Join(Lines, TEXT("\n"));
-
-	TArray<uint8> PlainBytes;
-	const FTCHARToUTF8 Converter(*Combined);
-	PlainBytes.Append((uint8*)Converter.Get(), Converter.Length());
-
-	const FAES::FAESKey Key = MakeAESKey(ProjectId);
-	const int32 Pad = 16 - (PlainBytes.Num() % 16);
-	for (int32 i = 0; i < Pad; ++i) PlainBytes.Add(static_cast<uint8>(Pad));
-
-	FAES::EncryptData(PlainBytes.GetData(), PlainBytes.Num(), Key);
-
-	const FString Encoded = FBase64::Encode(PlainBytes);
-	return FFileHelper::SaveStringToFile(Encoded, *GetLicenseFilePath());
+	return CreateEncryptedLicenseFile(Lines, ProjectId);
 }
 
 bool FGorgeousCoreLicenseHelper::ReadAllLicenseEntries(const FString& ProjectId, TArray<TPair<FDateTime, FString>>& OutEntries)
@@ -158,7 +160,7 @@ bool FGorgeousCoreLicenseHelper::ReadAllLicenseEntries(const FString& ProjectId,
 	}
 
 	TArray<uint8> EncryptedBytes;
-	if (!FBase64::Decode(Encoded, EncryptedBytes))
+	if (!FBase64::Decode(Encoded, EncryptedBytes) || EncryptedBytes.IsEmpty() || EncryptedBytes.Num() % 16 != 0)
 	{
 		return false;
 	}
@@ -168,24 +170,30 @@ bool FGorgeousCoreLicenseHelper::ReadAllLicenseEntries(const FString& ProjectId,
 
 	if (EncryptedBytes.Num() == 0) return true;
 	const uint8 Pad = EncryptedBytes.Last();
-	if (Pad > 16) return false;
+	if (Pad == 0 || Pad > 16 || Pad > EncryptedBytes.Num()) return false;
+	for (int32 Index = EncryptedBytes.Num() - Pad; Index < EncryptedBytes.Num(); ++Index)
+	{
+		if (EncryptedBytes[Index] != Pad) return false;
+	}
 	EncryptedBytes.SetNum(EncryptedBytes.Num() - Pad);
 
-	const FString Combined = FString(UTF8_TO_TCHAR(EncryptedBytes.GetData()));
+	const FUTF8ToTCHAR Decoded(reinterpret_cast<const ANSICHAR*>(EncryptedBytes.GetData()), EncryptedBytes.Num());
+	const FString Combined(Decoded.Length(), Decoded.Get());
 	TArray<FString> Lines;
 	Combined.ParseIntoArrayLines(Lines);
-	for (const FString& Line : Lines)
+	FDateTime FileTimestamp;
+	const bool bHasHeader = Lines.Num() > 0 && FDateTime::ParseIso8601(*Lines[0], FileTimestamp);
+	for (int32 Index = bHasHeader ? 1 : 0; Index < Lines.Num(); ++Index)
 	{
-		if (int32 SepIdx; Line.FindChar('|', SepIdx))
+		const FString& Line = Lines[Index];
+		int32 Separator;
+		FDateTime EntryTimestamp;
+		if (Line.FindChar('|', Separator) && FDateTime::ParseIso8601(*Line.Left(Separator), EntryTimestamp))
 		{
-			FString DateStr = Line.Left(SepIdx);
-			FString ValueStr = Line.Mid(SepIdx + 1);
-			FDateTime DT;
-			if (FDateTime::ParseIso8601(*DateStr, DT))
-			{
-				OutEntries.Add(TPair<FDateTime, FString>(DT, ValueStr));
-			}
+			OutEntries.Emplace(EntryTimestamp, Line.Mid(Separator + 1));
 		}
+		else if (bHasHeader) { OutEntries.Emplace(FileTimestamp, Line); }
+		else { return false; }
 	}
 	return true;
 }

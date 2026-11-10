@@ -1,3 +1,4 @@
+#include "QualityOfLife/GorgeousPlayerController.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -61,6 +62,9 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_ListPermissionProviders()
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_SetPermissionOverride(FString PermissionName, bool bAllow)
 {
+    if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
+    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+
 	if (UGorgeousPermissionProvider* Provider = UGorgeousPermissionProvider::FindProvider(PermissionName))
 	{
 		Provider->SetCheatOverride(true, bAllow);
@@ -73,6 +77,9 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_SetPermissionOverride(FStri
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_ClearPermissionOverride(FString PermissionName)
 {
+    if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
+    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+
 	if (UGorgeousPermissionProvider* Provider = UGorgeousPermissionProvider::FindProvider(PermissionName))
 	{
 		Provider->SetCheatOverride(false, false);
@@ -85,6 +92,9 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_ClearPermissionOverride(FSt
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_CreatePermissionRole(FString RoleName)
 {
+    if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
+    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->CreateOrUpdateRole(FName(*RoleName), TMap<FString, bool>());
@@ -97,6 +107,9 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_CreatePermissionRole(FStrin
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_DeletePermissionRole(FString RoleName)
 {
+    if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
+    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->DeleteRole(FName(*RoleName));
@@ -109,6 +122,14 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_DeletePermissionRole(FStrin
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_GrantLocalPermissionRole(FString RoleName)
 {
+    if (auto* PC=Cast<AGorgeousPlayerController>(GetPlayerController()))
+        if (!PC->HasAuthority())
+        {
+            PC->Server_RequestGorgeousPermissionMutation(PC->PlayerState,EGorgeousPermissionMutation::GrantRole,RoleName,true);
+            GT_I_LOG(TEXT("Cheat"),TEXT("Requested permission role change; server policy decides authorization."));
+            return;
+        }
+
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		if (AActor* PlayerActor = GetLocalPlayerActor())
@@ -124,6 +145,14 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_GrantLocalPermissionRole(FS
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_RevokeLocalPermissionRole(FString RoleName)
 {
+    if (auto* PC=Cast<AGorgeousPlayerController>(GetPlayerController()))
+        if (!PC->HasAuthority())
+        {
+            PC->Server_RequestGorgeousPermissionMutation(PC->PlayerState,EGorgeousPermissionMutation::RevokeRole,RoleName,true);
+            GT_I_LOG(TEXT("Cheat"),TEXT("Requested permission role change; server policy decides authorization."));
+            return;
+        }
+
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		if (AActor* PlayerActor = GetLocalPlayerActor())
@@ -139,6 +168,9 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_RevokeLocalPermissionRole(F
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_SetRolePermission(FString RoleName, FString PermissionName, bool bAllow)
 {
+    if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
+    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->GrantPermissionToRole(FName(*RoleName), PermissionName, bAllow);

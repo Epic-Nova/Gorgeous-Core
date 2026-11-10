@@ -10,46 +10,14 @@
 <==========================================================================*/
 
 #include "AutoReplication/Globals/GorgeousAutoReplicationNetworkingGlobals.h"
+#include "GameFramework/PlayerState.h"
+#include "Engine/LocalPlayer.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "HAL/FileManager.h"
 
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformProcess.h"
-
-namespace GorgeousAutoReplicationNetworkingLibrary_Private
-{
-static FString BuildMachineFingerprint()
-{
-	const FString OperatingSystemId = FPlatformMisc::GetOperatingSystemId();
-	const FString LoginId = FPlatformMisc::GetLoginId();
-	const FString ComputerName = FPlatformProcess::ComputerName();
-
-	FString Fingerprint;
-	if (!OperatingSystemId.IsEmpty())
-	{
-		Fingerprint = OperatingSystemId;
-	}
-	if (!LoginId.IsEmpty())
-	{
-		Fingerprint = Fingerprint.IsEmpty() ? LoginId : FString::Printf(TEXT("%s|%s"), *Fingerprint, *LoginId);
-	}
-	if (!ComputerName.IsEmpty())
-	{
-		Fingerprint = Fingerprint.IsEmpty() ? ComputerName : FString::Printf(TEXT("%s|%s"), *Fingerprint, *ComputerName);
-	}
-
-	if (Fingerprint.IsEmpty())
-	{
-		Fingerprint = FString::Printf(TEXT("Fallback-%llu"), FPlatformTime::Cycles64());
-	}
-
-	return Fingerprint;
-}
-
-static FString GetCachedMachineFingerprint()
-{
-	static FString CachedFingerprint = BuildMachineFingerprint();
-	return CachedFingerprint;
-}
-}
 
 FString UGorgeousAutoReplicationNetworkingGlobals::MakeStablePlayerConnectionId(const APlayerController* PlayerController)
 {
@@ -58,7 +26,24 @@ FString UGorgeousAutoReplicationNetworkingGlobals::MakeStablePlayerConnectionId(
 		return FString();
 	}
 
-	const FGorgeousAutoReplicationRPCResponderHandle Handle = FGorgeousAutoReplicationRPCResponderHandle::FromController(PlayerController);
-	const FString MachineFingerprint = GorgeousAutoReplicationNetworkingLibrary_Private::GetCachedMachineFingerprint();
-	return MachineFingerprint;
+    if (PlayerController->PlayerState && PlayerController->PlayerState->GetUniqueId().IsValid())
+        return PlayerController->PlayerState->GetUniqueId()->ToString();
+    const ULocalPlayer* Local = PlayerController->GetLocalPlayer();
+    if (!Local) return FString(); // A server cannot manufacture a remote user's persistent identity.
+    const int32 Slot = Local->GetControllerId();
+    static TMap<int32,FString> Cache;
+    if (const FString* Existing=Cache.Find(Slot)) return *Existing;
+    const FString Filename=FPaths::Combine(FPaths::ProjectSavedDir(),TEXT("Gorgeous/ConnectionIds"),FString::Printf(TEXT("LocalPlayer-%d.id"),Slot));
+    FString Id;
+    FGuid Parsed;
+    if (!FFileHelper::LoadFileToString(Id,*Filename) || !FGuid::Parse(Id.TrimStartAndEnd(),Parsed))
+    {
+        Parsed=FGuid::NewGuid();
+        Id=Parsed.ToString(EGuidFormats::DigitsWithHyphens);
+        IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename),true);
+        if (!FFileHelper::SaveStringToFile(Id,*Filename)) return FString();
+    }
+    Id=Parsed.ToString(EGuidFormats::DigitsWithHyphens);
+    Cache.Add(Slot,Id);
+    return Id;
 }

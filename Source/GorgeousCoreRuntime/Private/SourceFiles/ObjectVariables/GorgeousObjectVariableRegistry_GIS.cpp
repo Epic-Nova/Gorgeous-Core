@@ -14,6 +14,9 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
+#include "Engine/Engine.h"
+#include "Engine/GameInstance.h"
+#include "Engine/World.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -30,36 +33,25 @@ void UGorgeousObjectVariableRegistry_GIS::Initialize(FSubsystemCollectionBase& C
 
 void UGorgeousObjectVariableRegistry_GIS::Deinitialize()
 {
-	Super::Deinitialize();
-
-	UGorgeousRootObjectVariable::CleanupRegistry(true);
-
-	// Tear down the auto-replication coordinator.  The OnWorldCleanup delegate
-	// registered in the module never fires in PIE teardown, so we do it here
-	// where Deinitialize() is guaranteed to run.
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UWorld* World = GI->GetWorld())
-		{
-			FGorgeousAutoReplicationCoordinator::TearDownForWorld(World);
-		}
-	}
-
-	FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
+    UGameInstance* Instance=GetGameInstance();
+    UWorld* World=Instance ? Instance->GetWorld() : nullptr;
+    bool bOtherGameInstance=false;
+    if (GEngine) for (const FWorldContext& Context:GEngine->GetWorldContexts())
+        if ((Context.WorldType==EWorldType::Game || Context.WorldType==EWorldType::PIE) &&
+            Context.World() && Context.OwningGameInstance && Context.OwningGameInstance!=Instance)
+            bOtherGameInstance=true;
+    if (bOtherGameInstance) UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(World,true);
+    else UGorgeousRootObjectVariable::CleanupRegistry(true);
+    FGorgeousAutoReplicationCoordinator::TearDownForWorld(World);
+    FWorldDelegates::LevelRemovedFromWorld.RemoveAll(this);
+    Super::Deinitialize();
 }
 
-void UGorgeousObjectVariableRegistry_GIS::OnLevelRemoved(ULevel* Level, UWorld* World)
+void UGorgeousObjectVariableRegistry_GIS::OnLevelRemoved(ULevel* Level,UWorld* World)
 {
-	if (UGameInstance* OwningGameInstance = GetGameInstance())
-	{
-		const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-		for (const FName& RootName : RegisteredRootNames)
-		{
-			if (UGorgeousRootObjectVariable::IsSharedNetworkingRoot(RootName))
-			{
-				UGorgeousRootObjectVariable::PromoteRootRegistryOwner(RootName, OwningGameInstance);
-			}
-		}
-	}
-	UGorgeousRootObjectVariable::CleanupRegistry();
+    UGameInstance* Instance=GetGameInstance();
+    // A null Level means all levels are being removed (map travel). Streaming
+    // one sublevel or another PIE world's callback must not purge this session.
+    if (Level || !Instance || !World || World->GetGameInstance()!=Instance) return;
+    UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(World,false);
 }

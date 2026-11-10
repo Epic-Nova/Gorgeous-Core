@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
-#include "InsightMatrix/GorgeousInsightFunctionalTest.h"
+#include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 
@@ -21,7 +21,8 @@ struct FGorgeousDebugAssistInsightTests
 
 		// Spawn the functional test actor which acts as our Debug Assist Beacon
 		FActorSpawnParameters SpawnParams;
-		AGorgeousInsightFunctionalTest* BeaconActor = World->SpawnActor<AGorgeousInsightFunctionalTest>(SpawnParams);
+		UClass* BeaconClass = FindObject<UClass>(nullptr, TEXT("/Script/GorgeousCoreEditor.GorgeousInsightFunctionalTest"));
+		AActor* BeaconActor = BeaconClass ? World->SpawnActor<AActor>(BeaconClass, SpawnParams) : nullptr;
 		
 		if (!BeaconActor)
 		{
@@ -78,10 +79,9 @@ struct FGorgeousDebugAssistInsightTests
 	{
 		FGorgeousInsightScenarioResult Result;
 		
-		// Scaffolding: the actual ImGui implementation arrives later.
-		Result.bSuccess = true;
-		Result.AddNote(TEXT("Scaffolded Test: Subsystem properly constructed pipeline for ImGui payload."));
-		Result.AddNote(TEXT("Actual ImGui integration and rendering will be tested once the ImGui layer is fully installed."));
+		// The absent integration cannot truthfully produce a passing functional test.
+        Result.AddError(TEXT("ImGui integration is not implemented; no population/render assertion was executed."));
+
 		
 		return Result;
 	}
@@ -91,7 +91,8 @@ struct FGorgeousDebugAssistInsightTests
 		FGorgeousInsightScenarioDescriptor D;
 		D.ScenarioName = TEXT("Core.DebugAssist.Functional.ImGuiPopulation");
 		D.DisplayName  = TEXT("Debug Assist: ImGui Population Test");
-		D.Description  = TEXT("Trace the beacon. Verify the Cog/ImGui widget dynamically populates with the actor's current Event Traffic.");
+		D.Description = TEXT("Unavailable: ImGui integration is not implemented. Explicit execution reports failure instead of a scaffolded pass.");
+        D.bEnabledByDefault = false;
 		D.Tags         = { TEXT("debug-assist"), TEXT("functional"), TEXT("GorgeousCore") };
 		D.Priority     = 25;
 		D.Runner = [](const FGorgeousInsightScenarioContext& Ctx) { return RunImGuiPopulationTest(Ctx); };

@@ -69,7 +69,10 @@ bool UGorgeousPluginHelper::RegisterModule(IGorgeousThingsModuleInterface* Modul
 	KnownGorgeousPlugins.Add(PluginName);
 	
 	// Track expected modules per plugin
-	ExpectedModulesPerPlugin.FindOrAdd(PluginName)++;
+	if (!ModulesToDefer.Contains(ModuleInterface))
+	{
+		ExpectedModulesPerPlugin.FindOrAdd(PluginName)++;
+	}
 
 	// Core modules bypass all checks - they must register first to bootstrap the system
 	if (ModuleInterface->ProvidesCoreFunctionality())
@@ -119,6 +122,8 @@ bool UGorgeousPluginHelper::RegisterModule(IGorgeousThingsModuleInterface* Modul
 	
 	for (const FName& DependentPlugin : ModuleInterface->GetDependentPlugins())
 	{
+		// Modules within one plugin are ordered by Unreal; a plugin is not its own external dependency.
+		if (DependentPlugin == PluginName) continue;
 		if (!ValidateDependencyChain(DependentPlugin, FailedDependencies, FailureReasons))
 		{
 			// Dependency chain validation failed - collect all failures before failing
@@ -150,6 +155,8 @@ bool UGorgeousPluginHelper::RegisterModule(IGorgeousThingsModuleInterface* Modul
 	// Dependencies must be FullyLoaded or PartiallyLoaded before we proceed
 	for (const FName& DependentPlugin : ModuleInterface->GetDependentPlugins())
 	{
+		// Modules within one plugin are ordered by Unreal; a plugin is not its own external dependency.
+		if (DependentPlugin == PluginName) continue;
 		const EGorgeousPluginLoadState DependencyState = GetPluginLoadState(DependentPlugin);
 		
 		if (DependencyState == EGorgeousPluginLoadState::NotLoaded)
@@ -180,7 +187,7 @@ bool UGorgeousPluginHelper::RegisterModule(IGorgeousThingsModuleInterface* Modul
 				*DependentPlugin.ToString());
 			
 			// Decrement expected count since we'll re-add when DefferModuleRegistration increments it
-			ExpectedModulesPerPlugin.FindOrAdd(PluginName)--;
+			// Keep this module counted while its registration is pending.
 			DefferModuleRegistration(ModuleInterface);
 			return false;
 		}
@@ -213,6 +220,8 @@ bool UGorgeousPluginHelper::RegisterModule(IGorgeousThingsModuleInterface* Modul
 
 void UGorgeousPluginHelper::UnregisterModule(const IGorgeousThingsModuleInterface* ModuleInterface)
 {
+	ModulesToDefer.Remove(const_cast<IGorgeousThingsModuleInterface*>(ModuleInterface));
+	DeferredRetryCount.Remove(const_cast<IGorgeousThingsModuleInterface*>(ModuleInterface));
 	if (!IsModuleRegistered(ModuleInterface))
 		return;
 	
@@ -266,6 +275,7 @@ void UGorgeousPluginHelper::DefferModuleRegistration(IGorgeousThingsModuleInterf
 	
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([this, ModuleInterface](float DeltaTime)
 	{
+		if (!ModulesToDefer.Contains(ModuleInterface)) { return false; }
 		// Check retry count
 		int32& RetryCount = DeferredRetryCount.FindOrAdd(ModuleInterface);
 		RetryCount++;
@@ -311,6 +321,7 @@ void UGorgeousPluginHelper::DefferModuleRegistration(IGorgeousThingsModuleInterf
 		// Check if any dependency has terminally failed - if so, stop trying
 		for (const FName& DependentPlugin : ModuleInterface->GetDependentPlugins())
 		{
+			if (DependentPlugin == ModuleInterface->GetBelongingPluginName()) continue;
 			if (const EGorgeousPluginLoadState DependencyState = GetPluginLoadState(DependentPlugin); 
 				DependencyState == EGorgeousPluginLoadState::NotLoaded)
 			{
@@ -353,6 +364,7 @@ void UGorgeousPluginHelper::DefferModuleRegistration(IGorgeousThingsModuleInterf
 		// Try to register - RegisterModule handles all validation
 		if (RegisterModule(ModuleInterface))
 		{
+			ModuleInterface->CompleteGorgeousStartup();
 			ModulesToDefer.Remove(ModuleInterface);
 			DeferredRetryCount.Remove(ModuleInterface);
 			
@@ -388,12 +400,22 @@ void UGorgeousPluginHelper::DefferModuleRegistration(IGorgeousThingsModuleInterf
 
 EGorgeousPluginLoadState UGorgeousPluginHelper::GetPluginLoadState(const FName& PluginName) const
 {
-	// Check cached state first
-	if (const EGorgeousPluginLoadState* CachedState = PluginLoadStates.Find(PluginName))
+	// Derive current state from current counts: a cached failure must not hide later modules.
+	if (!KnownGorgeousPlugins.Contains(PluginName))
 	{
-		return *CachedState;
+		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
+		if (Plugin.IsValid() && Plugin->IsEnabled())
+		{
+			bool bContainsGorgeousModule = false;
+			bool bHasLoadedModule = Plugin->GetDescriptor().Modules.IsEmpty();
+			for (const FModuleDescriptor& Module : Plugin->GetDescriptor().Modules)
+			{
+				bContainsGorgeousModule |= Module.Name.ToString().StartsWith(TEXT("Gorgeous"));
+				bHasLoadedModule |= FModuleManager::Get().IsModuleLoaded(Module.Name);
+			}
+			if (!bContainsGorgeousModule && bHasLoadedModule) { return EGorgeousPluginLoadState::FullyLoaded; }
+		}
 	}
-	
 	const int32 Expected = ExpectedModulesPerPlugin.FindRef(PluginName);
 	const int32 Loaded = LoadedModulesPerPlugin.FindRef(PluginName);
 	const int32 Failed = FailedModulesPerPlugin.FindRef(PluginName);
@@ -693,6 +715,7 @@ TArray<FName> UGorgeousPluginHelper::GetGorgeousPluginDependencies(const FName& 
 		}
 	}
 	
+	UniqueDependencies.Remove(PluginName);
 	return UniqueDependencies.Array();
 }
 TArray<IGorgeousThingsModuleInterface*> UGorgeousPluginHelper::GetAllRegisteredModules() const
@@ -740,6 +763,9 @@ TArray<FGorgeousOfflineSystemCacheEntry> UGorgeousPluginHelper::GetOfflineSystem
 					Entry.Description = Obj->GetStringField(TEXT("Description"));
 					Entry.Version = Obj->GetStringField(TEXT("Version"));
 					Entry.DownloadUrl = Obj->GetStringField(TEXT("DownloadUrl"));
+                    Obj->TryGetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
+                    Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+                    Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
 					Entry.bIsCoreSystem = Obj->GetBoolField(TEXT("bIsCoreSystem"));
 
 					const TArray<TSharedPtr<FJsonValue>>* SourcePathsArray;
@@ -785,6 +811,8 @@ TArray<FGorgeousPluginUpdateCacheEntry> UGorgeousPluginHelper::GetPluginUpdateCa
 					Entry.MinimumCoreVersion = Obj->GetStringField(TEXT("MinimumCoreVersion"));
 					Entry.ChangelogUrl = Obj->GetStringField(TEXT("ChangelogUrl"));
 					Entry.DownloadToken = Obj->GetStringField(TEXT("DownloadToken"));
+                    Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+                    Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
 					CacheEntries.Add(Entry);
 				}
 			}
@@ -812,6 +840,9 @@ void UGorgeousPluginHelper::SetOfflineSystemCache(const TArray<FGorgeousOfflineS
 		JsonObj->SetStringField(TEXT("Description"), Entry.Description);
 		JsonObj->SetStringField(TEXT("Version"), Entry.Version);
 		JsonObj->SetStringField(TEXT("DownloadUrl"), Entry.DownloadUrl);
+        JsonObj->SetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
+        JsonObj->SetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+        JsonObj->SetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
 		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
 		JsonObj->SetBoolField(TEXT("bIsCoreSystem"), Entry.bIsCoreSystem);
 
@@ -848,6 +879,8 @@ void UGorgeousPluginHelper::SetPluginUpdateCache(const TArray<FGorgeousPluginUpd
 		JsonObj->SetStringField(TEXT("MinimumCoreVersion"), Entry.MinimumCoreVersion);
 		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
 		JsonObj->SetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
+        JsonObj->SetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+        JsonObj->SetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
 		JsonArray.Add(MakeShared<FJsonValueObject>(JsonObj));
 	}
 
@@ -879,6 +912,13 @@ FString UGorgeousPluginHelper::GetPluginUpdateChangelogUrl(const FName& PluginNa
 		}
 	}
 	return FString();
+}
+
+FString UGorgeousPluginHelper::GetPluginUpdateChecksumSha256(const FName& PluginName) const
+{
+    for (const auto& Entry : GetPluginUpdateCache())
+        if (Entry.PluginName == PluginName.ToString()) return Entry.ChecksumSha256;
+    return FString();
 }
 
 FString UGorgeousPluginHelper::GetPluginUpdateDownloadToken(const FName& PluginName) const
@@ -1120,6 +1160,8 @@ bool UGorgeousPluginHelper::TryResolveCircularDependency(const IGorgeousThingsMo
 	// Check each dependency to see if we have a circular deferred dependency
 	for (const FName& DependentPlugin : ModuleInterface->GetDependentPlugins())
 	{
+		// Modules within one plugin are ordered by Unreal; a plugin is not its own external dependency.
+		if (DependentPlugin == PluginName) continue;
 		// If the dependency's state is Unknown and both plugins have deferred modules waiting for each other
 		if (const EGorgeousPluginLoadState DependencyState = GetPluginLoadState(DependentPlugin); 
 			DependencyState != EGorgeousPluginLoadState::Unknown)
@@ -1258,6 +1300,8 @@ void UGorgeousPluginHelper::GenerateAndSaveBinaryChecksum()
 	// across installer updates, debug info changes, etc.
 #if PLATFORM_WINDOWS
 	IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dll"), true, false);
+#elif PLATFORM_MAC
+    IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dylib"), true, false);
 #else
 	IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.so"), true, false);
 #endif

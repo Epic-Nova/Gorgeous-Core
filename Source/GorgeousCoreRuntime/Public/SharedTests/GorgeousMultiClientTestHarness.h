@@ -61,7 +61,7 @@ struct FGorgeousMultiClientTestConfig
 	/** Seconds after connections settle before running scenarios. */
 	float WarmupSeconds = 2.0f;
 
-	/** Tag filter, empty = run all 'comprehensive' scenarios. */
+	/** Tag filter; empty includes all enabled non-meta scenarios. */
 	TSet<FName> TagFilter;
 
 	/** Network emulation preset (-1 = none). */
@@ -77,6 +77,7 @@ struct FGorgeousMultiClientTestReport
 	int32 TotalFailed = 0;
 	double TotalDurationSeconds = 0.0;
 	bool bAllPassed = false;
+	FString FailureReason;
 
 	/** Aggregate stats across all endpoints. */
 	int32 TotalValueVerifications = 0;
@@ -128,9 +129,10 @@ class GORGEOUSCORERUNTIME_API FGorgeousMultiClientTestOrchestrator
 public:
 	/**
 	 * Runs the full multi-client test pipeline synchronously (editor-only).
-	 * Returns false if PIE cannot be started.
+	 * Returns false with FailureReason when tools/endpoints are unavailable or no runnable scenario matches.
+	 * Native automation must pass its current test explicitly; runtime callers retain a null default.
 	 */
-	static bool RunTests(const FGorgeousMultiClientTestConfig& Config, FGorgeousMultiClientTestReport& OutReport);
+	static bool RunTests(const FGorgeousMultiClientTestConfig& Config, FGorgeousMultiClientTestReport& OutReport, FAutomationTestBase* NativeTest = nullptr);
 
 	/**
 	 * Returns true when a PIE session is currently running with multiple worlds.
@@ -152,4 +154,10 @@ public:
 		int32 ClientIndex,
 		const TArray<FGorgeousInsightScenarioDescriptor>& Scenarios,
 		FAutomationTestBase* OptionalTest = nullptr);
+#if WITH_DEV_AUTOMATION_TESTS
+private:
+	// Native fixture source only; runtime callers still use the real registry.
+	friend struct FClosureOrchestratorScenarioScope;
+	static const TArray<FGorgeousInsightScenarioDescriptor>* NativeScenarioSourceOverride;
+#endif
 };

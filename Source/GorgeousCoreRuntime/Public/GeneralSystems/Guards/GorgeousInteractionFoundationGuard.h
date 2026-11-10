@@ -20,7 +20,7 @@
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //<-------------------------------------------------------------------------->
 
-#if GORGEOUS_SYSTEM_INSTALLED_COMMONUIFOUNDATION
+#if GORGEOUS_SYSTEM_INSTALLED_INTERACTIONFOUNDATION
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundationStructures.h"
 	#include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation.h"
 	#include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
@@ -87,8 +87,10 @@
 	#define GORGEOUS_INITIALIZE_INTERACTION_FOUNDATION_COMPONENTS(AttachmentPoint, OutPromptComponent)
 
 	#define GORGEOUS_CLASS_INTERACTION_CHARACTER_HANDLER() nullptr
-	#define GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET() nullptr
 	#define GORGEOUS_CLASS_INTERACTION_BASE_HANDLER() nullptr
 	#define GORGEOUS_CLASS_INTERACTION_ACTION_WIDGET() nullptr
 	#define GORGEOUS_CLASS_INTERACTION_PROMPT_WIDGET() nullptr
 #endif
+
+// Backward-compatible long name must be available with the system enabled or disabled.
+#define GORGEOUS_CLASS_INTERACTION_FOUNDATION_PROMPT_WIDGET() GORGEOUS_CLASS_INTERACTION_PROMPT_WIDGET()

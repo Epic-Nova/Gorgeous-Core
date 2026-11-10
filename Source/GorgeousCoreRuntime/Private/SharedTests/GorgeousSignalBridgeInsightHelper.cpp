@@ -26,9 +26,10 @@ void UGorgeousSignalBridgeInsightHelper::HandleTestSignal(FGameplayTag SignalTag
 		}
 	}
 	HitCount += PrimeCount;
+    ++SignalsReceived;
 
 	// Random chance (e.g., 20%) to dispatch a result back
-	if (BridgeRef && FMath::FRand() < 0.20f)
+	if (BridgeRef && (bDispatchEverySignal || FMath::FRand() < 0.20f))
 	{
 		FGorgeousTestSignalPayload ResultPayload;
 		ResultPayload.PrimeResult = PrimeCount;

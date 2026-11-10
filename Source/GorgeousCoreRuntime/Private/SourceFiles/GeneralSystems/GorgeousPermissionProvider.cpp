@@ -20,6 +20,7 @@ void UGorgeousPermissionProvider::SetCheatOverride(bool bInOverrideActive, bool 
 
 bool UGorgeousPermissionProvider::EvaluatePermission_Implementation(AActor* Interactor, AActor* TargetObject) const
 {
+    if (!Interactor || !Interactor->HasAuthority()) return false;
 	if (bCheatOverrideActive)
 	{
 		return bCheatOverrideValue;
@@ -80,4 +81,20 @@ UGorgeousPermissionProvider* UGorgeousPermissionProvider::FindProvider(const FSt
 		return Found->Get();
 	}
 	return nullptr;
+}
+
+void UGorgeousPermissionProvider::PostInitProperties()
+{
+    Super::PostInitProperties();
+    if (!IsTemplate()) RegisterProvider(this);
+}
+void UGorgeousPermissionProvider::PostLoad()
+{
+    Super::PostLoad();
+    if (!IsTemplate()) RegisterProvider(this);
+}
+void UGorgeousPermissionProvider::BeginDestroy()
+{
+    if (RegisteredProviders.FindRef(PermissionName).Get() == this) UnregisterProvider(this);
+    Super::BeginDestroy();
 }

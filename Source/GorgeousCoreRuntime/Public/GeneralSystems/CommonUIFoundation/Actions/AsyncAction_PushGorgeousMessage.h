@@ -39,9 +39,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGorgeousMessageResultDelegate, FNam
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Actions/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Actions/AsyncAction_PushGorgeousMessage",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Actions/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#async-widget-creation-and-messages",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#async-widget-creation-and-messages",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#async-widget-creation-and-messages"
 		)
 )
 class GORGEOUSCORERUNTIME_API UAsyncAction_PushGorgeousMessage : public UBlueprintAsyncActionBase

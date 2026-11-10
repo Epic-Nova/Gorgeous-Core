@@ -11,6 +11,7 @@
 #include "GorgeousCoreRuntimeUtilitiesModule.h"
 #include "Containers/Ticker.h"
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Templates/GorgeousSingleton.h"
 
 void FGorgeousCoreRuntimeUtilitiesModule::GorgeousStartupModule()
 {
@@ -20,6 +21,11 @@ void FGorgeousCoreRuntimeUtilitiesModule::GorgeousStartupModule()
 		UGorgeousPluginHelper::GenerateAndSaveBinaryChecksum();
 		return false; // Run exactly once
 	}), 10.0f);
+}
+
+void FGorgeousCoreRuntimeUtilitiesModule::GorgeousShutdownModule()
+{
+	UGorgeousSingleton::DestroyAllSingletons();
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeUtilitiesModule, GorgeousCoreRuntimeUtilities)

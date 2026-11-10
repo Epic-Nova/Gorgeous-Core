@@ -58,7 +58,6 @@ bool UGorgeousRootNetworkStackSubsystem::CanControllerAccess(const UGorgeousObje
 	}
 
 	const FName ChannelName = Variable->GetEffectiveNetworkChannel();
-	TryAutoSubscribeController(Variable, Controller);
 	if (!IsControllerSubscribedToChannel(Controller, ChannelName))
 	{
 		return false;

@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -58,11 +58,9 @@ void UGorgeousConditionalObjectChooser::CleanupInvalidEntries()
 		ConditionCheck = nullptr;
 	}
 
-	// Clean Conditions array
-	Conditions.RemoveAll([](const TObjectPtr<UGorgeousObjectVariable>& Entry)
-	{
-		return !IsValid(Entry) || IsLikelyPlaceholder(Entry.Get());
-	});
+    // Preserve authored indices. A missing slot must never retarget later results.
+    for (auto& Entry : Conditions)
+        if (!IsValid(Entry.Get()) || IsLikelyPlaceholder(Entry.Get())) Entry = nullptr;
 }
 
 UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() const
@@ -78,9 +76,8 @@ UGorgeousObjectVariable* UGorgeousConditionalObjectChooser::DecideCondition() co
 		return nullptr;
 	}
 
-	if (UGorgeousObjectVariable* ObjectVariable = Conditions[ConditionIndex])
+	if (UGorgeousObjectVariable* ObjectVariable = Conditions[ConditionIndex]; IsValid(ObjectVariable))
 	{
-		ObjectVariable->InvokeInstancedFunctionality(FGuid::NewGuid());
 		return ObjectVariable;
 	}
 

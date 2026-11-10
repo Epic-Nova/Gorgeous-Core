@@ -38,7 +38,7 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
         PrivateDependencyModuleNames.AddRange(new[]
         {
             "GorgeousVault",
-            "FunctionalTesting", 
+
             "Niagara"
         });
 
@@ -63,17 +63,9 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
             });
         }
 
-        // Gauntlet is only available for non-Editor program builds
-        bool bWithGauntlet = Target.Type == TargetType.Program;
-        if (bWithGauntlet)
-        {
-            PrivateDependencyModuleNames.Add("Gauntlet");
-            PublicDefinitions.Add("GORGEOUSCORE_WITH_GAUNTLET=1");
-        }
-        else
-        {
-            PublicDefinitions.Add("GORGEOUSCORE_WITH_GAUNTLET=0");
-        }
+        // Gauntlet is a runtime plugin with installed Game manifests in UE 5.8.
+        PublicDependencyModuleNames.Add("Gauntlet");
+        PublicDefinitions.Add("GORGEOUSCORE_WITH_GAUNTLET=1");
 
         // Iris support
         var bUseIrisSupport = true;
@@ -109,7 +101,9 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
     public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros(ReadOnlyTargetRules Target)
     {
         var moduleDir = GetModuleDir();
-        var pluginsDir = Path.GetFullPath(Path.Combine(moduleDir, "..", "..", "..", ".."));
+        var pluginsDir = Target.ProjectFile != null
+            ? Path.Combine(Path.GetDirectoryName(Target.ProjectFile.FullName), "Plugins")
+            : Path.Combine(UnrealBuildBase.Unreal.EngineDirectory.FullName, "Plugins");
         
         var macros = new System.Collections.Generic.List<string>();
         macros.AddRange(InjectPluginMacros(pluginsDir, Target.ProjectFile?.FullName));

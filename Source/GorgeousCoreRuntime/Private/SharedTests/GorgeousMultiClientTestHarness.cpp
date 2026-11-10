@@ -13,6 +13,7 @@
 
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "InsightMatrix/GorgeousInsightHarness.h"
+#include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "SharedTests/GorgeousNetworkEmulationHelpers.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -21,12 +22,19 @@
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Misc/AutomationTest.h"
 #include "SharedTests/GorgeousObjectVariablePerfTestTypes.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "../UnitTests/GorgeousDevelopmentToolsTestScope.h"
+#endif
 
 #if WITH_EDITOR
 #include "Editor.h"
 #include "Settings/LevelEditorPlaySettings.h"
 #include "UnrealEdGlobals.h"
 #include "Editor/UnrealEdEngine.h"
+#endif
+
+#if WITH_DEV_AUTOMATION_TESTS
+const TArray<FGorgeousInsightScenarioDescriptor>* FGorgeousMultiClientTestOrchestrator::NativeScenarioSourceOverride = nullptr;
 #endif
 
 bool FGorgeousMultiClientTestOrchestrator::IsMultiPlayerPIEActive()
@@ -154,10 +162,16 @@ FGorgeousMultiClientEndpointResult FGorgeousMultiClientTestOrchestrator::RunScen
 	return Result;
 }
 
-bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTestConfig& Config, FGorgeousMultiClientTestReport& OutReport)
+bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTestConfig& Config, FGorgeousMultiClientTestReport& OutReport, FAutomationTestBase* NativeTest)
 {
 	OutReport = FGorgeousMultiClientTestReport();
 	OutReport.Config = Config;
+	if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() &&
+		!UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(NativeTest))
+	{
+		OutReport.FailureReason = TEXT("Development Suite is absent, disabled, or not approved for this target.");
+		return false;
+	}
 
 	const double StartTime = FPlatformTime::Seconds();
 
@@ -165,6 +179,7 @@ bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTe
 	// ── Step 1: Check if PIE is already running with multiple worlds ──
 	if (!IsMultiPlayerPIEActive())
 	{
+		OutReport.FailureReason = TEXT("Multiplayer PIE endpoints are not active.");
 		GT_W_LOG("GT.MultiClientTest", TEXT("[MultiClientHarness] PIE is not active with multiple worlds."));
 		GT_W_LOG("GT.MultiClientTest", TEXT("[MultiClientHarness] Please start PIE with %d clients + dedicated server enabled."), Config.NumClients);
 		GT_W_LOG("GT.MultiClientTest", TEXT("[MultiClientHarness] Use: Editor → Play → Multiplayer Options → Number of Players = %d, Run Dedicated Server = true"), Config.NumClients + 1);
@@ -195,11 +210,18 @@ bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTe
 	// ── Step 4: Gather scenarios to run ──
 	TArray<FGorgeousInsightScenarioDescriptor> Scenarios;
 	{
-		const TArray<FGorgeousInsightScenarioDescriptor> All = FGorgeousInsightTestMatrix::GetRegisteredScenarios();
+		TArray<FGorgeousInsightScenarioDescriptor> All;
+#if WITH_DEV_AUTOMATION_TESTS
+		if (NativeScenarioSourceOverride && UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(NativeTest))
+			All = *NativeScenarioSourceOverride;
+		else
+#endif
+			All = FGorgeousInsightTestMatrix::GetRegisteredScenarios();
 		for (const FGorgeousInsightScenarioDescriptor& Desc : All)
 		{
 			// Skip meta/runall scenarios
-			if (Desc.ScenarioName.ToString().Contains(TEXT("RunAll"))) continue;
+			if (!Desc.bEnabledByDefault || Desc.ScenarioName.ToString().Contains(TEXT("RunAll")) ||
+				Desc.ScenarioName == TEXT("AutoReplication.MultiClient.Orchestrator")) continue;
 
 			bool bMatchesTag = Config.TagFilter.Num() == 0; // empty filter = match all
 			for (const FName& Tag : Desc.Tags)
@@ -208,20 +230,6 @@ bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTe
 				{
 					bMatchesTag = true;
 					break;
-				}
-				// Default: include "comprehensive" tagged scenarios
-				if (Config.TagFilter.Num() == 0 && Tag == TEXT("comprehensive"))
-				{
-					bMatchesTag = true;
-					break;
-				}
-			}
-			// Also include the "local" scenarios for cross-validation
-			if (!bMatchesTag)
-			{
-				for (const FName& Tag : Desc.Tags)
-				{
-					if (Tag == TEXT("local")) { bMatchesTag = true; break; }
 				}
 			}
 
@@ -232,6 +240,13 @@ bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTe
 		}
 	}
 
+	if (Scenarios.IsEmpty())
+	{
+		OutReport.FailureReason = TEXT("Scenario filter produced no runnable matches; meta/self scenarios are excluded.");
+		OutReport.TotalDurationSeconds = FPlatformTime::Seconds() - StartTime;
+		GT_W_LOG("GT.MultiClientTest", TEXT("[MultiClientHarness] %s"), *OutReport.FailureReason);
+		return false;
+	}
 	GT_I_LOG("GT.MultiClientTest", TEXT("[MultiClientHarness] Running %d scenarios on %d endpoints."), Scenarios.Num(), Worlds.Num());
 
 	// ── Step 5: Run scenarios on each endpoint ──
@@ -242,7 +257,7 @@ bool FGorgeousMultiClientTestOrchestrator::RunTests(const FGorgeousMultiClientTe
 		const int32 CIdx = bIsServer ? INDEX_NONE : ClientIdx++;
 
 		FGorgeousMultiClientEndpointResult EPResult = RunScenariosOnWorld(
-			WorldPair.Value, WorldPair.Key, bIsServer, CIdx, Scenarios);
+			WorldPair.Value, WorldPair.Key, bIsServer, CIdx, Scenarios, NativeTest);
 
 		OutReport.TotalScenarios += EPResult.TotalScenarios;
 		OutReport.TotalPassed += EPResult.PassedScenarios;
@@ -308,7 +323,7 @@ static FGorgeousInsightScenarioDescriptor MakeMultiClientOrchestrator()
 		}
 
 		FGorgeousMultiClientTestReport Report;
-		const bool bStarted = FGorgeousMultiClientTestOrchestrator::RunTests(Config, Report);
+		const bool bStarted = FGorgeousMultiClientTestOrchestrator::RunTests(Config, Report, Context.Test);
 
 		if (!bStarted)
 		{
@@ -370,7 +385,7 @@ static FGorgeousInsightScenarioDescriptor MakeMultiClientOrchestrator()
 				Report.TotalFailed, Report.TotalScenarios));
 		}
 
-		FGorgeousInsightHarness::SaveScenarioResult(Context.Descriptor, Result, TEXT("multiclient"));
+		FGorgeousInsightHarness::SaveScenarioResult(Context.Descriptor, Result, TEXT("multiclient"), Context.Test);
 		return Result;
 	};
 	return D;
@@ -399,10 +414,10 @@ bool FGorgeousMultiClientAutomationTest::RunTest(const FString& Parameters)
 	}
 
 	FGorgeousMultiClientTestReport Report;
-	if (!FGorgeousMultiClientTestOrchestrator::RunTests(Config, Report))
+	if (!FGorgeousMultiClientTestOrchestrator::RunTests(Config, Report, this))
 	{
-		AddWarning(TEXT("PIE is not running with multiple players. Start PIE with Play → Multiplayer Options → Number of Players = 3, Run Dedicated Server = true."));
-		return true; // Don't fail the test, just warn
+        AddError(Report.FailureReason.IsEmpty() ? TEXT("Multi-client orchestration did not execute. Start multiplayer PIE with at least one server and two clients before running this test.") : Report.FailureReason);
+        return false;
 	}
 
 	// Transcribe
@@ -426,6 +441,39 @@ bool FGorgeousMultiClientAutomationTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("All multi-client scenarios passed"), Report.bAllPassed);
 	return true;
+}
+
+// Exercise the actual orchestration entrypoint, including its reported outcome,
+// without inventing endpoints or suppressing errors from the current test.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousOrchestratorPrerequisiteRegression,
+    "GorgeousCore.LimitationAudit.OrchestratorPrerequisite",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FGorgeousOrchestratorPrerequisiteRegression::RunTest(const FString&)
+{
+    if (FGorgeousMultiClientTestOrchestrator::IsMultiPlayerPIEActive())
+    {
+        AddError(TEXT("Run this prerequisite regression outside multiplayer PIE; it must exercise the missing-endpoint path."));
+        return false;
+    }
+    FGorgeousMultiClientTestConfig Config;
+    FGorgeousMultiClientTestReport NativeReport;
+    TestTrue(TEXT("This regression supplies the actual current native automation context"), UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(this));
+    TestFalse(TEXT("Explicit native context reaches the genuine missing-endpoint rejection"), FGorgeousMultiClientTestOrchestrator::RunTests(Config, NativeReport, this));
+    TestEqual(TEXT("Native failure is missing endpoints rather than the developer-tools gate"), NativeReport.FailureReason, FString(TEXT("Multiplayer PIE endpoints are not active.")));
+    // The nested accessor is not the framework's current test. Opt the fixture into tools explicitly
+    // so its real RunTest still proves the endpoint failure, independently of the native privilege check.
+    FGorgeousDevelopmentToolsTestScope ToolsScope;
+    TestTrue(TEXT("Nested entrypoint fixture explicitly enables tools before exercising endpoints"), UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled());
+    class FOrchestratorAuditAccessor : public FGorgeousMultiClientAutomationTest
+    {
+    public:
+        explicit FOrchestratorAuditAccessor(const FString& Name) : FGorgeousMultiClientAutomationTest(Name) {}
+        using FGorgeousMultiClientAutomationTest::RunTest;
+    };
+    FOrchestratorAuditAccessor Inner(TEXT("GorgeousPrivate.OrchestratorPrerequisite.Inner"));
+    TestFalse(TEXT("Actual orchestrator automation entrypoint refuses missing multiplayer endpoints"),Inner.RunTest(TEXT("")));
+    TestTrue(TEXT("Missing execution is recorded as an error rather than warning-only success"),Inner.HasAnyErrors());
+    return true;
 }
 
 #endif // WITH_DEV_AUTOMATION_TESTS

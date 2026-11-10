@@ -20,6 +20,7 @@ UAsyncAction_PushGorgeousMessage* UAsyncAction_PushGorgeousMessage::PushGorgeous
 
 	UAsyncAction_PushGorgeousMessage* Action = NewObject<UAsyncAction_PushGorgeousMessage>();
 	Action->WorldContextObject = InWorldContextObject;
+	if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(InWorldContextObject)) Action->Request.LocalPlayerIndex = Subsystem->GetLocalPlayerIndex();
 	Action->Request.Title = Title;
 	Action->Request.Message = Message;
 	Action->Request.Config = Config;
@@ -50,19 +51,16 @@ void UAsyncAction_PushGorgeousMessage::Activate()
 	USignalBridgeBlueprintFunctionLibrary::Listen(WorldContextObject, ResultTag, nullptr, ResultDelegate);
 
 	// 3. Dispatch the message
-	USignalBridgeBlueprintFunctionLibrary::Dispatch(WorldContextObject, PushTag, FInstancedStruct::Make(Request));
+	USignalBridgeBlueprintFunctionLibrary::DispatchLocal(WorldContextObject, PushTag, FInstancedStruct::Make(Request));
 }
 
 void UAsyncAction_PushGorgeousMessage::HandleMessageResult(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
-	// Clean up listeners
-	FGameplayTag ResultTag = TAG_Gorgeous_UI_System_Message_Result;
-	USignalBridgeBlueprintFunctionLibrary::Clear(WorldContextObject, ResultTag, nullptr);
-
 	const FGorgeousUIMessageResult* Result = Payload.GetPtr<FGorgeousUIMessageResult>();
     
 	// Ensure this result is actually for OUR request
 	if (!Result || Result->RequestID != Request.RequestID) return;
+	USignalBridgeBlueprintFunctionLibrary::Unlisten(WorldContextObject, TAG_Gorgeous_UI_System_Message_Result, nullptr, ResultDelegate);
 
 	// Fire the appropriate pin
 	const FName& Res = Result->ResultTag;

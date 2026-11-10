@@ -43,9 +43,9 @@ class AGorgeousPlayerController;
 //<------------------------------------------------------------->
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/SignalBridgeStorage_OV",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#how-signals-travel",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API USignalBridgeStorage_OV : public UGorgeousObjectVariable
@@ -130,6 +130,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge")
 	void Clear(FGameplayTag Tag, AGorgeousPlayerController* Controller);
+    UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Signal Bridge")
+    void Unlisten(FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
+
 
 	/**
 	 * Fires the local bindings for a tag. Called by the RPC relay.
@@ -241,7 +244,15 @@ protected:
 	TMap<FGameplayTag, FGorgeousSignalBridgeAccessRules_S> AccessRules;
 
 	/** Local-only map of bound delegates. */
-	TMap<FGameplayTag, FSignalBridgeEventMulticastDelegate> LocalBindings;
+	struct FLocalSignalBinding
+    {
+        FSignalBridgeEventDelegate Delegate;
+        TWeakObjectPtr<AGorgeousPlayerController> Controller;
+        TWeakObjectPtr<AActor> Source;
+        bool bActorScoped = false;
+        bool operator==(const FLocalSignalBinding& Other) const { return Delegate == Other.Delegate && Controller == Other.Controller && Source == Other.Source && bActorScoped == Other.bActorScoped; }
+    };
+    TMap<FGameplayTag, TArray<FLocalSignalBinding>> LocalBindings;
 
 	// Authority-only dictionary of listener tracking objects.
 	UPROPERTY(Transient)
@@ -256,6 +267,7 @@ private:
 
 	// Friend access for Insight Matrix unit tests.
 	friend struct FGorgeousSignalBridgeTestAccess;
+    friend class UGorgeousAutoReplicationRPCRelayComponent;
 	/** Helper to find or create a listener registry for a tag (Authority only). */
 	FGorgeousSignalBridgeListener_S& GetOrCreateListenerRegistry(FGameplayTag Tag);
 

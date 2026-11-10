@@ -82,7 +82,7 @@ namespace GorgeousGameInstance_Private
 	{
 		UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Inspecting NamedRootInstances (%d entries) before purge:"), UGorgeousRootObjectVariable::NamedRootInstances.Num());
 
-		for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+		for (const TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 		{
 			const UGorgeousRootObjectVariable* Root = Pair.Value.Get();
 			UE_LOG(
@@ -142,6 +142,7 @@ UGorgeousGameInstance::UGorgeousGameInstance()
 
 void UGorgeousGameInstance::Init()
 {
+    Super::Init();
 	UGorgeousRootObjectVariable::SetRootCreationAllowed(true);
 
 	FGorgeousQualityOfLifeStatics::EnsureSelfReference(this, AdditionalGorgeousData, false);
@@ -171,21 +172,19 @@ void UGorgeousGameInstance::Init()
 		RootRegistryChangedHandle = UGorgeousRootObjectVariable::OnRootRegistryChanged.AddUObject(this, &UGorgeousGameInstance::HandleRootRegistryChanged);
 	}
 	
-	Super::Init();
+
 	
-	IAssetRegistry& AssetRegistry =
-	UAssetManager::Get().GetAssetRegistry();
+
 
 }
 
 void UGorgeousGameInstance::Shutdown()
 {
-	UGorgeousRootObjectVariable::SetRootCreationAllowed(false);
+    bIsShuttingDown=true;
 
 	GorgeousGameInstance_Private::LogNamedRootInstances(this);
 	
-	IAssetRegistry& AssetRegistry =
-	UAssetManager::Get().GetAssetRegistry();
+
 	
 	const int32 RootedBeforePurge = GorgeousGameInstance_Private::DumpRootedObjectsInGameInstanceOuterChain(this);
 	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Found %d rooted object(s) in GameInstance outer chain before purge."), RootedBeforePurge);
@@ -230,7 +229,7 @@ void UGorgeousGameInstance::Shutdown()
 
 	UE_LOG(LogGorgeousGameInstance, VeryVerbose, TEXT("Purged %d world-owned object-variable registry entries during Shutdown."), PurgedWorldOwnedEntries);
 
-	for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+	for (const TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 	{
 		if (UGorgeousRootObjectVariable* RootInstance = Pair.Value.Get())
 		{
@@ -262,17 +261,7 @@ void UGorgeousGameInstance::Shutdown()
 
 void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 {
-#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
-	if (bIsEnsuringRootFallback || IsEngineExitRequested() || HasAnyFlags(RF_BeginDestroyed))
-	{
-		return;
-	}
-#else
-	if (bIsEnsuringRootFallback)
-	{
-		return;
-	}
-#endif
+    if (bIsShuttingDown || bIsEnsuringRootFallback || IsEngineExitRequested() || HasAnyFlags(RF_BeginDestroyed)) return;
 
 	TGuardValue<bool> ReentrancyGuard(bIsEnsuringRootFallback, true);
 
@@ -280,26 +269,9 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 	const FName DefaultRootName = UGorgeousRootObjectVariable::GetDefaultRootName();
 	RootsToInitialize.Add(DefaultRootName.IsNone() ? NAME_None : DefaultRootName);
 
-#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
-	const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-	for (const FName& RootName : RegisteredRootNames)
-	{
-		if (!RootName.IsNone())
-		{
-			RootsToInitialize.Add(RootName);
-		}
-	}
-#else
-	// @TODO
-	//const TArray<FName> RegisteredRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-	//for (const FName& RootName : RegisteredRootNames)
-	//{
-	//	if (!RootName.IsNone())
-	//	{
-	//		RootsToInitialize.Add(RootName);
-	//	}
-	//}
-#endif
+    for (const FName RootName : UGorgeousRootObjectVariable::GetRegisteredRootNames())
+        if (!RootName.IsNone()) RootsToInitialize.Add(RootName);
+
 
 	// This loop sets up FallbackOwner and shared network stack ownership for all roots.
 	// Safe because PurgeWorldOwnedRegistryEntries (registered on FWorldDelegates::OnWorldCleanup)
@@ -324,9 +296,9 @@ void UGorgeousGameInstance::EnsureRootVariablesFallbackToGameInstance()
 		}
 	}
 
-	for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+	for (const TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 	{
-		if (UGorgeousRootObjectVariable* RootInstance = Pair.Value)
+		if (UGorgeousRootObjectVariable* RootInstance = Pair.Value.Get())
 		{
 			RootInstance->SetFallbackOwner(this);
 
@@ -393,6 +365,5 @@ void UGorgeousGameInstance::PostEditChangeProperty(FPropertyChangedEvent& Proper
 
 void UGorgeousGameInstance::HandleRootRegistryChanged()
 {
-	bIsEnsuringRootFallback = false;
 	EnsureRootVariablesFallbackToGameInstance();
 }

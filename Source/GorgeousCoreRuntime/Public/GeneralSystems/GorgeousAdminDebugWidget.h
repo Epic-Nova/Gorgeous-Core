@@ -16,6 +16,7 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GeneralSystems/GorgeousPermissionManagerSubsystem.h"
 #include "GorgeousAdminDebugWidget.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -38,9 +39,9 @@
 */
 UCLASS(Abstract, BlueprintType, Blueprintable,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GorgeousAdminDebugWidget",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Permissions/#admin-debug-widget",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAdminDebugWidget : public UUserWidget
@@ -60,6 +61,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous|Admin")
 	bool HasPermission(const FString& PermissionKey, AActor* TargetActor = nullptr) const;
+    /** Sends an edit through this widget's owned controller. Server project policy defaults deny. */
+    UFUNCTION(BlueprintCallable,Category="Gorgeous|Admin")
+    void RequestPermissionChange(APlayerState* TargetPlayer,EGorgeousPermissionMutation Operation,const FString& Key,bool bAllow);
+
 
 	/**
 	 * Executes an abstract admin action with an arbitrary payload.

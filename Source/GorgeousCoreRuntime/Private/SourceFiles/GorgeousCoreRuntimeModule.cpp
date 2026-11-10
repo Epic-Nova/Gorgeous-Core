@@ -9,12 +9,12 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeModule.h"
+#include "GorgeousGuardRequirements.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #endif
 
-#include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 #include "Interfaces/IPluginManager.h"
 #include "CoreMinimal.h"
@@ -50,7 +50,7 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 	
 #if WITH_EDITOR
 	// Shutdown the Gorgeous Startup Hook Module, because it has already done its job
-	FModuleManager::Get().UnloadModule(TEXT("GorgeousCoreStartupHook"));
+	// StartupHook remains loaded until normal module shutdown (no dangling callbacks).
 #endif
 	
 	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddStatic([]()
@@ -94,14 +94,12 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 	// from the immortal Root OV registries. This MUST fire before UEditorEngine::CheckForWorldGCLeaks
 	// to break the strong reference chain (Root → TObjectPtr → OV → Outer → World) that would
 	// otherwise cause a "World Memory Leaks: 2 leaked objects" fatal error at editor startup and PIE teardown.
-#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
-	FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool bSessionEnded, bool /*bCleanupResources*/)
+	WorldCleanupHandle = FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool bSessionEnded, bool /*bCleanupResources*/)
 	{
 		UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(World, bSessionEnded);
 	});
-#endif
 	
-	InsightProvider = new FGorgeousCoreInsightMatrixProvider();
+	// Optional developer providers are owned by GorgeousDevelopmentSuiteRuntime.
 
 #if WITH_DEV_AUTOMATION_TESTS
 	// Ensure scenarios defined inside this module register with the Insight Matrix once all statics are loaded.
@@ -113,8 +111,10 @@ void FGorgeousCoreRuntimeModule::GorgeousShutdownModule()
 {
 	GT_W_LOG("GT.Core.Lifecycle", TEXT("FGorgeousCoreRuntimeModule has shut down!"));
 
-	delete InsightProvider;
-	InsightProvider = nullptr;
+	FWorldDelegates::OnWorldCleanup.Remove(WorldCleanupHandle);
+	WorldCleanupHandle.Reset();
+	// IModularFeature is a non-virtual empty base; recover the allocation before deleting.
+
 
 #if WITH_DEV_AUTOMATION_TESTS
 	FGorgeousInsightScenarioRegistrar::DeactivateAll();
@@ -129,7 +129,7 @@ TArray<FName> FGorgeousCoreRuntimeModule::GetDependentPlugins() const
 int32 FGorgeousCoreRuntimeModule::GetMinimumRequiredCoreVersion() const
 {
 	//Actually not needed as the Core does not perform checks against itself.
-	return 100; // Version 0.9
+	return 100; // Version 1.0
 }
 
 IMPLEMENT_MODULE(FGorgeousCoreRuntimeModule, GorgeousCoreRuntime)

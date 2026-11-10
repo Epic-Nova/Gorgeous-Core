@@ -34,7 +34,7 @@ public:
 	/**
 	 * The override function of the module interface that is called to unload this module.
 	 */
-	virtual void GorgeousShutdownModule() override {}
+	virtual void GorgeousShutdownModule() override;
 
 	/**
 	 * Returns the functionality type of this gorgeous module.

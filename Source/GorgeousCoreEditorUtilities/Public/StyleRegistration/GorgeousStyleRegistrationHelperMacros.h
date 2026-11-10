@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Styling/SlateStyleRegistry.h"
+#include "Interfaces/IPluginManager.h"
+#include "Misc/Paths.h"
 #include "StyleRegistration/GorgeousStyleRegistrationHelpers.h"
 //<-------------------------------------------------------------------------->
 
@@ -26,14 +28,21 @@
  *							allowing the brushes to be registered to the style set before it is registered to the Slate style registry.
  */
 #define GORGEOUS_REGISTER_STYLE_SET(GGorgeousStyle, StyleName, PluginName, StyleScopeCalls) \
-{ \
-	if(GGorgeousStyle.IsValid()) { return; } \
-	GGorgeousStyle = MakeShared<FSlateStyleSet>(StyleName); \
-	GGorgeousStyle->SetContentRoot(FPaths::Combine(IPluginManager::Get().FindPlugin(PluginName)->GetBaseDir(), TEXT("Resources"))); \
-	GorgeousStyleRegistration::GGorgeousStyleSet = GGorgeousStyle; \
-	StyleScopeCalls; \
-	FSlateStyleRegistry::RegisterSlateStyle(*GGorgeousStyle); \
-}
+do { \
+    if (!GGorgeousStyle.IsValid()) \
+    { \
+        const TSharedPtr<IPlugin> GorgeousStylePlugin = IPluginManager::Get().FindPlugin(PluginName); \
+        if (GorgeousStylePlugin.IsValid()) \
+        { \
+            GGorgeousStyle = MakeShared<FSlateStyleSet>(StyleName); \
+            GGorgeousStyle->SetContentRoot(FPaths::Combine(GorgeousStylePlugin->GetBaseDir(), TEXT("Resources"))); \
+            GorgeousStyleRegistration::GGorgeousStyleSet = GGorgeousStyle; \
+            StyleScopeCalls; \
+            FSlateStyleRegistry::RegisterSlateStyle(*GGorgeousStyle); \
+        } \
+        else UE_LOG(LogTemp, Warning, TEXT("Cannot register Gorgeous style '%s': plugin '%s' was not found."), *FName(StyleName).ToString(), *FString(PluginName)); \
+    } \
+} while (false);
 
 /**
  * Macro to set both icon and thumbnail brushes for a given key and class name, using the same file name for both, within the scope of a style set registration.
@@ -96,9 +105,11 @@
 }
 
 #define GORGEOUS_UNREGISTER_STYLE_SET(GGorgeousStyle) \
-{ \
-	if (!GGorgeousStyle.IsValid()) { return; } \
-	FSlateStyleRegistry::UnRegisterSlateStyle(*GGorgeousStyle); \
-	GGorgeousStyle.Reset(); \
-	GorgeousStyleRegistration::GGorgeousStyleSet.Reset(); \
-}
+do { \
+    if (GGorgeousStyle.IsValid()) \
+    { \
+        FSlateStyleRegistry::UnRegisterSlateStyle(*GGorgeousStyle); \
+        if (GorgeousStyleRegistration::GGorgeousStyleSet == GGorgeousStyle) GorgeousStyleRegistration::GGorgeousStyleSet.Reset(); \
+        GGorgeousStyle.Reset(); \
+    } \
+} while (false);

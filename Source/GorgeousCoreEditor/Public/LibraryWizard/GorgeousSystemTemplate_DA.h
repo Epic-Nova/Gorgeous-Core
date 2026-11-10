@@ -107,6 +107,6 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "Gorgeous Setup Wizard")
 	bool ExecuteTemplateGeneration(UObject* GeneratedAsset, const TArray<UObject*>& PayloadData) const;
-	virtual bool ExecuteTemplateGeneration_Implementation(UObject* GeneratedAsset, const TArray<UObject*>& PayloadData) const { return false; }
+	virtual bool ExecuteTemplateGeneration_Implementation(UObject* GeneratedAsset, const TArray<UObject*>& PayloadData) const { return IsValid(GeneratedAsset); }
 	//<-------------------------->
 };

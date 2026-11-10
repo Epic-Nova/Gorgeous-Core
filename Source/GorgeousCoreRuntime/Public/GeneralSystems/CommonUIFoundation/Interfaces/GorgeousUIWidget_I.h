@@ -93,6 +93,7 @@ public:
 	virtual bool IsInterpTheme() const { return false; }
 	virtual void SetIsInterpTheme(bool bInInterp) {}
 	virtual FGorgeousUIInterpConfig_S GetThemeInterpConfig() const { return {}; }
+	virtual void SetThemeInterpolationDuration(float Duration) {}
 	virtual TMap<FName, FLinearColor>& GetStartThemeColors() { static TMap<FName, FLinearColor> Dummy; return Dummy; }
 	virtual TMap<FName, FLinearColor>& GetTargetThemeColors() { static TMap<FName, FLinearColor> Dummy; return Dummy; }
 	virtual TMap<FName, FLinearColor>& GetCurrentThemeColors() { static TMap<FName, FLinearColor> Dummy; return Dummy; }

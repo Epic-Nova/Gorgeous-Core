@@ -24,9 +24,23 @@
  * @return The string value
  */
 template <typename Enumeration>
+static FORCEINLINE bool TryGorgeousStringToEnum(const FString& InValue, Enumeration& OutValue)
+{
+	const UEnum* Enum = StaticEnum<Enumeration>();
+	const int64 Value = Enum ? Enum->GetValueByNameString(InValue) : INDEX_NONE;
+	if (Value == INDEX_NONE) { return false; }
+	OutValue = static_cast<Enumeration>(Value);
+	return true;
+}
+
+template <typename Enumeration>
 static FORCEINLINE Enumeration GorgeousStringToEnum(const FString InValue)
 {
-	return static_cast<Enumeration>(StaticEnum<Enumeration>()->GetValueByNameString(InValue));
+	const UEnum* Enum = StaticEnum<Enumeration>();
+	const int64 Value = Enum ? Enum->GetValueByNameString(InValue) : INDEX_NONE;
+	if (Value != INDEX_NONE) { return static_cast<Enumeration>(Value); }
+	// Unknown text must not become an out-of-range enum value.
+	return Enum && Enum->NumEnums() > 0 ? static_cast<Enumeration>(Enum->GetValueByIndex(0)) : Enumeration{};
 }
 
 /**

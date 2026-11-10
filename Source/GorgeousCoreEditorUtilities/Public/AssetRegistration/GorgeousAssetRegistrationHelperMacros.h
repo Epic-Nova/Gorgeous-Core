@@ -36,7 +36,7 @@
 { \
 	TSharedRef<IAssetTypeActions> AssetTypeAction = AssetTypeActionExpr; \
 	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().RegisterAssetTypeActions(AssetTypeAction); \
-	GorgeousAssetRegistration::GRegisteredAssetTypeActions.Add(AssetTypeAction); \
+	GorgeousAssetRegistration::TrackAssetTypeAction(FName(TEXT(UE_MODULE_NAME)), AssetTypeAction); \
 }
 
 /**
@@ -93,27 +93,8 @@
  * @param AssetTypeAction The shared reference to the IAssetTypeActions instance that was used to register the asset type, which will be unregistered and removed from the list of registered asset type actions.
  */
 #define UNREGISTER_GORGEOUS_ASSET(AssetTypeAction) \
-{ \
-	FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get().UnregisterAssetTypeActions(AssetTypeAction); \
-	GorgeousAssetRegistration::GRegisteredAssetTypeActions.Remove(AssetTypeAction); \
-}
+    GorgeousAssetRegistration::UnregisterAssetTypeAction(AssetTypeAction);
 
-/**
- * Macro to unregister all previously registered custom asset types from the Unreal Editor, which iterates through the list of registered asset type actions and unregisters each one, then clears the list.
- */
+/** Unregister only the invoking module's actions, including registrations from other translation units. */
 #define UNREGISTER_GORGEOUS_ASSETS \
-{ \
-	if (!FModuleManager::Get().IsModuleLoaded("AssetTools")) \
-	{ \
-		GorgeousAssetRegistration::GRegisteredAssetTypeActions.Reset(); \
-		return; \
-	} \
-	IAssetTools& AssetTools = FModuleManager::GetModuleChecked<FAssetToolsModule>("AssetTools").Get(); \
-	for (const TSharedPtr<IAssetTypeActions>& Action : GorgeousAssetRegistration::GRegisteredAssetTypeActions) \
-	{ \
-		if (Action.IsValid()) \
-		{ \
-			UNREGISTER_GORGEOUS_ASSET(Action.ToSharedRef()); \
-		} \
-	} \
-}
+    GorgeousAssetRegistration::UnregisterAssetTypeActions(FName(TEXT(UE_MODULE_NAME)));

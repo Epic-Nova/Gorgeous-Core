@@ -17,6 +17,11 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
 #include "Interfaces/IPluginManager.h"
+#include "PluginDescriptor.h"
+#include "ModuleDescriptor.h"
+#if WITH_EDITOR
+#include "UObject/ObjectSaveContext.h"
+#endif
 #include "Helpers/GorgeousPluginHelper.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
@@ -32,6 +37,9 @@ namespace
 {
 const IGorgeousExtensionResourceGuardRuntimeInterface* FindGuardForSystem(const FName SystemName)
 {
+#if !WITH_EDITOR
+    return nullptr;
+#else
     FString SystemIdentifier = SystemName.ToString();
     if (SystemIdentifier.StartsWith(TEXT("PDA_")))
     {
@@ -47,9 +55,13 @@ const IGorgeousExtensionResourceGuardRuntimeInterface* FindGuardForSystem(const 
     TArray<FAssetData> Assets;
     AssetRegistry.GetAllAssets(Assets, true);
 
+    const FTopLevelAssetPath GuardBase(TEXT("/Script/GorgeousCoreEditorUtilities"), TEXT("GorgeousExtensionResourceGuard"));
+    TArray<FTopLevelAssetPath> Bases = { GuardBase };
+    TSet<FTopLevelAssetPath> DerivedGuardClasses;
+    AssetRegistry.GetDerivedClassNames(Bases, TSet<FTopLevelAssetPath>(), DerivedGuardClasses);
     for (const FAssetData& Asset : Assets)
     {
-        if (Asset.AssetClassPath.GetAssetName() != TEXT("GorgeousExtensionResourceGuard"))
+        if (Asset.AssetClassPath != GuardBase && !DerivedGuardClasses.Contains(Asset.AssetClassPath))
         {
             continue;
         }
@@ -67,11 +79,12 @@ const IGorgeousExtensionResourceGuardRuntimeInterface* FindGuardForSystem(const 
     }
 
     return nullptr;
+#endif
 }
 
-bool AreGuardRequirementsAvailable(const IGorgeousExtensionResourceGuardRuntimeInterface& Guard)
+bool AreGuardRequirementsAvailable(const TMap<FName, bool>& Plugins, const TMap<FName, bool>& Systems)
 {
-    for (const TPair<FName, bool>& RequiredPlugin : Guard.GetGuardRequiredPlugins())
+    for (const TPair<FName, bool>& RequiredPlugin : Plugins)
     {
         if (RequiredPlugin.Value)
         {
@@ -85,7 +98,7 @@ bool AreGuardRequirementsAvailable(const IGorgeousExtensionResourceGuardRuntimeI
         }
     }
 
-    for (const TPair<FName, bool>& RequiredSystem : Guard.GetGuardRequiredBlueprintPacks())
+    for (const TPair<FName, bool>& RequiredSystem : Systems)
     {
         if (!RequiredSystem.Value && !UGeneralSystemConfiguration_PDA::IsSystemPresent(RequiredSystem.Key))
         {
@@ -164,8 +177,10 @@ bool UGeneralSystemConfiguration_PDA::IsSystemPresent(const FName SystemName)
             continue;
 
         // First check the obvious system name by grabbing the PDA filename. If no match occurred, then try to match the system name to one of the synonyms present in the component tags.
-        const FName ExpectedSystemAssetName(*FString::Printf(TEXT("PDA_%s"), *SystemName.ToString()));
-        const FName ExpectedComponentTag(*FString::Printf(TEXT("%s_System"), *SystemName.ToString()));
+        FString NormalizedSystemName = SystemName.ToString();
+        NormalizedSystemName.RemoveFromStart(TEXT("PDA_"));
+        const FName ExpectedSystemAssetName(*FString::Printf(TEXT("PDA_%s"), *NormalizedSystemName));
+        const FName ExpectedComponentTag(*FString::Printf(TEXT("%s_System"), *NormalizedSystemName));
         const UGeneralSystem_AC* AuthoritativeComponent = SystemConfiguration->AuthoritativeComponent
             ? SystemConfiguration->AuthoritativeComponent->GetDefaultObject<UGeneralSystem_AC>()
             : nullptr;
@@ -201,16 +216,19 @@ bool UGeneralSystemConfiguration_PDA::ActivateSystemInternal(TSet<const UGeneral
 
     ActivationStack.Add(this);
     const IGorgeousExtensionResourceGuardRuntimeInterface* Guard = FindGuardForSystem(GetPDAAssetName());
-    if (Guard)
+    const TMap<FName, bool>& RequiredPlugins = Guard ? Guard->GetGuardRequiredPlugins() : RuntimeRequiredPlugins;
+    const TMap<FName, bool>& RequiredSystems = Guard ? Guard->GetGuardRequiredBlueprintPacks() : RuntimeRequiredSystems;
     {
-        for (const TPair<FName, bool>& RequiredSystem : Guard->GetGuardRequiredBlueprintPacks())
+        for (const TPair<FName, bool>& RequiredSystem : RequiredSystems)
         {
             if (RequiredSystem.Value)
             {
                 continue;
             }
 
-            const FName RequiredPDAName(*FString::Printf(TEXT("PDA_%s"), *RequiredSystem.Key.ToString()));
+            FString DependencyName = RequiredSystem.Key.ToString();
+            DependencyName.RemoveFromStart(TEXT("PDA_"));
+            const FName RequiredPDAName(*FString::Printf(TEXT("PDA_%s"), *DependencyName));
             UGeneralSystemConfiguration_PDA* Dependency = nullptr;
             for (UGeneralSystemConfiguration_PDA* Candidate : GetAllSystemConfigurations())
             {
@@ -232,7 +250,7 @@ bool UGeneralSystemConfiguration_PDA::ActivateSystemInternal(TSet<const UGeneral
         }
     }
 
-    if (Guard && !AreGuardRequirementsAvailable(*Guard))
+    if (!AreGuardRequirementsAvailable(RequiredPlugins, RequiredSystems))
     {
         GT_E_LOG("GT.GeneralSystemConfiguration",
             TEXT("General system '%s' has unavailable extension resource guard requirements."), *GetName());
@@ -245,7 +263,7 @@ bool UGeneralSystemConfiguration_PDA::ActivateSystemInternal(TSet<const UGeneral
     {
         if (IsValid(Action))
         {
-            if (Action->PredictAction(this))
+            if (Action->CanExecuteInCurrentSession() && Action->PredictAction(this))
             {
                 Action->OnSystemActivated(this);
                 ActivatedActions.Add(Action);
@@ -296,3 +314,39 @@ void UGeneralSystemConfiguration_PDA::ActivateAllSystemConfigurations()
         }
     }
 }
+#if WITH_EDITOR
+bool UGeneralSystemConfiguration_PDA::RefreshRuntimeRequirements()
+{
+    const IGorgeousExtensionResourceGuardRuntimeInterface* Guard = FindGuardForSystem(GetPDAAssetName());
+    if (!Guard) return false;
+    TMap<FName, bool> CookedPlugins;
+    for (const TPair<FName, bool>& Requirement : Guard->GetGuardRequiredPlugins())
+    {
+        const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(Requirement.Key.ToString());
+        // Editor-only helpers such as DataValidation must not become packaged-game requirements.
+        if (Plugin.IsValid())
+        {
+            const TArray<FModuleDescriptor>& Modules = Plugin->GetDescriptor().Modules;
+            const bool bRuntimeCapable = Modules.IsEmpty() || Modules.ContainsByPredicate([](const FModuleDescriptor& Module)
+            {
+                return Module.Type == EHostType::Runtime || Module.Type == EHostType::RuntimeNoCommandlet ||
+                    Module.Type == EHostType::RuntimeAndProgram || Module.Type == EHostType::CookedOnly ||
+                    Module.Type == EHostType::ClientOnly || Module.Type == EHostType::ClientOnlyNoCommandlet || Module.Type == EHostType::ServerOnly;
+            });
+            if (!bRuntimeCapable) continue;
+        }
+        CookedPlugins.Add(Requirement.Key, Requirement.Value);
+    }
+    const TMap<FName, bool>& CookedSystems = Guard->GetGuardRequiredBlueprintPacks();
+    if (RuntimeRequiredPlugins.OrderIndependentCompareEqual(CookedPlugins) && RuntimeRequiredSystems.OrderIndependentCompareEqual(CookedSystems)) return false;
+    RuntimeRequiredPlugins = MoveTemp(CookedPlugins);
+    RuntimeRequiredSystems = CookedSystems;
+    return true;
+}
+
+void UGeneralSystemConfiguration_PDA::PreSave(FObjectPreSaveContext SaveContext)
+{
+    RefreshRuntimeRequirements();
+    Super::PreSave(SaveContext);
+}
+#endif

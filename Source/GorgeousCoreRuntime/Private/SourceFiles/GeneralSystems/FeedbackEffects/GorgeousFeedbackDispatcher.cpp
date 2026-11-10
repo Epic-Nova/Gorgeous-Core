@@ -3,6 +3,8 @@
 #include "GeneralSystems/FeedbackEffects/GorgeousFeedbackDispatcher.h"
 
 #include "FeedbackEffects/GorgeousFeedbackEffectTypes.h"
+#include "GameFramework/Actor.h"
+#include "Components/SceneComponent.h"
 #include "FeedbackEffects/GorgeousFeedbackProvider.h"
 #include "FeedbackEffects/GorgeousFeedbackEffect.h"
 #include "FeedbackEffects/GorgeousFeedbackSelector.h"
@@ -10,6 +12,30 @@
 
 namespace
 {
+    struct FSequentialFeedbackPlayback : TSharedFromThis<FSequentialFeedbackPlayback>
+    {
+        TArray<TWeakObjectPtr<UGorgeousFeedbackEffect>> Effects;
+        FGorgeousFeedbackContext Context;
+        TWeakObjectPtr<UObject> Instigator, Target, UserData;
+        TWeakObjectPtr<AActor> Owner;
+        TWeakObjectPtr<USceneComponent> Attach;
+        bool bHadOwner = false;
+        int32 Index = 0;
+        void Next()
+        {
+            if (bHadOwner && !Owner.IsValid()) { return; }
+            while (Index < Effects.Num())
+            {
+                UGorgeousFeedbackEffect* Effect = Effects[Index++].Get();
+                if (!Effect) { continue; }
+                Context.Instigator = Instigator.Get(); Context.Target = Target.Get(); Context.UserData = UserData.Get();
+                Context.OwnerActor = Owner.Get(); Context.AttachComponent = Attach.Get();
+                Effect->PlayScheduled(Context, FSimpleDelegate::CreateLambda([Self = AsShared()] { Self->Next(); }));
+                return;
+            }
+        }
+    };
+
 	/** Filters a definition's effects down to those whose Tags match the definition's FilterTags. */
 	TArray<UGorgeousFeedbackEffect*> FilterDefinitionEffects(const FGorgeousFeedbackDefinition& Definition)
 	{
@@ -79,9 +105,7 @@ namespace
 		}
 
 		case EGorgeousFeedbackSelectionMode::ESequential:
-			// Sequential plays the candidates in order, each honoring its own scheduling. For a
-			// single definition call this is equivalent to EAll at the top level, so we fall
-			// through to returning every candidate.
+			// PlayDefinition chains these candidates through scheduling completion.
 			return Candidates;
 
 		case EGorgeousFeedbackSelectionMode::ECustom:
@@ -152,6 +176,18 @@ void UGorgeousFeedbackDispatcher::PlayDefinition(const FGorgeousFeedbackDefiniti
 		TEXT("Playing definition with %d candidate(s) under selection mode %s."),
 		Effects.Num(), *ModeName);
 
+    if (Definition.SelectionMode == EGorgeousFeedbackSelectionMode::ESequential)
+    {
+        TSharedRef<FSequentialFeedbackPlayback> Sequence = MakeShared<FSequentialFeedbackPlayback>();
+        for (UGorgeousFeedbackEffect* Effect : Effects) { Sequence->Effects.Add(Effect); }
+        Sequence->Context = Context;
+        Sequence->Instigator = Context.Instigator; Sequence->Target = Context.Target; Sequence->UserData = Context.UserData;
+        Sequence->Owner = Context.OwnerActor; Sequence->Attach = Context.AttachComponent; Sequence->bHadOwner = IsValid(Context.OwnerActor);
+        Sequence->Next();
+        TotalEffectsExecuted += Effects.Num();
+        return;
+    }
+
 	for (UGorgeousFeedbackEffect* Effect : Effects)
 	{
 		if (Effect && Effect->CanExecute(Context))
@@ -167,7 +203,7 @@ void UGorgeousFeedbackDispatcher::PlayDefinition(const FGorgeousFeedbackDefiniti
 				GT_I_LOG("GT.FeedbackEffects.Execute", TEXT("Executing effect '%s'."), *EffectName);
 			}
 
-			Effect->Execute(Context);
+			Effect->PlayFeedback(Context);
 			++TotalEffectsExecuted;
 
 			FString RecentEntry = Effect->Description.IsEmpty()

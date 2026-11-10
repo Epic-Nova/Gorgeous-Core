@@ -5,10 +5,13 @@
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
+#include "GameFramework/PlayerState.h"
+#include "GameFramework/Controller.h"
 #include "Serialization/MemoryWriter.h"
 #include "Serialization/MemoryReader.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
+#include "Engine/PackageMapClient.h"
 
 UGorgeousStatFoundationStorage_OV::UGorgeousStatFoundationStorage_OV()
 {
@@ -36,7 +39,7 @@ bool UGorgeousStatFoundationStorage_OV::BuildCustomAutoReplicationPayload_Implem
 	AGorgeousPlayerController* Controller = ConditionContext.TargetController;
 	if (!Controller) return false;
 
-	TMap<FString, FGorgeousStatValues_S> FilteredStats;
+	TMap<AActor*, FGorgeousStatValues_S> FilteredStats;
 	for (const auto& ActorPair : AllActorStats)
 	{
 		AActor* Actor = ActorPair.Key.Get();
@@ -53,7 +56,7 @@ bool UGorgeousStatFoundationStorage_OV::BuildCustomAutoReplicationPayload_Implem
 
 		if (AuthorizedStats.Values.Num() > 0)
 		{
-			FilteredStats.Add(Actor->GetPathName(), AuthorizedStats);
+			FilteredStats.Add(Actor, AuthorizedStats);
 		}
 	}
 
@@ -63,8 +66,8 @@ bool UGorgeousStatFoundationStorage_OV::BuildCustomAutoReplicationPayload_Implem
 
 	for (auto& Pair : FilteredStats)
 	{
-		FString ActorPath = Pair.Key;
-		Writer << ActorPath;
+		UObject* ActorReference = Pair.Key;
+        if (!ConditionContext.PackageMap || !ConditionContext.PackageMap->SerializeObject(Writer, AActor::StaticClass(), ActorReference)) return false;
 		
 		int32 StatCount = Pair.Value.Values.Num();
 		Writer << StatCount;
@@ -82,21 +85,23 @@ bool UGorgeousStatFoundationStorage_OV::BuildCustomAutoReplicationPayload_Implem
 
 bool UGorgeousStatFoundationStorage_OV::ApplyCustomAutoReplicationPayload_Implementation(FName PropertyName, const TArray<uint8>& Payload, const struct FGorgeousAutoReplicationConditionContext& ConditionContext)
 {
-	if (Payload.Num() == 0) return false;
+	if (Payload.Num() == 0 || Payload.Num() > 1024 * 1024) return false;
 
 	FMemoryReader Reader(Payload);
 	int32 MapSize = 0;
 	Reader << MapSize;
+    if (Reader.IsError() || MapSize < 0 || MapSize > 16384) return false;
 
 	for (int32 i = 0; i < MapSize; ++i)
 	{
-		FString ActorPath;
-		Reader << ActorPath;
+		UObject* ActorReference = nullptr;
+        if (!ConditionContext.PackageMap || !ConditionContext.PackageMap->SerializeObject(Reader, AActor::StaticClass(), ActorReference)) return false;
 
 		int32 StatCount = 0;
 		Reader << StatCount;
+        if (Reader.IsError() || StatCount < 0 || StatCount > 16384) return false;
 
-		AActor* Actor = FindObject<AActor>(nullptr, *ActorPath);
+		AActor* Actor = Cast<AActor>(ActorReference);
 		if (!Actor)
 		{
 			for (int32 j = 0; j < StatCount; ++j)
@@ -125,18 +130,19 @@ bool UGorgeousStatFoundationStorage_OV::ApplyCustomAutoReplicationPayload_Implem
 				ActorStats.Values.Add(Tag, Value);
 				LastActorStats.Values.Add(Tag, Value);
 				OnStatChanged.Broadcast(Tag, Value);
+                OnActorStatChanged.Broadcast(Actor, Tag, Value);
 			}
 		}
 	}
 
-	return true;
+	return !Reader.IsError();
 }
 
-void UGorgeousStatFoundationStorage_OV::SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester)
+bool UGorgeousStatFoundationStorage_OV::SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester)
 {
-	if (!HasAuthority() || !Actor) return;
+	if (!HasAuthority() || !Actor || !Tag.IsValid() || !FMath::IsFinite(Value)) return false;
 
-	if (Requester && !EvaluateStatAccess(Requester, Actor, Tag)) return;
+	if (Requester && !EvaluateStatAccess(Requester, Actor, Tag)) return false;
 
 	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	if (const FGorgeousStat_S* Metadata = Settings->FindStatMetadata(Tag))
@@ -169,14 +175,17 @@ void UGorgeousStatFoundationStorage_OV::SetStatValue(AActor* Actor, FGameplayTag
 	}
 
 	FGorgeousStatValues_S& ActorStats = AllActorStats.FindOrAdd(Actor);
+    const bool bWasPresent=ActorStats.Values.Contains(Tag);
 	float& CurrentValue = ActorStats.Values.FindOrAdd(Tag);
 	
-	if (CurrentValue != Value)
+	if (!bWasPresent || CurrentValue != Value)
 	{
 		CurrentValue = Value;
 		OnStatChanged.Broadcast(Tag, Value);
+                OnActorStatChanged.Broadcast(Actor, Tag, Value);
 		MarkPropertyDirty(NAME_None);
 	}
+    return true;
 }
 
 float UGorgeousStatFoundationStorage_OV::GetStatValue(AActor* Actor, FGameplayTag Tag) const
@@ -199,7 +208,8 @@ float UGorgeousStatFoundationStorage_OV::GetStatValue(AActor* Actor, FGameplayTa
 
 bool UGorgeousStatFoundationStorage_OV::HasStat(AActor* Actor, FGameplayTag Tag) const
 {
-	return AllActorStats.Contains(Actor) || GetDefault<UGorgeousStatFoundationSettings>()->StatRegistry.Contains(Tag);
+	const FGorgeousStatValues_S* Stats = AllActorStats.Find(Actor);
+    return Actor && Tag.IsValid() && Stats && Stats->Values.Contains(Tag);
 }
 
 void UGorgeousStatFoundationStorage_OV::AddAllowedController(AActor* Actor, FGameplayTag Tag, AGorgeousPlayerController* Controller)
@@ -248,9 +258,10 @@ bool UGorgeousStatFoundationStorage_OV::EvaluateStatAccess(AGorgeousPlayerContro
 		{
 		case EGorgeousObjectVariableAccessPolicy::Everyone: return true;
 		case EGorgeousObjectVariableAccessPolicy::OwningControllerOnly:
-			return Controller != nullptr && Actor->GetInstigatorController() == Controller;
+			return Controller && (Actor==Controller || Actor==Controller->PlayerState.Get() || Actor->GetOwner()==Controller || Actor->GetInstigatorController()==Controller);
 		case EGorgeousObjectVariableAccessPolicy::Custom:
 			if (!Controller) return false;
+            if (Rules.AllowedControllers.Contains(Controller)) return true;
 			for (const auto& AllowedClass : Rules.AllowedClasses)
 			{
 				if (Controller->IsA(AllowedClass)) return true;
@@ -259,7 +270,7 @@ bool UGorgeousStatFoundationStorage_OV::EvaluateStatAccess(AGorgeousPlayerContro
 		default: break;
 		}
 	}
-	return false;
+	return true; // No configured rule: default access policy is Everyone.
 }
 
 FGorgeousStatListener_S& UGorgeousStatFoundationStorage_OV::GetOrCreateListenerRegistry(AActor* Actor)

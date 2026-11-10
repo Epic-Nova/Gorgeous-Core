@@ -23,6 +23,7 @@
 //<-------------------------------------------------------------------------->
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousStatChangedDelegate, FGameplayTag, StatTag, float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FGorgeousActorStatChangedDelegate, AActor*, Actor, FGameplayTag, StatTag, float, NewValue);
 
 /*
 <=============================--- Class Info ---============================>
@@ -43,9 +44,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousStatChangedDelegate, FGame
 */
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#storage",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationStorage_OV : public UGorgeousObjectVariable
@@ -88,7 +89,7 @@ public:
 	 * @param Requester The controller requesting the update, if any.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats")
-	void SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester = nullptr);
+	bool SetStatValue(AActor* Actor, FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester = nullptr);
 
 	/**
 	 * Returns a statistic value for an actor.
@@ -140,6 +141,8 @@ public:
 	// Broadcast when any stat changes.
 	UPROPERTY(BlueprintAssignable, Category = "Gorgeous Core|Stats")
 	FGorgeousStatChangedDelegate OnStatChanged;
+    UPROPERTY(BlueprintAssignable, Category="Gorgeous Core|Stats")
+    FGorgeousActorStatChangedDelegate OnActorStatChanged;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
 
@@ -152,6 +155,7 @@ protected:
 	 * Internal storage map: Actor -> Stats.
 	 * Replicated via Custom Payload to allow per-controller filtering.
 	 */
+    UPROPERTY(Transient)
 	TMap<TWeakObjectPtr<AActor>, FGorgeousStatValues_S> AllActorStats;
 
 	// Authority-only tracking of listeners.

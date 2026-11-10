@@ -18,6 +18,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
 #include "HttpModule.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
 #include "Interfaces/IPluginManager.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Dom/JsonObject.h"
@@ -282,6 +283,7 @@ void UGorgeousNudgeSubsystem::CheckForNudgesNow()
 
 void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 {
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
 	Request->SetURL(NudgeFeedEndpoint);
 	Request->SetVerb(TEXT("GET"));
@@ -289,7 +291,7 @@ void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 	Request->OnProcessRequestComplete().BindLambda([WeakSubsystem = TWeakObjectPtr<UGorgeousNudgeSubsystem>(this)](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful)
 	{
 		UGorgeousNudgeSubsystem* Subsystem = WeakSubsystem.Get();
-		if (!Subsystem || !bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode())) return;
+		if (!GorgeousNetworkConsent::IsAllowed() || !Subsystem || !bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode())) return;
 
 		TSharedPtr<FJsonObject> FeedRoot;
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
@@ -318,14 +320,16 @@ void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 
 void UGorgeousNudgeSubsystem::FetchMarkdownNudge(FGorgeousNudgeEntry Entry)
 {
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+	if (!GorgeousNetworkConsent::IsSafeURL(Entry.MarkdownUrl)) return;
 	Request->SetURL(Entry.MarkdownUrl);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Accept"), TEXT("text/markdown, text/plain"));
 	Request->OnProcessRequestComplete().BindLambda([WeakSubsystem = TWeakObjectPtr<UGorgeousNudgeSubsystem>(this), Entry = MoveTemp(Entry)](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful) mutable
 	{
 		UGorgeousNudgeSubsystem* Subsystem = WeakSubsystem.Get();
-		if (!Subsystem) return;
+		if (!Subsystem || !GorgeousNetworkConsent::IsAllowed()) return;
 		if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 		{
 			Entry.MarkdownContent = Response->GetContentAsString();

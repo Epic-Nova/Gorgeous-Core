@@ -10,6 +10,11 @@
 <==========================================================================*/
 #pragma once
 
+#include "Helpers/GorgeousPathHelper.h"
+#include "HAL/FileManager.h"
+#include "Helpers/GorgeousDirectoryHelper.h"
+#include "Misc/FileHelper.h"
+
 /**
  * Checks if a file exists within the Gorgeous file structure.
  *
@@ -71,7 +76,7 @@ static FORCEINLINE bool ReadGorgeousFile(const FString& FilePath, FString& Resul
 {
     if(IsGorgeousFilePresent(FilePath))
     {
-       return FFileHelper::LoadFileToString(Result, *IFileManager::Get().CreateFileReader(*RelativePathToGorgeousPath(FilePath)), bVerifyHash ? FFileHelper::EHashOptions::EnableVerify : FFileHelper::EHashOptions::None);
+       return FFileHelper::LoadFileToString(Result, *RelativePathToGorgeousPath(FilePath), bVerifyHash ? FFileHelper::EHashOptions::EnableVerify : FFileHelper::EHashOptions::None);
     }
     return false;
 }
@@ -104,7 +109,7 @@ static FORCEINLINE void CopyGorgeousFile(const FString& FilePath, const FString&
 {
     if(IsGorgeousFilePresent(FilePath))
     {
-       IFileManager::Get().Copy(*RelativePathToGorgeousPath(FilePath), *RelativePathToGorgeousPath(CopyPath), bReplaceIfAlreadyExist, bIgnoreReadOnly);
+       IFileManager::Get().Copy(*RelativePathToGorgeousPath(CopyPath), *RelativePathToGorgeousPath(FilePath), bReplaceIfAlreadyExist, bIgnoreReadOnly);
     }
 }
 
@@ -121,7 +126,7 @@ static FORCEINLINE bool MoveOrRenameGorgeousFile(const FString& FilePath, const 
 {
     if(IsGorgeousFilePresent(FilePath))
     {
-       return IFileManager::Get().Move(*RelativePathToGorgeousPath(FilePath), *RelativePathToGorgeousPath(NewFilePath), bReplaceIfAlreadyExist, bIgnoreReadOnly);
+       return IFileManager::Get().Move(*RelativePathToGorgeousPath(NewFilePath), *RelativePathToGorgeousPath(FilePath), bReplaceIfAlreadyExist, bIgnoreReadOnly);
     }
     return false;
 }
@@ -151,11 +156,11 @@ static FORCEINLINE bool InsertInGorgeousFile(const FString& FilePath, FString Co
     if(IsGorgeousFilePresent(FilePath))
     {
        FString LoadedFileString;
-       ReadGorgeousFile(FilePath, LoadedFileString);
+       if (!ReadGorgeousFile(FilePath, LoadedFileString)) { return false; }
 
        LoadedFileString.Append(Content);
 
-       WriteGorgeousFile(FilePath, LoadedFileString, true);
+       return WriteGorgeousFile(FilePath, LoadedFileString, true);
     }
     return false;
 }
@@ -173,9 +178,9 @@ static FORCEINLINE bool ReplaceInGorgeousFile(const FString& FilePath, const FSt
     if(ExistInGorgeousFile(FilePath, Content))
     {
        FString LoadedFileString;
-       ReadGorgeousFile(FilePath, LoadedFileString);
+       if (!ReadGorgeousFile(FilePath, LoadedFileString)) { return false; }
 
-       WriteGorgeousFile(FilePath, LoadedFileString.Replace(*Content, *NewContent), true);
+       return WriteGorgeousFile(FilePath, LoadedFileString.Replace(*Content, *NewContent), true);
     }
     return false;
 }
@@ -192,9 +197,9 @@ static FORCEINLINE bool DeleteInGorgeousFile(const FString& FilePath, const FStr
     if(ExistInGorgeousFile(FilePath, Content))
     {
        FString LoadedFileString;
-       ReadGorgeousFile(FilePath, LoadedFileString);
+       if (!ReadGorgeousFile(FilePath, LoadedFileString)) { return false; }
 
-       WriteGorgeousFile(FilePath, LoadedFileString.Replace(*Content, TEXT("")), true);
+       return WriteGorgeousFile(FilePath, LoadedFileString.Replace(*Content, TEXT("")), true);
     }
     return false;
 }

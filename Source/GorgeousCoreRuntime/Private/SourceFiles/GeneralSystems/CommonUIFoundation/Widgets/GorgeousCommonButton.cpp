@@ -67,7 +67,7 @@ void UGorgeousCommonButton::PlayThemedSound(FGameplayTag SoundTag)
 	if (Subsystem)
 	{
 		// Reverse iterate to fetch resources from the most recent theme first
-		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+		for (int32 i = Subsystem->GetCurrentThemes().Num() - 1; i >= 0; --i)
 		{
 			if (USoundBase* Sound = Subsystem->GetCurrentThemes()[i]->GetThemedSound(SoundTag))
 			{

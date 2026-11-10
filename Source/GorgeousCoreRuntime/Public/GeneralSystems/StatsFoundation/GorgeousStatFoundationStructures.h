@@ -148,6 +148,13 @@ USTRUCT(BlueprintType)
 struct FGorgeousStatModificationPayload_S
 {
 	GENERATED_BODY()
+    // Required target: unaddressed global modifications must not affect every actor.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat")
+    TObjectPtr<AActor> Target = nullptr;
+    // Optional stat selection when several stats share a modification signal.
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stat")
+    FGameplayTag Stat;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stat")
 	float Value = 0.0f;

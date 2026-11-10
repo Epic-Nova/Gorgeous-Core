@@ -40,9 +40,9 @@ using TStack = TArray<ElementType, AllocatorType>;
 */
 UCLASS(Abstract,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/SingleObjectVariable",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/NativeTypes/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API USingleObjectVariable : public UGorgeousObjectVariable
@@ -655,6 +655,7 @@ UCLASS(Abstract)
 class GORGEOUSCORERUNTIME_API UQueueObjectVariable : public UGorgeousObjectVariable
 {
     GENERATED_BODY()
+    UE_SETUP_OBJECT_VARIABLE_AUTO_REPLICATION
     UPROPERTY(EditAnywhere, SaveGame, Category = "Queue")
     EObjectVariableQueueMode_E QueueMode;
 
@@ -688,34 +689,36 @@ class GORGEOUSCORERUNTIME_API UObject_QOTOV : public UQueueObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(UObject*, ObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UObject*> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(UObject*)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(UObject* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -727,14 +730,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectObjectQueueObjectVariable(OptionalVariableName).Num();
+        return GetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<UObject*> Values;
-        SetObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UObject_QOTOV()
@@ -753,34 +756,36 @@ class GORGEOUSCORERUNTIME_API UClass_QOTOV : public UQueueObjectTypeObjectVariab
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(UClass*, ObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UClass*> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(UClass*)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(UClass* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UClass*> Values = GetObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -792,14 +797,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectClassQueueObjectVariable(OptionalVariableName).Num();
+        return GetObjectClassQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<UClass*> Values;
-        SetObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UClass_QOTOV()
@@ -818,34 +823,36 @@ class GORGEOUSCORERUNTIME_API USoftObject_QOTOV : public UQueueObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftObjectPtr<UObject>> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(TSoftObjectPtr<UObject>)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(TSoftObjectPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetSoftObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -857,14 +864,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectObjectQueueObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftObjectPtr<UObject>> Values;
-        SetSoftObjectObjectQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftObject_QOTOV()
@@ -883,34 +890,36 @@ class GORGEOUSCORERUNTIME_API USoftClass_QOTOV : public UQueueObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftClassPtr<UObject>> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(TSoftClassPtr<UObject>)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(TSoftClassPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetSoftObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -922,14 +931,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectClassQueueObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftClassPtr<UObject>> Values;
-        SetSoftObjectClassQueueObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftClass_QOTOV()
@@ -949,34 +958,36 @@ class GORGEOUSCORERUNTIME_API UBoolean_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(bool, Boolean)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<bool> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(bool)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(bool InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<bool> Values = GetBooleanQueueObjectVariable(OptionalVariableName);
+        TArray<bool> Values = GetBooleanQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetBooleanQueueObjectVariable(OptionalVariableName, Values);
+        SetBooleanQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<bool> Values = GetBooleanQueueObjectVariable(OptionalVariableName);
+        TArray<bool> Values = GetBooleanQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetBooleanQueueObjectVariable(OptionalVariableName, Values);
+        SetBooleanQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<bool> Values = GetBooleanQueueObjectVariable(OptionalVariableName);
+        TArray<bool> Values = GetBooleanQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -988,14 +999,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetBooleanQueueObjectVariable(OptionalVariableName).Num();
+        return GetBooleanQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<bool> Values;
-        SetBooleanQueueObjectVariable(OptionalVariableName, Values);
+        SetBooleanQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UBoolean_QOV()
@@ -1014,34 +1025,36 @@ class GORGEOUSCORERUNTIME_API UByte_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(uint8, Byte)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<uint8> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(uint8)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(uint8 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteQueueObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetByteQueueObjectVariable(OptionalVariableName, Values);
+        SetByteQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteQueueObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetByteQueueObjectVariable(OptionalVariableName, Values);
+        SetByteQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<uint8> Values = GetByteQueueObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1053,14 +1066,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetByteQueueObjectVariable(OptionalVariableName).Num();
+        return GetByteQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<uint8> Values;
-        SetByteQueueObjectVariable(OptionalVariableName, Values);
+        SetByteQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UByte_QOV()
@@ -1079,34 +1092,36 @@ class GORGEOUSCORERUNTIME_API UFloat_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(float, Float)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<float> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(float)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(float InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatQueueObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetFloatQueueObjectVariable(OptionalVariableName, Values);
+        SetFloatQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatQueueObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetFloatQueueObjectVariable(OptionalVariableName, Values);
+        SetFloatQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<float> Values = GetFloatQueueObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1118,14 +1133,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetFloatQueueObjectVariable(OptionalVariableName).Num();
+        return GetFloatQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<float> Values;
-        SetFloatQueueObjectVariable(OptionalVariableName, Values);
+        SetFloatQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFloat_QOV()
@@ -1144,34 +1159,36 @@ class GORGEOUSCORERUNTIME_API UDouble_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(double, Double)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<double> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(double)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(double InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleQueueObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetDoubleQueueObjectVariable(OptionalVariableName, Values);
+        SetDoubleQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleQueueObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetDoubleQueueObjectVariable(OptionalVariableName, Values);
+        SetDoubleQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<double> Values = GetDoubleQueueObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1183,14 +1200,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetDoubleQueueObjectVariable(OptionalVariableName).Num();
+        return GetDoubleQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<double> Values;
-        SetDoubleQueueObjectVariable(OptionalVariableName, Values);
+        SetDoubleQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UDouble_QOV()
@@ -1209,34 +1226,36 @@ class GORGEOUSCORERUNTIME_API UInteger64_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(int64, Integer64)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int64> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(int64)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(int64 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64QueueObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64QueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetInteger64QueueObjectVariable(OptionalVariableName, Values);
+        SetInteger64QueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64QueueObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64QueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetInteger64QueueObjectVariable(OptionalVariableName, Values);
+        SetInteger64QueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int64> Values = GetInteger64QueueObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64QueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1248,14 +1267,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetInteger64QueueObjectVariable(OptionalVariableName).Num();
+        return GetInteger64QueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<int64> Values;
-        SetInteger64QueueObjectVariable(OptionalVariableName, Values);
+        SetInteger64QueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger64_QOV()
@@ -1274,34 +1293,36 @@ class GORGEOUSCORERUNTIME_API UInteger_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(int32, Integer)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int32> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(int32)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(int32 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerQueueObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetIntegerQueueObjectVariable(OptionalVariableName, Values);
+        SetIntegerQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerQueueObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetIntegerQueueObjectVariable(OptionalVariableName, Values);
+        SetIntegerQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int32> Values = GetIntegerQueueObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1313,14 +1334,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetIntegerQueueObjectVariable(OptionalVariableName).Num();
+        return GetIntegerQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<int32> Values;
-        SetIntegerQueueObjectVariable(OptionalVariableName, Values);
+        SetIntegerQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger_QOV()
@@ -1339,34 +1360,36 @@ class GORGEOUSCORERUNTIME_API UName_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(FName, Name)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FName> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(FName)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(FName InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameQueueObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetNameQueueObjectVariable(OptionalVariableName, Values);
+        SetNameQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameQueueObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetNameQueueObjectVariable(OptionalVariableName, Values);
+        SetNameQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FName> Values = GetNameQueueObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1378,14 +1401,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetNameQueueObjectVariable(OptionalVariableName).Num();
+        return GetNameQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<FName> Values;
-        SetNameQueueObjectVariable(OptionalVariableName, Values);
+        SetNameQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UName_QOV()
@@ -1404,34 +1427,36 @@ class GORGEOUSCORERUNTIME_API URotator_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(FRotator, Rotator)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FRotator> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(FRotator)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(FRotator InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorQueueObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetRotatorQueueObjectVariable(OptionalVariableName, Values);
+        SetRotatorQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorQueueObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetRotatorQueueObjectVariable(OptionalVariableName, Values);
+        SetRotatorQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FRotator> Values = GetRotatorQueueObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1443,14 +1468,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetRotatorQueueObjectVariable(OptionalVariableName).Num();
+        return GetRotatorQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<FRotator> Values;
-        SetRotatorQueueObjectVariable(OptionalVariableName, Values);
+        SetRotatorQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     URotator_QOV()
@@ -1469,34 +1494,36 @@ class GORGEOUSCORERUNTIME_API UString_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(FString, String)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FString> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(FString)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(FString InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringQueueObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetStringQueueObjectVariable(OptionalVariableName, Values);
+        SetStringQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringQueueObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetStringQueueObjectVariable(OptionalVariableName, Values);
+        SetStringQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FString> Values = GetStringQueueObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1508,14 +1535,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetStringQueueObjectVariable(OptionalVariableName).Num();
+        return GetStringQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<FString> Values;
-        SetStringQueueObjectVariable(OptionalVariableName, Values);
+        SetStringQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UString_QOV()
@@ -1534,34 +1561,36 @@ class GORGEOUSCORERUNTIME_API UText_QOV : public UQueueObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(FText, Text)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FText> Value;
     UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(FText)
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Enqueue"))
     void EnqueueQueue(FText InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextQueueObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextQueueObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetTextQueueObjectVariable(OptionalVariableName, Values);
+        SetTextQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Dequeue"))
     bool DequeueQueue(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextQueueObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetTextQueueObjectVariable(OptionalVariableName, Values);
+        SetTextQueueObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Peek"))
     bool PeekQueue(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FText> Values = GetTextQueueObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextQueueObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1573,14 +1602,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Count"))
     int32 GetQueueCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetTextQueueObjectVariable(OptionalVariableName).Num();
+        return GetTextQueueObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Queue", meta=(CompactNodeTitle="Clear"))
     void ClearQueue(FName OptionalVariableName = NAME_None)
     {
         TArray<FText> Values;
-        SetTextQueueObjectVariable(OptionalVariableName, Values);
+        SetTextQueueObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UText_QOV()
@@ -1623,33 +1652,35 @@ class GORGEOUSCORERUNTIME_API UObject_SKOTOV : public UStackObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(UObject*, ObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UObject*> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(UObject* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UObject*> Values = GetObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1661,14 +1692,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectObjectStackObjectVariable(OptionalVariableName).Num();
+        return GetObjectObjectStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<UObject*> Values;
-        SetObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UObject_SKOTOV()
@@ -1687,33 +1718,35 @@ class GORGEOUSCORERUNTIME_API UClass_SKOTOV : public UStackObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(UClass*, ObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UClass*> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(UClass* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UClass*> Values = GetObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1725,14 +1758,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectClassStackObjectVariable(OptionalVariableName).Num();
+        return GetObjectClassStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<UClass*> Values;
-        SetObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UClass_SKOTOV()
@@ -1751,33 +1784,35 @@ class GORGEOUSCORERUNTIME_API USoftObject_SKOTOV : public UStackObjectTypeObject
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftObjectPtr<UObject>> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(TSoftObjectPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetSoftObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1789,14 +1824,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectObjectStackObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftObjectPtr<UObject>> Values;
-        SetSoftObjectObjectStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftObject_SKOTOV()
@@ -1815,33 +1850,35 @@ class GORGEOUSCORERUNTIME_API USoftClass_SKOTOV : public UStackObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftClassPtr<UObject>> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(TSoftClassPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetSoftObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1853,14 +1890,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectClassStackObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftClassPtr<UObject>> Values;
-        SetSoftObjectClassStackObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftClass_SKOTOV()
@@ -1880,33 +1917,35 @@ public:
     {
         GENERATED_BODY()
         UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(bool, Boolean)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<bool> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
         void PushStack(bool InValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanStackObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanStackObjectVariable_Implementation(OptionalVariableName);
             Values.Add(InValue);
-            SetBooleanStackObjectVariable(OptionalVariableName, Values);
+            SetBooleanStackObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
         bool PopStack(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanStackObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanStackObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
             }
             OutValue = Values.Last();
             Values.RemoveAt(Values.Num() - 1);
-            SetBooleanStackObjectVariable(OptionalVariableName, Values);
+            SetBooleanStackObjectVariable_Implementation(OptionalVariableName, Values);
             return true;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
         bool PeekStack(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None) const
         {
-            TArray<bool> Values = GetBooleanStackObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanStackObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
@@ -1918,14 +1957,14 @@ public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
         int32 GetStackCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetBooleanStackObjectVariable(OptionalVariableName).Num();
+            return GetBooleanStackObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
         void ClearStack(FName OptionalVariableName = NAME_None)
         {
             TArray<bool> Values;
-            SetBooleanStackObjectVariable(OptionalVariableName, Values);
+            SetBooleanStackObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UBoolean_SKOV()
@@ -1945,33 +1984,35 @@ class GORGEOUSCORERUNTIME_API UByte_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(uint8, Byte)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<uint8> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(uint8 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteStackObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetByteStackObjectVariable(OptionalVariableName, Values);
+        SetByteStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteStackObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetByteStackObjectVariable(OptionalVariableName, Values);
+        SetByteStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<uint8> Values = GetByteStackObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -1983,14 +2024,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetByteStackObjectVariable(OptionalVariableName).Num();
+        return GetByteStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<uint8> Values;
-        SetByteStackObjectVariable(OptionalVariableName, Values);
+        SetByteStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UByte_SKOV()
@@ -2009,33 +2050,35 @@ class GORGEOUSCORERUNTIME_API UFloat_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(float, Float)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<float> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(float InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatStackObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetFloatStackObjectVariable(OptionalVariableName, Values);
+        SetFloatStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatStackObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetFloatStackObjectVariable(OptionalVariableName, Values);
+        SetFloatStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<float> Values = GetFloatStackObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2047,14 +2090,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetFloatStackObjectVariable(OptionalVariableName).Num();
+        return GetFloatStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<float> Values;
-        SetFloatStackObjectVariable(OptionalVariableName, Values);
+        SetFloatStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFloat_SKOV()
@@ -2073,33 +2116,35 @@ class GORGEOUSCORERUNTIME_API UDouble_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(double, Double)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<double> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(double InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleStackObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetDoubleStackObjectVariable(OptionalVariableName, Values);
+        SetDoubleStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleStackObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetDoubleStackObjectVariable(OptionalVariableName, Values);
+        SetDoubleStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<double> Values = GetDoubleStackObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2111,14 +2156,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetDoubleStackObjectVariable(OptionalVariableName).Num();
+        return GetDoubleStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<double> Values;
-        SetDoubleStackObjectVariable(OptionalVariableName, Values);
+        SetDoubleStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UDouble_SKOV()
@@ -2137,33 +2182,35 @@ class GORGEOUSCORERUNTIME_API UInteger64_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(int64, Integer64)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int64> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(int64 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64StackObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64StackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetInteger64StackObjectVariable(OptionalVariableName, Values);
+        SetInteger64StackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64StackObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64StackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetInteger64StackObjectVariable(OptionalVariableName, Values);
+        SetInteger64StackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int64> Values = GetInteger64StackObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64StackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2175,14 +2222,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetInteger64StackObjectVariable(OptionalVariableName).Num();
+        return GetInteger64StackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<int64> Values;
-        SetInteger64StackObjectVariable(OptionalVariableName, Values);
+        SetInteger64StackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger64_SKOV()
@@ -2201,33 +2248,35 @@ class GORGEOUSCORERUNTIME_API UInteger_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(int32, Integer)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int32> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(int32 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerStackObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetIntegerStackObjectVariable(OptionalVariableName, Values);
+        SetIntegerStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerStackObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetIntegerStackObjectVariable(OptionalVariableName, Values);
+        SetIntegerStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int32> Values = GetIntegerStackObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2239,14 +2288,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetIntegerStackObjectVariable(OptionalVariableName).Num();
+        return GetIntegerStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<int32> Values;
-        SetIntegerStackObjectVariable(OptionalVariableName, Values);
+        SetIntegerStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger_SKOV()
@@ -2265,33 +2314,35 @@ class GORGEOUSCORERUNTIME_API UName_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(FName, Name)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FName> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(FName InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameStackObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetNameStackObjectVariable(OptionalVariableName, Values);
+        SetNameStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameStackObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetNameStackObjectVariable(OptionalVariableName, Values);
+        SetNameStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FName> Values = GetNameStackObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2303,14 +2354,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetNameStackObjectVariable(OptionalVariableName).Num();
+        return GetNameStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<FName> Values;
-        SetNameStackObjectVariable(OptionalVariableName, Values);
+        SetNameStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UName_SKOV()
@@ -2329,33 +2380,35 @@ class GORGEOUSCORERUNTIME_API URotator_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(FRotator, Rotator)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FRotator> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(FRotator InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorStackObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetRotatorStackObjectVariable(OptionalVariableName, Values);
+        SetRotatorStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorStackObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetRotatorStackObjectVariable(OptionalVariableName, Values);
+        SetRotatorStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FRotator> Values = GetRotatorStackObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2367,14 +2420,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetRotatorStackObjectVariable(OptionalVariableName).Num();
+        return GetRotatorStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<FRotator> Values;
-        SetRotatorStackObjectVariable(OptionalVariableName, Values);
+        SetRotatorStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     URotator_SKOV()
@@ -2393,33 +2446,35 @@ class GORGEOUSCORERUNTIME_API UString_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(FString, String)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FString> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(FString InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringStackObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetStringStackObjectVariable(OptionalVariableName, Values);
+        SetStringStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringStackObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetStringStackObjectVariable(OptionalVariableName, Values);
+        SetStringStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FString> Values = GetStringStackObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2431,14 +2486,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetStringStackObjectVariable(OptionalVariableName).Num();
+        return GetStringStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<FString> Values;
-        SetStringStackObjectVariable(OptionalVariableName, Values);
+        SetStringStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UString_SKOV()
@@ -2457,33 +2512,35 @@ class GORGEOUSCORERUNTIME_API UText_SKOV : public UStackObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_STACK_NATIVE_INTERFACE(FText, Text)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FText> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Push"))
     void PushStack(FText InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextStackObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextStackObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetTextStackObjectVariable(OptionalVariableName, Values);
+        SetTextStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Pop"))
     bool PopStack(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextStackObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetTextStackObjectVariable(OptionalVariableName, Values);
+        SetTextStackObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Peek"))
     bool PeekStack(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FText> Values = GetTextStackObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextStackObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2495,14 +2552,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Count"))
     int32 GetStackCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetTextStackObjectVariable(OptionalVariableName).Num();
+        return GetTextStackObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Stack", meta=(CompactNodeTitle="Clear"))
     void ClearStack(FName OptionalVariableName = NAME_None)
     {
         TArray<FText> Values;
-        SetTextStackObjectVariable(OptionalVariableName, Values);
+        SetTextStackObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UText_SKOV()
@@ -2545,55 +2602,57 @@ class GORGEOUSCORERUNTIME_API UObject_DQOTOV : public UDequeObjectTypeObjectVari
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(UObject*, ObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UObject*> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(UObject* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(UObject* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2605,7 +2664,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) UObject*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<UObject*> Values = GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2617,14 +2676,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectObjectDequeObjectVariable(OptionalVariableName).Num();
+        return GetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<UObject*> Values;
-        SetObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UObject_DQOTOV()
@@ -2643,55 +2702,57 @@ class GORGEOUSCORERUNTIME_API UClass_DQOTOV : public UDequeObjectTypeObjectVaria
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(UClass*, ObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<UClass*> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(UClass* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(UClass* InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2703,7 +2764,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) UClass*& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<UClass*> Values = GetObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<UClass*> Values = GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2715,14 +2776,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetObjectClassDequeObjectVariable(OptionalVariableName).Num();
+        return GetObjectClassDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<UClass*> Values;
-        SetObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UClass_DQOTOV()
@@ -2741,55 +2802,57 @@ class GORGEOUSCORERUNTIME_API USoftObject_DQOTOV : public UDequeObjectTypeObject
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftObjectPtr<UObject>> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(TSoftObjectPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(TSoftObjectPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetSoftObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetSoftObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetSoftObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2801,7 +2864,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) TSoftObjectPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftObjectPtr<UObject>> Values = GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2813,14 +2876,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectObjectDequeObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftObjectPtr<UObject>> Values;
-        SetSoftObjectObjectDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectObjectDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftObject_DQOTOV()
@@ -2839,55 +2902,57 @@ class GORGEOUSCORERUNTIME_API USoftClass_DQOTOV : public UDequeObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<TSoftClassPtr<UObject>> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(TSoftClassPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetSoftObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(TSoftClassPtr<UObject> InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetSoftObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetSoftObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetSoftObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2899,7 +2964,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) TSoftClassPtr<UObject>& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable(OptionalVariableName);
+        TArray<TSoftClassPtr<UObject>> Values = GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -2911,14 +2976,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetSoftObjectClassDequeObjectVariable(OptionalVariableName).Num();
+        return GetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<TSoftClassPtr<UObject>> Values;
-        SetSoftObjectClassDequeObjectVariable(OptionalVariableName, Values);
+        SetSoftObjectClassDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     USoftClass_DQOTOV()
@@ -2938,55 +3003,57 @@ public:
     {
         GENERATED_BODY()
         UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(bool, Boolean)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<bool> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
         void PushBackDeque(bool InValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             Values.Add(InValue);
-            SetBooleanDequeObjectVariable(OptionalVariableName, Values);
+            SetBooleanDequeObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
         void PushFrontDeque(bool InValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             Values.Insert(InValue, 0);
-            SetBooleanDequeObjectVariable(OptionalVariableName, Values);
+            SetBooleanDequeObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
         bool PopFrontDeque(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
             }
             OutValue = Values[0];
             Values.RemoveAt(0);
-            SetBooleanDequeObjectVariable(OptionalVariableName, Values);
+            SetBooleanDequeObjectVariable_Implementation(OptionalVariableName, Values);
             return true;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
         bool PopBackDeque(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None)
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
             }
             OutValue = Values.Last();
             Values.RemoveAt(Values.Num() - 1);
-            SetBooleanDequeObjectVariable(OptionalVariableName, Values);
+            SetBooleanDequeObjectVariable_Implementation(OptionalVariableName, Values);
             return true;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
         bool PeekFrontDeque(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None) const
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
@@ -2998,7 +3065,7 @@ public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
         bool PeekBackDeque(UPARAM(ref) bool& OutValue, FName OptionalVariableName = NAME_None) const
         {
-            TArray<bool> Values = GetBooleanDequeObjectVariable(OptionalVariableName);
+            TArray<bool> Values = GetBooleanDequeObjectVariable_Implementation(OptionalVariableName);
             if (Values.Num() == 0)
             {
                 return false;
@@ -3010,14 +3077,14 @@ public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
         int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetBooleanDequeObjectVariable(OptionalVariableName).Num();
+            return GetBooleanDequeObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
         void ClearDeque(FName OptionalVariableName = NAME_None)
         {
             TArray<bool> Values;
-            SetBooleanDequeObjectVariable(OptionalVariableName, Values);
+            SetBooleanDequeObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UBoolean_DQOV()
@@ -3037,55 +3104,57 @@ class GORGEOUSCORERUNTIME_API UByte_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(uint8, Byte)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<uint8> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(uint8 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetByteDequeObjectVariable(OptionalVariableName, Values);
+        SetByteDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(uint8 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetByteDequeObjectVariable(OptionalVariableName, Values);
+        SetByteDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetByteDequeObjectVariable(OptionalVariableName, Values);
+        SetByteDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetByteDequeObjectVariable(OptionalVariableName, Values);
+        SetByteDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3097,7 +3166,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) uint8& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<uint8> Values = GetByteDequeObjectVariable(OptionalVariableName);
+        TArray<uint8> Values = GetByteDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3109,14 +3178,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetByteDequeObjectVariable(OptionalVariableName).Num();
+        return GetByteDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<uint8> Values;
-        SetByteDequeObjectVariable(OptionalVariableName, Values);
+        SetByteDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UByte_DQOV()
@@ -3135,55 +3204,57 @@ class GORGEOUSCORERUNTIME_API UFloat_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(float, Float)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<float> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(float InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetFloatDequeObjectVariable(OptionalVariableName, Values);
+        SetFloatDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(float InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetFloatDequeObjectVariable(OptionalVariableName, Values);
+        SetFloatDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetFloatDequeObjectVariable(OptionalVariableName, Values);
+        SetFloatDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetFloatDequeObjectVariable(OptionalVariableName, Values);
+        SetFloatDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3195,7 +3266,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) float& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<float> Values = GetFloatDequeObjectVariable(OptionalVariableName);
+        TArray<float> Values = GetFloatDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3207,14 +3278,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetFloatDequeObjectVariable(OptionalVariableName).Num();
+        return GetFloatDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<float> Values;
-        SetFloatDequeObjectVariable(OptionalVariableName, Values);
+        SetFloatDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFloat_DQOV()
@@ -3233,55 +3304,57 @@ class GORGEOUSCORERUNTIME_API UDouble_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(double, Double)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<double> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(double InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetDoubleDequeObjectVariable(OptionalVariableName, Values);
+        SetDoubleDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(double InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetDoubleDequeObjectVariable(OptionalVariableName, Values);
+        SetDoubleDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetDoubleDequeObjectVariable(OptionalVariableName, Values);
+        SetDoubleDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetDoubleDequeObjectVariable(OptionalVariableName, Values);
+        SetDoubleDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3293,7 +3366,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) double& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<double> Values = GetDoubleDequeObjectVariable(OptionalVariableName);
+        TArray<double> Values = GetDoubleDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3305,14 +3378,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetDoubleDequeObjectVariable(OptionalVariableName).Num();
+        return GetDoubleDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<double> Values;
-        SetDoubleDequeObjectVariable(OptionalVariableName, Values);
+        SetDoubleDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UDouble_DQOV()
@@ -3331,55 +3404,57 @@ class GORGEOUSCORERUNTIME_API UInteger64_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(int64, Integer64)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int64> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(int64 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetInteger64DequeObjectVariable(OptionalVariableName, Values);
+        SetInteger64DequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(int64 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetInteger64DequeObjectVariable(OptionalVariableName, Values);
+        SetInteger64DequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetInteger64DequeObjectVariable(OptionalVariableName, Values);
+        SetInteger64DequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetInteger64DequeObjectVariable(OptionalVariableName, Values);
+        SetInteger64DequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3391,7 +3466,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) int64& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int64> Values = GetInteger64DequeObjectVariable(OptionalVariableName);
+        TArray<int64> Values = GetInteger64DequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3403,14 +3478,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetInteger64DequeObjectVariable(OptionalVariableName).Num();
+        return GetInteger64DequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<int64> Values;
-        SetInteger64DequeObjectVariable(OptionalVariableName, Values);
+        SetInteger64DequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger64_DQOV()
@@ -3429,55 +3504,57 @@ class GORGEOUSCORERUNTIME_API UInteger_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(int32, Integer)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<int32> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(int32 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetIntegerDequeObjectVariable(OptionalVariableName, Values);
+        SetIntegerDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(int32 InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetIntegerDequeObjectVariable(OptionalVariableName, Values);
+        SetIntegerDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetIntegerDequeObjectVariable(OptionalVariableName, Values);
+        SetIntegerDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetIntegerDequeObjectVariable(OptionalVariableName, Values);
+        SetIntegerDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3489,7 +3566,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) int32& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<int32> Values = GetIntegerDequeObjectVariable(OptionalVariableName);
+        TArray<int32> Values = GetIntegerDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3501,14 +3578,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetIntegerDequeObjectVariable(OptionalVariableName).Num();
+        return GetIntegerDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<int32> Values;
-        SetIntegerDequeObjectVariable(OptionalVariableName, Values);
+        SetIntegerDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UInteger_DQOV()
@@ -3527,55 +3604,57 @@ class GORGEOUSCORERUNTIME_API UName_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(FName, Name)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FName> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(FName InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetNameDequeObjectVariable(OptionalVariableName, Values);
+        SetNameDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(FName InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetNameDequeObjectVariable(OptionalVariableName, Values);
+        SetNameDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetNameDequeObjectVariable(OptionalVariableName, Values);
+        SetNameDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetNameDequeObjectVariable(OptionalVariableName, Values);
+        SetNameDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3587,7 +3666,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) FName& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FName> Values = GetNameDequeObjectVariable(OptionalVariableName);
+        TArray<FName> Values = GetNameDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3599,14 +3678,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetNameDequeObjectVariable(OptionalVariableName).Num();
+        return GetNameDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<FName> Values;
-        SetNameDequeObjectVariable(OptionalVariableName, Values);
+        SetNameDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UName_DQOV()
@@ -3625,55 +3704,57 @@ class GORGEOUSCORERUNTIME_API URotator_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(FRotator, Rotator)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FRotator> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(FRotator InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetRotatorDequeObjectVariable(OptionalVariableName, Values);
+        SetRotatorDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(FRotator InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetRotatorDequeObjectVariable(OptionalVariableName, Values);
+        SetRotatorDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetRotatorDequeObjectVariable(OptionalVariableName, Values);
+        SetRotatorDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetRotatorDequeObjectVariable(OptionalVariableName, Values);
+        SetRotatorDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3685,7 +3766,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) FRotator& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FRotator> Values = GetRotatorDequeObjectVariable(OptionalVariableName);
+        TArray<FRotator> Values = GetRotatorDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3697,14 +3778,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetRotatorDequeObjectVariable(OptionalVariableName).Num();
+        return GetRotatorDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<FRotator> Values;
-        SetRotatorDequeObjectVariable(OptionalVariableName, Values);
+        SetRotatorDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     URotator_DQOV()
@@ -3723,55 +3804,57 @@ class GORGEOUSCORERUNTIME_API UString_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(FString, String)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FString> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(FString InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetStringDequeObjectVariable(OptionalVariableName, Values);
+        SetStringDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(FString InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetStringDequeObjectVariable(OptionalVariableName, Values);
+        SetStringDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetStringDequeObjectVariable(OptionalVariableName, Values);
+        SetStringDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetStringDequeObjectVariable(OptionalVariableName, Values);
+        SetStringDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3783,7 +3866,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) FString& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FString> Values = GetStringDequeObjectVariable(OptionalVariableName);
+        TArray<FString> Values = GetStringDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3795,14 +3878,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetStringDequeObjectVariable(OptionalVariableName).Num();
+        return GetStringDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<FString> Values;
-        SetStringDequeObjectVariable(OptionalVariableName, Values);
+        SetStringDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UString_DQOV()
@@ -3821,55 +3904,57 @@ class GORGEOUSCORERUNTIME_API UText_DQOV : public UDequeObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_DEQUE_NATIVE_INTERFACE(FText, Text)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TArray<FText> Value;
 public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushBack"))
     void PushBackDeque(FText InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Add(InValue);
-        SetTextDequeObjectVariable(OptionalVariableName, Values);
+        SetTextDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PushFront"))
     void PushFrontDeque(FText InValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         Values.Insert(InValue, 0);
-        SetTextDequeObjectVariable(OptionalVariableName, Values);
+        SetTextDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopFront"))
     bool PopFrontDeque(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values[0];
         Values.RemoveAt(0);
-        SetTextDequeObjectVariable(OptionalVariableName, Values);
+        SetTextDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PopBack"))
     bool PopBackDeque(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None)
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
         }
         OutValue = Values.Last();
         Values.RemoveAt(Values.Num() - 1);
-        SetTextDequeObjectVariable(OptionalVariableName, Values);
+        SetTextDequeObjectVariable_Implementation(OptionalVariableName, Values);
         return true;
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekFront"))
     bool PeekFrontDeque(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3881,7 +3966,7 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="PeekBack"))
     bool PeekBackDeque(UPARAM(ref) FText& OutValue, FName OptionalVariableName = NAME_None) const
     {
-        TArray<FText> Values = GetTextDequeObjectVariable(OptionalVariableName);
+        TArray<FText> Values = GetTextDequeObjectVariable_Implementation(OptionalVariableName);
         if (Values.Num() == 0)
         {
             return false;
@@ -3893,14 +3978,14 @@ public:
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Count"))
     int32 GetDequeCount(FName OptionalVariableName = NAME_None) const
     {
-        return GetTextDequeObjectVariable(OptionalVariableName).Num();
+        return GetTextDequeObjectVariable_Implementation(OptionalVariableName).Num();
     }
 
     UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Deque", meta=(CompactNodeTitle="Clear"))
     void ClearDeque(FName OptionalVariableName = NAME_None)
     {
         TArray<FText> Values;
-        SetTextDequeObjectVariable(OptionalVariableName, Values);
+        SetTextDequeObjectVariable_Implementation(OptionalVariableName, Values);
     }
 
     UText_DQOV()
@@ -4198,6 +4283,8 @@ class GORGEOUSCORERUNTIME_API UObject_MMOTOV : public UMultiMapObjectTypeObjectV
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(UObject*, ObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<UObject*, FObjectVariableMultiMapValue> Value;
 
     UObject_MMOTOV()
     {
@@ -4216,6 +4303,8 @@ class GORGEOUSCORERUNTIME_API UClass_MMOTOV : public UMultiMapObjectTypeObjectVa
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(UClass*, ObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<UClass*, FObjectVariableMultiMapValue> Value;
 
     UClass_MMOTOV()
     {
@@ -4234,6 +4323,8 @@ class GORGEOUSCORERUNTIME_API USoftObject_MMOTOV : public UMultiMapObjectTypeObj
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(TSoftObjectPtr<UObject>, SoftObjectObject)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<TSoftObjectPtr<UObject>, FObjectVariableMultiMapValue> Value;
 
     USoftObject_MMOTOV()
     {
@@ -4252,6 +4343,8 @@ class GORGEOUSCORERUNTIME_API USoftClass_MMOTOV : public UMultiMapObjectTypeObje
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(TSoftClassPtr<UObject>, SoftObjectClass)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<TSoftClassPtr<UObject>, FObjectVariableMultiMapValue> Value;
 
     USoftClass_MMOTOV()
     {
@@ -4270,29 +4363,31 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(uint8, Byte)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<uint8, FObjectVariableMultiMapValue> Value;
 
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(uint8 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable(OptionalVariableName);
+            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetByteMultiMapObjectVariable(OptionalVariableName, Values);
+            SetByteMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(uint8 Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable(OptionalVariableName);
+            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetByteMultiMapObjectVariable(OptionalVariableName, Values);
+            SetByteMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(uint8 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable(OptionalVariableName);
+            TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetByteMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4300,7 +4395,7 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetByteMultiMapObjectVariable(OptionalVariableName, Values);
+                SetByteMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4309,7 +4404,8 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(uint8 Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetByteMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetByteMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4319,20 +4415,20 @@ class GORGEOUSCORERUNTIME_API UByte_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(uint8 Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetByteMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetByteMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetByteMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetByteMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<uint8, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetByteMultiMapObjectVariable(OptionalVariableName, Values);
+            SetByteMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UByte_MMOV()
@@ -4352,28 +4448,30 @@ class GORGEOUSCORERUNTIME_API UFloat_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(float, Float)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<float, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(float Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable(OptionalVariableName);
+            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetFloatMultiMapObjectVariable(OptionalVariableName, Values);
+            SetFloatMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(float Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable(OptionalVariableName);
+            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetFloatMultiMapObjectVariable(OptionalVariableName, Values);
+            SetFloatMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(float Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable(OptionalVariableName);
+            TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4381,7 +4479,7 @@ class GORGEOUSCORERUNTIME_API UFloat_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetFloatMultiMapObjectVariable(OptionalVariableName, Values);
+                SetFloatMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4390,7 +4488,8 @@ class GORGEOUSCORERUNTIME_API UFloat_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(float Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetFloatMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4400,20 +4499,20 @@ class GORGEOUSCORERUNTIME_API UFloat_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(float Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetFloatMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetFloatMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetFloatMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<float, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetFloatMultiMapObjectVariable(OptionalVariableName, Values);
+            SetFloatMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFloat_MMOV()
@@ -4433,28 +4532,30 @@ class GORGEOUSCORERUNTIME_API UDouble_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(double, Double)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<double, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(double Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable(OptionalVariableName);
+            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetDoubleMultiMapObjectVariable(OptionalVariableName, Values);
+            SetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(double Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable(OptionalVariableName);
+            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetDoubleMultiMapObjectVariable(OptionalVariableName, Values);
+            SetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(double Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable(OptionalVariableName);
+            TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4462,7 +4563,7 @@ class GORGEOUSCORERUNTIME_API UDouble_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetDoubleMultiMapObjectVariable(OptionalVariableName, Values);
+                SetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4471,7 +4572,8 @@ class GORGEOUSCORERUNTIME_API UDouble_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(double Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetDoubleMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4481,20 +4583,20 @@ class GORGEOUSCORERUNTIME_API UDouble_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(double Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetDoubleMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetDoubleMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<double, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetDoubleMultiMapObjectVariable(OptionalVariableName, Values);
+            SetDoubleMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UDouble_MMOV()
@@ -4514,28 +4616,30 @@ class GORGEOUSCORERUNTIME_API UInteger64_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(int64, Integer64)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<int64, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(int64 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable(OptionalVariableName);
+            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetInteger64MultiMapObjectVariable(OptionalVariableName, Values);
+            SetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(int64 Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable(OptionalVariableName);
+            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetInteger64MultiMapObjectVariable(OptionalVariableName, Values);
+            SetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(int64 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable(OptionalVariableName);
+            TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4543,7 +4647,7 @@ class GORGEOUSCORERUNTIME_API UInteger64_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetInteger64MultiMapObjectVariable(OptionalVariableName, Values);
+                SetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4552,7 +4656,8 @@ class GORGEOUSCORERUNTIME_API UInteger64_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(int64 Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetInteger64MultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4562,20 +4667,20 @@ class GORGEOUSCORERUNTIME_API UInteger64_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(int64 Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetInteger64MultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetInteger64MultiMapObjectVariable(OptionalVariableName).Num();
+            return GetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<int64, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetInteger64MultiMapObjectVariable(OptionalVariableName, Values);
+            SetInteger64MultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UInteger64_MMOV()
@@ -4595,28 +4700,30 @@ class GORGEOUSCORERUNTIME_API UInteger_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(int32, Integer)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<int32, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(int32 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable(OptionalVariableName);
+            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetIntegerMultiMapObjectVariable(OptionalVariableName, Values);
+            SetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(int32 Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable(OptionalVariableName);
+            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetIntegerMultiMapObjectVariable(OptionalVariableName, Values);
+            SetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(int32 Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable(OptionalVariableName);
+            TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4624,7 +4731,7 @@ class GORGEOUSCORERUNTIME_API UInteger_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetIntegerMultiMapObjectVariable(OptionalVariableName, Values);
+                SetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4633,7 +4740,8 @@ class GORGEOUSCORERUNTIME_API UInteger_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(int32 Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetIntegerMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4643,20 +4751,20 @@ class GORGEOUSCORERUNTIME_API UInteger_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(int32 Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetIntegerMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetIntegerMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<int32, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetIntegerMultiMapObjectVariable(OptionalVariableName, Values);
+            SetIntegerMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UInteger_MMOV()
@@ -4676,28 +4784,30 @@ class GORGEOUSCORERUNTIME_API UName_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(FName, Name)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<FName, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(FName Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable(OptionalVariableName);
+            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetNameMultiMapObjectVariable(OptionalVariableName, Values);
+            SetNameMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(FName Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable(OptionalVariableName);
+            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetNameMultiMapObjectVariable(OptionalVariableName, Values);
+            SetNameMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(FName Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable(OptionalVariableName);
+            TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetNameMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4705,7 +4815,7 @@ class GORGEOUSCORERUNTIME_API UName_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetNameMultiMapObjectVariable(OptionalVariableName, Values);
+                SetNameMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4714,7 +4824,8 @@ class GORGEOUSCORERUNTIME_API UName_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(FName Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetNameMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetNameMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4724,20 +4835,20 @@ class GORGEOUSCORERUNTIME_API UName_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(FName Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetNameMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetNameMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetNameMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetNameMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<FName, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetNameMultiMapObjectVariable(OptionalVariableName, Values);
+            SetNameMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UName_MMOV()
@@ -4757,28 +4868,30 @@ class GORGEOUSCORERUNTIME_API UString_MMOV : public UMultiMapObjectVariable
 {
     GENERATED_BODY()
     UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_NATIVE_INTERFACE(FString, String)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, Category="Default", meta=(AllowPrivateAccess="true"))
+    TMap<FString, FObjectVariableMultiMapValue> Value;
     public:
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Add"))
         void AddMultiMap(FString Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable(OptionalVariableName);
+            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable_Implementation(OptionalVariableName);
             Values.FindOrAdd(Key).Values.Add(InValue);
-            SetStringMultiMapObjectVariable(OptionalVariableName, Values);
+            SetStringMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveKey"))
         bool RemoveMultiMapKey(FString Key, FName OptionalVariableName = NAME_None)
         {
-            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable(OptionalVariableName);
+            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable_Implementation(OptionalVariableName);
             const bool bRemoved = Values.Remove(Key) > 0;
-            SetStringMultiMapObjectVariable(OptionalVariableName, Values);
+            SetStringMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
             return bRemoved;
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="RemoveEntry"))
         bool RemoveMultiMapEntry(FString Key, UGorgeousObjectVariable* InValue, FName OptionalVariableName = NAME_None)
         {
-            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable(OptionalVariableName);
+            TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values = GetStringMultiMapObjectVariable_Implementation(OptionalVariableName);
             if (UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 const int32 Removed = Found->Values.Remove(InValue);
@@ -4786,7 +4899,7 @@ class GORGEOUSCORERUNTIME_API UString_MMOV : public UMultiMapObjectVariable
                 {
                     Values.Remove(Key);
                 }
-                SetStringMultiMapObjectVariable(OptionalVariableName, Values);
+                SetStringMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
                 return Removed > 0;
             }
             return false;
@@ -4795,7 +4908,8 @@ class GORGEOUSCORERUNTIME_API UString_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Find"))
         FObjectVariableMultiMapValue FindMultiMapValues(FString Key, FName OptionalVariableName = NAME_None) const
         {
-            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = GetStringMultiMapObjectVariable(OptionalVariableName).Find(Key))
+            const auto Values = GetStringMultiMapObjectVariable_Implementation(OptionalVariableName);
+            if (const UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE* Found = Values.Find(Key))
             {
                 return *Found;
             }
@@ -4805,20 +4919,20 @@ class GORGEOUSCORERUNTIME_API UString_MMOV : public UMultiMapObjectVariable
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Contains"))
         bool ContainsMultiMapKey(FString Key, FName OptionalVariableName = NAME_None) const
         {
-            return GetStringMultiMapObjectVariable(OptionalVariableName).Contains(Key);
+            return GetStringMultiMapObjectVariable_Implementation(OptionalVariableName).Contains(Key);
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Count"))
         int32 GetMultiMapKeyCount(FName OptionalVariableName = NAME_None) const
         {
-            return GetStringMultiMapObjectVariable(OptionalVariableName).Num();
+            return GetStringMultiMapObjectVariable_Implementation(OptionalVariableName).Num();
         }
 
         UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Gorgeous Object Variables|Multi Map", meta=(CompactNodeTitle="Clear"))
         void ClearMultiMap(FName OptionalVariableName = NAME_None)
         {
             TMap<FString, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Values;
-            SetStringMultiMapObjectVariable(OptionalVariableName, Values);
+            SetStringMultiMapObjectVariable_Implementation(OptionalVariableName, Values);
         }
 
         UString_MMOV()

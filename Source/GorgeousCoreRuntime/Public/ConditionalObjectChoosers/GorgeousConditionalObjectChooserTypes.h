@@ -12,6 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GameplayTagContainer.h"
 #include "GorgeousConditionalObjectChooserTypes.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -106,7 +107,7 @@ struct FGameplayTagContainerWrapper_S
 		uint32 Hash = 0;
 		for (const FGameplayTag& Tag : Wrapper.Container)
 		{
-			Hash = HashCombine(Hash, GetTypeHash(Tag));
+			Hash += GetTypeHash(Tag);
 		}
 		return Hash;
 	}

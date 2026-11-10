@@ -31,6 +31,13 @@ public class GorgeousVault : ModuleRules
         // ── Public include path (GorgeousVaultAPI.h / GorgeousVaultPlatform.h) ──
         PublicIncludePaths.Add(IncludePath);
 
+        // Vault integration is dormant. Do not distribute an unused private binary.
+        if (System.Environment.GetEnvironmentVariable("GORGEOUS_ENABLE_VAULT") != "1")
+        {
+            PublicDefinitions.Add("GORGEOUSCORE_WITH_VAULT=0");
+            return;
+        }
+
         // ── Platform-specific DLL deployment ─────────────────────────────
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {

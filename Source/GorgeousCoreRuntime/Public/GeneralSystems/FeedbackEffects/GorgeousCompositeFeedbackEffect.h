@@ -39,9 +39,9 @@
 */
 UCLASS(Blueprintable, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/GorgeousCompositeFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#composite",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousCompositeFeedbackEffect  : public UGorgeousFeedbackEffect
@@ -57,7 +57,7 @@ public:
 	 *
 	 * @param Context The runtime situation the child effects execute against.
 	 */
-	virtual void Execute_Implementation(
+	virtual void PerformExecute(
 		const FGorgeousFeedbackContext& Context
 	) override;
 
@@ -70,6 +70,8 @@ public:
 	virtual bool CanExecute_Implementation(
 		const FGorgeousFeedbackContext& Context
 	) const override;
+	virtual void PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted) override;
+	virtual void StopActiveEffects() override;
 	//<------------------------------------------------------------------------->
 	#pragma endregion Overrides
 

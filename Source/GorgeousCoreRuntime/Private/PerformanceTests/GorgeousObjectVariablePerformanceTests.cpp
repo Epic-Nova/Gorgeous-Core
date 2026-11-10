@@ -834,6 +834,31 @@ namespace GorgeousObjectVariablePerf
 		return FGorgeousNetworkEmulation::ApplyPreset(Scenario.NetworkEmulationPreset);
 	}
 
+#if DO_ENABLE_NET_TEST
+	class FScopedPacketSimulationRestore
+	{
+	public:
+		explicit FScopedPacketSimulationRestore(bool bEnabled)
+		{
+			if (!bEnabled || !GEngine) return;
+			for (const FWorldContext& Context:GEngine->GetWorldContexts())
+				for (const FNamedNetDriver& Entry:Context.ActiveNetDrivers)
+					if (UNetDriver* Driver=Entry.NetDriver)
+						if (!Saved.ContainsByPredicate([Driver](const auto& Item){return Item.Key.Get()==Driver;}))
+							Saved.Emplace(Driver,Driver->PacketSimulationSettings);
+		}
+		~FScopedPacketSimulationRestore()
+		{
+			for (const auto& Item:Saved)
+				if (UNetDriver* Driver=Item.Key.Get()) Driver->SetPacketSimulationSettings(Item.Value);
+		}
+		FScopedPacketSimulationRestore(const FScopedPacketSimulationRestore&)=delete;
+		FScopedPacketSimulationRestore& operator=(const FScopedPacketSimulationRestore&)=delete;
+	private:
+		TArray<TPair<TWeakObjectPtr<UNetDriver>,FPacketSimulationSettings>> Saved;
+	};
+#endif
+
 	struct FActiveRootContext
 	{
 		UGorgeousRootObjectVariable* Root = nullptr;
@@ -2307,6 +2332,9 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 
 	TickHarness();
 
+#if DO_ENABLE_NET_TEST
+	const FScopedPacketSimulationRestore RestorePacketSettings(Scenario.HasNetworkEmulationPreset());
+#endif
 	const FGorgeousNetworkEmulation::FRuntimeProfile NetworkRuntime = InitializeNetworkEmulation(Scenario);
 	if (NetworkRuntime.bEnabled)
 	{
@@ -3481,3 +3509,63 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 }
 
 #endif // WITH_AUTOMATION_TESTS
+
+#if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
+#if DO_ENABLE_NET_TEST
+#include "IpNetDriver.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousRegistryScaleNetSettingsClosure,
+    "GorgeousCore.LimitationClosure.Insight.RegistryScaleRestoresNetSettings",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FGorgeousRegistryScaleNetSettingsClosure::RunTest(const FString&)
+{
+    if (!TestNotNull(TEXT("Engine context exists"), GEngine)) return false;
+    UWorld* World=UWorld::CreateWorld(EWorldType::EditorPreview,false);
+    if (!TestNotNull(TEXT("Owned preview world created"),World)) return false;
+    FWorldContext& Context=GEngine->CreateNewWorldContext(EWorldType::EditorPreview);
+    Context.SetCurrentWorld(World);
+    TStrongObjectPtr<UIpNetDriver> Driver(NewObject<UIpNetDriver>());
+    Driver->SetWorld(World);
+    FPacketSimulationSettings Original;
+    Original.PktLag=17;Original.PktLagVariance=3;Original.PktIncomingLoss=4;
+    Driver->SetPacketSimulationSettings(Original);
+    FNamedNetDriver Entry;Entry.NetDriver=Driver.Get();Context.ActiveNetDrivers.Add(Entry);
+    // Also protect any pre-existing editor drivers when observing the old leak.
+    TArray<TPair<TWeakObjectPtr<UNetDriver>,FPacketSimulationSettings>> Before;
+    for (const FWorldContext& Existing:GEngine->GetWorldContexts())
+        for (const FNamedNetDriver& Named:Existing.ActiveNetDrivers)
+            if (Named.NetDriver) Before.Emplace(Named.NetDriver,Named.NetDriver->PacketSimulationSettings);
+    ON_SCOPE_EXIT
+    {
+        for (const auto& Saved:Before)
+            if (UNetDriver* Existing=Saved.Key.Get()) Existing->SetPacketSimulationSettings(Saved.Value);
+        Context.ActiveNetDrivers.Reset();
+        Driver->SetWorld(nullptr);
+        GEngine->DestroyWorldContext(World);World->DestroyWorld(false);
+    };
+    class FRegistryCall final : public FGorgeousObjectVariableRegistryScaleTest
+    {
+    public:
+        FRegistryCall():FGorgeousObjectVariableRegistryScaleTest(TEXT("AuditRegistryScaleInner")){}
+        using FGorgeousObjectVariableRegistryScaleTest::RunTest;
+    } Inner;
+    TestTrue(TEXT("Actual bounded RegistryScale entrypoint executes"),Inner.RunTest(TEXT("Num=4 NetworkPreset=2 SpawnBudget=999 LookupBudget=999 HierarchyBudget=999 ReplicationChance=0")));
+    for (const auto& Saved:Before)
+        if (UNetDriver* Existing=Saved.Key.Get())
+            TestTrue(TEXT("RegistryScale restores complete settings of each touched surviving driver"),
+                FPacketSimulationSettings::StaticStruct()->CompareScriptStruct(&Saved.Value,&Existing->PacketSimulationSettings,0));
+    [&]()
+    {
+        GorgeousObjectVariablePerf::FScopedPacketSimulationRestore Restore(true);
+        FGorgeousNetworkEmulation::FPresetProfile Profile;
+        TestTrue(TEXT("Early-return control builds real emulation preset"),FGorgeousNetworkEmulation::BuildPreset(2,Profile));
+        FString Warning;
+        TestTrue(TEXT("Early-return scope touches actual active drivers"),FGorgeousNetworkEmulation::ApplyProfile(Profile,Warning));
+        TestFalse(TEXT("Control proves settings changed inside scope"),FPacketSimulationSettings::StaticStruct()->CompareScriptStruct(&Original,&Driver->PacketSimulationSettings,0));
+        return;
+    }();
+    TestTrue(TEXT("Actual scope restores settings on early return"),FPacketSimulationSettings::StaticStruct()->CompareScriptStruct(&Original,&Driver->PacketSimulationSettings,0));
+    return true;
+}
+#endif
+#endif

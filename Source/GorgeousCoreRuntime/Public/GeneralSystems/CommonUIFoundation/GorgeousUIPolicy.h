@@ -10,6 +10,8 @@
 <==========================================================================*/
 #pragma once
 
+#include "Containers/Ticker.h"
+
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -55,9 +57,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLayoutCreatedDelegate, ULocalPla
 */
 UCLASS(config = Game, DefaultConfig,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/GorgeousUIPolicy",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#the-ui-policy",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#quick-start"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousUIPolicy : public UGameInstanceSubsystem
@@ -68,6 +70,8 @@ public:
 
 	// Initializes the policy subsystem with the configured layout class.
 	UGorgeousUIPolicy(const FObjectInitializer& ObjectInitializer);
+	/** Game layouts wait for the owning controller's input system; previews may be worldless. */
+	static bool IsPlayerInputReadyForLayout(const ULocalPlayer* LocalPlayer, const APlayerController* Controller);
 
 
 	//<============================--- Overrides ---============================>
@@ -180,6 +184,9 @@ protected:
 	 * @param LocalPlayer The player that left.
 	 */
 	void HandleLocalPlayerRemoved(ULocalPlayer* LocalPlayer);
+	bool RefreshPlayerLayouts(float DeltaTime);
+	FTSTicker::FDelegateHandle LayoutRefreshTicker;
+	TSet<TWeakObjectPtr<ULocalPlayer>> PendingLayoutLoads;
 	//<------------------------------------------------------------------------->
 	#pragma endregion C++ Only
 

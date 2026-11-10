@@ -36,9 +36,9 @@
 */
 UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GorgeousPermissionProvider",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Permissions/#permission-providers",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousPermissionProvider : public UObject
@@ -48,6 +48,9 @@ class GORGEOUSCORERUNTIME_API UGorgeousPermissionProvider : public UObject
 	// Constructs a permission provider.
 public:
 	UGorgeousPermissionProvider();
+    virtual void PostInitProperties() override;
+    virtual void PostLoad() override;
+    virtual void BeginDestroy() override;
 
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 	#pragma region UAT/UBT Exposed Variables

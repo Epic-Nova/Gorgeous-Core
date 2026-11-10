@@ -346,7 +346,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousDebugAssistVisualParameters
         , TracePathThickness(2.0f)
         , bDrawSweptSphere(true)
         , bWireframe(false)
-        , SweptSphereSteps(2)
+        , SweptSphereSteps(10)
         , SweptSphereSegments(16)
     {
     }

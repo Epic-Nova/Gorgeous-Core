@@ -1,3 +1,6 @@
+#include "InsightMatrix/GorgeousInsightTestMatrix.h"
+#include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
+#include "InsightMatrix/GorgeousInsightHarness.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Insight Matrix (Runtime)                   |
@@ -9,7 +12,6 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
-#include "InsightMatrix/GorgeousInsightTestMatrix.h"
 
 #include "Misc/AutomationTest.h"
 #include "Misc/CommandLine.h"
@@ -19,6 +21,8 @@
 namespace GorgeousInsightMatrix_Private
 {
 	static FCriticalSection RegistryMutex;
+	// Defer static factories until Core startup, then admit later-loaded modules.
+	static bool bRegistrarsActivated = false;
 
 	struct FScenarioEntry
 	{
@@ -47,8 +51,13 @@ FGorgeousInsightMatrixRequest::FGorgeousInsightMatrixRequest()
 FGorgeousInsightMatrixRequest FGorgeousInsightMatrixRequest::FromParameters(const FString& Parameters)
 {
 	FGorgeousInsightMatrixRequest Request;
-	Request.RawParameters = Parameters;
-	Request.ParameterMap = ParseKeyValueMap(Parameters);
+	FString GlobalParameters;
+	FParse::Value(FCommandLine::Get(), TEXT("GorgeousInsightParameters="), GlobalParameters, false);
+	Request.RawParameters = GlobalParameters.IsEmpty() ? Parameters : GlobalParameters + TEXT(" ") + Parameters;
+	Request.ParameterMap = ParseKeyValueMap(GlobalParameters);
+	// Individual automation selections and arguments take precedence over defaults.
+	for (const TPair<FString, FString>& Parameter : ParseKeyValueMap(Parameters))
+		Request.ParameterMap.Add(Parameter.Key, Parameter.Value);
 
 	if (const FString* VariantToken = Request.ParameterMap.Find(TEXT("variant")))
 	{
@@ -84,7 +93,7 @@ FGorgeousInsightMatrixRequest FGorgeousInsightMatrixRequest::FromParameters(cons
 	if (Request.ScenarioWhitelist.Num() == 0)
 	{
 		FString ScenarioOverride;
-		if (FParse::Value(FCommandLine::Get(), TEXT("GorgeousInsightScenario="), ScenarioOverride) && !ScenarioOverride.IsEmpty())
+		if (FParse::Value(FCommandLine::Get(), TEXT("GorgeousInsightScenario="), ScenarioOverride, false) && !ScenarioOverride.IsEmpty())
 		{
 			ParseNameList(ScenarioOverride, Request.ScenarioWhitelist);
 		}
@@ -368,6 +377,7 @@ FGorgeousInsightScenarioRegistrar::FGorgeousInsightScenarioRegistrar(FDescriptor
 	: Factory(MoveTemp(InFactory))
 {
 	GetRegistrars().Add(this);
+	if (bRegistrarsActivated) Activate();
 }
 
 FGorgeousInsightScenarioRegistrar::~FGorgeousInsightScenarioRegistrar()
@@ -396,6 +406,7 @@ void FGorgeousInsightScenarioRegistrar::Deactivate()
 
 void FGorgeousInsightScenarioRegistrar::ActivateAll()
 {
+	bRegistrarsActivated = true;
 	for (FGorgeousInsightScenarioRegistrar* Registrar : GetRegistrars())
 	{
 		if (Registrar)
@@ -407,6 +418,7 @@ void FGorgeousInsightScenarioRegistrar::ActivateAll()
 
 void FGorgeousInsightScenarioRegistrar::DeactivateAll()
 {
+	bRegistrarsActivated = false;
 	for (FGorgeousInsightScenarioRegistrar* Registrar : GetRegistrars())
 	{
 		if (Registrar)
@@ -507,10 +519,23 @@ TArray<FGorgeousInsightScenarioDescriptor> FGorgeousInsightTestMatrix::GetFilter
 
 FGorgeousInsightScenarioResult FGorgeousInsightTestMatrix::ExecuteScenario(const FGorgeousInsightScenarioDescriptor& Descriptor, const FGorgeousInsightScenarioContext& Context)
 {
+    if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() && !(Context.Test && UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(Context.Test)))
+    {
+        FGorgeousInsightScenarioResult Disabled;
+        Disabled.AddError(TEXT("Development Suite is absent, disabled, or not approved for this target."));
+        return Disabled;
+    }
+
 	if (!Descriptor.Runner)
 	{
 		FGorgeousInsightScenarioResult Result;
 		Result.AddError(TEXT("No scenario runner registered."));
+		return Result;
+	}
+	if (Descriptor.Tags.Contains(TEXT("gauntlet")) && !FGorgeousInsightHarness::IsGauntletActive())
+	{
+		FGorgeousInsightScenarioResult Result;
+		Result.AddError(TEXT("This registered scenario requires the Gauntlet harness."));
 		return Result;
 	}
 
@@ -523,6 +548,14 @@ TArray<FGorgeousInsightScenarioRunResult> FGorgeousInsightTestMatrix::ExecuteMat
 	UObject* WorldContextObject)
 {
 	TArray<FGorgeousInsightScenarioRunResult> Results;
+    if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() && !UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(&Test))
+    {
+        FGorgeousInsightScenarioRunResult Disabled;
+        Disabled.Result.AddError(TEXT("Development Suite is absent, disabled, or not approved for this target."));
+        Results.Add(MoveTemp(Disabled));
+        return Results;
+    }
+
 	const TArray<FGorgeousInsightScenarioDescriptor> Targets = GetFilteredScenarios(Request);
 	if (Targets.Num() == 0)
 	{

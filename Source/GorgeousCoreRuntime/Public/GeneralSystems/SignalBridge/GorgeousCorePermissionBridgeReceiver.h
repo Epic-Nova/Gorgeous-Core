@@ -70,9 +70,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousPermissionSignalPayload_S
 */
 UCLASS(BlueprintType, Blueprintable,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/GorgeousCorePermissionBridgeReceiver",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Permissions/#signal-bridge-permission-receiver",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousCorePermissionBridgeReceiver : public UGorgeousBaseWorldContextUObject

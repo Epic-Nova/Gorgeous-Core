@@ -43,9 +43,9 @@
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/GorgeousGameInstance",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/GameInstance/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/#setting-up-the-classes"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousGameInstance : public UGameInstance
@@ -90,6 +90,7 @@ private:
 	void EnsureRootVariablesFallbackToGameInstance();
 	void HandleRootRegistryChanged();
 
+	bool bIsShuttingDown=false;
 	bool bIsEnsuringRootFallback = false; // prevent reentrant root fallback loops from delegate broadcasts
 	FDelegateHandle RootRegistryChangedHandle;
 };

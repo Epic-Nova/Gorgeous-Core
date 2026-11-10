@@ -42,9 +42,9 @@ class AGorgeousPlayerController;
 //<------------------------------------------------------------->
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/GorgeousStatFoundation",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#library-functions",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousStatFoundation : public UGorgeous
@@ -93,7 +93,7 @@ public:
 	 * @param Value The value to assign.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats", meta = (WorldContext = "WorldContextObject", DefaultToSelf = "Actor", CompactNodeTitle="Set Stat"))
-	static void SetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Value);
+	static bool SetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Value);
 
 	/**
 	 * Modifies a statistic value on an actor. Authority only.
@@ -104,7 +104,7 @@ public:
 	 * @param Delta The amount to add to the current value.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats", meta = (WorldContext = "WorldContextObject", DefaultToSelf = "Actor", CompactNodeTitle="Modify Stat"))
-	static void ModifyStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Delta);
+	static bool ModifyStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Delta);
 
 	/**
 	 * Adds a controller to a statistic's allowed list on an actor.

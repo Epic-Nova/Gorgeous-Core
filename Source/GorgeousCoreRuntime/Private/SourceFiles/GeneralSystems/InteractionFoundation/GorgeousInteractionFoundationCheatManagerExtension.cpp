@@ -32,6 +32,7 @@ namespace
 		FRotator ViewRotation;
 		PlayerController->GetPlayerViewPoint(OutParameters.Start, ViewRotation);
 		OutParameters.End = OutParameters.Start + (ViewRotation.Vector() * TraceDistance);
+		OutParameters.TraceChannel = UGorgeousInteractionFoundation::GetInteractableCollisionChannel();
 		OutParameters.ActorsToIgnore.Add(PlayerController);
 		if (APawn* Pawn = PlayerController->GetPawn())
 		{

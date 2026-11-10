@@ -18,6 +18,10 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Misc/Parse.h"
+#include "UObject/SavePackage.h"
+#include "UObject/Package.h"
+#include "Misc/PackageName.h"
+#include "Misc/Paths.h"
 #include "UObject/SoftObjectPath.h"
 //<-------------------------------------------------------------------------->
 
@@ -51,11 +55,12 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 	}
 
 	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+	AssetRegistry.SearchAllAssets(true);
 	TArray<FAssetData> SelectedAssets;
 	TSet<FSoftObjectPath> UniqueAssetPaths;
 
 	FString SourcesArg;
-	if (FParse::Value(*Params, TEXT("Sources="), SourcesArg) && !SourcesArg.IsEmpty())
+	if (FParse::Value(*Params, TEXT("Sources="), SourcesArg, false) && !SourcesArg.IsEmpty())
 	{
 		TArray<FString> SourcePaths;
 		ParseListArgument(SourcesArg, SourcePaths);
@@ -94,7 +99,7 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 	}
 
 	FString SourceFoldersArg;
-	if (FParse::Value(*Params, TEXT("SourceFolder="), SourceFoldersArg) && !SourceFoldersArg.IsEmpty())
+	if (FParse::Value(*Params, TEXT("SourceFolder="), SourceFoldersArg, false) && !SourceFoldersArg.IsEmpty())
 	{
 		TArray<FString> SourceFolders;
 		ParseListArgument(SourceFoldersArg, SourceFolders);
@@ -139,7 +144,19 @@ int32 UGorgeousDataSchemaMappingBatchCommandlet::Main(const FString& Params)
 	}
 	else
 	{
-		FGorgeousDataSchemaMappingEditorService::ExecuteMigration(SchemaMap, SelectedAssets);
+		TArray<UPackage*> CreatedPackages;
+		const bool bSucceeded = FGorgeousDataSchemaMappingEditorService::ExecuteMigration(SchemaMap, SelectedAssets, &CreatedPackages);
+		bool bSavedAll = true;
+		for (UPackage* Package : CreatedPackages)
+		{
+			const FString Filename = FPackageName::LongPackageNameToFilename(Package->GetName(), FPackageName::GetAssetPackageExtension());
+			FSavePackageArgs Args;
+			Args.TopLevelFlags = RF_Public | RF_Standalone;
+			Args.SaveFlags = SAVE_NoError;
+			bSavedAll = UPackage::SavePackage(Package, nullptr, *Filename, Args) && bSavedAll;
+		}
+		if (!bSucceeded) return 4;
+		if (!bSavedAll) return 5;
 	}
 
 	return 0;

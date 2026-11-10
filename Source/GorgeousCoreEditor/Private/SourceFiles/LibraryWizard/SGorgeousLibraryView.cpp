@@ -7,6 +7,7 @@
 <=========================================================================*/
 
 #include "LibraryWizard/SGorgeousLibraryView.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
 
  //<=====--- Includes ---=====>
  //<----- Engine Includes ----->
@@ -29,6 +30,7 @@
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Images/SImage.h"
+#include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Layout/SWrapBox.h"
 //<----- Module Includes ----->
 #include "LibraryWizard/IGorgeousLibraryParticipant.h"
@@ -595,10 +597,23 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateParticipantRow(
 		bHasUpdate = Helper->HasPluginUpdateAvailable(Participant->GetParticipantName());
 	}
 
+    const FSlateBrush* ParticipantIcon = nullptr;
+    if (!Participant->GetParticipantIcon().IsNone())
+    {
+        if (const ISlateStyle* Style = FSlateStyleRegistry::FindSlateStyle(Participant->GetParticipantStyleSetName()))
+            ParticipantIcon = Style->GetOptionalBrush(Participant->GetParticipantIcon(), nullptr, nullptr);
+        if (!ParticipantIcon) ParticipantIcon = FAppStyle::Get().GetOptionalBrush(Participant->GetParticipantIcon(), nullptr, nullptr);
+    }
+
 	return SNew(STableRow<TSharedPtr<IGorgeousLibraryParticipant>>, OwnerTable)
 		.Padding(FMargin(10.0f, 6.0f))
 		[
 			SNew(SHorizontalBox)
+            + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 6.f, 0.f)
+            [
+                SNew(SImage).Image(ParticipantIcon).DesiredSizeOverride(FVector2D(16.f, 16.f))
+                .Visibility(ParticipantIcon ? EVisibility::Visible : EVisibility::Collapsed)
+            ]
 			+ SHorizontalBox::Slot()
 			.VAlign(VAlign_Center)
 			.FillWidth(1.0f)
@@ -656,7 +671,7 @@ TSharedPtr<SWidget> SGorgeousLibraryView::OnParticipantContextMenuOpening()
 					FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Info"),
 					FUIAction(FExecuteAction::CreateLambda([ChangelogUrl]()
 					{
-						FPlatformProcess::LaunchURL(*ChangelogUrl, nullptr, nullptr);
+						if (GorgeousNetworkConsent::IsSafeURL(ChangelogUrl)) FPlatformProcess::LaunchURL(*ChangelogUrl, nullptr, nullptr);
 					}))
 				);
 			}

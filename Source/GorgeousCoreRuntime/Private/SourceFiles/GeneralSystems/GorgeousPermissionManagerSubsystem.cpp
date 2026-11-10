@@ -1,9 +1,13 @@
+#include "QualityOfLife/GorgeousPlayerController.h"
+#include "Misc/ScopeExit.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
 #include "GeneralSystems/GorgeousPermissionManagerSubsystem.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/PlayerState.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
+#include "Engine/World.h"
 
 FString UGorgeousPermissionManagerSubsystem::GetPlayerId(AActor* Player) const
 {
@@ -12,6 +16,11 @@ FString UGorgeousPermissionManagerSubsystem::GetPlayerId(AActor* Player) const
 		return TEXT("System");
 	}
 
+    if (APlayerController* PC = Cast<APlayerController>(Player))
+    {
+        if (const FString* SnapshotKey=OwnerSnapshotKeys.Find(PC)) return *SnapshotKey;
+        if (PC->PlayerState) return FString::Printf(TEXT("%d"), PC->PlayerState->GetPlayerId());
+    }
 	if (APawn* Pawn = Cast<APawn>(Player))
 	{
 		if (APlayerState* PS = Pawn->GetPlayerState())
@@ -31,6 +40,8 @@ FString UGorgeousPermissionManagerSubsystem::GetPlayerId(AActor* Player) const
 
 void UGorgeousPermissionManagerSubsystem::CreateOrUpdateRole(FName RoleName, const TMap<FString, bool>& Permissions)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (RoleName.IsNone()) return;
 
 	FGorgeousPermissionRole& Role = Roles.FindOrAdd(RoleName);
@@ -45,6 +56,8 @@ void UGorgeousPermissionManagerSubsystem::CreateOrUpdateRole(FName RoleName, con
 
 void UGorgeousPermissionManagerSubsystem::DeleteRole(FName RoleName)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	Roles.Remove(RoleName);
 	
 	// Remove from all players
@@ -56,6 +69,8 @@ void UGorgeousPermissionManagerSubsystem::DeleteRole(FName RoleName)
 
 void UGorgeousPermissionManagerSubsystem::GrantPermissionToRole(FName RoleName, const FString& PermissionName, bool bAllow)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (RoleName.IsNone() || PermissionName.IsEmpty()) return;
 
 	FGorgeousPermissionRole& Role = Roles.FindOrAdd(RoleName);
@@ -65,6 +80,8 @@ void UGorgeousPermissionManagerSubsystem::GrantPermissionToRole(FName RoleName, 
 
 void UGorgeousPermissionManagerSubsystem::RevokePermissionFromRole(FName RoleName, const FString& PermissionName)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (FGorgeousPermissionRole* Role = Roles.Find(RoleName))
 	{
 		Role->Permissions.Remove(PermissionName);
@@ -73,6 +90,8 @@ void UGorgeousPermissionManagerSubsystem::RevokePermissionFromRole(FName RoleNam
 
 void UGorgeousPermissionManagerSubsystem::GrantRole(AActor* Player, FName RoleName)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (!Player || RoleName.IsNone()) return;
 
 	FString PlayerId = GetPlayerId(Player);
@@ -82,6 +101,8 @@ void UGorgeousPermissionManagerSubsystem::GrantRole(AActor* Player, FName RoleNa
 
 void UGorgeousPermissionManagerSubsystem::RevokeRole(AActor* Player, FName RoleName)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (!Player || RoleName.IsNone()) return;
 
 	FString PlayerId = GetPlayerId(Player);
@@ -105,6 +126,8 @@ bool UGorgeousPermissionManagerSubsystem::HasRole(AActor* Player, FName RoleName
 
 void UGorgeousPermissionManagerSubsystem::GrantPermission(AActor* Player, const FString& PermissionName, bool bAllow)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (!Player || PermissionName.IsEmpty()) return;
 
 	FString PlayerId = GetPlayerId(Player);
@@ -114,6 +137,8 @@ void UGorgeousPermissionManagerSubsystem::GrantPermission(AActor* Player, const 
 
 void UGorgeousPermissionManagerSubsystem::RevokePermission(AActor* Player, const FString& PermissionName)
 {
+    if (GetWorld() && GetWorld()->GetNetMode()==NM_Client) return;
+    ON_SCOPE_EXIT { SendOwnerSnapshots(); };
 	if (!Player || PermissionName.IsEmpty()) return;
 
 	FString PlayerId = GetPlayerId(Player);
@@ -154,4 +179,54 @@ bool UGorgeousPermissionManagerSubsystem::EvaluatePlayerPermission(AActor* Playe
 	}
 
 	return false;
+}
+
+FGorgeousOwnerPermissionSnapshot UGorgeousPermissionManagerSubsystem::BuildOwnerSnapshot(APlayerController* Controller) const
+{
+    FGorgeousOwnerPermissionSnapshot Snapshot;
+    if (!Controller || !Controller->HasAuthority()) return Snapshot;
+    Snapshot.PlayerKey=GetPlayerId(Controller);
+    auto AppendRules=[](const TMap<FString,bool>& Source,TArray<FGorgeousPermissionRuleWire>& Out)
+    {
+        for (const auto& Pair:Source)
+        {
+            auto& Rule=Out.AddDefaulted_GetRef(); Rule.Permission=Pair.Key; Rule.bAllow=Pair.Value;
+        }
+    };
+    if (const auto* Data=PlayerData.Find(Snapshot.PlayerKey))
+    {
+        Snapshot.AssignedRoles=Data->AssignedRoles;
+        AppendRules(Data->PlayerSpecificPermissions,Snapshot.PlayerOverrides);
+    }
+    for (FName Name:Snapshot.AssignedRoles)
+        if (const auto* Role=Roles.Find(Name))
+        {
+            auto& WireRole=Snapshot.AssignedRoleRules.AddDefaulted_GetRef();
+            WireRole.RoleName=Name; AppendRules(Role->Permissions,WireRole.Rules);
+        }
+    return Snapshot;
+}
+void UGorgeousPermissionManagerSubsystem::ApplyOwnerSnapshot(const FGorgeousOwnerPermissionSnapshot& Snapshot,APlayerController* ReceivingOwner)
+{
+    if (!GetWorld() || GetWorld()->GetNetMode()!=NM_Client || Snapshot.PlayerKey.IsEmpty() || !ReceivingOwner || !ReceivingOwner->IsLocalController()) return;
+    OwnerSnapshotKeys.Add(ReceivingOwner,Snapshot.PlayerKey);
+    FGorgeousPlayerPermissionData Player;
+    Player.AssignedRoles=Snapshot.AssignedRoles;
+    for (const auto& Rule:Snapshot.PlayerOverrides) Player.PlayerSpecificPermissions.Add(Rule.Permission,Rule.bAllow);
+    PlayerData.Add(Snapshot.PlayerKey,MoveTemp(Player));
+    for (const auto& WireRole:Snapshot.AssignedRoleRules)
+    {
+        FGorgeousPermissionRole Role; Role.RoleName=WireRole.RoleName;
+        for (const auto& Rule:WireRole.Rules) Role.Permissions.Add(Rule.Permission,Rule.bAllow);
+        Roles.Add(Role.RoleName,MoveTemp(Role));
+    }
+    OnPermissionsUpdated.Broadcast();
+}
+void UGorgeousPermissionManagerSubsystem::SendOwnerSnapshots()
+{
+    UWorld* World=GetWorld(); if (!World || World->GetNetMode()==NM_Client) return;
+    OnPermissionsUpdated.Broadcast();
+    for (FConstPlayerControllerIterator It=World->GetPlayerControllerIterator();It;++It)
+        if (auto* Controller=Cast<AGorgeousPlayerController>(It->Get()))
+            if (!Controller->IsLocalController()) Controller->Client_ReceiveGorgeousPermissionSnapshot(BuildOwnerSnapshot(Controller));
 }

@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "NudgeHelper/SGorgeousNudgeCarousel.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
 #include "Helpers/GorgeousPluginHelper.h"
 #include "LibraryWizard/GorgeousUpdateManager.h"
 #include "NudgeHelper/GorgeousNudgeSubsystem.h"
@@ -28,6 +29,8 @@
 //=============================================================================
 // SGorgeousNudgeCarousel Implementation
 //=============================================================================
+
+namespace { FString EscapeGorgeousHtml(FString S) { S.ReplaceInline(TEXT("&"),TEXT("&amp;")); S.ReplaceInline(TEXT("<"),TEXT("&lt;")); S.ReplaceInline(TEXT(">"),TEXT("&gt;")); S.ReplaceInline(TEXT("\""),TEXT("&quot;")); return S; } }
 
 void SGorgeousNudgeCarousel::Construct(const FArguments& InArgs)
 {
@@ -56,7 +59,7 @@ void SGorgeousNudgeCarousel::Construct(const FArguments& InArgs)
 				]
 			];
 			const FString HtmlPage = Entry.HtmlPage.IsEmpty()
-				? FString::Printf(TEXT("<html><head><style>body{margin:0;min-height:100vh;background:radial-gradient(circle at 70%% 12%%,#0b3545 0,#041820 36%%,#020b10 100%%);color:#eaf8fc;font-family:Segoe UI,Arial,sans-serif;display:grid;place-items:center}.card{max-width:660px;padding:52px;border:1px solid rgba(49,171,211,.2);border-radius:22px;background:rgba(4,27,36,.83);box-shadow:0 28px 90px rgba(0,0,0,.45)}.eyebrow{color:#23a8d8;text-transform:uppercase;font-size:12px;letter-spacing:2px;font-weight:700}h1{font-size:42px;margin:14px 0;color:#f2fbff}p{font-size:18px;line-height:1.6;color:#9cc5d2}a{display:inline-block;margin-top:16px;padding:12px 20px;border-radius:10px;background:#147da5;color:#f4fcff;text-decoration:none;font-weight:700;box-shadow:0 8px 24px rgba(13,124,165,.3)}</style></head><body><main class='card'><div class='eyebrow'>Gorgeous Things</div><h1>%s</h1><p>%s</p></main></body></html>"), *Entry.Title.ToString(), *Entry.Description.ToString())
+				? FString::Printf(TEXT("<html><head><style>body{margin:0;min-height:100vh;background:radial-gradient(circle at 70%% 12%%,#0b3545 0,#041820 36%%,#020b10 100%%);color:#eaf8fc;font-family:Segoe UI,Arial,sans-serif;display:grid;place-items:center}.card{max-width:660px;padding:52px;border:1px solid rgba(49,171,211,.2);border-radius:22px;background:rgba(4,27,36,.83);box-shadow:0 28px 90px rgba(0,0,0,.45)}.eyebrow{color:#23a8d8;text-transform:uppercase;font-size:12px;letter-spacing:2px;font-weight:700}h1{font-size:42px;margin:14px 0;color:#f2fbff}p{font-size:18px;line-height:1.6;color:#9cc5d2}a{display:inline-block;margin-top:16px;padding:12px 20px;border-radius:10px;background:#147da5;color:#f4fcff;text-decoration:none;font-weight:700;box-shadow:0 8px 24px rgba(13,124,165,.3)}</style></head><body><main class='card'><div class='eyebrow'>Gorgeous Things</div><h1>%s</h1><p>%s</p></main></body></html>"), *EscapeGorgeousHtml(Entry.Title.ToString()), *EscapeGorgeousHtml(Entry.Description.ToString()))
 				: Entry.HtmlPage;
 			TSharedPtr<SWebBrowser> PreviewBrowserPage;
 			TSharedPtr<SWebBrowser> DestinationBrowserPage;
@@ -291,7 +294,7 @@ FReply SGorgeousNudgeCarousel::OnAction()
 			{
 				if (DestinationBrowserPages.IsValidIndex(CurrentIndex) && DestinationBrowserPages[CurrentIndex].IsValid() && BrowserContentSwitchers.IsValidIndex(CurrentIndex) && BrowserContentSwitchers[CurrentIndex].IsValid())
 				{
-					DestinationBrowserPages[CurrentIndex]->LoadURL(Entry.ActionUrl);
+					if (GorgeousNetworkConsent::IsAllowed() && GorgeousNetworkConsent::IsSafeURL(Entry.ActionUrl)) DestinationBrowserPages[CurrentIndex]->LoadURL(Entry.ActionUrl);
 					BrowserContentSwitchers[CurrentIndex]->SetActiveWidgetIndex(1);
 					bViewingDestinationPage[CurrentIndex] = true;
 					Refresh();

@@ -69,9 +69,9 @@ struct FGorgeousRootRegistryOwnerHandle
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/GorgeousRootObjectVariable",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/RootRegistry/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousRootObjectVariable : public UGorgeousObjectVariable
@@ -86,6 +86,7 @@ public:
      * Constructor for the root object variable.
      */
     UGorgeousRootObjectVariable();
+    virtual void BeginDestroy() override;
 
    /**
     * Gets (or lazily creates) the named root object variable.
@@ -273,7 +274,7 @@ private:
 
 public:
    /** Named root instances keyed by the identifier configured in settings. */
-   static TMap<FName, TObjectPtr<UGorgeousRootObjectVariable>> NamedRootInstances;
+   static TMap<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>> NamedRootInstances;
 
 protected:
    // Name key this root was registered with (None for legacy fallback).

@@ -30,6 +30,11 @@
 #include "Editor.h"
 #include "Factories/Factory.h"
 #include "UObject/SavePackage.h"
+#include "UObject/Package.h"
+#include "Misc/PackageName.h"
+#include "HAL/FileManager.h"
+#include "Misc/ScopeExit.h"
+#include "UObject/Class.h"
 #include "Engine/DataAsset.h"
 #include "ContentBrowserModule.h"
 #include "IContentBrowserSingleton.h"
@@ -477,6 +482,18 @@ FReply SGorgeousSetupWizard::OnFinishClicked()
 		return FReply::Handled();
 	}
 
+	bool bGenerationSucceeded = false;
+	ON_SCOPE_EXIT
+	{
+		if (!bGenerationSucceeded && IsValid(CreatedAsset))
+		{
+			FAssetRegistryModule::AssetDeleted(CreatedAsset);
+			CreatedAsset->ClearFlags(RF_Public | RF_Standalone);
+			CreatedAsset->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
+			CreatedAsset->MarkAsGarbage();
+		}
+	};
+
 	// 1. Copy wizard payload properties into the newly created asset (Auto-Mapping)
 	for (UObject* PayloadInstance : PayloadInstances)
 	{
@@ -511,6 +528,11 @@ FReply SGorgeousSetupWizard::OnFinishClicked()
 							void* SourcePtr = Prop->ContainerPtrToValuePtr<void>(PayloadInstance);
 							void* DestPtr = DestProp->ContainerPtrToValuePtr<void>(CreatedAsset);
 							DestProp->CopyCompleteValue(DestPtr, SourcePtr);
+						if (DestProp->ContainsInstancedObjectProperty())
+						{
+							FObjectInstancingGraph Graph(CreatedAsset);
+							DestProp->InstanceSubobjects(DestPtr, SourcePtr, CreatedAsset, &Graph);
+						}
 						}
 					}
 				}
@@ -541,8 +563,18 @@ FReply SGorgeousSetupWizard::OnFinishClicked()
 
 	if (bSuccess)
 	{
-		// Mark the package as dirty so it's saved
 		CreatedAsset->MarkPackageDirty();
+		const FString Filename = FPackageName::LongPackageNameToFilename(CreatedAsset->GetOutermost()->GetName(), FPackageName::GetAssetPackageExtension());
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);
+		FSavePackageArgs SaveArgs;
+		SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+		if (!UPackage::SavePackage(CreatedAsset->GetOutermost(), CreatedAsset, *Filename, SaveArgs))
+		{
+			FNotificationInfo Failure(NSLOCTEXT("GorgeousCore", "WizardSaveFailed", "The completed asset could not be saved. Generation was rolled back."));
+			FSlateNotificationManager::Get().AddNotification(Failure);
+			return FReply::Handled();
+		}
+		bGenerationSucceeded = true;
 
 		// Open the asset in the editor
 		if (GEditor)
@@ -635,7 +667,8 @@ void SGorgeousSetupWizard::HandleSavePathPicked(const FString& PickedPath)
 
 FString SGorgeousSetupWizard::ValidateSavePath() const
 {
-	const FString SavePath  = SavePathTextBox.IsValid()  ? SavePathTextBox->GetText().ToString().TrimStartAndEnd()  : TEXT("");
+	FString SavePath  = SavePathTextBox.IsValid()  ? SavePathTextBox->GetText().ToString().TrimStartAndEnd()  : TEXT("");
+	SavePath.RemoveFromEnd(TEXT("/"));
 	const FString AssetName = AssetNameTextBox.IsValid() ? AssetNameTextBox->GetText().ToString().TrimStartAndEnd() : TEXT("");
 
 	if (SavePath.IsEmpty())
@@ -643,7 +676,7 @@ FString SGorgeousSetupWizard::ValidateSavePath() const
 		return TEXT("Save Path cannot be empty.");
 	}
 
-	if (!FPackageName::IsValidLongPackageName(SavePath, true))
+	if (!FPackageName::IsValidLongPackageName(SavePath / TEXT("WizardValidationAsset"), true))
 	{
 		return TEXT("Save Path must be a valid Unreal long package path, such as /Game/Items/ or /MyCoolItem/");
 	}

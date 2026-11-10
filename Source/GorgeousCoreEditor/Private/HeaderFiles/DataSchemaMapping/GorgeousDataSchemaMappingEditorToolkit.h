@@ -48,6 +48,12 @@ public:
 
 private:
 	void ExtendToolbar();
+	void RefreshEligibilityCache() const;
+	mutable double LastEligibilityCheck = -1.0;
+	mutable bool bCanMigrateCached = false;
+	mutable bool bCanPreviewCached = false;
+	mutable FText MigrationFailureCached;
+	mutable FText PreviewFailureCached;
 	void FillToolbar(FToolBarBuilder& ToolbarBuilder);
 	void HandleBulkMigrateClicked();
 	bool CanBulkMigrateFromSchema() const;

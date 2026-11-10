@@ -37,9 +37,9 @@ enum class EGorgeousNudgeScope : uint8
  * @author Nils Bergemann
  */
 USTRUCT(BlueprintType, meta = (
-	DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Overview",
-	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/GorgeousNudgeEntry",
-	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Examples"
+	DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
+	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
+	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news"
 	))
 struct GORGEOUSCOREEDITOR_API FGorgeousNudgeEntry
 {

@@ -35,9 +35,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousHapticFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#haptic",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousHapticFeedbackEffect : public UGorgeousFeedbackEffect
@@ -54,6 +54,8 @@ public:
 	 * @param Context The runtime situation used to resolve the player controller.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual float GetPlaybackDuration(const FGorgeousFeedbackContext& Context) const override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a haptic asset configured.
@@ -82,9 +84,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Scale = 1.f;
 
-	// Whether the haptic effect should follow the player's hand.
+	// Haptics are device-local; looping is an independent, explicit choice.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bLooping = false;
+
+	// Retained for serialized compatibility. Haptics cannot spatially follow an actor.
+	UPROPERTY(meta=(DeprecatedProperty, DeprecationMessage="Haptics use Hand; use Looping to repeat playback."))
 	bool bFollowTarget = false;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
+private:
+	TArray<TWeakObjectPtr<APlayerController>> ActiveControllers;
+
 };

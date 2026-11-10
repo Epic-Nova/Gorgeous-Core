@@ -96,6 +96,7 @@ private:
 	 * @param OutError An output parameter to receive any error message if the resolution fails.
 	 */
 	static bool ResolveStructPropertyPath(
+		UObject* TargetOwner,
 		UStruct* CurrentStruct,
 		void* CurrentContainerPtr,
 		const TArray<FString>& Segments,

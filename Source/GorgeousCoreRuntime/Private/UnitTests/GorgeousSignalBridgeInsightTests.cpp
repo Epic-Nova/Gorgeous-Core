@@ -51,7 +51,7 @@ struct FGorgeousSignalBridgeInsightTests
 		
 		Bridge->Dispatch(TAG_Gorgeous_Test_SignalBridge_Perf, TestPayload);
 		
-		if (SystemA->HitCount == 1)
+		if (SystemA->SignalsReceived == 1 && SystemA->HitCount == 95)
 		{
 			Result.AddNote(TEXT("Anonymous routing successful. Payload received perfectly without tight coupling."));
 		}
@@ -113,6 +113,7 @@ struct FGorgeousSignalBridgeInsightTests
 		// Create the dummy helper object
 		UGorgeousSignalBridgeInsightHelper* DummyListener = NewObject<UGorgeousSignalBridgeInsightHelper>();
 		DummyListener->BridgeRef = Bridge;
+        DummyListener->bDispatchEverySignal = true;
 		
 		// Bind the main perf tag to the dummy helper
 		FSignalBridgeEventDelegate PerfDelegate;
@@ -140,7 +141,18 @@ struct FGorgeousSignalBridgeInsightTests
 		
 		Result.AddNote(FString::Printf(TEXT("Successfully benchmarked %d local dispatches. Heavy calculations yielded hit count: %d. Sub-dispatched %d results. Verified %lld total prime calculations returned."), NumIterations, DummyListener->HitCount, DummyListener->ResultsDispatched, DummyListener->TotalVerifiedCalculations));
 		
-		Result.AddMetric(TEXT("Dispatch Count"), FString::FromInt(NumIterations));
+		const int64 ExpectedPrimeTotal = static_cast<int64>(NumIterations) * 95;
+        if (DummyListener->SignalsReceived != NumIterations || DummyListener->HitCount != ExpectedPrimeTotal ||
+            DummyListener->ResultsDispatched != NumIterations || DummyListener->TotalVerifiedCalculations != ExpectedPrimeTotal)
+        {
+            Result.AddError(FString::Printf(TEXT("Signal benchmark lost or duplicated work: received=%d calculations=%d replies=%d verified=%lld; expected %d deliveries/replies and %lld calculations."),
+                DummyListener->SignalsReceived, DummyListener->HitCount, DummyListener->ResultsDispatched,
+                DummyListener->TotalVerifiedCalculations, NumIterations, ExpectedPrimeTotal));
+        }
+        Bridge->Unlisten(TAG_Gorgeous_Test_SignalBridge_Perf, nullptr, PerfDelegate);
+        Bridge->Unlisten(TAG_Gorgeous_Test_SignalBridge_PerfResult, nullptr, ResultDelegate);
+        Result.AddMetric(TEXT("Signals Received"), FString::FromInt(DummyListener->SignalsReceived));
+        Result.AddMetric(TEXT("Dispatch Count"), FString::FromInt(NumIterations));
 		Result.AddMetric(TEXT("Results Sub-Dispatched"), FString::FromInt(DummyListener->ResultsDispatched));
 		Result.AddMetric(TEXT("Verified Prime Calculations"), FString::Printf(TEXT("%lld"), DummyListener->TotalVerifiedCalculations));
 		Result.AddMetric(TEXT("Total Time"), TotalTimeMs, TEXT("ms"));
@@ -201,7 +213,7 @@ struct FGorgeousSignalBridgeInsightTests
 			return Result;
 		}
 
-		UWorld* PrimaryWorld = bReplicated ? ServerWorld : Ctx.WorldContextObject->GetWorld();
+		UWorld* PrimaryWorld = bReplicated ? ServerWorld : (Ctx.WorldContextObject ? Ctx.WorldContextObject->GetWorld() : nullptr);
 		USignalBridgeStorage_OV* PrimaryBridge = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(PrimaryWorld, bReplicated);
 
 		if (!PrimaryBridge)

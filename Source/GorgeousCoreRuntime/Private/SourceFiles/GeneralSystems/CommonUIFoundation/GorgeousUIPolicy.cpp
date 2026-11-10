@@ -8,6 +8,11 @@
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/InputSettings.h"
+#include "EnhancedPlayerInput.h"
+#include "EnhancedInputSubsystems.h"
+#include "Engine/World.h"
 
 
 //Heavily oriented on Lyra
@@ -27,6 +32,8 @@ void UGorgeousUIPolicy::Initialize(FSubsystemCollectionBase& Collection)
 	GI->OnLocalPlayerAddedEvent.AddUObject(this, &UGorgeousUIPolicy::HandleLocalPlayerAdded);
 	GI->OnLocalPlayerRemovedEvent.AddUObject(this, &UGorgeousUIPolicy::HandleLocalPlayerRemoved);
 
+	LayoutRefreshTicker = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UGorgeousUIPolicy::RefreshPlayerLayouts), 0.5f);
+
 	// Handle any players that already exist (common in PIE)
 	for (ULocalPlayer* LP : GI->GetLocalPlayers())
 	{
@@ -36,6 +43,9 @@ void UGorgeousUIPolicy::Initialize(FSubsystemCollectionBase& Collection)
 
 void UGorgeousUIPolicy::Deinitialize()
 {
+	FTSTicker::GetCoreTicker().RemoveTicker(LayoutRefreshTicker);
+	LayoutRefreshTicker.Reset();
+	PendingLayoutLoads.Empty();
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		GI->OnLocalPlayerAddedEvent.RemoveAll(this);
@@ -93,22 +103,47 @@ UGorgeousPrimaryGameLayout* UGorgeousUIPolicy::GetRootLayoutForController(const 
 	return nullptr;
 }
 
+bool UGorgeousUIPolicy::IsPlayerInputReadyForLayout(const ULocalPlayer* LocalPlayer, const APlayerController* Controller)
+{
+	if (!IsValid(LocalPlayer) || !IsValid(Controller)) return false;
+	const UWorld* PlayerWorld = Controller->GetWorld();
+	// Existing worldless widget/preview fixtures do not run a game input system.
+	if (!PlayerWorld || !PlayerWorld->IsGameWorld()) return true;
+	if (!IsValid(Controller->PlayerInput)) return false;
+	const UClass* OverrideClass = Controller->GetOverridePlayerInputClass().Get();
+	const UClass* InputClass = OverrideClass ? OverrideClass : UInputSettings::GetDefaultPlayerInputClass();
+	if (InputClass && InputClass->IsChildOf(UEnhancedPlayerInput::StaticClass()))
+	{
+		const UEnhancedPlayerInput* EnhancedInput = Cast<UEnhancedPlayerInput>(Controller->PlayerInput);
+		if (!EnhancedInput) return false;
+		if (const auto* InputSubsystem = LocalPlayer->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			return InputSubsystem->GetPlayerInput() == EnhancedInput;
+	}
+	// A legacy PlayerInput is valid when the controller/project chose legacy input.
+	return true;
+}
+
 void UGorgeousUIPolicy::CreateLayoutForPlayer(ULocalPlayer* LocalPlayer)
 {
 	const UGorgeousUIFoundationSettings* Settings = GetDefault<UGorgeousUIFoundationSettings>();
 	if (!LocalPlayer || !Settings || Settings->DefaultLayoutClass.IsNull()) return;
-	if (Layouts.Contains(LocalPlayer)) return; // Already created
+	if (!IsPlayerInputReadyForLayout(LocalPlayer, LocalPlayer->GetPlayerController(GetWorld()))) return;
+	if (Layouts.Contains(LocalPlayer) || PendingLayoutLoads.Contains(LocalPlayer)) return; // Already created or loading
+	PendingLayoutLoads.Add(LocalPlayer);
 
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
 	Streamable.RequestAsyncLoad(Settings->DefaultLayoutClass.ToSoftObjectPath(),
 		FStreamableDelegate::CreateWeakLambda(this, [this, LocalPlayer, Settings]()
 		{
+			PendingLayoutLoads.Remove(LocalPlayer);
 			UClass* LoadedClass = Settings->DefaultLayoutClass.Get();
 			if (!LoadedClass || !IsValid(LocalPlayer)) return;
 			if (Layouts.Contains(LocalPlayer)) return; // Race guard
 
 			APlayerController* PC = LocalPlayer->GetPlayerController(GetWorld());
-			if (!PC) return;
+			// Input may have disappeared or the controller changed while loading.
+			// Pending was cleared above, so the normal refresh ticker can retry.
+			if (!IsPlayerInputReadyForLayout(LocalPlayer, PC)) return;
 
 			if (UGorgeousPrimaryGameLayout* Layout = CreateWidget<UGorgeousPrimaryGameLayout>(PC, LoadedClass))
 			{
@@ -138,4 +173,19 @@ void UGorgeousUIPolicy::HandleLocalPlayerAdded(ULocalPlayer* LocalPlayer)
 void UGorgeousUIPolicy::HandleLocalPlayerRemoved(ULocalPlayer* LocalPlayer)
 {
 	RemoveLayoutForPlayer(LocalPlayer);
+}
+
+bool UGorgeousUIPolicy::RefreshPlayerLayouts(float DeltaTime)
+{
+	UGameInstance* Instance = GetGameInstance();
+	if (!Instance) return true;
+	for (ULocalPlayer* Player : Instance->GetLocalPlayers())
+	{
+		UGorgeousPrimaryGameLayout* Layout = GetRootLayout(Player);
+		APlayerController* Controller = Player ? Player->GetPlayerController(GetWorld()) : nullptr;
+		if (Layout && (!Controller || Layout->GetWorld() != GetWorld() || Layout->GetOwningPlayer() != Controller))
+			RemoveLayoutForPlayer(Player);
+		if (Controller && !GetRootLayout(Player)) CreateLayoutForPlayer(Player);
+	}
+	return true;
 }

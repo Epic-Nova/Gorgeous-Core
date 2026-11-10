@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -20,6 +20,7 @@
 #include "QualityOfLife/GorgeousGameMode.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "GameFeaturesSubsystem.h"
+#include "Interfaces/IPluginManager.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousPlayerState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
@@ -185,6 +186,8 @@ UObject* UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(const UObject* W
 void UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(UObject* WorldContextObject,
 	TSubclassOf<UObject> QualityOfLifeClass)
 {
+    if (!WorldContextObject || !QualityOfLifeClass) return;
+
 	UObject* QoLInstance = GetQualityOfLifeReference(WorldContextObject, QualityOfLifeClass); // Ensure references are resolved and cached.
 	if (!QoLInstance)
 	{
@@ -192,7 +195,7 @@ void UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(UObject* World
 		return;
 	}
 	
-if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(WorldContextObject, QoLInstance))
+if (FGorgeousAutoReplicationMixin* AutoReplicationMixin = GorgeousCoreRuntimeGlobals_Private::ResolveAutoReplicationMixin(QoLInstance, QoLInstance))
 	{
 		AutoReplicationMixin->InitializeAdditionalData(true);
 	}
@@ -388,8 +391,7 @@ void UGorgeousCoreRuntimeGlobals::SetAutoReplicationBackendsEnabled(const UObjec
             ApplyAutoReplicationSettingsToCoordinator(World);
 
             FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
-            Coordinator.TearDown();
-            Coordinator.Initialize(World);
+            Coordinator.ReinitializePreservingStreams(World);
         }
     }
 }
@@ -402,8 +404,7 @@ void UGorgeousCoreRuntimeGlobals::SetAutoReplicationUseIrisOverride(const UObjec
         Coordinator.SetUseIrisOverride(bEnable);
 
         // Reinitialize Coordinator to apply change immediately.
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -414,8 +415,7 @@ void UGorgeousCoreRuntimeGlobals::ClearAutoReplicationUseIrisOverride(const UObj
         FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
         Coordinator.ClearUseIrisOverride();
 
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -426,8 +426,7 @@ void UGorgeousCoreRuntimeGlobals::SetAutoReplicationReplicationGraphOverride(con
         FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
         Coordinator.SetReplicationGraphEnabledOverride(bEnable);
 
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -438,8 +437,7 @@ void UGorgeousCoreRuntimeGlobals::ClearAutoReplicationReplicationGraphOverride(c
         FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
         Coordinator.ClearReplicationGraphEnabledOverride();
 
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -450,8 +448,7 @@ void UGorgeousCoreRuntimeGlobals::SetAutoReplicationGraphClassOverride(const UOb
         FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
         Coordinator.SetAutoReplicationGraphClassOverride(GraphClass);
 
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -462,8 +459,7 @@ void UGorgeousCoreRuntimeGlobals::ClearAutoReplicationGraphClassOverride(const U
         FGorgeousAutoReplicationCoordinator& Coordinator = FGorgeousAutoReplicationCoordinator::Get(World);
         Coordinator.ClearAutoReplicationGraphClassOverride();
 
-        Coordinator.TearDown();
-        Coordinator.Initialize(World);
+        Coordinator.ReinitializePreservingStreams(World);
     }
 }
 
@@ -586,7 +582,8 @@ bool UGorgeousCoreRuntimeGlobals::IsGameFeaturePluginActive(const UObject* World
 		return false;
 	}
 	
-	return UGameFeaturesSubsystem::Get().IsGameFeaturePluginActive(PluginName.ToString());
+	FString URL;
+    return UGameFeaturesSubsystem::Get().GetPluginURLByName(PluginName.ToString(),URL) && UGameFeaturesSubsystem::Get().IsGameFeaturePluginActive(URL);
 }
 
 void UGorgeousCoreRuntimeGlobals::SetGameFeaturePluginActive(const UObject* WorldContextObject, const FName& PluginName, const bool bNewActive)
@@ -594,14 +591,10 @@ void UGorgeousCoreRuntimeGlobals::SetGameFeaturePluginActive(const UObject* Worl
 	if ((bNewActive && IsGameFeaturePluginActive(WorldContextObject, PluginName)) || (!bNewActive && !IsGameFeaturePluginActive(WorldContextObject, PluginName)))
 		return;
 	
-	if (bNewActive)
-	{
-		UGameFeaturesSubsystem::Get().LoadAndActivateGameFeaturePlugin(PluginName.ToString(), FGameFeaturePluginLoadComplete());
-	}
-	else
-	{
-		UGameFeaturesSubsystem::Get().DeactivateGameFeaturePlugin(PluginName.ToString());
-	}
+    FString URL;
+    if (!UGameFeaturesSubsystem::Get().GetPluginURLByName(PluginName.ToString(),URL)) return;
+	if (bNewActive) UGameFeaturesSubsystem::Get().LoadAndActivateGameFeaturePlugin(URL, FGameFeaturePluginLoadComplete());
+    else UGameFeaturesSubsystem::Get().DeactivateGameFeaturePlugin(URL);
 }
 
 

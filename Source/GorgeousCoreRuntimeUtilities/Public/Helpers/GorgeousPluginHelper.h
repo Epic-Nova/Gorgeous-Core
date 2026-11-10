@@ -66,6 +66,9 @@ struct FGorgeousOfflineSystemCacheEntry
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString Description;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString Version;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadUrl;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadToken;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChecksumSha256;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SignatureEd25519;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
     UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> SourcePaths;
     UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> ContentPaths;
@@ -82,6 +85,8 @@ struct FGorgeousPluginUpdateCacheEntry
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString MinimumCoreVersion;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
     UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadToken;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChecksumSha256;
+    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SignatureEd25519;
 };
 
 UCLASS()
@@ -292,6 +297,7 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * Gets the download token for a specific plugin if an update is available.
 	 */
 	FString GetPluginUpdateDownloadToken(const FName& PluginName) const;
+    FString GetPluginUpdateChecksumSha256(const FName& PluginName) const;
 
 	/**
 	 * Checks if the initial system validation sweep has successfully completed.

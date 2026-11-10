@@ -63,9 +63,10 @@ void UGorgeousCommonWidget::UpdateActionIcon(const UGorgeousUITheme_DA* ThemeOve
 	if (Subsystem)
 	{
 		// Reverse iterate to fetch resources from the most recent theme first
-		for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+		for (int32 i = Subsystem->GetCurrentThemes().Num() - 1; i >= 0; --i)
 		{
-			const UGorgeousUITheme_DA* FinalTheme = ThemeOverride ? ThemeOverride : Subsystem->GetCurrentThemes()[i];
+			const UGorgeousUITheme_DA* FinalTheme = ThemeOverride && i == Subsystem->GetCurrentThemes().Num() - 1 ? ThemeOverride : Subsystem->GetCurrentThemes()[i];
+			if (!FinalTheme) continue;
 			FSlateBrush IconBrush = FinalTheme->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName());
 		
 			if (IconBrush.HasUObject() || IconBrush.GetResourceName() != NAME_None)

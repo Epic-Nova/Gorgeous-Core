@@ -1,3 +1,4 @@
+#include "Components/ActorComponent.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -9,6 +10,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
+#include "GeneralSystems/VisualDataGathering/GorgeousVDGConsent.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
@@ -27,10 +29,46 @@
 
 TMap<FGuid, UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState> UGorgeousAutoReplicationRPCRequestAsyncAction::PendingRequests;
 TMap<FGuid, TMap<FString, FGorgeousAutoReplicationRPCResult>> UGorgeousAutoReplicationRPCRequestAsyncAction::ClientDeferredResultCache;
+namespace {
+    TMap<FGuid,TMap<FString,TPair<TWeakObjectPtr<UObject>,EGorgeousRPCReadyState>>> RemoteEarlyReadySignals;
+    TMap<FGuid,FDelegateHandle> RequestWorldCleanupHandles;
+    void RemoveRequestWorldCleanup(const FGuid& RequestGuid)
+    {
+        if (const FDelegateHandle* Handle = RequestWorldCleanupHandles.Find(RequestGuid))
+        {
+            FWorldDelegates::OnWorldCleanup.Remove(*Handle);
+            RequestWorldCleanupHandles.Remove(RequestGuid);
+        }
+    }
+}
+
+UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* UGorgeousAutoReplicationRPCRequestAsyncAction::FindPendingForWorld(const FGuid& Guid,UWorld* World)
+{
+    auto* Pending=PendingRequests.Find(Guid);
+    if (Pending && World && Pending->Action.IsValid())
+    {
+        UObject* Context=Pending->Action->WeakContext.Get();
+        if (!Context || Context->GetWorld()!=World) return nullptr;
+    }
+    return Pending;
+}
+bool UGorgeousAutoReplicationRPCRequestAsyncAction::IsExpectedRemoteResponder(const FGuid& Guid,const FGorgeousAutoReplicationRPCResponderHandle& Responder,UWorld* World)
+{
+    const auto* Pending=FindPendingForWorld(Guid,World);
+    return (Pending && !Pending->bCompleted && Pending->Action.IsValid() && Pending->ExpectedResponders.Contains(Responder.GetStableKey())) || UGorgeousAutoReplicationRPCRelayComponent::IsClientInitiatedExpectedResponder(Guid,Responder);
+}
+void UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponderKeys(const FGuid& Guid,const TArray<FString>& Keys,UWorld* World)
+{
+    auto* Pending=FindPendingForWorld(Guid,World);
+    if (!Pending || Pending->bCompleted || Keys.Num()>1024) return;
+    for (const FString& Key:Keys) if (Key.Len()<=256) Pending->ExpectedResponders.Add(Key);
+}
+
 
 UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCRequestAsyncAction::RequestAutoReplicationRPC(UObject* WorldContextObject, FName Key, EGorgeousAutoReplicationRPCType Type, const FGorgeousRPCPayload& Payload, const EGorgeousAutoReplicationTargetKind TargetKind, AActor* OptionalTarget)
 {
 	UGorgeousAutoReplicationRPCRequestAsyncAction* Action = NewObject<UGorgeousAutoReplicationRPCRequestAsyncAction>();
+    Action->WeakRequestingContext=WorldContextObject;
 	Action->RequestKey = Key;
 	Action->RequestType = Type;
 	Action->RequestPayload = Payload;
@@ -46,24 +84,19 @@ UGorgeousAutoReplicationRPCRequestAsyncAction* UGorgeousAutoReplicationRPCReques
 	
 	if (WorldContextObject && !AutoReplicationOwner)
 	{
-		// Try to resolve from common patterns
-		if (APlayerController* PC = Cast<APlayerController>(WorldContextObject))
+        // An explicitly configured actor/pawn/component owns its own mixin;
+        // prefer it before the legacy pawn-to-controller convenience fallback.
+        AActor* DirectOwner=Cast<AActor>(WorldContextObject);
+        if (!DirectOwner) if (auto* Component=Cast<UActorComponent>(WorldContextObject)) DirectOwner=Component->GetOwner();
+        if (DirectOwner && FGorgeousAutoReplicationMixin::ResolveForActor(DirectOwner)) AutoReplicationOwner=DirectOwner;
+		else if (APlayerController* PC = Cast<APlayerController>(WorldContextObject))
 		{
 			AutoReplicationOwner = PC;
 		}
 		else if (APlayerState* PS = Cast<APlayerState>(WorldContextObject))
-		{
-			// PlayerState - try to get the owning player controller
-			AutoReplicationOwner = PS->GetOwningController();
-			if (!AutoReplicationOwner)
-			{
-				AutoReplicationOwner = PS->GetPlayerController();
-			}
-			if (!AutoReplicationOwner)
-			{
-				AutoReplicationOwner = PS;
-			}
-		}
+        {
+            AutoReplicationOwner = PS;
+        }
 		else if (APawn* Pawn = Cast<APawn>(WorldContextObject))
 		{
 			AutoReplicationOwner = Pawn->GetController();
@@ -133,6 +166,13 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::Activate()
 	}
 	bActivated = true;
 
+    if (FGorgeousVDGConsent::IsCollectionRequest(RequestKey) &&
+        !FGorgeousVDGConsent::CanSendCollectionRequest(WeakRequestingContext.Get()))
+    {
+        FailRequest();
+        return;
+    }
+
 	UObject* Context = WeakContext.Get();
 	if (!Context)
 	{
@@ -156,7 +196,10 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::Activate()
 		return;
 	}
 
-	// Start the per-request timeout timer if a non-zero timeout was specified in the payload.
+    // A synchronous handler may have completed and removed the pending request already.
+    if (!PendingRequests.Contains(RequestGuid)) return;
+    // Zero selects the documented finite default.
+    if (RequestPayload.TimeoutSeconds <= KINDA_SMALL_NUMBER) RequestPayload.TimeoutSeconds = 30.0f;
 	if (RequestPayload.TimeoutSeconds > KINDA_SMALL_NUMBER)
 	{
 		if (UWorld* World = Context->GetWorld())
@@ -176,7 +219,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(const
 		return;
 	}
 
-	UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(Result.QueuedRPC.RequestGuid);
+	UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* PendingState = FindPendingForWorld(Result.QueuedRPC.RequestGuid,Result.ExecutionWorld.Get());
 	if (!PendingState || PendingState->bCompleted)
 	{
 		// No local pending state, this machine processed an RPC that was initiated on a
@@ -355,6 +398,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyRequestCompleted(const
 
 void UGorgeousAutoReplicationRPCRequestAsyncAction::BeginDestroy()
 {
+	RemoveRequestWorldCleanup(RequestGuid);
 	if (RequestGuid.IsValid())
 	{
 		PendingRequests.Remove(RequestGuid);
@@ -370,6 +414,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::BeginDestroy()
 
 void UGorgeousAutoReplicationRPCRequestAsyncAction::FailRequest()
 {
+	RemoveRequestWorldCleanup(RequestGuid);
 	FGorgeousQueuedRPC FailedCopy;
 	FailedCopy.Key = RequestKey;
 	FailedCopy.Type = RequestType;
@@ -425,6 +470,18 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterPendingRequest()
 	PendingState.CollectedResults.Reset();
 	PendingState.ExpectedResponders.Reset();
 	AddToRoot();
+	if (UObject* Context = WeakContext.Get())
+	{
+		const TWeakObjectPtr<UWorld> RequestWorld(Context->GetWorld());
+		if (RequestWorld.IsValid())
+		{
+			RequestWorldCleanupHandles.Add(RequestGuid, FWorldDelegates::OnWorldCleanup.AddWeakLambda(this,
+				[this, RequestWorld](UWorld* CleaningWorld, bool, bool)
+				{
+					if (CleaningWorld == RequestWorld.Get() && PendingRequests.Contains(RequestGuid)) FailRequest();
+				}));
+		}
+	}
 	TryCompletePendingRequest(RequestGuid);
 }
 
@@ -444,18 +501,19 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::OnTimeout()
 	FailRequest();
 }
 
-void UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(const FGuid& RequestGuid, const FGorgeousAutoReplicationRPCResponderHandle& Responder)
+void UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(const FGuid& RequestGuid, const FGorgeousAutoReplicationRPCResponderHandle& Responder,UWorld* World)
 {
 	if (!RequestGuid.IsValid() || !Responder.IsValid())
 	{
 		return;
 	}
 
-	UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(RequestGuid);
-	if (!PendingState)
-	{
-		return;
-	}
+	UGorgeousAutoReplicationRPCRequestAsyncAction::FGorgeousAutoReplicationPendingRequestState* PendingState = FindPendingForWorld(RequestGuid,World);
+    if (!PendingState)
+    {
+        UGorgeousAutoReplicationRPCRelayComponent::RegisterClientInitiatedExpectedResponder(RequestGuid,Responder);
+        return;
+    }
 
 	const FString ResponderKey = BuildResponderKey(Responder);
 	if (!ResponderKey.IsEmpty())
@@ -521,6 +579,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::CompleteRequest(const TMap<F
 		*CompletedType,
 		*PrimaryResult.QueuedRPC.Key.ToString());
 
+	RemoveRequestWorldCleanup(RequestGuid);
 	OnCompleted.Broadcast(BuildAsyncResultPayload());
 
 	// Notify the debug tracker that this RPC completed successfully
@@ -636,7 +695,7 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::NotifyDeferredSingleResponde
 		return;
 	}
 
-	FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(RequestGuid);
+	FGorgeousAutoReplicationPendingRequestState* PendingState = FindPendingForWorld(RequestGuid,Result.ExecutionWorld.Get());
 	if (!PendingState || PendingState->bCompleted)
 	{
 		// No local pending state, relay back to the originating client (deferred/interim path).
@@ -777,13 +836,24 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterDeferredResult(
 		return;
 	}
 
-	FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(RequestGuid);
+	FGorgeousAutoReplicationPendingRequestState* PendingState = FindPendingForWorld(RequestGuid,Result.ExecutionWorld.Get());
 	if (!PendingState || PendingState->bCompleted)
 	{
 		// No local pending state: this machine is a remote responder (async action lives on
 		// another machine, typically the server). Cache the result locally so that when
 		// MarkAutoReplicationRPCResponderReady fires it can relay the populated OV back.
+        if (ClientDeferredResultCache.Num() >= 1024 && !ClientDeferredResultCache.Contains(RequestGuid)) return;
 		ClientDeferredResultCache.FindOrAdd(RequestGuid).Add(ResponderKey, Result);
+        if (auto* ByResponder = RemoteEarlyReadySignals.Find(RequestGuid))
+        {
+            if (auto* Early = ByResponder->Find(ResponderKey))
+            {
+                const auto Signal = *Early;
+                ByResponder->Remove(ResponderKey);
+                if (ByResponder->IsEmpty()) RemoteEarlyReadySignals.Remove(RequestGuid);
+                MarkAutoReplicationRPCResponderReady(Signal.Key.Get(), Result.QueuedRPC, Signal.Value);
+            }
+        }
 		return;
 	}
 
@@ -870,23 +940,11 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::MarkAutoReplicationRPCRespon
 	FString ResponderKey;
 	APlayerController* PC = nullptr;
 	
-	// Try to get the first local player controller
-	if (World->GetNetMode() == NM_Client || World->GetNetMode() == NM_Standalone)
-	{
-		PC = World->GetFirstPlayerController();
-	}
-
-	if (PC)
-	{
-		const FGorgeousAutoReplicationRPCResponderHandle Handle =
-			FGorgeousAutoReplicationRPCResponderHandle::FromController(PC);
-		ResponderKey = Handle.GetStableKey();
-	}
-	else if (World->GetAuthGameMode() != nullptr)
-	{
-		// On authority without a player controller, treat as Server.
-		ResponderKey = TEXT("Server");
-	}
+    const bool bServerType=QueuedRPC.Type==EGorgeousAutoReplicationRPCType::EReliableServer || QueuedRPC.Type==EGorgeousAutoReplicationRPCType::EUnreliableServer;
+    if (World->GetNetMode()!=NM_DedicatedServer) { PC=World->GetFirstPlayerController(); if (PC && !PC->IsLocalController()) PC=nullptr; }
+    if ((World->GetNetMode()!=NM_Client && bServerType) || World->GetNetMode()==NM_DedicatedServer) ResponderKey=TEXT("Server");
+    else if (PC) ResponderKey=FGorgeousAutoReplicationRPCResponderHandle::FromController(PC).GetStableKey();
+    else ResponderKey=TEXT("Server");
 
 	// Always update the debug tracker when enabled
 	if (FGorgeousRPCDebugTracker::IsEnabled())
@@ -906,65 +964,27 @@ void UGorgeousAutoReplicationRPCRequestAsyncAction::MarkAutoReplicationRPCRespon
 	}
 
 	// Drive deferred dispatch: promote stored deferred results when the handler signals readiness
-	FGorgeousAutoReplicationPendingRequestState* PendingState = PendingRequests.Find(QueuedRPC.RequestGuid);
-	if (!PendingState || PendingState->bCompleted || !PendingState->Action.IsValid())
-	{
-		// No pending state means this is a remote responder (not the RPC initiator).
-		// Build and relay the result back to the server so it can forward to the initiator.
-		const bool bShouldRelay =
-			(ReadyState == EGorgeousRPCReadyState::Ready ||
-			 ReadyState == EGorgeousRPCReadyState::ReadyForSingleResponderCallback)
-			&& !ResponderKey.IsEmpty();
-
-		if (bShouldRelay)
-		{
-			// Check if we're not on authority - only clients should relay back
-			if (World->GetNetMode() == NM_Client)
-			{
-				// Start from any deferred result we cached in RegisterDeferredResult.
-				// This ensures the populated OV (written by the handler after its delay)
-				// is included in the relay to the server.
-				FGorgeousAutoReplicationRPCResult Result;
-				if (TMap<FString, FGorgeousAutoReplicationRPCResult>* ByResponder =
-					ClientDeferredResultCache.Find(QueuedRPC.RequestGuid))
-				{
-					if (FGorgeousAutoReplicationRPCResult* Cached = ByResponder->Find(ResponderKey))
-					{
-						Result = *Cached;
-					}
-					// Only consume from the cache on final Ready.
-					// ReadyForSingleResponderCallback is interim, the entry must stay so
-					// the subsequent Ready relay can still find and consume it.
-					if (ReadyState == EGorgeousRPCReadyState::Ready)
-					{
-						ByResponder->Remove(ResponderKey);
-						if (ByResponder->IsEmpty())
-						{
-							ClientDeferredResultCache.Remove(QueuedRPC.RequestGuid);
-						}
-					}
-				}
-
-				// Ensure required fields are set (may already be set from cached data)
-				Result.QueuedRPC = QueuedRPC;
-				if (PC && !Result.Responder.IsValid())
-				{
-					Result.Responder = FGorgeousAutoReplicationRPCResponderHandle::FromController(PC);
-				}
-				
-				// Relay the result back to server, carrying the ready state so the server
-				// knows whether to fire the single-responder callback or complete normally.
-				if (PC)
-				{
-					if (UGorgeousAutoReplicationRPCRelayComponent* Relay = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
-					{
-						Relay->RelayResultToServer(Result, ReadyState);
-					}
-				}
-			}
-		}
-		return;
-	}
+	FGorgeousAutoReplicationPendingRequestState* PendingState = FindPendingForWorld(QueuedRPC.RequestGuid,World);
+    if (!PendingState || PendingState->bCompleted || !PendingState->Action.IsValid())
+    {
+        if (ReadyState!=EGorgeousRPCReadyState::Ready && ReadyState!=EGorgeousRPCReadyState::ReadyForSingleResponderCallback) return;
+        auto* ByResponder=ClientDeferredResultCache.Find(QueuedRPC.RequestGuid);
+        if (!ByResponder || !ByResponder->Contains(ResponderKey))
+        {
+            if (RemoteEarlyReadySignals.Num()<1024 || RemoteEarlyReadySignals.Contains(QueuedRPC.RequestGuid))
+                RemoteEarlyReadySignals.FindOrAdd(QueuedRPC.RequestGuid).Add(ResponderKey,{WorldContextObject,ReadyState});
+            return;
+        }
+        FGorgeousAutoReplicationRPCResult Result=ByResponder->FindChecked(ResponderKey);
+        Result.QueuedRPC=QueuedRPC; Result.ExecutionWorld=World;
+        if (ReadyState==EGorgeousRPCReadyState::Ready) { ByResponder->Remove(ResponderKey); if (ByResponder->IsEmpty()) ClientDeferredResultCache.Remove(QueuedRPC.RequestGuid); }
+        if (World->GetNetMode()==NM_Client)
+        {
+            if (PC) if (auto* Relay=PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>()) Relay->RelayResultToServer(Result,ReadyState);
+        }
+        else UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(Result,ReadyState);
+        return;
+    }
 
 	const FGorgeousAutoReplicationRPCResult* DeferredEntry = PendingState->DeferredResults.Find(ResponderKey);
 	if (!DeferredEntry)
@@ -1065,6 +1085,8 @@ FGorgeousAutoReplicationMixin* UGorgeousAutoReplicationRPCRequestAsyncAction::Re
 			return &WorldSettings->GetAutoReplicationMixin();
 		}
 
+        if (AActor* Actor=Cast<AActor>(Object)) return FGorgeousAutoReplicationMixin::ResolveForActor(Actor);
+        if (UActorComponent* Component=Cast<UActorComponent>(Object)) return FGorgeousAutoReplicationMixin::ResolveForActor(Component->GetOwner());
 		return nullptr;
 	};
 
@@ -1073,6 +1095,8 @@ FGorgeousAutoReplicationMixin* UGorgeousAutoReplicationRPCRequestAsyncAction::Re
 		return DirectMixin;
 	}
 
+    // Explicit actor/component targets must not silently invoke an unrelated global owner.
+    if (Context && (Context->IsA<AActor>() || Context->IsA<UActorComponent>())) return nullptr;
 	if (AGorgeousGameState* WorldGameState = Cast<AGorgeousGameState>(UGorgeousCoreRuntimeGlobals::GetQualityOfLifeReference(Context, AGorgeousGameState::StaticClass())))
 	{
 		return &WorldGameState->GetAutoReplicationMixin();

@@ -133,6 +133,26 @@ bool FGorgeousDataSchemaInvertBooleanTransformTest::RunTest(const FString& Param
 	TestTrue(TEXT("Invert boolean succeeds for 0"), bSucceeded);
 	TestEqual(TEXT("Invert boolean maps 0->True"), OutputValue, FString(TEXT("True")));
 
+	struct FAcceptedInput { const TCHAR* Input; const TCHAR* Inverted; };
+	const FAcceptedInput AcceptedInputs[] = {
+		{ TEXT("false"), TEXT("True") }, { TEXT("1"), TEXT("False") },
+		{ TEXT(" \tTrUe\r\n"), TEXT("False") }, { TEXT(" FALSE "), TEXT("True") },
+		{ TEXT(" 1 "), TEXT("False") }, { TEXT("\t0\n"), TEXT("True") }
+	};
+	for (const FAcceptedInput& Input : AcceptedInputs)
+	{
+		ErrorMessage.Reset();
+		TestTrue(FString::Printf(TEXT("Accepts '%s'"), Input.Input), FGorgeousDataSchemaMapper::ApplyTransformDefinition(TransformDefinition, Input.Input, OutputValue, ErrorMessage));
+		TestEqual(TEXT("Inverted value"), OutputValue, FString(Input.Inverted));
+		TestTrue(TEXT("Accepted input has no error"), ErrorMessage.IsEmpty());
+	}
+	for (const TCHAR* InvalidInput : { TEXT(""), TEXT("yes"), TEXT("on"), TEXT("2"), TEXT("falsehood"), TEXT("true trailing") })
+	{
+		ErrorMessage.Reset();
+		TestFalse(FString::Printf(TEXT("Rejects '%s'"), InvalidInput), FGorgeousDataSchemaMapper::ApplyTransformDefinition(TransformDefinition, InvalidInput, OutputValue, ErrorMessage));
+		TestTrue(TEXT("Invalid input has a boolean diagnostic"), ErrorMessage.Contains(TEXT("boolean")));
+	}
+
 	bSucceeded = FGorgeousDataSchemaMapper::ApplyTransformDefinition(TransformDefinition, TEXT("maybe"), OutputValue, ErrorMessage);
 	TestFalse(TEXT("Invert boolean fails for invalid input"), bSucceeded);
 	TestTrue(TEXT("Invert boolean returns error for invalid input"), ErrorMessage.Contains(TEXT("boolean")));

@@ -13,7 +13,7 @@
 
 UGorgeousLibrarySettings::UGorgeousLibrarySettings()
 {
-	ValidationInterval = 5;
+	ValidationInterval = 10;
 	ValidationCount = 0;
 }
 

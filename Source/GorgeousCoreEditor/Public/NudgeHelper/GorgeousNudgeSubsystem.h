@@ -42,9 +42,9 @@ class SWindow;
 <===========================================================================>
 */
 UCLASS(meta = (
-	DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Overview",
-	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/GorgeousNudgeSubsystem",
-	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/NudgeHelper/Examples"
+	DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
+	DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
+	DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news"
 	))
 class GORGEOUSCOREEDITOR_API UGorgeousNudgeSubsystem : public UEditorSubsystem
 {

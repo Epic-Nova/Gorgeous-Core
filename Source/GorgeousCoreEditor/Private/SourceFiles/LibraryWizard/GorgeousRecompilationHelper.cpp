@@ -25,6 +25,13 @@ bool UGorgeousRecompilationHelper::CheckRecompilationRequirement()
 	const TArray<FString> RecordedSystems = PluginHelper->GetRecordedInstalledSystems();
 	const TArray<FString> ActiveSystems = GetActiveGorgeousSystems();
 
+	if (RecordedSystems.IsEmpty())
+	{
+		const_cast<UGorgeousPluginHelper*>(PluginHelper)->RecordInstalledSystems(ActiveSystems);
+		bIsRecompilationRequired = false;
+		return false;
+	}
+
 	// Check for differences
 	bool bRecompilationNeeded = false;
 
@@ -84,7 +91,7 @@ void UGorgeousRecompilationHelper::TriggerGorgeousRecompilation()
 		const bool bSaveMapPackages = true;
 		const bool bSaveContentPackages = true;
 		const bool bFastSave = false;
-		FEditorFileUtils::SaveDirtyPackages(bPromptUserToSave, bSaveMapPackages, bSaveContentPackages, bFastSave);
+		if (!FEditorFileUtils::SaveDirtyPackages(bPromptUserToSave, bSaveMapPackages, bSaveContentPackages, bFastSave)) return;
 
 		TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 		if (CorePlugin.IsValid())
@@ -106,9 +113,8 @@ void UGorgeousRecompilationHelper::TriggerGorgeousRecompilation()
 				uint32 PID = FPlatformProcess::GetCurrentProcessId();
 				FString Args = FString::Printf(TEXT("--verify-compatibility --reopen-project --project \"%s\" --wait-for-pid %d"), *ProjectPath, PID);
 
-				FPlatformProcess::CreateProc(*InstallerPath, *Args, true, false, false, nullptr, 0, nullptr, nullptr);
-
-				FGenericPlatformMisc::RequestExit(false);
+				const FProcHandle Handle = FPlatformProcess::CreateProc(*InstallerPath, *Args, true, false, false, nullptr, 0, nullptr, nullptr);
+                if (Handle.IsValid()) FGenericPlatformMisc::RequestExit(false);
 			}
 			else
 			{

@@ -11,13 +11,8 @@
 
 AGorgeousHUD* UGorgeousUIExtensions::GetGorgeousHUD(const UObject* WorldContextObject)
 {
-	if (const UWorld* World = WorldContextObject ? WorldContextObject->GetWorld() : nullptr)
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			return Cast<AGorgeousHUD>(PC->GetHUD());
-		}
-	}
+	if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject))
+	{ if (auto* Player = Subsystem->GetLocalPlayer()) if (auto* Controller = Player->GetPlayerController(Subsystem->GetWorld())) return Cast<AGorgeousHUD>(Controller->GetHUD()); }
 	return nullptr;
 }
 
@@ -25,15 +20,7 @@ FSlateBrush UGorgeousUIExtensions::GetGorgeousActionIcon(UObject* WorldContextOb
 {
 	if (!WorldContextObject) return FSlateBrush();
 
-	// Get the local player and query the LocalPlayer subsystem (UGorgeousUIFoundationSubsystem derives from ULocalPlayerSubsystem)
-	ULocalPlayer* LocalPlayer = nullptr;
-	if (UWorld* World = WorldContextObject->GetWorld())
-	{
-		LocalPlayer = World->GetFirstLocalPlayerFromController();
-	}
-	if (!LocalPlayer) return FSlateBrush();
-
-	UGorgeousUIFoundationSubsystem* Subsystem = LocalPlayer->GetSubsystem<UGorgeousUIFoundationSubsystem>();
+	UGorgeousUIFoundationSubsystem* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject);
 	if (!Subsystem) return FSlateBrush();
 
 	TArray<UGorgeousUITheme_DA*> CurrentThemes = Subsystem->GetCurrentThemes();
@@ -41,7 +28,7 @@ FSlateBrush UGorgeousUIExtensions::GetGorgeousActionIcon(UObject* WorldContextOb
 	
 	// Reverse iterate to fetch resources from the most recent theme first
 	//@TODO: Since this reverse iterating code is used very often in the gorgeous ui context, we might want to write a template functor for this
-	for (int32 i = 0; i < Subsystem->GetCurrentThemes().Num() - 1; --i)
+	for (int32 i = Subsystem->GetCurrentThemes().Num() - 1; i >= 0; --i)
 	{
 		if (const FSlateBrush ThemeBrush = Subsystem->GetCurrentThemes()[i]->GetActionIcon(ActionTag, Subsystem->GetCurrentPlatformName()); 
 			ThemeBrush.GetResourceName() != NAME_None)
@@ -59,7 +46,7 @@ UCommonActivatableWidget* UGorgeousUIExtensions::PushGorgeousWidget(UObject* Wor
 
 	if (!LocalPlayer)
 	{
-		LocalPlayer = WorldContextObject->GetWorld()->GetFirstLocalPlayerFromController();
+		if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject)) LocalPlayer = Subsystem->GetLocalPlayer();
 	}
 
 	if (UGorgeousPrimaryGameLayout* Layout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(LocalPlayer))
@@ -76,7 +63,7 @@ void UGorgeousUIExtensions::PushGorgeousWidgetAsync(UObject* WorldContextObject,
 
 	if (!LocalPlayer)
 	{
-		LocalPlayer = WorldContextObject->GetWorld()->GetFirstLocalPlayerFromController();
+		if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject)) LocalPlayer = Subsystem->GetLocalPlayer();
 	}
 
 	if (UGorgeousPrimaryGameLayout* Layout = UGorgeousPrimaryGameLayout::GetPrimaryGameLayout(LocalPlayer))
@@ -85,26 +72,28 @@ void UGorgeousUIExtensions::PushGorgeousWidgetAsync(UObject* WorldContextObject,
 	}
 }
 
-//@TODO
+namespace
+{
+	TMap<TWeakObjectPtr<APlayerController>, TSet<FName>> GorgeousInputSuspensions;
+}
+
 FName UGorgeousUIExtensions::SuspendGorgeousInput(APlayerController* PlayerController, FName Reason)
 {
-	if (!PlayerController) return NAME_None;
-	
-	// In a AAA system, we would push a suspension token to a stack.
-	// For now, we'll use a unique name.
-	FName Token = FName(*FString::Printf(TEXT("%s_%f"), *Reason.ToString(), FPlatformTime::Seconds()));
-	
+	if (!IsValid(PlayerController)) return NAME_None;
+	for (auto It = GorgeousInputSuspensions.CreateIterator(); It; ++It) if (!It.Key().IsValid()) It.RemoveCurrent();
+	const FName Token(*FString::Printf(TEXT("%s_%s"), *Reason.ToString(), *FGuid::NewGuid().ToString()));
+	GorgeousInputSuspensions.FindOrAdd(PlayerController).Add(Token);
 	PlayerController->SetIgnoreMoveInput(true);
 	PlayerController->SetIgnoreLookInput(true);
-	
 	return Token;
 }
 
-//@TODO - implement a stack of suspension tokens to allow multiple overlapping input suspensions (e.g. during nested menu navigation)
 void UGorgeousUIExtensions::ResumeGorgeousInput(APlayerController* PlayerController, FName Token)
 {
-	if (!PlayerController || Token.IsNone()) return;
-
+	if (!IsValid(PlayerController) || Token.IsNone()) return;
+	auto* Tokens = GorgeousInputSuspensions.Find(PlayerController);
+	if (!Tokens || !Tokens->Remove(Token)) return;
+	if (Tokens->IsEmpty()) GorgeousInputSuspensions.Remove(PlayerController);
 	PlayerController->SetIgnoreMoveInput(false);
 	PlayerController->SetIgnoreLookInput(false);
 }

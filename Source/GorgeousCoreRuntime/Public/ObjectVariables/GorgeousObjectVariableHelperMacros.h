@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+// Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
@@ -149,7 +149,7 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 		} \
 		else \
 		{ \
-			VariableName = NewValue; \
+			SetNativeObjectVariableValue(VariableName,NewValue); \
 		} \
 		return VariableName; \
 	}
@@ -188,7 +188,7 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 		} \
 		else \
 		{ \
-			VariableName = NewValue; \
+			SetNativeObjectVariableValue(VariableName,NewValue); \
 		} \
 		return VariableName; \
 	}
@@ -227,7 +227,7 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 		} \
 		else \
 		{ \
-			VariableName = NewValue; \
+			SetNativeObjectVariableValue(VariableName,NewValue); \
 		} \
 		return VariableName; \
 	}
@@ -293,83 +293,9 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
  * Implements queue object variable interfaces using native TQueue storage.
  */
 #define UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_STORAGE(VariableType) \
-	private: \
-		using FQueueElementType = VariableType; \
-		mutable TQueue<FQueueElementType, EQueueMode::Spsc> ValueSpsc; \
-		mutable TQueue<FQueueElementType, EQueueMode::Mpsc> ValueMpsc; \
-		mutable int32 ValueSpscCount = 0; \
-		mutable int32 ValueMpscCount = 0; \
-		FORCEINLINE bool UsesMpscQueue() const { return GetQueueMode() == EObjectVariableQueueMode_E::EMpsc; } \
-		FORCEINLINE void ResetQueue(TQueue<FQueueElementType, EQueueMode::Spsc>& Queue, int32& Count) const \
-		{ \
-			FQueueElementType Temp; \
-			while (Queue.Dequeue(Temp)) {} \
-			Count = 0; \
-		} \
-		FORCEINLINE void ResetQueue(TQueue<FQueueElementType, EQueueMode::Mpsc>& Queue, int32& Count) const \
-		{ \
-			FQueueElementType Temp; \
-			while (Queue.Dequeue(Temp)) {} \
-			Count = 0; \
-		} \
-		FORCEINLINE TArray<VariableType> GetQueueAsArray() const \
-		{ \
-			TArray<VariableType> Result; \
-			if (UsesMpscQueue()) \
-			{ \
-				Result.Reserve(ValueMpscCount); \
-				FQueueElementType Temp; \
-				for (int32 Index = 0; Index < ValueMpscCount; ++Index) \
-				{ \
-					if (ValueMpsc.Dequeue(Temp)) \
-					{ \
-						Result.Add(Temp); \
-						ValueMpsc.Enqueue(Temp); \
-					} \
-				} \
-			} \
-			else \
-			{ \
-				Result.Reserve(ValueSpscCount); \
-				FQueueElementType Temp; \
-				for (int32 Index = 0; Index < ValueSpscCount; ++Index) \
-				{ \
-					if (ValueSpsc.Dequeue(Temp)) \
-					{ \
-						Result.Add(Temp); \
-						ValueSpsc.Enqueue(Temp); \
-					} \
-				} \
-			} \
-			return Result; \
-		} \
-		FORCEINLINE void SetQueueFromArray(const TArray<VariableType>& NewValue) const \
-		{ \
-			if (UsesMpscQueue()) \
-			{ \
-				ResetQueue(ValueMpsc, ValueMpscCount); \
-				for (int32 i = 0; i < NewValue.Num(); ++i) \
-				{ \
-					FQueueElementType EntryCopy = (FQueueElementType)NewValue[i]; \
-					if (ValueMpsc.Enqueue(EntryCopy)) \
-					{ \
-						++ValueMpscCount; \
-					} \
-				} \
-			} \
-			else \
-			{ \
-				ResetQueue(ValueSpsc, ValueSpscCount); \
-				for (int32 i = 0; i < NewValue.Num(); ++i) \
-				{ \
-					FQueueElementType EntryCopy = (FQueueElementType)NewValue[i]; \
-					if (ValueSpsc.Enqueue(EntryCopy)) \
-					{ \
-						++ValueSpscCount; \
-					} \
-				} \
-			} \
-		}
+    private: \
+        FORCEINLINE TArray<VariableType> GetQueueAsArray() const { return Value; } \
+        FORCEINLINE void SetQueueFromArray(const TArray<VariableType>& NewValue) { SetNativeObjectVariableValue(Value,NewValue); }
 
 #define UE_DEFINE_OBJECT_VARIABLE_QUEUE_NATIVE_INTERFACE(VariableType, VariableTypeName) \
 	public: \
@@ -420,11 +346,10 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 				SetDynamicProperty<TArray<VariableType>, FProperty>(OptionalVariableName, NewValue); \
 				return NewValue; \
 			} \
-			Value = NewValue; \
+			SetNativeObjectVariableValue(Value,NewValue); \
 			return Value; \
 		} \
-	private: \
-		TStack<VariableType> Value;
+	
 
 /**
  * Implements deque object variable interfaces using native TDeque storage.
@@ -457,16 +382,11 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 				SetDynamicProperty<TArray<VariableType>, FProperty>(OptionalVariableName, NewValue); \
 				return NewValue; \
 			} \
-			Value.Empty(); \
-			for (int32 i = 0; i < NewValue.Num(); ++i) \
-			{ \
-				FDequeElementType EntryCopy = (FDequeElementType)NewValue[i]; \
-				Value.PushLast(EntryCopy); \
-			} \
+			SetNativeObjectVariableValue(Value,NewValue); \
 			return NewValue; \
 		} \
 	private: \
-		TDeque<FDequeElementType> Value;
+		
 
 /**
  * Implements multi-map object variable interfaces using native TMultiMap storage.
@@ -483,12 +403,7 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 					return OutValue; \
 				} \
 			} \
-			TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Result; \
-			for (const TPair<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MAP_VALUE>& Pair : Value) \
-			{ \
-				Result.FindOrAdd(Pair.Key).Values.Add(Pair.Value); \
-			} \
-			return Result; \
+			return Value; \
 		} \
 		virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Set##VariableTypeName##MultiMapObjectVariable_Implementation(const FName OptionalVariableName, TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE>& NewValue) override \
 		{ \
@@ -497,18 +412,11 @@ virtual TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE> Get##Var
 				SetDynamicProperty<TMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE>, FProperty>(OptionalVariableName, NewValue); \
 				return NewValue; \
 			} \
-			Value.Empty(); \
-			for (const TPair<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MULTIMAP_VALUE>& Pair : NewValue) \
-			{ \
-				for (UE_DEFINE_OBJECT_VARIABLE_MAP_VALUE Entry : Pair.Value.Values) \
-				{ \
-					Value.Add(Pair.Key, Entry); \
-				} \
-			} \
+			SetNativeObjectVariableValue(Value,NewValue); \
 			return NewValue; \
 		} \
 	private: \
-		TMultiMap<VariableKeyType, UE_DEFINE_OBJECT_VARIABLE_MAP_VALUE> Value;
+		
 
 /**
  * Declares default single variable interface implementations that always return a fallback value.
