@@ -26,7 +26,7 @@ To install Unreal Engine:
 
 ## Jira-linked commits and AI coding agents
 
-Coding assistants and contributors **must read [AGENTS.md](../AGENTS.md)** before modifying this repository. GitHub Copilot also reads [copilot-instructions.md](copilot-instructions.md).
+Coding assistants and contributors should follow the repository-wide [AGENTS.md](../AGENTS.md) before modifying this repository.
 
 For work tied to a real Jira issue, put the key in the commit subject (`GT-123: Describe the change`), preferably in the branch name (`feature/GT-123-short-topic`) and PR title. Link `https://epicnova.atlassian.net/browse/GT-123` in the PR body with test evidence. **Never guess or manufacture issue keys.** Ask for the correct Jira ticket when unclear. A missing ticket is not permission to attach an unrelated one.
 
