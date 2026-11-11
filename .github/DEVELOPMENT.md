@@ -24,6 +24,16 @@ To install Unreal Engine:
 
 ---
 
+## Jira-linked commits and AI coding agents
+
+Coding assistants and contributors **must read [AGENTS.md](../AGENTS.md)** before modifying this repository. GitHub Copilot also reads [copilot-instructions.md](copilot-instructions.md).
+
+For work tied to a real Jira issue, put the key in the commit subject (`GT-123: Describe the change`), preferably in the branch name (`feature/GT-123-short-topic`) and PR title. Link `https://epicnova.atlassian.net/browse/GT-123` in the PR body with test evidence. **Never guess or manufacture issue keys.** Ask for the correct Jira ticket when unclear. A missing ticket is not permission to attach an unrelated one.
+
+With GitHub for Jira connected, this naming enables Jira development-panel associations after pushes; it does not automatically prove acceptance criteria or close the issue. AI agents must not mark Done merely because work was committed, a PR was opened or merged. See [Atlassian's GitHub integration guide](https://support.atlassian.com/jira-cloud-administration/docs/integrate-with-github/).
+
+---
+
 ## 🟦 Blueprint-Only Users (No C++ Required)
 
 If you're not planning to compile code and only want to **use the plugin in Blueprints**, follow these steps:
