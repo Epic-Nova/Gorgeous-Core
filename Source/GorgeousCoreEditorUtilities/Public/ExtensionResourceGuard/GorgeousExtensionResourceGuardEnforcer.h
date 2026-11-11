@@ -99,7 +99,8 @@ private:
 	 */
 	bool OnTick(float DeltaTime);
 	void ShowProtectionBanner();
-	TSharedPtr<class SNotificationItem> ProtectionBanner;
+	void ToggleProtectionFromBanner(bool bWasDisabled);
+	TWeakPtr<class SNotificationItem> ProtectionBanner;
 	bool bBannerProtectionDisabled = false;
 
 	/**
