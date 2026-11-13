@@ -67,9 +67,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintInsightAction
 */
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightActionConfig_DA",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#insight-action-config",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#adding-your-own-scenario"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousInsightActionConfig_DA : public UPrimaryDataAsset

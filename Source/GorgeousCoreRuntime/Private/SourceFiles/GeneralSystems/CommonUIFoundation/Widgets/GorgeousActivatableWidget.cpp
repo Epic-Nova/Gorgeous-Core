@@ -2,6 +2,8 @@
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 
 #include "Animation/WidgetAnimation.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationHelperImplementation.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIState_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
@@ -20,6 +22,23 @@ UGorgeousActivatableWidget::UGorgeousActivatableWidget()
 	};
 }
 
+void UGorgeousActivatableWidget::InitializeMessage_Implementation(const FGorgeousUIMessageRequest& Request)
+{
+	MessageRequest = Request;
+}
+
+void UGorgeousActivatableWidget::SubmitMessageResult(FName ResultTag)
+{
+	if (!MessageRequest.Config || !MessageRequest.RequestID.IsValid()) return;
+	FGorgeousUIMessageResult Result;
+	Result.RequestID = MessageRequest.RequestID;
+	Result.ResultTag = ResultTag;
+	MessageRequest.Config = nullptr; // exactly one completion per dialog
+	if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this)) Subsystem->CompleteMessagePresentation(Result.RequestID);
+	USignalBridgeBlueprintFunctionLibrary::DispatchLocal(this, TAG_Gorgeous_UI_System_Message_Result, FInstancedStruct::Make(Result));
+	if (IsActivated()) DeactivateWidget();
+}
+
 void UGorgeousActivatableWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -28,6 +47,7 @@ void UGorgeousActivatableWidget::NativeConstruct()
 
 void UGorgeousActivatableWidget::NativeDestruct()
 {
+	if (MessageRequest.Config) SubmitMessageResult(TEXT("Cancel"));
 	UE_UI_UNREGISTER_WIDGET()
 	Super::NativeDestruct();
 }
@@ -61,12 +81,13 @@ void UGorgeousActivatableWidget::NativeOnActivated()
 
 void UGorgeousActivatableWidget::NativeOnDeactivated()
 {
-	if (bRevertStateOnDeactivation && PreviousState)
+	if (MessageRequest.Config) SubmitMessageResult(TEXT("Cancel"));
+	if (bRevertStateOnDeactivation && AutoState)
 	{
 		UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(Subsystem);
 		if (Subsystem)
 		{
-			Subsystem->RemoveUIState(AutoState ? AutoState->GetClass() : PreviousState->GetClass());
+			Subsystem->RemoveUIStateByObject(AutoState);
 		}
 	}
 

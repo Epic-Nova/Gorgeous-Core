@@ -65,7 +65,6 @@ MONOLITHIC_HEADER_BOILERPLATE()
 #include "InsightMatrix/GorgeousInsightMatrixTypes.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 
-#include "InsightMatrix/GorgeousCoreInsightMatrixProvider.h"
 
 //Quality of Life Includes
 #include "QualityOfLife/GorgeousGameInstance.h"

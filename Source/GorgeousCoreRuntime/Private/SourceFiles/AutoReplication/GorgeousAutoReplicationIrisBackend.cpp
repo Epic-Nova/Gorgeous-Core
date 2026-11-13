@@ -33,6 +33,8 @@ void FGorgeousAutoReplicationIrisBackend::Initialize(UWorld* InWorld)
 
 void FGorgeousAutoReplicationIrisBackend::Reset()
 {
+    for (const auto& Pair : TrackedStreams)
+        if (auto* Variable = Pair.Value.Variable.Get()) Variable->ReleaseNativeIrisState();
 	TrackedStreams.Reset();
 	PendingDirtyStreams.Reset();
 	CachedWorld.Reset();
@@ -69,6 +71,7 @@ void FGorgeousAutoReplicationIrisBackend::UnregisterStream(UGorgeousObjectVariab
 	}
 	TrackedStreams.Remove(StreamKey);
 	PendingDirtyStreams.Remove(StreamKey);
+    Variable->ReleaseNativeIrisState();
 }
 
 void FGorgeousAutoReplicationIrisBackend::MarkStreamDirty(UGorgeousObjectVariable* Variable)
@@ -204,6 +207,9 @@ void FGorgeousAutoReplicationIrisBackend::DispatchStream(FTrackedStream& Stream,
 		}
 	}
 
+    // A real Iris subobject owns initial/change/late-join state when compatible.
+    // Preserve the existing per-connection transport for unsupported streams/drivers.
+    if (!Variable->TryPublishNativeIrisState()) Variable->QueueFullAutoReplicationSnapshot();
 	LogStreamUpdate(Stream, Reason);
 	Stream.MarkDispatched();
 }

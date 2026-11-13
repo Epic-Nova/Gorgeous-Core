@@ -88,7 +88,7 @@ namespace GorgeousInteractionFoundation
 
     static bool IsValidInteractionTarget(const AActor* TargetActor)
     {
-        return TargetActor != nullptr && TargetActor->GetClass()->ImplementsInterface(UInteractionFoundation_I::StaticClass());
+        return IsValid(TargetActor) && TargetActor->GetClass()->ImplementsInterface(UInteractionFoundation_I::StaticClass());
     }
 
     static bool DoesTargetSupportTag(const AActor* TargetActor, const FGameplayTag& InteractionTag)
@@ -121,7 +121,7 @@ namespace GorgeousInteractionFoundation
 
         if (TraceParameters.bIgnoreSelf)
         {
-            if (const AActor* SelfActor = Cast<AActor>(WorldContextObject))
+            if (const AActor* SelfActor = ResolveInteractingActor(WorldContextObject))
             {
                 QueryParams.AddIgnoredActor(SelfActor);
             }
@@ -260,7 +260,11 @@ void UGorgeousInteractionFoundation::IncrementPermissionDeniedInteractions()
 
 int32 UGorgeousInteractionFoundation::GetActiveTrackedInteractionActors()
 {
-	return InteractionActors.Num();
+	for (auto It = InteractionActors.CreateIterator(); It; ++It)
+    {
+        if (!It.Key().IsValid() || !It.Value().IsValid()) It.RemoveCurrent();
+    }
+    return InteractionActors.Num();
 }
 
 bool UGorgeousInteractionFoundation::TryRequestInteractionTags(AActor* TargetActor, FGameplayTagContainer& OutInteractionTags)
@@ -290,6 +294,7 @@ bool UGorgeousInteractionFoundation::TryFocus(AActor* TargetActor, AActor* Inter
     // Always initialize out parameters to an explicit default state at the absolute start
     bOutWasRefreshRequest = false;
     bOutWasUnfocus = false;
+    GetActiveTrackedInteractionActors(); // Discard expired weak entries from previous worlds/sessions.
 
     if (!IsValid(InteractingActor))
     {
@@ -490,6 +495,8 @@ bool UGorgeousInteractionFoundation::TrySphereTraceFocus(const UObject* WorldCon
 
         FGorgeousDebugAssistVisualParameters SyncedParams = DebugVisualParameters;
         SyncedParams.TracePathColor = TraceColor;
+        // DrawDebugAssistTrace above already renders the full requested path.
+        SyncedParams.bDrawTracePath = false;
         UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(WorldContextObject, TraceParameters.Start, TraceParameters.End, OutHitResult, SyncedParams);
 
         if (DebugVisualParameters.VFX.bEnableGroundingRing)

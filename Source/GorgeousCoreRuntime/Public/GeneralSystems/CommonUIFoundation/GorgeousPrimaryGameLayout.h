@@ -52,9 +52,9 @@ class UCommonActivatableWidget;
 */
 UCLASS(Abstract,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#layout-and-layers",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#quick-start"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousPrimaryGameLayout : public UCommonUserWidget
@@ -137,7 +137,8 @@ public:
 		FGameplayTag LayerName,
 		bool bSuspendInputUntilComplete,
 		TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass,
-		TFunction<void(UCommonActivatableWidget&)> InitFunc = nullptr);
+		TFunction<void(UCommonActivatableWidget&)> InitFunc = nullptr,
+		TFunction<void()> FailureFunc = nullptr);
 
 	/**
 	 * Searches all layers and removes a widget.
@@ -262,6 +263,9 @@ private:
 	// Delegate that receives signal-driven layout requests.
 	UPROPERTY()
 	FSignalBridgeEventDelegate LayoutSignalDelegate;
+	UPROPERTY() FSignalBridgeEventDelegate RegisterLayerDelegate;
+	TSet<TWeakObjectPtr<UCommonActivatableWidget>> TrackedOverlays;
+	void TrackOverlay(UCommonActivatableWidget* Widget);
 	//<------------------------------------------------------------------------->
 	#pragma endregion Variables
 };

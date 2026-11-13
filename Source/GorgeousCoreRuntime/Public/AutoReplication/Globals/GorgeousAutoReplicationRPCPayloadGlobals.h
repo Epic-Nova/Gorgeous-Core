@@ -34,9 +34,9 @@
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadGlobals",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Globals/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/NetworkingLibrary/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCPayloads/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/NetworkingLibrary/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCPayloadGlobals : public UGorgeous

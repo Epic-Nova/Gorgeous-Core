@@ -22,6 +22,7 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "UnrealEdMisc.h"
+#include "Interfaces/IProjectManager.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -297,11 +298,17 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 		EAppMsgType::YesNo,
 		FText::Format(
 			NSLOCTEXT("GorgeousExtensionResourceGuard", "RestartPrompt",
-				"Plugin '{0}' has been automatically added as a dependency and will be activated on restart.\n\nRestart now?"),
+				"Enable plugin '{0}' for this project and restart now?"),
 			FText::FromString(PluginName)));
 
 	if (Result == EAppReturnType::Yes)
 	{
+		FText Failure;
+		if (!IProjectManager::Get().SetPluginEnabled(PluginName, true, Failure) || !IProjectManager::Get().SaveCurrentProjectToDisk(Failure))
+		{
+			GT_E_LOG("GT.ExtensionResourceGuard", TEXT("Unable to enable plugin: %s"), *Failure.ToString());
+			return;
+		}
 		// User accepted, stop enforcement if it was running
 		if (GEditor)
 		{
@@ -312,7 +319,7 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 			}
 		}
 
-		FUnrealEdMisc::Get().RestartEditor(/*bWarn=*/ false);
+		FUnrealEdMisc::Get().RestartEditor(/*bWarn=*/ true);
 	}
 	else
 	{

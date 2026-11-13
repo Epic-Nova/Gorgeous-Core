@@ -33,9 +33,9 @@
 */
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/GorgeousDataSchemaMapping_DA",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/MappingAsset/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousDataSchemaMapping_DA : public UPrimaryDataAsset

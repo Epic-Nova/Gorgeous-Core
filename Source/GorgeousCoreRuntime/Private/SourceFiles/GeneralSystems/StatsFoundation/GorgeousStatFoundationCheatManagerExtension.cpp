@@ -5,6 +5,7 @@
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationSettings.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "GameplayTagContainer.h"
+#include "GameFramework/Pawn.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 void UGorgeousStatFoundationCheatManagerExtension::Cheat_SetStat(FString StatTag, float Value)
@@ -12,8 +13,9 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_SetStat(FString StatTag
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(*StatTag, false);
 	if (Tag.IsValid())
 	{
-		UGorgeousStatFoundation::SetStatValue(this, (AActor*)GetPlayerController()->GetPawn(), Tag, Value);
-		GT_S_LOG(TEXT("Cheat"), TEXT("Set stat %s to %f"), *StatTag, Value);
+        if (GetPlayerController() && UGorgeousStatFoundation::SetStatValue(this,GetPlayerController()->GetPawn().Get(),Tag,Value))
+            GT_S_LOG(TEXT("Cheat"),TEXT("Set stat %s to %f"),*StatTag,Value);
+        else GT_W_LOG(TEXT("Cheat"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
 	}
 	else
 	{
@@ -26,8 +28,9 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_ModifyStat(FString Stat
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(*StatTag, false);
 	if (Tag.IsValid())
 	{
-		UGorgeousStatFoundation::ModifyStatValue(this, (AActor*)GetPlayerController()->GetPawn(), Tag, Delta);
-		GT_S_LOG(TEXT("Cheat"), TEXT("Modified stat %s by %f"), *StatTag, Delta);
+        if (GetPlayerController() && UGorgeousStatFoundation::ModifyStatValue(this,GetPlayerController()->GetPawn().Get(),Tag,Delta))
+            GT_S_LOG(TEXT("Cheat"),TEXT("Modified stat %s by %f"),*StatTag,Delta);
+        else GT_W_LOG(TEXT("Cheat"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
 	}
 	else
 	{

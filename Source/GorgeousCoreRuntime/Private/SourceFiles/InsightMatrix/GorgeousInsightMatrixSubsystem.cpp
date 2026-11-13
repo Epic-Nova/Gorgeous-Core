@@ -10,7 +10,14 @@
 <==========================================================================*/
 
 #include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
-#include "InsightMatrix/GorgeousInsightFunctionalTest.h"
+#include "InsightMatrix/GorgeousDevelopmentToolsService.h"
+#include "InsightMatrix/GorgeousDevelopmentSuiteSettings.h"
+#include "InsightMatrix/GorgeousInsightChartSerialization.h"
+#include "UObject/GCObject.h"
+#include "UObject/UObjectBase.h"
+#if WITH_EDITOR
+#include "FunctionalTest.h"
+#endif
 #include "EngineUtils.h"
 
 #include "Engine/Engine.h"
@@ -39,18 +46,36 @@
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
 #include "Interfaces/IPluginManager.h"
-#include "InsightMatrix/Slate/GorgeousInsightDebugPanel.h"
-#include "Framework/Application/SlateApplication.h"
-#include "Framework/Application/IInputProcessor.h"
-#include "InputCoreTypes.h"
-#include "Styling/CoreStyle.h"
 #include "HAL/IConsoleManager.h"
-#include "Widgets/SWindow.h"
-#include "Widgets/Layout/SBorder.h"
-#include "Widgets/Layout/SConstraintCanvas.h"
-#include "Widgets/Text/STextBlock.h"
-#include "Widgets/SNullWidget.h"
 #include "GameFramework/PlayerController.h"
+#include "Engine/LocalPlayer.h"
+#include "Engine/GameInstance.h"
+
+/** Displays completed actor tests; running a row retrieves its recorded result, never fakes actor execution. */
+class FGorgeousFunctionalResultProvider final : public IGorgeousInsightMatrixProvider
+{
+public:
+    TMap<FName, FGorgeousInsightTestResult> Results;
+    TMap<FName, FText> DisplayNames;
+    virtual FName GetProviderName() const override { return TEXT("FunctionalTests"); }
+    virtual FString GetPluginName() const override { return TEXT("GorgeousCore"); }
+    virtual FText GetProviderDisplayName() const override { return NSLOCTEXT("GorgeousInsight", "FunctionalResults", "Functional test results"); }
+    virtual void GetTests(TArray<FGorgeousInsightTest>& Out) const override
+    {
+        for (const auto& Pair : Results)
+        {
+            FGorgeousInsightTest Test; Test.Id = Pair.Key; Test.DisplayName = DisplayNames.FindRef(Pair.Key);
+            Test.Category = TEXT("Recorded actor tests");
+            Test.Description = NSLOCTEXT("GorgeousInsight", "FunctionalRecorded", "Recorded result. Execute the functional actor or test volume in its test world to run again.");
+            Out.Add(MoveTemp(Test));
+        }
+    }
+    virtual FGorgeousInsightTestResult RunTest(FName Id, const FGorgeousInsightTestContext&) override
+    {
+        if (const auto* Found = Results.Find(Id)) return *Found;
+        FGorgeousInsightTestResult Result; Result.bSuccess = false; Result.Errors.Add(TEXT("Functional actor has not reported a result.")); return Result;
+    }
+};
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
@@ -114,30 +139,67 @@ namespace
 
 namespace
 {
+static FString GetInsightSavedPath(const TCHAR* Filename)
+{
+	const FString Directory = FPaths::ProjectSavedDir() / TEXT("GorgeousThings/InsightMatrix");
+	IFileManager::Get().MakeDirectory(*Directory, true);
+	return Directory / Filename;
+}
+
 static FString GetBaselineIniPath(FName ProviderName)
 {
-	FString PluginName;
-	FString FileName = TEXT("BaseInsightMatrixExt.ini");
-	if (ProviderName == TEXT("GorgeousCore"))
-	{
-		FileName = TEXT("BaseInsightMatrix.ini");
-	}
+	return GetInsightSavedPath(TEXT("ProviderBaselines.ini"));
+}
 
-	if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-	{
-		if (IGorgeousInsightMatrixProvider* Provider = Subsystem->FindProvider(ProviderName))
-		{
-			PluginName = Provider->GetPluginName();
-		}
-	}
+static FString GetTestBaselineIniPath()
+{
+	return GetInsightSavedPath(TEXT("TestBaselines.ini"));
+}
 
-	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName);
-	if (Plugin.IsValid())
+// Saved developer data is not part of the engine's layered config hierarchy.
+// Use an explicit file transaction, as PanelState already does, so a successful
+// in-memory GConfig mutation cannot masquerade as persisted baseline data.
+static TArray<FGorgeousInsightStat> ReadProviderBaselineStats(FName ProviderName)
+{
+	FConfigFile File;
+	File.Read(GetBaselineIniPath(ProviderName));
+	TArray<FGorgeousInsightStat> Stats;
+	const FConfigSection* Section = File.FindSection(TEXT("ProviderBaselineStats_") + ProviderName.ToString());
+	if (!Section) return Stats;
+	for (const auto& Pair : *Section)
 	{
-		return Plugin->GetBaseDir() / TEXT("Config") / FileName;
+		TArray<FString> Parts;
+		Pair.Value.GetValue().ParseIntoArray(Parts, TEXT("|"), false);
+		if (Parts.Num() < 8) continue;
+		FGorgeousInsightStat Stat;
+		Stat.Id = FName(*Parts[0]); Stat.DisplayName = FText::FromString(Parts[1]);
+		Stat.Description = FText::FromString(Parts[2]); Stat.Category = FName(*Parts[3]);
+		Stat.ValueType = static_cast<EGorgeousInsightStatValueType>(FCString::Atoi(*Parts[4]));
+		Stat.NumericValue = FCString::Atod(*Parts[5]); Stat.TextValue = FText::FromString(Parts[6]);
+		Stat.Unit = FText::FromString(Parts[7]);
+		Stats.Add(MoveTemp(Stat));
 	}
+	return Stats;
+}
 
-	return FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / PluginName / TEXT("Config") / FileName;
+static void WriteProviderBaselineStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats)
+{
+	const FString Path = GetBaselineIniPath(ProviderName);
+	const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
+	FConfigFile File;
+	File.Read(Path); // Preserve baselines belonging to other providers.
+	File.Remove(SectionName);
+	for (const auto& Stat : Stats)
+	{
+		const FString Line = FString::Printf(TEXT("%s|%s|%s|%s|%d|%f|%s|%s"),
+			*Stat.Id.ToString(), *Stat.DisplayName.ToString(), *Stat.Description.ToString(),
+			*Stat.Category.ToString(), static_cast<int32>(Stat.ValueType), Stat.NumericValue,
+			*Stat.TextValue.ToString(), *Stat.Unit.ToString());
+		File.SetString(*SectionName, *Stat.Id.ToString(), *Line);
+	}
+	File.Dirty = true; // Also persist removal of the final stat in a section.
+	if (!File.Write(Path))
+		GT_W_LOG("GT.Core.Insight", TEXT("Could not persist provider baselines to '%s'."), *Path);
 }
 
 	static FString MakeBaselineKey(FName ProviderName, FName TestId)
@@ -224,155 +286,14 @@ static FString GetBaselineIniPath(FName ProviderName)
 		FConsoleCommandWithArgsDelegate::CreateStatic(&SetBaselineCommand));
 
 	DECLARE_STATS_GROUP(TEXT("Gorgeous Insight Matrix"), STATGROUP_GorgeousInsightMatrix, STATCAT_Advanced);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Providers"), STAT_GIM_Providers, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Stats"), STAT_GIM_Stats, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Actions"), STAT_GIM_Actions, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Tests"), STAT_GIM_Tests, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Actions Executed"), STAT_GIM_ActionsExecuted, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("Tests Run"), STAT_GIM_TestsRun, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("CSV Exports"), STAT_GIM_ExportsCsv, STATGROUP_GorgeousInsightMatrix);
-	DECLARE_DWORD_COUNTER_STAT(TEXT("JSON Exports"), STAT_GIM_ExportsJson, STATGROUP_GorgeousInsightMatrix);
-
-	DECLARE_DELEGATE_OneParam(FGorgeousInsightDragDelta, const FVector2D&);
-
-	class SGorgeousInsightDraggablePanel : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(SGorgeousInsightDraggablePanel) {}
-			SLATE_ARGUMENT(float, HeaderHeight)
-			SLATE_ATTRIBUTE(FVector2D, PanelPosition)
-			SLATE_EVENT(FGorgeousInsightDragDelta, OnDragDelta)
-			SLATE_ARGUMENT(TSharedPtr<SWidget>, Content)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			HeaderHeight = InArgs._HeaderHeight;
-			PanelPosition = InArgs._PanelPosition;
-			OnDragDelta = InArgs._OnDragDelta;
-
-			ChildSlot
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
-				.Padding(2.f)
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[ 
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.GroupBorder"))
-						.Padding(FMargin(6.f, 2.f))
-						[ 
-							SNew(STextBlock)
-							.Text(NSLOCTEXT("GorgeousInsightDebugPanel", "DragHandle", "Gorgeous Insight Matrix"))
-							.Font(FCoreStyle::Get().GetFontStyle("BoldFont"))
-						]
-					]
-					+ SVerticalBox::Slot()
-					.AutoHeight()
-					[ 
-						InArgs._Content.IsValid() ? InArgs._Content.ToSharedRef() : SNullWidget::NullWidget
-					]
-				]
-			];
-		}
-
-		virtual FReply OnMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-			{
-				const FVector2D LocalPos = MyGeometry.AbsoluteToLocal(MouseEvent.GetScreenSpacePosition());
-				if (LocalPos.Y <= HeaderHeight)
-				{
-					bDragging = true;
-					DragStart = MouseEvent.GetScreenSpacePosition();
-					PanelStart = PanelPosition.Get();
-					return FReply::Handled().CaptureMouse(SharedThis(this));
-				}
-			}
-			return FReply::Unhandled();
-		}
-
-		virtual FReply OnMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (bDragging && MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
-			{
-				bDragging = false;
-				return FReply::Handled().ReleaseMouseCapture();
-			}
-			return FReply::Unhandled();
-		}
-
-		virtual FReply OnMouseMove(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) override
-		{
-			if (bDragging && OnDragDelta.IsBound())
-			{
-				const FVector2D Delta = MouseEvent.GetScreenSpacePosition() - DragStart;
-				OnDragDelta.Execute(PanelStart + Delta);
-				return FReply::Handled();
-			}
-			return FReply::Unhandled();
-		}
-
-	private:
-		float HeaderHeight = 28.f;
-		TAttribute<FVector2D> PanelPosition;
-		FGorgeousInsightDragDelta OnDragDelta;
-		bool bDragging = false;
-		FVector2D DragStart = FVector2D::ZeroVector;
-		FVector2D PanelStart = FVector2D::ZeroVector;
-	};
-
-	class FGorgeousInsightInputPreProcessor final : public IInputProcessor
-	{
-	public:
-		explicit FGorgeousInsightInputPreProcessor(TWeakObjectPtr<UGorgeousInsightMatrixSubsystem> InSubsystem)
-			: Subsystem(MoveTemp(InSubsystem))
-		{
-		}
-
-		virtual void Tick(const float DeltaTime, FSlateApplication& SlateApp, TSharedRef<ICursor> Cursor) override
-		{
-			(void)DeltaTime;
-			(void)SlateApp;
-			(void)Cursor;
-		}
-
-		virtual bool HandleKeyDownEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent) override
-		{
-			if (InKeyEvent.GetKey() == EKeys::Tab)
-			{
-				bTabDown = true;
-				return false;
-			}
-
-			if (bTabDown && InKeyEvent.GetKey() == EKeys::G)
-			{
-				if (UGorgeousInsightMatrixSubsystem* StrongSubsystem = Subsystem.Get())
-				{
-					StrongSubsystem->ToggleInGamePanel();
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		virtual bool HandleKeyUpEvent(FSlateApplication& SlateApp, const FKeyEvent& InKeyEvent) override
-		{
-			if (InKeyEvent.GetKey() == EKeys::Tab)
-			{
-				bTabDown = false;
-			}
-			return false;
-		}
-
-	private:
-		TWeakObjectPtr<UGorgeousInsightMatrixSubsystem> Subsystem;
-		bool bTabDown = false;
-	};
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Providers"), STAT_GIM_Providers, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Stats"), STAT_GIM_Stats, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Actions"), STAT_GIM_Actions, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Tests"), STAT_GIM_Tests, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Actions Executed"), STAT_GIM_ActionsExecuted, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Tests Run"), STAT_GIM_TestsRun, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("CSV Exports"), STAT_GIM_ExportsCsv, STATGROUP_GorgeousInsightMatrix);
+	DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("JSON Exports"), STAT_GIM_ExportsJson, STATGROUP_GorgeousInsightMatrix);
 
 	UObject* ResolveWorldContextObject(UObject* Requested)
 	{
@@ -416,6 +337,45 @@ static FString GetBaselineIniPath(FName ProviderName)
 	}
 }
 
+namespace
+{
+IGorgeousDevelopmentToolsService* GetDevelopmentToolsService()
+{
+    auto Services = IModularFeatures::Get().GetModularFeatureImplementations<IGorgeousDevelopmentToolsService>(IGorgeousDevelopmentToolsService::GetFeatureName());
+    return Services.Num() == 1 ? Services[0] : nullptr;
+}
+}
+
+bool UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled()
+{
+    auto* Service = GetDevelopmentToolsService();
+    if (!Service || !Service->IsAvailable() || IsEngineExitRequested() || !UObjectInitialized()) return false;
+    if (!GetDefault<UGorgeousDevelopmentSuiteSettings>()->bEnableInsightMatrix) return false;
+#if UE_BUILD_SHIPPING || UE_BUILD_TEST
+    return Service->AllowsShippingTools();
+#else
+    return true;
+#endif
+}
+
+bool UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(const FAutomationTestBase* Test)
+{
+#if WITH_DEV_AUTOMATION_TESTS && !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+    const auto* Current = FAutomationTestFramework::Get().GetCurrentTest();
+    return Current && Test && Current == Test;
+#else
+    return false;
+#endif
+}
+
+void UGorgeousInsightMatrixSubsystem::SetPanelState(const FGorgeousInsightPanelState& State)
+{
+    if (!IsDevelopmentToolsEnabled()) return;
+    CachedPanelState = State;
+    bHasCachedPanelState = true;
+    SavePanelState();
+}
+
 UGorgeousInsightMatrixSubsystem* UGorgeousInsightMatrixSubsystem::Get()
 {
 	if (!GEngine)
@@ -431,16 +391,16 @@ void UGorgeousInsightMatrixSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	Super::Initialize(Collection);
 
 	BaselineResultsCache.Reset();
-	if (const UGorgeousInsightBaselineSettings* Settings = GetDefault<UGorgeousInsightBaselineSettings>())
+	if (IsDevelopmentToolsEnabled()) if (UGorgeousInsightBaselineSettings* Settings = GetMutableDefault<UGorgeousInsightBaselineSettings>())
 	{
+		Settings->LoadConfig(UGorgeousInsightBaselineSettings::StaticClass(), *GetTestBaselineIniPath());
 		for (const TPair<FString, FGorgeousInsightBaselineEntry>& Pair : Settings->Baselines)
 		{
 			BaselineResultsCache.Add(Pair.Key, Pair.Value.ToResult());
 		}
 	}
 
-	RegisterInputPreProcessor();
-	GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).AddUObject(this, &UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor);
+
 	
 	// --- Modular Feature Integration ---
 	IModularFeatures::Get().OnModularFeatureRegistered().AddUObject(this, &UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered);
@@ -453,19 +413,21 @@ void UGorgeousInsightMatrixSubsystem::Initialize(FSubsystemCollectionBase& Colle
 		RegisterProvider(Provider);
 	}
 	
-	LoadCachedStats();
-	LoadPanelState();
+	if (auto* Service = GetDevelopmentToolsService()) Service->Attach(this);
+	if (IsDevelopmentToolsEnabled()) { LoadCachedStats(); LoadPanelState(); }
 }
 
 void UGorgeousInsightMatrixSubsystem::Deinitialize()
 {
-	UnregisterInputPreProcessor();
+	if (auto* Service = GetDevelopmentToolsService()) Service->Detach();
 
 	IModularFeatures::Get().OnModularFeatureRegistered().RemoveAll(this);
 	IModularFeatures::Get().OnModularFeatureUnregistered().RemoveAll(this);
 
 	HideInGamePanel();
 	HideDebugPanel();
+    if (FunctionalResultProvider.IsValid()) UnregisterProvider(FunctionalResultProvider.Get());
+    FunctionalResultProvider.Reset();
 	SaveCachedStats();
 	SavePanelState();
 
@@ -474,6 +436,7 @@ void UGorgeousInsightMatrixSubsystem::Deinitialize()
 
 void UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered(const FName& FeatureName, IModularFeature* Feature)
 {
+    if (FeatureName == IGorgeousDevelopmentToolsService::GetFeatureName()) static_cast<IGorgeousDevelopmentToolsService*>(Feature)->Attach(this);
 	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
 	{
 		RegisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
@@ -482,345 +445,63 @@ void UGorgeousInsightMatrixSubsystem::OnModularFeatureRegistered(const FName& Fe
 
 void UGorgeousInsightMatrixSubsystem::OnModularFeatureUnregistered(const FName& FeatureName, IModularFeature* Feature)
 {
+    if (FeatureName == IGorgeousDevelopmentToolsService::GetFeatureName()) static_cast<IGorgeousDevelopmentToolsService*>(Feature)->Detach();
 	if (FeatureName == IGorgeousInsightMatrixProvider::GetFeatureName())
 	{
 		UnregisterProvider(static_cast<IGorgeousInsightMatrixProvider*>(Feature));
 	}
 }
 
-void UGorgeousInsightMatrixSubsystem::RegisterInputPreProcessor()
-{
-	if (!FSlateApplication::IsInitialized())
-	{
-		return;
-	}
-
-	if (!InputPreProcessor.IsValid())
-	{
-		InputPreProcessor = MakeShared<FGorgeousInsightInputPreProcessor>(this);
-		FSlateApplication::Get().RegisterInputPreProcessor(InputPreProcessor, 0);
-	}
-}
-
-void UGorgeousInsightMatrixSubsystem::UnregisterInputPreProcessor()
-{
-	if (FSlateApplication::IsInitialized() && InputPreProcessor.IsValid())
-	{
-		FSlateApplication::Get().UnregisterInputPreProcessor(InputPreProcessor);
-		InputPreProcessor.Reset();
-	}
-}
-
 void UGorgeousInsightMatrixSubsystem::ShowDebugPanel(int32 ZOrder)
 {
-	if (!FSlateApplication::IsInitialized())
-	{
-		return;
-	}
-
-	if (!DebugPanelWindow.IsValid())
-	{
-		DebugPanelWidget.Reset();
-		DebugPanelWindow = SNew(SWindow)
-			.Title(NSLOCTEXT("GorgeousInsightDebugPanel", "WindowTitle", "Gorgeous Insight Matrix"))
-			.ClientSize(FVector2D(1200.f, 700.f))
-			.MinWidth(800.f)
-			.MinHeight(500.f)
-			.SupportsMinimize(true)
-			.SupportsMaximize(true);
-
-		DebugPanelWindow->SetContent(
-			SAssignNew(DebugPanelWidget, SGorgeousInsightDebugPanel)
-		);
-		BindPanelState(DebugPanelWidget);
-		DebugPanelWindow->SetOnWindowClosed(FOnWindowClosed::CreateLambda([this](const TSharedRef<SWindow>&)
-		{
-			DebugPanelWidget.Reset();
-			DebugPanelWindow.Reset();
-		}));
-
-		FSlateApplication::Get().AddWindow(DebugPanelWindow.ToSharedRef(), true);
-	}
-
-	if (DebugPanelWindow.IsValid())
-	{
-		DebugPanelWindow->BringToFront(true);
-	}
-
-	if (DebugPanelWidget.IsValid())
-	{
-		DebugPanelWidget->RefreshFromSubsystem();
-	}
+    if (auto* Service = GetDevelopmentToolsService(); Service && IsDevelopmentToolsEnabled()) Service->ShowDebugPanel(ZOrder);
 }
 
 void UGorgeousInsightMatrixSubsystem::HideDebugPanel()
 {
-	if (DebugPanelWindow.IsValid())
-	{
-		DebugPanelWindow->RequestDestroyWindow();
-	}
-	DebugPanelWidget.Reset();
-	DebugPanelWindow.Reset();
-}
-
-void UGorgeousInsightMatrixSubsystem::ToggleDebugPanel(int32 ZOrder)
-{
-	if (IsDebugPanelOpen())
-	{
-		HideDebugPanel();
-		return;
-	}
-
-	ShowDebugPanel(ZOrder);
-}
-
-bool UGorgeousInsightMatrixSubsystem::IsDebugPanelOpen() const
-{
-	return DebugPanelWindow.IsValid();
+    if (auto* Service = GetDevelopmentToolsService(); Service) Service->HideDebugPanel();
 }
 
 void UGorgeousInsightMatrixSubsystem::RefreshDebugPanel()
 {
-	if (DebugPanelWidget.IsValid())
-	{
-		DebugPanelWidget->RefreshFromSubsystem();
-	}
+    if (auto* Service = GetDevelopmentToolsService(); Service && IsDevelopmentToolsEnabled()) Service->RefreshDebugPanel();
 }
 
 void UGorgeousInsightMatrixSubsystem::ShowInGamePanel(int32 ZOrder)
 {
-	RegisterInputPreProcessor();
+    if (auto* Service = GetDevelopmentToolsService(); Service && IsDevelopmentToolsEnabled()) Service->ShowInGamePanel(ZOrder);
+}
 
-	if (!GEngine || !GEngine->GameViewport || !FSlateApplication::IsInitialized())
-	{
-		return;
-	}
-
-	if (!InGameCanvas.IsValid())
-	{
-		SAssignNew(InGameCanvas, SConstraintCanvas);
-	}
-
-	if (!InGamePanelWidget.IsValid())
-	{
-		SAssignNew(InGamePanelWidget, SGorgeousInsightDebugPanel);
-		BindPanelState(InGamePanelWidget);
-	}
-
-	if (!InGamePanelContainer.IsValid())
-	{
-		FVector2D ViewportSize(0.f, 0.f);
-		GEngine->GameViewport->GetViewportSize(ViewportSize);
-		const float MaxPanelHeight = ViewportSize.Y > 0.f ? ViewportSize.Y * 0.95f : 720.f;
-		TSharedRef<SWidget> PanelContent = SNew(SBox)
-			.MaxDesiredHeight(MaxPanelHeight)
-			[
-				InGamePanelWidget.ToSharedRef()
-			];
-
-		InGamePanelContainer = SNew(SGorgeousInsightDraggablePanel)
-			.HeaderHeight(28.f)
-			.PanelPosition(TAttribute<FVector2D>::CreateLambda([this]()
-			{
-				return GetInGamePanelPosition();
-			}))
-			.OnDragDelta(FGorgeousInsightDragDelta::CreateUObject(this, &UGorgeousInsightMatrixSubsystem::OnInGamePanelDragged))
-			.Content(PanelContent);
-		InGamePanelContainer->SlatePrepass();
-		InGamePanelSize = InGamePanelContainer->GetDesiredSize();
-		if (InGamePanelSize.IsNearlyZero())
-		{
-			InGamePanelSize = FVector2D(900.f, 620.f);
-		}
-
-		const float Margin = 24.f;
-		InGamePanelSize.Y = FMath::Min(InGamePanelSize.Y, MaxPanelHeight);
-		const float MaxY = FMath::Max(0.f, ViewportSize.Y - InGamePanelSize.Y - Margin);
-		const float MaxX = FMath::Max(0.f, ViewportSize.X - InGamePanelSize.X - Margin);
-		InGamePanelPosition = FVector2D(MaxX, FMath::Clamp(Margin, 0.f, MaxY));
-
-		InGameCanvas->AddSlot()
-		.Anchors(FAnchors(0.f, 0.f, 0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.AutoSize(false)
-		.Offset(TAttribute<FMargin>::CreateLambda([this]()
-		{
-			return FMargin(InGamePanelPosition.X, InGamePanelPosition.Y, InGamePanelSize.X, InGamePanelSize.Y);
-		}))
-		[
-			InGamePanelContainer.ToSharedRef()
-		];
-
-		GEngine->GameViewport->AddViewportWidgetContent(InGameCanvas.ToSharedRef(), ZOrder);
-	}
-
-	bInGamePanelVisible = true;
-	UpdateInGameInputMode(true);
-
-	if (InGamePanelWidget.IsValid())
-	{
-		InGamePanelWidget->RefreshFromSubsystem();
-	}
+void UGorgeousInsightMatrixSubsystem::ShowInGamePanelForPlayer(ULocalPlayer* LocalPlayer, int32 ZOrder)
+{
+    if (auto* Service = GetDevelopmentToolsService(); Service && IsDevelopmentToolsEnabled()) Service->ShowInGamePanelForPlayer(LocalPlayer, ZOrder);
 }
 
 void UGorgeousInsightMatrixSubsystem::HideInGamePanel()
 {
-	if (GEngine && GEngine->GameViewport && InGameCanvas.IsValid())
-	{
-		GEngine->GameViewport->RemoveViewportWidgetContent(InGameCanvas.ToSharedRef());
-	}
-
-	InGamePanelContainer.Reset();
-	InGamePanelWidget.Reset();
-	InGameCanvas.Reset();
-	bInGamePanelVisible = false;
-	UpdateInGameInputMode(false);
+    if (auto* Service = GetDevelopmentToolsService(); Service) Service->HideInGamePanel();
 }
 
-void UGorgeousInsightMatrixSubsystem::ToggleInGamePanel(int32 ZOrder)
+bool UGorgeousInsightMatrixSubsystem::IsDebugPanelOpen() const
 {
-	if (IsInGamePanelOpen())
-	{
-		HideInGamePanel();
-		return;
-	}
-
-	ShowInGamePanel(ZOrder);
+    auto* Service = GetDevelopmentToolsService();
+    return IsDevelopmentToolsEnabled() && Service && Service->IsDebugPanelOpen();
 }
 
 bool UGorgeousInsightMatrixSubsystem::IsInGamePanelOpen() const
 {
-	return bInGamePanelVisible && InGamePanelWidget.IsValid();
+    auto* Service = GetDevelopmentToolsService();
+    return IsDevelopmentToolsEnabled() && Service && Service->IsInGamePanelOpen();
 }
 
-FMargin UGorgeousInsightMatrixSubsystem::GetInGamePanelOffset() const
+void UGorgeousInsightMatrixSubsystem::ToggleDebugPanel(int32 ZOrder)
 {
-	return FMargin(InGamePanelPosition.X, InGamePanelPosition.Y, 0.f, 0.f);
+    if (IsDebugPanelOpen()) HideDebugPanel(); else ShowDebugPanel(ZOrder);
 }
 
-FVector2D UGorgeousInsightMatrixSubsystem::GetInGamePanelPosition() const
+void UGorgeousInsightMatrixSubsystem::ToggleInGamePanel(int32 ZOrder)
 {
-	return InGamePanelPosition;
-}
-
-void UGorgeousInsightMatrixSubsystem::OnInGamePanelDragged(const FVector2D& NewPosition)
-{
-	FVector2D ViewportSize(0.f, 0.f);
-	if (GEngine && GEngine->GameViewport)
-	{
-		GEngine->GameViewport->GetViewportSize(ViewportSize);
-	}
-
-	const float Margin = 12.f;
-	const float MaxX = FMath::Max(0.f, ViewportSize.X - InGamePanelSize.X - Margin);
-	const float MaxY = FMath::Max(0.f, ViewportSize.Y - InGamePanelSize.Y - Margin);
-	InGamePanelPosition.X = FMath::Clamp(NewPosition.X, 0.f, MaxX);
-	InGamePanelPosition.Y = FMath::Clamp(NewPosition.Y, 0.f, MaxY);
-	if (InGameCanvas.IsValid())
-	{
-		InGameCanvas->Invalidate(EInvalidateWidget::Layout);
-	}
-}
-
-void UGorgeousInsightMatrixSubsystem::UpdateInGameInputMode(bool bEnable) const
-{
-	if (!GEngine)
-	{
-		return;
-	}
-
-	UWorld* World = nullptr;
-	for (const FWorldContext& WorldContext : GEngine->GetWorldContexts())
-	{
-		if (WorldContext.World() && (WorldContext.WorldType == EWorldType::Game || WorldContext.WorldType == EWorldType::PIE))
-		{
-			World = WorldContext.World();
-			break;
-		}
-	}
-
-	if (!World)
-	{
-		return;
-	}
-
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (!PC)
-	{
-		return;
-	}
-
-	if (bEnable)
-	{
-		PC->bShowMouseCursor = true;
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		PC->SetInputMode(InputMode);
-	}
-	else
-	{
-		PC->bShowMouseCursor = false;
-		PC->SetInputMode(FInputModeGameOnly());
-	}
-}
-
-void UGorgeousInsightMatrixSubsystem::BindPanelState(const TSharedPtr<SGorgeousInsightDebugPanel>& Panel)
-{
-	if (!Panel.IsValid())
-	{
-		return;
-	}
-
-	Panel->OnStateChanged().AddUObject(this, &UGorgeousInsightMatrixSubsystem::HandlePanelStateChanged);
-
-	if (bHasCachedPanelState)
-	{
-		Panel->ImportState(CachedPanelState);
-		return;
-	}
-
-	TSharedPtr<SGorgeousInsightDebugPanel> OtherPanel;
-	if (Panel == DebugPanelWidget)
-	{
-		OtherPanel = InGamePanelWidget;
-	}
-	else if (Panel == InGamePanelWidget)
-	{
-		OtherPanel = DebugPanelWidget;
-	}
-
-	if (OtherPanel.IsValid())
-	{
-		CachedPanelState = OtherPanel->ExportState();
-		bHasCachedPanelState = true;
-		Panel->ImportState(CachedPanelState);
-	}
-}
-
-void UGorgeousInsightMatrixSubsystem::ApplyPanelStateToAll(const SGorgeousInsightDebugPanel::FInsightPanelState& State)
-{
-	TGuardValue<bool> Guard(bApplyingPanelState, true);
-	if (DebugPanelWidget.IsValid())
-	{
-		DebugPanelWidget->ImportState(State);
-	}
-	if (InGamePanelWidget.IsValid())
-	{
-		InGamePanelWidget->ImportState(State);
-	}
-}
-
-void UGorgeousInsightMatrixSubsystem::HandlePanelStateChanged(const SGorgeousInsightDebugPanel::FInsightPanelState& State)
-{
-	if (bApplyingPanelState)
-	{
-		return;
-	}
-
-	CachedPanelState = State;
-	bHasCachedPanelState = true;
-	ApplyPanelStateToAll(State);
-	SavePanelState();
+    if (IsInGamePanelOpen()) HideInGamePanel(); else ShowInGamePanel(ZOrder);
 }
 
 bool UGorgeousInsightMatrixSubsystem::RegisterProvider(IGorgeousInsightMatrixProvider* Provider)
@@ -941,37 +622,8 @@ void UGorgeousInsightMatrixSubsystem::GatherProviderStats(const FGorgeousInsight
 		}
 		else
 		{
-			// Lazy load from INI
-			const FString IniPath = GetBaselineIniPath(ProviderName);
-			const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
-			TArray<FString> Keys;
-			if (GConfig->GetSection(*SectionName, Keys, IniPath))
-			{
-				TArray<FGorgeousInsightStat>& LoadedStats = ProviderBaselineStats.FindOrAdd(ProviderName);
-				for (const FString& KeyStr : Keys)
-				{
-					FString StatLine;
-					if (GConfig->GetString(*SectionName, *KeyStr, StatLine, IniPath))
-					{
-						TArray<FString> Parts;
-						StatLine.ParseIntoArray(Parts, TEXT("|"), false);
-						if (Parts.Num() >= 8)
-						{
-							FGorgeousInsightStat Stat;
-							Stat.Id = FName(*Parts[0]);
-							Stat.DisplayName = FText::FromString(Parts[1]);
-							Stat.Description = FText::FromString(Parts[2]);
-							Stat.Category = FName(*Parts[3]);
-							Stat.ValueType = (EGorgeousInsightStatValueType)FCString::Atoi(*Parts[4]);
-							Stat.NumericValue = FCString::Atof(*Parts[5]);
-							Stat.TextValue = FText::FromString(Parts[6]);
-							Stat.Unit = FText::FromString(Parts[7]);
-							LoadedStats.Add(Stat);
-						}
-					}
-				}
-				ProviderStats = LoadedStats;
-			}
+			ProviderStats = ReadProviderBaselineStats(ProviderName);
+			ProviderBaselineStats.Add(ProviderName, ProviderStats);
 		}
 	}
 	else if (Context.Mode == EGorgeousInsightContextMode::Editor)
@@ -1009,14 +661,119 @@ void UGorgeousInsightMatrixSubsystem::GatherProviderStats(const FGorgeousInsight
 
 void UGorgeousInsightMatrixSubsystem::GatherProviderCharts(FName ProviderName, TArray<FGorgeousInsightChartDefinition>& OutCharts) const
 {
+	FGorgeousInsightGatherContext Context;
+	Context.Mode = EGorgeousInsightContextMode::Live;
+	GatherProviderCharts(ProviderName, Context, OutCharts);
+}
+
+void UGorgeousInsightMatrixSubsystem::GatherProviderCharts(FName ProviderName, const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightChartDefinition>& OutCharts) const
+{
+	OutCharts.Reset();
+	if (Context.Mode == EGorgeousInsightContextMode::Baseline)
+	{
+		LoadChartBaselines();
+		FScopeLock Lock(&StatsCacheMutex);
+		if (const auto* Found = ProviderBaselineCharts.Find(ProviderName)) OutCharts = *Found;
+		return;
+	}
+	if (Context.Mode == EGorgeousInsightContextMode::Editor)
+	{
+		const_cast<UGorgeousInsightMatrixSubsystem*>(this)->LoadCachedStats();
+		FScopeLock Lock(&StatsCacheMutex);
+		if (const auto* Found = CachedProviderCharts.Find(ProviderName)) OutCharts = *Found;
+		return;
+	}
 	if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName))
 	{
-		Provider->GatherCharts(OutCharts);
+		Provider->GatherCharts(Context, OutCharts);
+		CacheProviderCharts(ProviderName, OutCharts);
 	}
+}
+
+void UGorgeousInsightMatrixSubsystem::CacheProviderCharts(FName ProviderName, const TArray<FGorgeousInsightChartDefinition>& Charts) const
+{
+	FScopeLock Lock(&StatsCacheMutex);
+	const FDateTime Now = FDateTime::UtcNow();
+	if (EditorHistory.IsEmpty() || (Now - EditorHistory.Last().Timestamp).GetTotalSeconds() >= 5.0)
+	{
+		FGorgeousInsightEditorSnapshot Snapshot;
+		Snapshot.Timestamp = Now;
+		Snapshot.ProviderStats = CachedProviderStats;
+		Snapshot.ProviderCharts = CachedProviderCharts;
+		EditorHistory.Add(MoveTemp(Snapshot));
+		if (EditorHistory.Num() > 100) EditorHistory.RemoveAt(0, EditorHistory.Num() - 100);
+	}
+	EditorHistory.Last().ProviderStats.FindOrAdd(ProviderName);
+	EditorHistory.Last().ProviderCharts.FindOrAdd(ProviderName) = Charts;
+	CachedProviderCharts.FindOrAdd(ProviderName) = Charts;
+	ActiveHistoryIndex = EditorHistory.Num() - 1;
+	bStatsCacheLoaded = true;
+	bStatsCacheDirty = true;
+}
+
+void UGorgeousInsightMatrixSubsystem::LoadChartBaselines() const
+{
+    if (!IsDevelopmentToolsEnabled()) return;
+
+	FScopeLock Lock(&StatsCacheMutex);
+	if (bChartBaselinesLoaded) return;
+	bChartBaselinesLoaded = true;
+	FString Contents;
+	if (!FFileHelper::LoadFileToString(Contents, *GetInsightSavedPath(TEXT("ChartBaselines.json")))) return;
+	TSharedPtr<FJsonObject> Root;
+	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Contents), Root) || !Root.IsValid()) return;
+	const TArray<TSharedPtr<FJsonValue>>* SerializedProviders = nullptr;
+	if (!Root->TryGetArrayField(TEXT("providers"), SerializedProviders)) return;
+	for (const auto& Value : *SerializedProviders)
+	{
+		if (!Value.IsValid() || Value->Type != EJson::Object) continue;
+		const TSharedPtr<FJsonObject> Provider = Value->AsObject();
+		const TArray<TSharedPtr<FJsonValue>>* Charts = nullptr;
+		FString Name;
+		if (Provider->TryGetStringField(TEXT("provider"), Name) && Provider->TryGetArrayField(TEXT("charts"), Charts))
+			ProviderBaselineCharts.Add(FName(*Name), GorgeousInsightCharts::FromJsonArray(*Charts));
+	}
+}
+
+void UGorgeousInsightMatrixSubsystem::SaveChartBaselines() const
+{
+    if (!IsDevelopmentToolsEnabled()) return;
+
+	FScopeLock Lock(&StatsCacheMutex);
+	TArray<TSharedPtr<FJsonValue>> SerializedProviders;
+	for (const auto& Pair : ProviderBaselineCharts)
+	{
+		TSharedRef<FJsonObject> Provider = MakeShared<FJsonObject>();
+		Provider->SetStringField(TEXT("provider"), Pair.Key.ToString());
+		Provider->SetArrayField(TEXT("charts"), GorgeousInsightCharts::ToJsonArray(Pair.Value));
+		SerializedProviders.Add(MakeShared<FJsonValueObject>(Provider));
+	}
+	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetArrayField(TEXT("providers"), SerializedProviders);
+	FString Output;
+	FJsonSerializer::Serialize(Root, TJsonWriterFactory<>::Create(&Output));
+	FFileHelper::SaveStringToFile(Output, *GetInsightSavedPath(TEXT("ChartBaselines.json")));
+}
+
+void UGorgeousInsightMatrixSubsystem::AddReferencedObjects(UObject* Object, FReferenceCollector& Collector)
+{
+	UGorgeousInsightMatrixSubsystem* Self = CastChecked<UGorgeousInsightMatrixSubsystem>(Object);
+	auto Visit = [&Collector](auto& Providers)
+	{
+		for (auto& Pair : Providers)
+			for (FGorgeousInsightChartDefinition& Chart : Pair.Value)
+				Chart.InstancedPayload.AddStructReferencedObjects(Collector);
+	};
+	Visit(Self->CachedProviderCharts);
+	Visit(Self->ProviderBaselineCharts);
+	for (auto& Snapshot : Self->EditorHistory) Visit(Snapshot.ProviderCharts);
+	Super::AddReferencedObjects(Object, Collector);
 }
 
 void UGorgeousInsightMatrixSubsystem::LoadCachedStats()
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
 	FScopeLock CacheLock(&StatsCacheMutex);
 	if (bStatsCacheLoaded)
 	{
@@ -1029,6 +786,7 @@ void UGorgeousInsightMatrixSubsystem::LoadCachedStats()
 	EditorHistory.Reset();
 	ActiveHistoryIndex = -1;
 	CachedProviderStats.Reset();
+	CachedProviderCharts.Reset();
 
 	FString Contents;
 	if (FFileHelper::LoadFileToString(Contents, *FilePath))
@@ -1086,6 +844,9 @@ void UGorgeousInsightMatrixSubsystem::LoadCachedStats()
 								Stats.Add(Stat);
 							}
 							Snapshot.ProviderStats.Add(FName(*ProviderName), Stats);
+							const TArray<TSharedPtr<FJsonValue>>* ChartsArray = nullptr;
+							if (ProviderObj->TryGetArrayField(TEXT("charts"), ChartsArray))
+								Snapshot.ProviderCharts.Add(FName(*ProviderName), GorgeousInsightCharts::FromJsonArray(*ChartsArray));
 						}
 					}
 					EditorHistory.Add(Snapshot);
@@ -1098,6 +859,7 @@ void UGorgeousInsightMatrixSubsystem::LoadCachedStats()
 	{
 		ActiveHistoryIndex = EditorHistory.Num() - 1;
 		CachedProviderStats = EditorHistory.Last().ProviderStats;
+		CachedProviderCharts = EditorHistory.Last().ProviderCharts;
 	}
 
 	bStatsCacheLoaded = true;
@@ -1111,10 +873,13 @@ void UGorgeousInsightMatrixSubsystem::ApplyHistorySnapshot(int32 Index)
 	{
 		ActiveHistoryIndex = Index;
 		CachedProviderStats = EditorHistory[Index].ProviderStats;
+		CachedProviderCharts = EditorHistory[Index].ProviderCharts;
 	}
 }
 void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
 	FScopeLock CacheLock(&StatsCacheMutex);
 	if (!bStatsCacheLoaded || !bStatsCacheDirty)
 	{
@@ -1147,6 +912,7 @@ void UGorgeousInsightMatrixSubsystem::SaveCachedStats() const
 			TSharedRef<FJsonObject> ProviderObj = MakeShared<FJsonObject>();
 			ProviderObj->SetStringField(TEXT("provider"), Pair.Key.ToString());
 			ProviderObj->SetArrayField(TEXT("stats"), StatArray);
+			if (const auto* Charts = Snapshot.ProviderCharts.Find(Pair.Key)) ProviderObj->SetArrayField(TEXT("charts"), GorgeousInsightCharts::ToJsonArray(*Charts));
 			ProviderArray.Add(MakeShared<FJsonValueObject>(ProviderObj));
 		}
 		
@@ -1197,6 +963,8 @@ void UGorgeousInsightMatrixSubsystem::CacheProviderStats(FName ProviderName, con
 	{
 		FGorgeousInsightEditorSnapshot NewSnap;
 		NewSnap.Timestamp = Now;
+		NewSnap.ProviderStats = CachedProviderStats;
+		NewSnap.ProviderCharts = CachedProviderCharts;
 		NewSnap.ProviderStats.Add(ProviderName, Stats);
 		EditorHistory.Add(NewSnap);
 		// Keep history reasonably sized
@@ -1269,13 +1037,15 @@ void UGorgeousInsightMatrixSubsystem::GatherProviderTests(const FName ProviderNa
 
 bool UGorgeousInsightMatrixSubsystem::ExecuteAction(const FName ProviderName, const FName ActionId, const FGorgeousInsightActionContext& Context)
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	GORGEOUS_PROFILE_SCOPE(GIM_ExecuteAction);
 	if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName))
 	{
 		FGorgeousInsightActionContext ResolvedContext = Context;
 		ResolvedContext.WorldContextObject = ResolveWorldContextObject(Context.WorldContextObject);
 		const double StartSeconds = FPlatformTime::Seconds();
-		Provider->ExecuteAction(ActionId, ResolvedContext);
+		const FGorgeousInsightActionResult Outcome = Provider->ExecuteActionWithResult(ActionId, ResolvedContext);
 		const double DurationSeconds = FPlatformTime::Seconds() - StartSeconds;
 		FGorgeousInsightLastActionStats& ActionStats = LastActionStats.FindOrAdd(ProviderName).FindOrAdd(ActionId);
 		ActionStats.bHasRun = true;
@@ -1283,12 +1053,14 @@ bool UGorgeousInsightMatrixSubsystem::ExecuteAction(const FName ProviderName, co
 		ActionStats.ProviderName = ProviderName;
 		ActionStats.ActionId = ActionId;
 		ActionStats.DurationSeconds = DurationSeconds;
-		ActionStats.bSucceeded = true;
+		ActionStats.bSucceeded = Outcome.Status == EGorgeousInsightActionStatus::Succeeded;
+        ActionStats.bHasExecutionResult = Outcome.Status != EGorgeousInsightActionStatus::Dispatched;
+        ActionStats.ResultMessage = Outcome.Message;
 		INC_DWORD_STAT(STAT_GIM_ActionsExecuted);
 		GORGEOUS_CSV_CUSTOM_STAT_ACCUMULATE(InsightActionsExecuted, 1);
 		GORGEOUS_TRACE_BOOKMARK(TEXT("InsightAction %s.%s"), *ProviderName.ToString(), *ActionId.ToString());
 		SavePanelState(); // Save after action execution
-		return true;
+		return Outcome.Status != EGorgeousInsightActionStatus::Failed;
 	}
 	return false;
 }
@@ -1308,6 +1080,8 @@ bool UGorgeousInsightMatrixSubsystem::GetLastActionStats(const FName ProviderNam
 
 FGorgeousInsightTestResult UGorgeousInsightMatrixSubsystem::RunTest(const FName ProviderName, const FName TestId, const FGorgeousInsightTestContext& Context)
 {
+    if (!IsDevelopmentToolsEnabled()) { FGorgeousInsightTestResult Disabled; Disabled.bSuccess = false; Disabled.Errors.Add(TEXT("Development Suite is absent, disabled, or not approved for this target.")); return Disabled; }
+
 	GORGEOUS_PROFILE_SCOPE(GIM_RunTest);
 	if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName))
 	{
@@ -1324,7 +1098,30 @@ FGorgeousInsightTestResult UGorgeousInsightMatrixSubsystem::RunTest(const FName 
 		SavePanelState(); // Save after test execution
 		return Result;
 	}
-	return FGorgeousInsightTestResult();
+	FGorgeousInsightTestResult Missing;
+    Missing.bSuccess = false;
+    Missing.Errors.Add(FString::Printf(TEXT("Insight provider %s was not registered."), *ProviderName.ToString()));
+    return Missing;
+}
+
+void UGorgeousInsightMatrixSubsystem::RecordFunctionalTestResult(FName TestId, const FText& DisplayName, const FGorgeousInsightTestResult& Result, double DurationSeconds)
+{
+    const bool bNewProvider = !FunctionalResultProvider.IsValid();
+    if (bNewProvider) FunctionalResultProvider = MakeShared<FGorgeousFunctionalResultProvider>();
+    FunctionalResultProvider->Results.Add(TestId, Result);
+    FunctionalResultProvider->DisplayNames.Add(TestId, DisplayName);
+    const FName ProviderName = FunctionalResultProvider->GetProviderName();
+    LastTestResults.FindOrAdd(ProviderName).Add(TestId, Result);
+    UpdateLastRunStats(ProviderName, TestId, Result, DurationSeconds);
+    ++ExternalTestResultRevision;
+    if (bNewProvider) RegisterProvider(FunctionalResultProvider.Get());
+    SavePanelState();
+}
+
+const FGorgeousInsightTestResult* UGorgeousInsightMatrixSubsystem::GetLastTestResult(FName ProviderName, FName TestId) const
+{
+    const auto* Results = LastTestResults.Find(ProviderName);
+    return Results ? Results->Find(TestId) : nullptr;
 }
 
 void UGorgeousInsightMatrixSubsystem::UpdateLastRunStats(const FName ProviderName, const FName TestId, const FGorgeousInsightTestResult& Result, const double DurationSeconds)
@@ -1351,6 +1148,8 @@ const FGorgeousInsightTestResult* UGorgeousInsightMatrixSubsystem::GetBaselineRe
 
 bool UGorgeousInsightMatrixSubsystem::SetBaselineFromLastResult(FName ProviderName, FName TestId)
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	const TMap<FName, FGorgeousInsightTestResult>* ProviderMap = LastTestResults.Find(ProviderName);
 	if (!ProviderMap)
 	{
@@ -1374,9 +1173,9 @@ bool UGorgeousInsightMatrixSubsystem::SetBaselineFromLastResult(FName ProviderNa
 	Settings->Baselines.Add(Key, Entry);
 	
 	// Write to specific INI file
-	const FString IniPath = GetBaselineIniPath(ProviderName);
+	const FString IniPath = GetTestBaselineIniPath();
 	FString SectionName = TEXT("BaselineTest_") + Key;
-	GConfig->SetBool(*SectionName, TEXT("bSuccess"), Entry.bSuccess, IniPath);
+	
 	// We use standard Config array formats for simplicity, but saving the full Baseline entry 
 	// via standard UE config paths is complex.
 	// Actually, UObject::SaveConfig(CPF_Config, *IniPath) saves ALL properties on the object!
@@ -1386,8 +1185,10 @@ bool UGorgeousInsightMatrixSubsystem::SetBaselineFromLastResult(FName ProviderNa
 	return true;
 }
 
-bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFilePath, FName ProviderName) const
+bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFilePath, FName ProviderName, const FGorgeousInsightGatherContext& Context) const
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	GORGEOUS_PROFILE_SCOPE(GIM_ExportStatsCsv);
 	if (AbsoluteFilePath.IsEmpty())
 	{
@@ -1396,7 +1197,6 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFi
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsoluteFilePath), true);
 
 	TArray<FGorgeousInsightStat> Stats;
-	FGorgeousInsightGatherContext Context;
 	if (ProviderName.IsNone())
 	{
 		GatherAllStats(Context, Stats);
@@ -1406,17 +1206,31 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFi
 		GatherProviderStats(Context, ProviderName, Stats);
 	}
 
-	FString Csv = TEXT("Id,DisplayName,Category,ValueType,NumericValue,TextValue,Unit\n");
+	auto QuoteCsv = [](FString Value) { Value.ReplaceInline(TEXT("\""), TEXT("\"\"")); return TEXT("\"") + Value + TEXT("\""); };
+	FString Csv = TEXT("Id,DisplayName,Category,ValueType,NumericValue,TextValue,Unit,RecordType,Provider,ChartJson\n");
 	for (const FGorgeousInsightStat& Stat : Stats)
 	{
-		Csv += FString::Printf(TEXT("%s,%s,%s,%d,%.6f,%s,%s\n"),
-			*Stat.Id.ToString(),
-			*Stat.DisplayName.ToString(),
-			*Stat.Category.ToString(),
+		Csv += FString::Printf(TEXT("%s,%s,%s,%d,%.6f,%s,%s,Stat,,\n"),
+			*QuoteCsv(Stat.Id.ToString()),
+			*QuoteCsv(Stat.DisplayName.ToString()),
+			*QuoteCsv(Stat.Category.ToString()),
 			static_cast<int32>(Stat.ValueType),
 			Stat.NumericValue,
-			*Stat.TextValue.ToString(),
-			*Stat.Unit.ToString());
+			*QuoteCsv(Stat.TextValue.ToString()),
+			*QuoteCsv(Stat.Unit.ToString()));
+	}
+
+	for (IGorgeousInsightMatrixProvider* Provider : GetProviders())
+	{
+		if (!Provider || (!ProviderName.IsNone() && Provider->GetProviderName() != ProviderName)) continue;
+		TArray<FGorgeousInsightChartDefinition> Charts;
+		GatherProviderCharts(Provider->GetProviderName(), Context, Charts);
+		for (const auto& Chart : Charts)
+		{
+			FString Json;
+			FJsonSerializer::Serialize(GorgeousInsightCharts::ToJson(Chart), TJsonWriterFactory<>::Create(&Json));
+			Csv += FString::Printf(TEXT("%s,%s,,,,,,Chart,%s,%s\n"), *QuoteCsv(Chart.Id.ToString()), *QuoteCsv(Chart.Title.ToString()), *QuoteCsv(Provider->GetProviderName().ToString()), *QuoteCsv(Json));
+		}
 	}
 
 	const bool bSaved = FFileHelper::SaveStringToFile(Csv, *AbsoluteFilePath);
@@ -1429,8 +1243,10 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToCSV(const FString& AbsoluteFi
 	return bSaved;
 }
 
-bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteFilePath, FName ProviderName) const
+bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteFilePath, FName ProviderName, const FGorgeousInsightGatherContext& Context) const
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	GORGEOUS_PROFILE_SCOPE(GIM_ExportStatsJson);
 	if (AbsoluteFilePath.IsEmpty())
 	{
@@ -1439,7 +1255,6 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteF
 	IFileManager::Get().MakeDirectory(*FPaths::GetPath(AbsoluteFilePath), true);
 
 	TArray<FGorgeousInsightStat> Stats;
-	FGorgeousInsightGatherContext Context;
 	if (ProviderName.IsNone())
 	{
 		GatherAllStats(Context, Stats);
@@ -1466,6 +1281,20 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteF
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetArrayField(TEXT("stats"), StatArray);
+	TArray<TSharedPtr<FJsonValue>> ChartsJson;
+	for (IGorgeousInsightMatrixProvider* Provider : GetProviders())
+	{
+		if (!Provider || (!ProviderName.IsNone() && Provider->GetProviderName() != ProviderName)) continue;
+		TArray<FGorgeousInsightChartDefinition> Charts;
+		GatherProviderCharts(Provider->GetProviderName(), Context, Charts);
+		for (const auto& Chart : Charts)
+		{
+			TSharedRef<FJsonObject> ChartJson = GorgeousInsightCharts::ToJson(Chart);
+			ChartJson->SetStringField(TEXT("provider"), Provider->GetProviderName().ToString());
+			ChartsJson.Add(MakeShared<FJsonValueObject>(ChartJson));
+		}
+	}
+	Root->SetArrayField(TEXT("charts"), ChartsJson);
 	if (!ProviderName.IsNone())
 	{
 		Root->SetStringField(TEXT("provider"), ProviderName.ToString());
@@ -1490,6 +1319,8 @@ bool UGorgeousInsightMatrixSubsystem::ExportStatsToJson(const FString& AbsoluteF
 
 bool UGorgeousInsightMatrixSubsystem::EnqueueScenario(FName ScenarioName, const FString& Parameters, int32 VariantIndex, UObject* WorldContextObject)
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	if (ScenarioName.IsNone())
 	{
 		return false;
@@ -1511,6 +1342,8 @@ bool UGorgeousInsightMatrixSubsystem::EnqueueScenario(FName ScenarioName, const 
 
 FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByName(FName ScenarioName, const FString& Parameters, int32 VariantIndex, UObject* WorldContextObject)
 {
+    if (!IsDevelopmentToolsEnabled()) { FGorgeousInsightScenarioResult Disabled; Disabled.bSuccess = false; Disabled.Errors.Add(TEXT("Development Suite is absent, disabled, or not approved for this target.")); return Disabled; }
+
 	FGorgeousInsightScenarioResult Result;
 	(void)WorldContextObject;
 
@@ -1598,6 +1431,8 @@ FGorgeousInsightScenarioResult UGorgeousInsightMatrixSubsystem::RunScenarioByNam
 
 TArray<FGorgeousInsightScenarioResult> UGorgeousInsightMatrixSubsystem::RunQueuedScenarios()
 {
+    if (!IsDevelopmentToolsEnabled()) { FGorgeousInsightScenarioResult Disabled; Disabled.bSuccess = false; Disabled.Errors.Add(TEXT("Development Suite is absent, disabled, or not approved for this target.")); return { MoveTemp(Disabled) }; }
+
 	TArray<FGorgeousInsightQueuedScenario> ToRun;
 	{
 		FScopeLock QueueLock(&QueueMutex);
@@ -1617,6 +1452,8 @@ TArray<FGorgeousInsightScenarioResult> UGorgeousInsightMatrixSubsystem::RunQueue
 
 bool UGorgeousInsightMatrixSubsystem::EnqueueTest(FName ProviderName, FName TestId, const FGorgeousInsightTestContext& Context)
 {
+    if (!IsDevelopmentToolsEnabled()) return false;
+
 	if (ProviderName.IsNone() || TestId.IsNone())
 	{
 		return false;
@@ -1637,6 +1474,8 @@ bool UGorgeousInsightMatrixSubsystem::EnqueueTest(FName ProviderName, FName Test
 
 TArray<UGorgeousInsightMatrixSubsystem::FGorgeousInsightQueuedTestResult> UGorgeousInsightMatrixSubsystem::RunQueuedTests()
 {
+    if (!IsDevelopmentToolsEnabled()) { FGorgeousInsightQueuedTestResult Disabled; Disabled.Result.bSuccess = false; Disabled.Result.Errors.Add(TEXT("Development Suite is absent, disabled, or not approved for this target.")); return { MoveTemp(Disabled) }; }
+
 	TArray<FGorgeousInsightQueuedTest> ToRun;
 	{
 		FScopeLock QueueLock(&QueueMutex);
@@ -1672,7 +1511,18 @@ int32 UGorgeousInsightMatrixSubsystem::GetQueuedScenarioCount() const
 
 void UGorgeousInsightMatrixSubsystem::AddBaselineStats(FName ProviderName, const TArray<FGorgeousInsightStat>& Stats)
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
+	LoadChartBaselines();
+	TArray<FGorgeousInsightChartDefinition> Charts;
+	FGorgeousInsightGatherContext LiveContext;
+	LiveContext.Mode = EGorgeousInsightContextMode::Live;
+	if (IGorgeousInsightMatrixProvider* Provider = FindProvider(ProviderName)) Provider->GatherCharts(LiveContext, Charts);
+	{
 	FScopeLock CacheLock(&StatsCacheMutex);
+	ProviderBaselineCharts.FindOrAdd(ProviderName) = Charts;
+	if (!ProviderBaselineStats.Contains(ProviderName))
+		ProviderBaselineStats.Add(ProviderName, ReadProviderBaselineStats(ProviderName));
 	TArray<FGorgeousInsightStat>& ProviderStats = ProviderBaselineStats.FindOrAdd(ProviderName);
 	
 	// Add or update
@@ -1694,63 +1544,29 @@ void UGorgeousInsightMatrixSubsystem::AddBaselineStats(FName ProviderName, const
 		}
 	}
 	
-	// Save to custom INI
-	if (UGorgeousInsightBaselineSettings* Settings = GetMutableDefault<UGorgeousInsightBaselineSettings>())
-	{
-		// Note: Provider Baseline Stats (not test results) are not tracked in Settings!
-		// Wait, we need a way to track Provider Baseline stats in Settings or write them manually.
-		// For now, let's write them manually to the INI via GConfig.
-		const FString IniPath = GetBaselineIniPath(ProviderName);
-		const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
-		
-		GConfig->EmptySection(*SectionName, IniPath);
-		for (const FGorgeousInsightStat& Stat : ProviderStats)
-		{
-			FString StatLine = FString::Printf(TEXT("%s|%s|%s|%s|%d|%f|%s|%s"),
-				*Stat.Id.ToString(),
-				*Stat.DisplayName.ToString(),
-				*Stat.Description.ToString(),
-				*Stat.Category.ToString(),
-				(int32)Stat.ValueType,
-				Stat.NumericValue,
-				*Stat.TextValue.ToString(),
-				*Stat.Unit.ToString());
-			GConfig->SetString(*SectionName, *Stat.Id.ToString(), *StatLine, IniPath);
-		}
-		GConfig->Flush(false, IniPath);
+	WriteProviderBaselineStats(ProviderName, ProviderStats);
 	}
+	SaveChartBaselines();
 }
 
 void UGorgeousInsightMatrixSubsystem::RemoveBaselineStat(FName ProviderName, FName StatId)
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
 	FScopeLock CacheLock(&StatsCacheMutex);
+	if (!ProviderBaselineStats.Contains(ProviderName))
+		ProviderBaselineStats.Add(ProviderName, ReadProviderBaselineStats(ProviderName));
 	if (TArray<FGorgeousInsightStat>* ProviderStats = ProviderBaselineStats.Find(ProviderName))
 	{
 		ProviderStats->RemoveAll([StatId](const FGorgeousInsightStat& Stat) { return Stat.Id == StatId; });
-		
-		const FString IniPath = GetBaselineIniPath(ProviderName);
-		const FString SectionName = TEXT("ProviderBaselineStats_") + ProviderName.ToString();
-		
-		GConfig->EmptySection(*SectionName, IniPath);
-		for (const FGorgeousInsightStat& Stat : *ProviderStats)
-		{
-			FString StatLine = FString::Printf(TEXT("%s|%s|%s|%s|%d|%f|%s|%s"),
-				*Stat.Id.ToString(),
-				*Stat.DisplayName.ToString(),
-				*Stat.Description.ToString(),
-				*Stat.Category.ToString(),
-				(int32)Stat.ValueType,
-				Stat.NumericValue,
-				*Stat.TextValue.ToString(),
-				*Stat.Unit.ToString());
-			GConfig->SetString(*SectionName, *Stat.Id.ToString(), *StatLine, IniPath);
-		}
-		GConfig->Flush(false, IniPath);
+		WriteProviderBaselineStats(ProviderName, *ProviderStats);
 	}
 }
 
 TArray<FGorgeousInsightScenarioRunResult> UGorgeousInsightMatrixSubsystem::RunMatrix(const FString& Parameters, UObject* WorldContextObject)
 {
+    if (!IsDevelopmentToolsEnabled()) { FGorgeousInsightScenarioRunResult Disabled; Disabled.Result.bSuccess = false; Disabled.Result.Errors.Add(TEXT("Development Suite is absent, disabled, or not approved for this target.")); return { MoveTemp(Disabled) }; }
+
 	const FGorgeousInsightMatrixRequest Request = FGorgeousInsightMatrixRequest::FromParameters(Parameters);
 	TArray<FGorgeousInsightScenarioRunResult> Results;
 
@@ -1786,22 +1602,13 @@ TArray<FGorgeousInsightScenarioRunResult> UGorgeousInsightMatrixSubsystem::RunMa
 
 FString UGorgeousInsightMatrixSubsystem::GetInsightMatrixIniPath()
 {
-	// Get the path to the GorgeousCore plugin's Config folder
-	FString PluginDir;
-	if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore")))
-	{
-		PluginDir = Plugin->GetBaseDir() / TEXT("Config");
-	}
-	else
-	{
-		PluginDir = FPaths::ProjectPluginsDir() / TEXT("GorgeousThings") / TEXT("GorgeousCore") / TEXT("Config");
-	}
-	IFileManager::Get().MakeDirectory(*PluginDir, true);
-	return PluginDir / TEXT("BaseInsightMatrix.ini");
+	return GetInsightSavedPath(TEXT("PanelState.ini"));
 }
 
 void UGorgeousInsightMatrixSubsystem::LoadPanelState()
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
 	const FString IniPath = GetInsightMatrixIniPath();
 	
 	if (!FPaths::FileExists(IniPath))
@@ -2043,6 +1850,8 @@ void UGorgeousInsightMatrixSubsystem::LoadPanelState()
 		{
 			Stats.bSucceeded = Value->GetValue().ToBool();
 		}
+        if (const FConfigValue* Value = Section->Find(TEXT("bHasExecutionResult"))) Stats.bHasExecutionResult = Value->GetValue().ToBool();
+        if (const FConfigValue* Value = Section->Find(TEXT("ResultMessage"))) Stats.ResultMessage = Value->GetValue();
 		
 		LastActionStats.FindOrAdd(FName(*ProviderPart)).Add(FName(*ActionPart), Stats);
 	}
@@ -2050,6 +1859,8 @@ void UGorgeousInsightMatrixSubsystem::LoadPanelState()
 
 void UGorgeousInsightMatrixSubsystem::SavePanelState() const
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
 	const FString IniPath = GetInsightMatrixIniPath();
 	
 	FConfigFile ConfigFile;
@@ -2167,6 +1978,8 @@ void UGorgeousInsightMatrixSubsystem::SavePanelState() const
 			ConfigFile.SetString(*SectionName, TEXT("Timestamp"), *ActionPair.Value.Timestamp.ToString());
 			ConfigFile.SetString(*SectionName, TEXT("DurationSeconds"), *FString::Printf(TEXT("%f"), ActionPair.Value.DurationSeconds));
 			ConfigFile.SetString(*SectionName, TEXT("bSucceeded"), ActionPair.Value.bSucceeded ? TEXT("true") : TEXT("false"));
+            ConfigFile.SetString(*SectionName, TEXT("bHasExecutionResult"), ActionPair.Value.bHasExecutionResult ? TEXT("true") : TEXT("false"));
+            ConfigFile.SetString(*SectionName, TEXT("ResultMessage"), *ActionPair.Value.ResultMessage);
 		}
 	}
 	
@@ -2176,6 +1989,9 @@ void UGorgeousInsightMatrixSubsystem::SavePanelState() const
 
 void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldContextObject)
 {
+    if (!IsDevelopmentToolsEnabled()) return;
+
+#if WITH_EDITOR
 	if (!WorldContextObject)
 	{
 		return;
@@ -2183,9 +1999,9 @@ void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldC
 
 	if (UWorld* World = WorldContextObject->GetWorld())
 	{
-		for (TActorIterator<AGorgeousInsightFunctionalTest> It(World); It; ++It)
+		for (TActorIterator<AFunctionalTest> It(World); It; ++It)
 		{
-			AGorgeousInsightFunctionalTest* TestActor = *It;
+			AFunctionalTest* TestActor = *It;
 			if (TestActor)
 			{
 				// Triggers the functional test logic, allowing the beacon to process state.
@@ -2193,4 +2009,5 @@ void UGorgeousInsightMatrixSubsystem::RunAllLocalFunctionalTests(UObject* WorldC
 			}
 		}
 	}
+#endif
 }

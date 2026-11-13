@@ -15,7 +15,7 @@
  * 
  * @author Nils Bergemann
  */
-struct FGorgeousCoreLicenseHelper
+struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousCoreLicenseHelper
 {
 	/**
 	 * Creates an encrypted license file in the GorgeousCore plugin folder with multiple license strings.

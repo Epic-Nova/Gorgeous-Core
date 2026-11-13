@@ -15,7 +15,7 @@
 UGorgeousAutoReplicationSettings::UGorgeousAutoReplicationSettings(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 	, bEnableIris(false)
-	, bEnableReplicationGraph(true)
+	, bEnableReplicationGraph(false)
 	, AutoReplicationGraphClass(TSoftClassPtr<UReplicationGraph>(UGorgeousAutoReplicationGraph::StaticClass()))
 	, bForceIrisAtRuntime(false)
 	, bForceReplicationGraphAtRuntime(false)

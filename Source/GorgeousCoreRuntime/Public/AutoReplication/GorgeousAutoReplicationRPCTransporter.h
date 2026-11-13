@@ -46,9 +46,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FGorgeousAutoReplicationRPCRoutedSi
 */
 UCLASS(ClassGroup = (GorgeousCore), Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCTransporter",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCTransporter/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCTransporter : public UActorComponent

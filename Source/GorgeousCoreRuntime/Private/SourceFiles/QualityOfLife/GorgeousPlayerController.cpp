@@ -1,3 +1,4 @@
+#include "HAL/PlatformTime.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -21,6 +22,7 @@
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationCheatManagerExtension.h"
 #include "GeneralSystems/InteractionFoundation/GorgeousInteractionFoundationCheatManagerExtension.h"
 #include "GeneralSystems/GorgeousPermissionCheatManagerExtension.h"
+#include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "Net/UnrealNetwork.h"
 #include "Engine/LocalPlayer.h"
@@ -46,6 +48,14 @@ AGorgeousPlayerController::AGorgeousPlayerController()
 UE_QOL_DEFINE_HANDLE_AUTOREPLICATION_RPC(AGorgeousPlayerController)
 
 UE_QOL_DEFINE_BEGIN_PLAY_WITH_RELAY_AND_EXTRA(AGorgeousPlayerController,
+    if (HasAuthority() && bActivateNetworkingCapabilities)
+    {
+        // The public Default channel is joined once for this controller's lifetime.
+        // Named channels require explicit membership; no send may undo an unsubscribe.
+        if (auto* Stack=UGorgeousRootNetworkStackSubsystem::Get(GetWorld()))
+            Stack->SubscribeControllerToChannel(this,UGorgeousRootNetworkStackSubsystem::GetDefaultChannelName());
+    }
+    if (IsLocalController() && !HasAuthority()) Server_RequestGorgeousPermissionSnapshot();
 	if (CheatManager)
 	{
 		CheatManager->AddCheatManagerExtension(NewObject<UGorgeousStatFoundationCheatManagerExtension>(CheatManager));
@@ -125,6 +135,7 @@ int32 AGorgeousPlayerController::GetPlayerConnectionIndex_Implementation() const
 	return -1;
 }
 
+#if WITH_DEV_AUTOMATION_TESTS
 void AGorgeousPlayerController::ResetAutomationRPCWitnessEntries()
 {
 	AutomationRPCWitnessEntries.Reset();
@@ -140,6 +151,8 @@ void AGorgeousPlayerController::RecordAutomationRPCWitness(const FName HandlerNa
 	Entry.NetMode = GetNetMode();
 	Entry.TimestampSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 }
+
+#endif
 
 void AGorgeousPlayerController::Automation_ServerToClient(int32 Sequence, const FString& Stamp)
 {
@@ -190,4 +203,59 @@ void AGorgeousPlayerController::Client_ReceiveSignal_Implementation(FGameplayTag
 	{
 		Storage->FireLocalSignal(Tag, Payload);
 	}
+}
+
+void AGorgeousPlayerController::Client_ReceiveGorgeousPermissionSnapshot_Implementation(const FGorgeousOwnerPermissionSnapshot& Snapshot)
+{
+    if (UGameInstance* Instance=GetGameInstance())
+        if (auto* Manager=Instance->GetSubsystem<UGorgeousPermissionManagerSubsystem>()) Manager->ApplyOwnerSnapshot(Snapshot,this);
+}
+void AGorgeousPlayerController::Server_RequestGorgeousPermissionSnapshot_Implementation()
+{
+    const double Now=FPlatformTime::Seconds(); if (Now-LastPermissionSnapshotRequestTime<0.25) return;
+    LastPermissionSnapshotRequestTime=Now;
+    if (UGameInstance* Instance=GetGameInstance())
+        if (auto* Manager=Instance->GetSubsystem<UGorgeousPermissionManagerSubsystem>()) Client_ReceiveGorgeousPermissionSnapshot(Manager->BuildOwnerSnapshot(this));
+}
+bool AGorgeousPlayerController::CanAdministerGorgeousPermissions_Implementation(APlayerState* TargetPlayer) const { return false; }
+void AGorgeousPlayerController::Client_GorgeousPermissionMutationResult_Implementation(bool bAccepted)
+{ bLastPermissionMutationAccepted=bAccepted; }
+void AGorgeousPlayerController::Server_RequestGorgeousPermissionMutation_Implementation(APlayerState* TargetPlayer,EGorgeousPermissionMutation Operation,const FString& Key,bool bAllow)
+{
+    const double Now=FPlatformTime::Seconds();
+    if (Now-LastPermissionMutationRequestTime<0.05) { Client_GorgeousPermissionMutationResult(false); return; }
+    LastPermissionMutationRequestTime=Now;
+    // Requester identity is this server-side owning controller, never a client argument.
+    if (!TargetPlayer || TargetPlayer->GetWorld()!=GetWorld() || Key.IsEmpty() || Key.Len()>256 || !CanAdministerGorgeousPermissions(TargetPlayer))
+    { Client_GorgeousPermissionMutationResult(false); return; }
+    auto* Manager=GetGameInstance() ? GetGameInstance()->GetSubsystem<UGorgeousPermissionManagerSubsystem>() : nullptr;
+    if (!Manager) { Client_GorgeousPermissionMutationResult(false); return; }
+    switch(Operation)
+    {
+        case EGorgeousPermissionMutation::GrantRole: Manager->GrantRole(TargetPlayer,FName(*Key)); break;
+        case EGorgeousPermissionMutation::RevokeRole: Manager->RevokeRole(TargetPlayer,FName(*Key)); break;
+        case EGorgeousPermissionMutation::GrantPermission: Manager->GrantPermission(TargetPlayer,Key,bAllow); break;
+        case EGorgeousPermissionMutation::RevokePermission: Manager->RevokePermission(TargetPlayer,Key); break;
+        default: Client_GorgeousPermissionMutationResult(false); return;
+    }
+    Client_GorgeousPermissionMutationResult(true);
+}
+
+void AGorgeousPlayerController::SetVisualDataGatheringConsent(bool bAccepted)
+{
+    if (!HasAuthority() && !IsLocalController()) return;
+    bVDGConsentDecisionMade=true;
+    bVDGConsentGranted=bAccepted;
+    if (!HasAuthority()) Server_SetVisualDataGatheringConsent(bAccepted);
+}
+void AGorgeousPlayerController::Server_SetVisualDataGatheringConsent_Implementation(bool bAccepted)
+{
+    // The actor's owning connection supplies the decision; no player identity is accepted.
+    bVDGConsentDecisionMade=true;
+    bVDGConsentGranted=bAccepted;
+}
+void AGorgeousPlayerController::ResetVisualDataGatheringConsent()
+{
+    SetVisualDataGatheringConsent(false);
+    bVDGConsentDecisionMade=false;
 }

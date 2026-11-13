@@ -33,9 +33,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousCameraShakeFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#camera-shake",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousCameraShakeFeedbackEffect : public UGorgeousFeedbackEffect
@@ -52,6 +52,8 @@ public:
 	 * @param Context The runtime situation used to resolve the player controller.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual float GetPlaybackDuration(const FGorgeousFeedbackContext& Context) const override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a camera shake class configured.
@@ -82,7 +84,10 @@ public:
 
 	// Custom rotation used when PlaySpace is set to UserDefined.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FRotator UserPlaySpaceRotation;
+	FRotator UserPlaySpaceRotation = FRotator::ZeroRotator;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
+private:
+	TArray<TWeakObjectPtr<APlayerController>> ActiveControllers;
+
 };

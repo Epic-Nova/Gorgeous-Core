@@ -27,6 +27,7 @@
 class UGorgeousObjectVariable;
 class UGorgeousAutoReplicationRPCTransporter;
 class AController;
+struct FGorgeousObjectVariableTrunk;
 //<------------------------------------------------------------->
 /**
  * Handle that maps a AutoReplication key to a replicated array index and optional cached value.
@@ -80,6 +81,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousObjectVariableEntry
 
 public:
 	FGorgeousObjectVariableEntry();
+    UPROPERTY(EditAnywhere,Category="Gorgeous AutoReplication")
+    FGuid SerializedVariableIdentifier;
+
 
 	// Default value that will be instanced or used when networking is disabled.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Instanced, Category = "Gorgeous AutoReplication", meta = (GorgeousObjectVariableTrunk = "DefaultObjectVariableTrunk"))
@@ -158,13 +162,18 @@ class GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationMixin
 public:
 	friend class UGorgeousAutoReplicationRPCTransporter;
 	friend class UGorgeousAutoReplicationRPCRelayComponent;
+#if WITH_DEV_AUTOMATION_TESTS
+    // Exercises the exact private receive -> public OnRep ordering path.
+    friend class FGorgeousReplicationSlotOrderingRegression;
+#endif
 
 	FGorgeousAutoReplicationMixin();
+    static FGorgeousAutoReplicationMixin* ResolveForActor(AActor* Actor);
 
 	/** Binds the mixin to the owning object and the storage containers declared by macros on that class. */
 	void Bind(UObject* InOwner,
 		TMap<FName, FGorgeousObjectVariableEntry>* InAdditionalData,
-		TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables);
+		TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables,FGorgeousObjectVariableTrunk* InTrunk=nullptr);
 
 	/** Initializes the additional data container and optionally activates networking. */
 	void InitializeAdditionalData(bool bActivateNetworkingCapabilities);
@@ -221,16 +230,20 @@ private:
 	bool ResolveRPCDestination(const FName Key, EGorgeousAutoReplicationTargetKind RequestedKind, EGorgeousAutoReplicationTargetKind& OutResolvedKind, UGorgeousObjectVariable*& OutVariable, UObject*& OutOwner) const;
 	UGorgeousObjectVariable* ResolveVariableForKey(const FName Key) const;
 	bool CanControllerReceiveRPC(const FGorgeousQueuedRPC& QueuedRPC, AController* Controller) const;
+    bool CanControllerInvokeRPC(const FGorgeousQueuedRPC& Request, APlayerController* Sender) const;
 	bool CanControllerReceivePropertyPayload(FName EntryKey, AController* Controller) const;
+    bool CanControllerWritePropertyPayload(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, APlayerController* Sender) const;
 	void AutoSubscribeControllerForVariable(AController* Controller, UGorgeousObjectVariable* TargetVariable) const;
 
 private:
 	TWeakObjectPtr<UObject> Owner;
+	FGorgeousObjectVariableTrunk* ExplicitTrunk=nullptr;
 	TMap<FName, FGorgeousObjectVariableEntry>* AdditionalData;
 	TArray<FGorgeousReplicatedVariableEntry>* ReplicatedVariables;
 	TMap<FName, uint16> KeyToReplicationIndex;
 	bool bNetworkingEnabled;
 	bool bIsBound;
+    bool bHasInitializedAdditionalData=false;
 	/** Actor-bound component that mirrors RPC payloads to the desired network target. */
 	TWeakObjectPtr<UGorgeousAutoReplicationRPCTransporter> RPCTransporter;
 	/** Relay component for routing server-bound RPCs from clients. */

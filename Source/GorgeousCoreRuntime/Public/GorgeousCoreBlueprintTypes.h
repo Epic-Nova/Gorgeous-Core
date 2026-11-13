@@ -33,9 +33,9 @@
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//GorgeousObjectVariableBlueprint",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime//Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ObjectVariables/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableBlueprint : public UBlueprint

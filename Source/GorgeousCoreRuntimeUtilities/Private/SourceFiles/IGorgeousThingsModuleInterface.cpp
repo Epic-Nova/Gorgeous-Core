@@ -15,6 +15,7 @@
 #include "Helpers/GorgeousPluginHelper.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Features/IModularFeatures.h"
+#include "UObject/UObjectBase.h"
 //<-------------------------------------------------------------------------->
 
 //=============================================================================
@@ -37,23 +38,18 @@ void IGorgeousThingsModuleInterface::StartupModule()
 	
 	if (UGorgeousPluginHelper::GetSingleton()->RegisterModule(this))
 	{
+		CompleteGorgeousStartup();
+	}
+}
+
+void IGorgeousThingsModuleInterface::CompleteGorgeousStartup()
+{
+	if (!bGorgeousModuleStarted)
+	{
+		bGorgeousModuleStarted = true;
 		GorgeousStartupModule();
 
-		if (GetModuleFunctionality() == EGorgeousModuleFunctionality::Runtime && !GetInsightProvider())
-		{
-			
-			GT_W_LOG_FULL_EX("GT.InsightMatrix.Provider.Missing", 
-				TEXT("Insight Matrix provider missing for plugin '%s', some functionality may not work as expected!"),
-				5.0f,
-				true,
-				true,
-				true,
-				true,
-				nullptr,
-				nullptr,
-				*GetBelongingPluginName().ToString()
-			);
-		}
+		// Insight providers are optional. Ordinary runtime modules need no developer suite.
 
 		if (InsightProvider)
 		{
@@ -66,11 +62,18 @@ void IGorgeousThingsModuleInterface::ShutdownModule()
 {
 	IModuleInterface::ShutdownModule();
 	
-	if (InsightProvider)
+	if (bGorgeousModuleStarted && InsightProvider)
 	{
 		IModularFeatures::Get().UnregisterModularFeature(FName(TEXT("GorgeousInsightMatrixProvider")), InsightProvider);
 	}
 
-	GorgeousShutdownModule();
-	UGorgeousPluginHelper::GetSingleton()->UnregisterModule(this);
+	if (bGorgeousModuleStarted)
+	{
+		bGorgeousModuleStarted = false;
+		GorgeousShutdownModule();
+	}
+	if (UObjectInitialized() && !GExitPurge)
+	{
+		if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton()) Helper->UnregisterModule(this);
+	}
 }

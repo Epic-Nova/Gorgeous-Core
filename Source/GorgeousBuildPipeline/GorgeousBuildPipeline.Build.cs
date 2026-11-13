@@ -16,6 +16,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using EpicGames.Core;
 
 #nullable enable
 
@@ -57,6 +58,146 @@ public struct GorgeousBuildSettings
 	public bool bDisableInferredDependencies;
 }
 
+/// <summary>Compile checks generated from explicitly exported, fingerprinted guard assets.</summary>
+public static class GorgeousGuardBuildRequirements
+{
+    private sealed class Guard
+    {
+        public JsonObject Data = null!;
+        public string Container = "";
+        public string Id => Data.GetStringField("SystemIdentifier");
+    }
+
+    private static string Under(string root, string relative)
+    {
+        string prefix = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        string full = Path.GetFullPath(Path.Combine(root, relative));
+        if (!full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("Guard manifest path leaves its plugin: " + relative);
+        return full;
+    }
+
+    private static string Hash(string path)
+    {
+        using var sha = System.Security.Cryptography.SHA1.Create();
+        using var stream = File.OpenRead(path);
+        return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+    }
+
+    private static string Symbol(string id) => Regex.Replace(id.ToUpperInvariant(), "[^A-Z0-9_]", "_");
+    private static string Message(string value) => value.Replace("\\", "/").Replace("\"", "'").Replace("\r", " ").Replace("\n", " ");
+
+    public static void Register(ModuleRules module, ReadOnlyTargetRules target, string coreRoot, string engineRoot)
+    {
+        ProjectDescriptor? project = target.ProjectFile == null ? null : ProjectDescriptor.FromFile(target.ProjectFile);
+        var additional = new List<DirectoryReference>();
+        if (project != null && target.ProjectFile != null && JsonObject.TryRead(target.ProjectFile, out var projectJson) && projectJson.TryGetStringArrayField("AdditionalPluginDirectories", out var directories))
+            additional.AddRange(directories.Select(path => new DirectoryReference(Path.GetFullPath(Path.Combine(target.ProjectFile.Directory.FullName, path)))));
+        var plugins = Plugins.ToFilteredDictionary(Plugins.ReadAvailablePlugins(new DirectoryReference(engineRoot), target.ProjectFile?.Directory, additional))
+            .ToDictionary(pair => pair.Key, pair => pair.Value.ChoiceVersion ?? pair.Value.KnownVersions.Last(), StringComparer.OrdinalIgnoreCase);
+        var enabled = new HashSet<string>(plugins.Values.Where(p => Plugins.IsPluginEnabledForTarget(p, project!, target.Platform, target.Configuration, target.Type)).Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+        bool ExplicitlyOff(string name) => target.DisablePlugins.Contains(name, StringComparer.OrdinalIgnoreCase) ||
+            (project?.Plugins ?? Array.Empty<PluginReferenceDescriptor>()).Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && !p.bEnabled);
+        foreach (string name in target.EnablePlugins) if (!ExplicitlyOff(name)) enabled.Add(name);
+        foreach (string name in target.DisablePlugins) enabled.Remove(name);
+        bool changed;
+        do
+        {
+            changed = false;
+            foreach (string name in enabled.ToArray())
+                if (plugins.TryGetValue(name, out var plugin))
+                    foreach (var reference in plugin.Descriptor.Plugins ?? new List<PluginReferenceDescriptor>())
+                        if (reference.bEnabled && reference.IsEnabledForPlatform(target.Platform) && reference.IsEnabledForTargetConfiguration(target.Configuration) && reference.IsEnabledForTarget(target.Type) && !ExplicitlyOff(reference.Name) && plugins.ContainsKey(reference.Name))
+                            changed |= enabled.Add(reference.Name);
+        } while (changed);
+
+        var guards = new List<Guard>();
+        var dependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var plugin in plugins.Values.OrderBy(p => p.Name, StringComparer.Ordinal))
+        {
+            if (!enabled.Contains(plugin.Name)) continue;
+            string manifest = Path.Combine(plugin.Directory.FullName, "Config", "GorgeousGuardRequirements.json");
+            if (!File.Exists(manifest))
+            {
+                if (plugin.Directory.FullName.Equals(coreRoot, StringComparison.OrdinalIgnoreCase) && Directory.Exists(Path.Combine(coreRoot, "Content", "Data", "CoreData", "ExtensionResourceGuards")))
+                    throw new InvalidOperationException("Missing Gorgeous guard requirements export. Run UnrealEditor-Cmd <project> -run=GorgeousAuditFixup -ExportGuardRequirements before building; distribute Config/GorgeousGuardRequirements.json with the plugin.");
+                continue;
+            }
+            dependencies.Add(manifest);
+            if (!JsonObject.TryRead(new FileReference(manifest), out var document) || document.GetIntegerField("SchemaVersion") != 1 || document.GetStringField("HashAlgorithm") != "SHA1" || !document.GetStringField("PluginName").Equals(plugin.Name, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Invalid/version-mismatched Gorgeous guard manifest: " + manifest);
+            var sources = document.GetObjectArrayField("Sources");
+            var recorded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var source in sources)
+            {
+                string relative = source.GetStringField("Path").Replace('\\', '/');
+                string path = Under(plugin.Directory.FullName, relative);
+                if (!recorded.Add(relative) || !File.Exists(path) || !Hash(path).Equals(source.GetStringField("Sha1"), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Stale Gorgeous guard metadata: " + path + ". Save assets and rerun -run=GorgeousAuditFixup -ExportGuardRequirements -GuardPlugin=" + plugin.Name);
+                dependencies.Add(path);
+            }
+            var onDisk = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string folder in document.GetStringArrayField("GuardFolders"))
+            {
+                string path = Under(plugin.Directory.FullName, folder);
+                dependencies.Add(path);
+                if (Directory.Exists(path)) foreach (string asset in Directory.GetFiles(path, "*.uasset", SearchOption.AllDirectories))
+                    onDisk.Add(Path.GetRelativePath(plugin.Directory.FullName, asset).Replace('\\', '/'));
+            }
+            if (!recorded.SetEquals(onDisk)) throw new InvalidOperationException("Added/removed guard source assets require a fresh export: " + manifest);
+            foreach (var data in document.GetObjectArrayField("Guards"))
+            {
+                if (!recorded.Contains(data.GetStringField("SourceAsset")) || string.IsNullOrWhiteSpace(data.GetStringField("SystemIdentifier")) || string.IsNullOrWhiteSpace(data.GetStringField("GuardClass")))
+                    throw new InvalidOperationException("Guard manifest lacks source/class/identifier provenance: " + manifest);
+                guards.Add(new Guard { Data = data, Container = plugin.Name });
+            }
+        }
+        foreach (var file in dependencies) module.ExternalDependencies.Add(file);
+        bool Active(Guard guard)
+        {
+            if (!guard.Data.GetBoolField("IsContentPackGuard")) return true;
+            string owner = guard.Data.GetStringField("OwningPluginName");
+            string content = guard.Data.GetStringField("ContentSubPath");
+            if (string.IsNullOrWhiteSpace(owner) || owner == "None" || string.IsNullOrWhiteSpace(content)) return true;
+            return enabled.Contains(owner) && plugins.TryGetValue(owner, out var info) && Directory.Exists(Under(Path.Combine(info.Directory.FullName, "Content"), content.TrimStart('/', '\\')));
+        }
+        var ids = new Dictionary<string, Guard>(StringComparer.OrdinalIgnoreCase);
+        var symbols = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var guard in guards)
+            if (!ids.TryAdd(guard.Id, guard) || !symbols.Add(Symbol(guard.Id))) throw new InvalidOperationException("Duplicate/ambiguous compile guard identifier: " + guard.Id);
+        var lines = new List<string> { "// Generated by Gorgeous UBT rules from fingerprinted guard data. Do not edit.", "#pragma once", "#define GORGEOUS_GUARD_REQUIREMENTS_SCHEMA_VERSION 1" };
+        var runtimeTypes = new HashSet<string>(new[] { "Runtime", "RuntimeNoCommandlet", "RuntimeAndProgram", "CookedOnly", "ClientOnly", "ClientOnlyNoCommandlet", "ServerOnly" });
+        foreach (var guard in guards.OrderBy(g => g.Id, StringComparer.Ordinal))
+        {
+            bool active = Active(guard);
+            var mandatory = new List<string>(); var optional = new List<string>();
+            foreach (var requirement in guard.Data.GetObjectArrayField("RequiredPlugins"))
+            {
+                string name = requirement.GetStringField("Name");
+                if (target.Type != TargetType.Editor && plugins.TryGetValue(name, out var info) && info.Descriptor.Modules != null && info.Descriptor.Modules.Count > 0 && !info.Descriptor.Modules.Any(m => runtimeTypes.Contains(m.Type.ToString()))) continue;
+                if (!enabled.Contains(name)) (requirement.GetBoolField("Optional") ? optional : mandatory).Add("plugin " + name);
+            }
+            foreach (var requirement in guard.Data.GetObjectArrayField("RequiredBlueprintPacks"))
+            {
+                string name = requirement.GetStringField("Name");
+                if (!ids.TryGetValue(name, out var dependency) || !Active(dependency)) (requirement.GetBoolField("Optional") ? optional : mandatory).Add("pack " + name);
+            }
+            string symbol = "GORGEOUS_GUARD_" + Symbol(guard.Id);
+            lines.Add($"#define {symbol}_ACTIVE {(active ? 1 : 0)}");
+            lines.Add($"#define {symbol}_REQUIREMENTS_MET {(mandatory.Count == 0 ? 1 : 0)}");
+            if (active && mandatory.Count > 0) lines.Add("#error \"Gorgeous guard " + Message(guard.Id) + " requires " + Message(string.Join(", ", mandatory)) + "\"");
+            if (active && optional.Count > 0) lines.Add("#pragma message(\"Optional Gorgeous guard dependency unavailable: " + Message(guard.Id + ": " + string.Join(", ", optional)) + "\")");
+        }
+        string header = string.Join("\n", lines) + "\n";
+        // UBT owns the generated include directory. No global forced includes or public PCH flags.
+        module.GenerateHeaderFuncs.Add(("GorgeousGuardRequirements", (logger, directory) =>
+        {
+            string path = Path.Combine(directory.FullName, "GorgeousGuardRequirements.h");
+            Directory.CreateDirectory(directory.FullName);
+            if (!File.Exists(path) || File.ReadAllText(path) != header) File.WriteAllText(path, header, new System.Text.UTF8Encoding(false));
+        }));
+    }
+}
+
 public abstract class GorgeousModuleRules : ModuleRules
 {
 	private static readonly string[] BasePublicDependencies = {
@@ -74,6 +215,18 @@ public abstract class GorgeousModuleRules : ModuleRules
 	{
 	}
 
+    private static void TryWriteAllLines(string path, IEnumerable<string> lines)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(path);
+            if (dir != null) Directory.CreateDirectory(dir);
+            File.WriteAllLines(path, lines);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+    }
+
 	protected void ApplyGorgeousBuildSettings(GorgeousBuildSettings Settings)
 	{
 		// Normalize settings
@@ -88,6 +241,10 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 		AddPublicDependency(BasePublicDependencies);
 		AddPrivateDependency(BasePrivateDependencies);
+		if (Name == "GorgeousCoreRuntime")
+		{
+			GorgeousGuardBuildRequirements.Register(this, Target, Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..")), EngineDirectory);
+		}
 
 		var platformAsString = Target.Platform.ToString().ToUpper();
 		PublicDefinitions.Add("IS_" + platformAsString + "_PLATFORM=1");
@@ -112,6 +269,13 @@ public abstract class GorgeousModuleRules : ModuleRules
 		ApplyFrozenInferredDependencies(Settings);
 		}
 		ApplyAutoIncludePaths(Settings);
+        PublicAdditionalLibraries.AddRange(Settings.AdditionalLibraries);
+        foreach(var library in Settings.AdditionalDynamicLibraries)
+        {
+            PublicDelayLoadDLLs.Add(Path.GetFileName(library));
+            RuntimeDependencies.Add(library.Contains("$(",StringComparison.Ordinal) || Path.IsPathRooted(library)
+                ? library : Path.GetFullPath(Path.Combine(ModuleDirectory,library)));
+        }
 
 		OptimizeCode = CodeOptimization.InShippingBuildsOnly;
 	}
@@ -191,7 +355,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		// Save for debugging
 		var debugFile = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousIncludeDebug.json");
 		var debugDir = Path.GetDirectoryName(debugFile);
-		if (debugDir != null) Directory.CreateDirectory(debugDir);
+		// Directory creation is handled by TryWriteAllLines.
 
 		var dict = new Dictionary<string, List<string>>();
 		if (File.Exists(debugFile))
@@ -230,7 +394,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		output.Add("  ]");
 		output.Add("}");
 
-		File.WriteAllLines(debugFile, output);
+		TryWriteAllLines(debugFile, output);
 	}
 
 	private void ApplyAutoIncludePaths(GorgeousBuildSettings Settings)
@@ -354,7 +518,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		{
 			var debugPath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousMacroDebug.json");
 			var dir = Path.GetDirectoryName(debugPath);
-			if (dir != null) Directory.CreateDirectory(dir);
+			// Best-effort directory creation is performed by TryWriteAllLines.
 
 			var lines = new List<string> { "{", $"  \"Module\": \"{Name}\",", "  \"PublicDefinitions\": [" };
 			var macroList = PublicDefinitions.ToList();
@@ -366,7 +530,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 			lines.Add("  ]");
 			lines.Add("}");
 
-			File.WriteAllLines(debugPath, lines);
+			TryWriteAllLines(debugPath, lines);
 		}
 		catch (Exception) { /* Fail silently */ }
 	}
@@ -493,35 +657,35 @@ public abstract class GorgeousModuleRules : ModuleRules
 		string PluginsDirectory,
 		string? ProjectDescriptorPath)
 	{
-		var descriptorPaths = Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories).ToList();
-		if (!string.IsNullOrWhiteSpace(ProjectDescriptorPath) && File.Exists(ProjectDescriptorPath))
-		{
-			descriptorPaths.Add(ProjectDescriptorPath);
-		}
-
-		var escapedPluginName = Regex.Escape(PluginName);
-		var enabledReferencePattern = $"\\\"Name\\\"\\s*:\\s*\\\"{escapedPluginName}\\\".*?\\\"Enabled\\\"\\s*:\\s*true";
-		foreach (var descriptorPath in descriptorPaths)
-		{
-			try
-			{
-				if (Regex.IsMatch(File.ReadAllText(descriptorPath), enabledReferencePattern, RegexOptions.IgnoreCase | RegexOptions.Singleline))
-				{
-					return true;
-				}
-			}
-			catch (Exception) { }
-		}
-
-		try
-		{
-			return Regex.IsMatch(File.ReadAllText(PluginDescriptorPath), "\\\"EnabledByDefault\\\"\\s*:\\s*true", RegexOptions.IgnoreCase);
-		}
-		catch (Exception)
-		{
-			return false;
-		}
-	}
+        // Explicit project references win, including false. Parse JSON objects rather
+        // than allowing a regex to match the next plugin's Enabled field.
+        bool? ReadReference(string path)
+        {
+            try
+            {
+                if (JsonObject.TryRead(new FileReference(path), out var doc) && doc.TryGetObjectArrayField("Plugins", out var refs))
+                    foreach (var reference in refs)
+                        if (reference.TryGetStringField("Name", out var name) &&
+                            string.Equals(name, PluginName, StringComparison.OrdinalIgnoreCase) &&
+                            reference.TryGetBoolField("Enabled", out var enabled))
+                            return enabled;
+            }
+            catch (Exception) { }
+            return null;
+        }
+        if (!string.IsNullOrWhiteSpace(ProjectDescriptorPath) && File.Exists(ProjectDescriptorPath))
+        {
+            var enabled = ReadReference(ProjectDescriptorPath);
+            if (enabled.HasValue) return enabled.Value;
+        }
+        foreach (var path in Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories))
+            if (ReadReference(path) == true) return true;
+        try
+        {
+            return JsonObject.TryRead(new FileReference(PluginDescriptorPath), out var doc) && doc.TryGetBoolField("EnabledByDefault", out var enabled) && enabled;
+        }
+        catch (Exception) { return false; }
+    }
 
 	/// <summary>
 	/// The current standard format for General System macros.
@@ -592,7 +756,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 	private DependencyCache LoadOrGenerateDependencyCache(
 		GorgeousBuildSettings Settings,
-		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
+		IReadOnlyDictionary<string, long> PreprocessorDefinitions)
 	{
 		var cachePath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousDepsCache.json");
 		var sourceSignature = BuildSourceSignature();
@@ -634,7 +798,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		}
 
 		var dirName = Path.GetDirectoryName(cachePath);
-		if (dirName != null) Directory.CreateDirectory(dirName);
+		// Best-effort directory creation is performed by TryWriteAllLines.
 		var generated = GenerateDependencyCache(Settings, PreprocessorDefinitions);
 		generated.SourceSignature = sourceSignature;
 		generated.PreprocessorSignature = preprocessorSignature;
@@ -661,7 +825,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		output.Add($"  \"PreprocessorSignature\": \"{generated.PreprocessorSignature}\"");
 		
 		output.Add("}");
-		File.WriteAllLines(cachePath, output);
+		TryWriteAllLines(cachePath, output);
 		return generated;
 	}
 
@@ -671,7 +835,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 	/// </summary>
 	private DependencyCache LoadOrCreateFrozenDependencyCache(
 		GorgeousBuildSettings Settings,
-		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
+		IReadOnlyDictionary<string, long> PreprocessorDefinitions)
 	{
 		var cachePath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousDepsCache.json");
 		if (File.Exists(cachePath))
@@ -705,7 +869,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		generated.SourceSignature = BuildSourceSignature();
 		generated.PreprocessorSignature = BuildPreprocessorSignature(PreprocessorDefinitions);
 		var cacheDirectory = Path.GetDirectoryName(cachePath);
-		if (cacheDirectory != null) Directory.CreateDirectory(cacheDirectory);
+		// Best-effort directory creation is performed by TryWriteAllLines.
 		WriteDependencyCache(cachePath, generated);
 		Console.WriteLine($"Gorgeous inferred dependency scan is disabled for {Name}; created initial frozen cache at {cachePath}.");
 		return generated;
@@ -722,12 +886,12 @@ public abstract class GorgeousModuleRules : ModuleRules
 		output.Add($"  \"SourceSignature\": \"{Cache.SourceSignature}\",");
 		output.Add($"  \"PreprocessorSignature\": \"{Cache.PreprocessorSignature}\"");
 		output.Add("}");
-		File.WriteAllLines(CachePath, output);
+		TryWriteAllLines(CachePath, output);
 	}
 
 	private DependencyCache GenerateDependencyCache(
 		GorgeousBuildSettings Settings,
-		IReadOnlyDictionary<string, bool> PreprocessorDefinitions)
+		IReadOnlyDictionary<string, long> PreprocessorDefinitions)
 	{
 		var exclusions = new HashSet<string>(Settings.ModulesToExclude ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 		var publicPath = Path.Combine(ModuleDirectory, "Public");
@@ -755,7 +919,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		string Root,
 		HashSet<string> Exclusions,
 		Dictionary<string, string> HeaderMap,
-		IReadOnlyDictionary<string, bool> PreprocessorDefinitions,
+		IReadOnlyDictionary<string, long> PreprocessorDefinitions,
 		List<string> Diagnostics)
 	{
 		if (!Directory.Exists(Root)) yield break;
@@ -769,10 +933,12 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var discovered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var file in files)
 		{
-			var definitions = new Dictionary<string, bool>(PreprocessorDefinitions, StringComparer.OrdinalIgnoreCase);
+			var definitions = new Dictionary<string, long>(PreprocessorDefinitions, StringComparer.OrdinalIgnoreCase);
 			var conditionStack = new Stack<PreprocessorConditionFrame>();
-			foreach (var line in File.ReadLines(file))
+            bool inBlockComment=false;
+			foreach (var rawLine in File.ReadLines(file))
 			{
+                var line=StripSourceComments(rawLine, ref inBlockComment);
 				if (TryProcessPreprocessorDirective(line, definitions, conditionStack))
 				{
 					continue;
@@ -783,7 +949,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 					continue;
 				}
 
-				var headerName = ExtractHeaderCandidate(line);
+				var headerName = ExtractHeaderCandidate(ResolveVersionInclude(line, definitions));
 				if (headerName == null)
 				{
 					if (line.Contains("#include", StringComparison.Ordinal)) Diagnostics.Add($"Skipped macro or malformed include: {file}: {line.Trim()}");
@@ -858,7 +1024,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 	private void WriteInferenceReport(IEnumerable<string> PublicDependencies, IEnumerable<string> PrivateDependencies, IEnumerable<string> Diagnostics)
 	{
 		var reportPath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousInferredDependencies.json");
-		Directory.CreateDirectory(Path.GetDirectoryName(reportPath)!);
+		// Best-effort directory creation is performed by TryWriteAllLines.
 		var lines = new List<string> { "{", $"  \"Module\": \"{Name}\",", "  \"PublicDependencies\": [" };
 		var publicItems = PublicDependencies.OrderBy(item => item).ToList();
 		for (var index = 0; index < publicItems.Count; ++index) lines.Add($"    \"{publicItems[index]}\"{(index + 1 < publicItems.Count ? "," : string.Empty)}");
@@ -876,7 +1042,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		}
 		lines.Add("  ]");
 		lines.Add("}");
-		File.WriteAllLines(reportPath, lines);
+		TryWriteAllLines(reportPath, lines);
 	}
 
 	private sealed class PreprocessorConditionFrame
@@ -893,7 +1059,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 
 	private static bool TryProcessPreprocessorDirective(
 		string Line,
-		Dictionary<string, bool> Definitions,
+		Dictionary<string, long> Definitions,
 		Stack<PreprocessorConditionFrame> ConditionStack)
 	{
 		var directiveMatch = Regex.Match(Line, @"^\s*#\s*(?<directive>if|ifdef|ifndef|elif|else|endif|define|undef)\b(?<argument>.*)$");
@@ -913,8 +1079,8 @@ public abstract class GorgeousModuleRules : ModuleRules
 				var parentActive = IsPreprocessorBranchActive(ConditionStack);
 				var condition = directive switch
 				{
-					"ifdef" => Definitions.TryGetValue(argument, out var ifdefValue) && ifdefValue,
-					"ifndef" => !Definitions.TryGetValue(argument, out var ifndefValue) || !ifndefValue,
+					"ifdef" => Definitions.ContainsKey(argument),
+					"ifndef" => !Definitions.ContainsKey(argument),
 					_ => EvaluatePreprocessorExpression(argument, Definitions)
 				};
 				ConditionStack.Push(new PreprocessorConditionFrame
@@ -951,8 +1117,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 					var definition = Regex.Match(argument, @"^(?<name>[A-Za-z_]\w*)(?:\s+(?<value>\S+))?");
 					if (definition.Success)
 					{
-						Definitions[definition.Groups["name"].Value] = !definition.Groups["value"].Success
-							|| !string.Equals(definition.Groups["value"].Value, "0", StringComparison.Ordinal);
+						Definitions[definition.Groups["name"].Value] = definition.Groups["value"].Success ? ParsePreprocessorInteger(definition.Groups["value"].Value) : 1;
 					}
 				}
 				return true;
@@ -964,100 +1129,89 @@ public abstract class GorgeousModuleRules : ModuleRules
 		}
 	}
 
-	private static bool EvaluatePreprocessorExpression(string Expression, IReadOnlyDictionary<string, bool> Definitions)
+
+    private static long ParsePreprocessorInteger(string value)
+    {
+        value=value.Trim().TrimEnd('u','U','l','L');
+        if (value.StartsWith("0x",StringComparison.OrdinalIgnoreCase))
+            return long.TryParse(value.Substring(2),System.Globalization.NumberStyles.HexNumber,System.Globalization.CultureInfo.InvariantCulture,out var hex)?hex:0;
+        if (long.TryParse(value,out var number)) return number;
+        return string.Equals(value,"true",StringComparison.OrdinalIgnoreCase)?1:0;
+    }
+
+    private static bool EvaluatePreprocessorExpression(string expression, IReadOnlyDictionary<string,long> definitions)
+    {
+        expression=Regex.Replace(expression,@"UE_VERSION_(NEWER_THAN|OLDER_THAN|AT_LEAST)\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)",m=>{
+            long Get(string name)=>definitions.TryGetValue(name,out var v)?v:0;
+            var installed=new[]{Get("ENGINE_MAJOR_VERSION"),Get("ENGINE_MINOR_VERSION"),Get("ENGINE_PATCH_VERSION")};
+            var required=new[]{long.Parse(m.Groups[2].Value),long.Parse(m.Groups[3].Value),long.Parse(m.Groups[4].Value)};
+            int compare=0; for(int i=0;i<3 && compare==0;++i) compare=installed[i].CompareTo(required[i]);
+            bool yes=m.Groups[1].Value=="NEWER_THAN"?compare>0:m.Groups[1].Value=="OLDER_THAN"?compare<0:compare>=0;
+            return yes?"1":"0";
+        });
+        expression=Regex.Replace(expression,@"defined\s*\(\s*([A-Za-z_]\w*)\s*\)",m=>definitions.ContainsKey(m.Groups[1].Value)?"1":"0");
+        expression=Regex.Replace(expression,@"defined\s+([A-Za-z_]\w*)",m=>definitions.ContainsKey(m.Groups[1].Value)?"1":"0");
+        expression=Regex.Replace(expression,@"\b[A-Za-z_]\w*\b",m=>definitions.TryGetValue(m.Value,out var v)?v.ToString(System.Globalization.CultureInfo.InvariantCulture):"0");
+        try { return new PreprocessorExpressionParser(expression).Parse(); } catch(FormatException) { return false; } catch(OverflowException) { return false; }
+    }
+
+    // C integer-expression precedence, sufficient for build/version feature guards.
+    private sealed class PreprocessorExpressionParser
+    {
+        private readonly string text; private int position;
+        public PreprocessorExpressionParser(string expression) { text=expression; }
+        public bool Parse() { long v=Or(); Space(); return position==text.Length && v!=0; }
+        private long Or() { long v=And(); while(Take("||")) {long r=And();v=v!=0||r!=0?1:0;} return v; }
+        private long And() { long v=BitOr(); while(Take("&&")) {long r=BitOr();v=v!=0&&r!=0?1:0;} return v; }
+        private long BitOr() { long v=BitXor(); while(Single("|","||"))v|=BitXor(); return v; }
+        private long BitXor() { long v=BitAnd(); while(Take("^"))v^=BitAnd(); return v; }
+        private long BitAnd() { long v=Equal(); while(Single("&","&&"))v&=Equal(); return v; }
+        private long Equal() { long v=Relation(); while(true) {if(Take("=="))v=v==Relation()?1:0;else if(Take("!="))v=v!=Relation()?1:0;else return v;} }
+        private long Relation() { long v=Shift(); while(true) {if(Take("<="))v=v<=Shift()?1:0;else if(Take(">="))v=v>=Shift()?1:0;else if(Take("<"))v=v<Shift()?1:0;else if(Take(">"))v=v>Shift()?1:0;else return v;} }
+        private long Shift() { long v=Add(); while(true) {if(Take("<<"))v<<=(int)Add();else if(Take(">>"))v>>=(int)Add();else return v;} }
+        private long Add() { long v=Multiply(); while(true) {if(Take("+"))v+=Multiply();else if(Take("-"))v-=Multiply();else return v;} }
+        private long Multiply() { long v=Unary(); while(true) {if(Take("*"))v*=Unary();else if(Take("/")){long r=Unary();v=r==0?0:v/r;}else if(Take("%")){long r=Unary();v=r==0?0:v%r;}else return v;} }
+        private long Unary()
+        {
+            if(Take("!"))return Unary()==0?1:0; if(Take("~"))return ~Unary(); if(Take("-"))return -Unary(); if(Take("+"))return Unary();
+            if(Take("(")){long v=Or();if(!Take(")"))throw new FormatException();return v;}
+            Space();int start=position;while(position<text.Length && char.IsLetterOrDigit(text[position]))++position;
+            if(start==position)throw new FormatException();return ParsePreprocessorInteger(text.Substring(start,position-start));
+        }
+        private void Space(){while(position<text.Length && char.IsWhiteSpace(text[position]))++position;}
+        private bool Take(string token){Space();if(!text.AsSpan(position).StartsWith(token,StringComparison.Ordinal))return false;position+=token.Length;return true;}
+        private bool Single(string token,string doubled){Space();return !text.AsSpan(position).StartsWith(doubled,StringComparison.Ordinal)&&Take(token);}
+    }
+
+	private Dictionary<string, long> BuildPreprocessorDefinitions()
 	{
-		Expression = Regex.Replace(Expression, @"defined\s*\(\s*(?<name>[A-Za-z_]\w*)\s*\)", Match =>
-			Definitions.TryGetValue(Match.Groups["name"].Value, out var value) && value ? "1" : "0");
-		Expression = Regex.Replace(Expression, @"defined\s+(?<name>[A-Za-z_]\w*)", Match =>
-			Definitions.TryGetValue(Match.Groups["name"].Value, out var value) && value ? "1" : "0");
-		Expression = Regex.Replace(Expression, @"\b[A-Za-z_]\w*\b", Match =>
-			Definitions.TryGetValue(Match.Value, out var value) && value ? "1" : "0");
-
-		return new PreprocessorExpressionParser(Expression).Parse();
-	}
-
-	private sealed class PreprocessorExpressionParser
-	{
-		private readonly string Expression;
-		private int Position;
-
-		public PreprocessorExpressionParser(string InExpression) => Expression = InExpression;
-
-		public bool Parse()
-		{
-			var value = ParseOr();
-			SkipWhitespace();
-			return Position == Expression.Length && value;
-		}
-
-		private bool ParseOr()
-		{
-			var value = ParseAnd();
-			while (TryConsume("||")) value |= ParseAnd();
-			return value;
-		}
-
-		private bool ParseAnd()
-		{
-			var value = ParseUnary();
-			while (TryConsume("&&")) value &= ParseUnary();
-			return value;
-		}
-
-		private bool ParseUnary()
-		{
-			if (TryConsume("!")) return !ParseUnary();
-			if (TryConsume("("))
-			{
-				var value = ParseOr();
-				return TryConsume(")") && value;
-			}
-
-			SkipWhitespace();
-			var start = Position;
-			while (Position < Expression.Length && char.IsDigit(Expression[Position])) ++Position;
-			return start != Position && !string.Equals(Expression.Substring(start, Position - start), "0", StringComparison.Ordinal);
-		}
-
-		private bool TryConsume(string Token)
-		{
-			SkipWhitespace();
-			if (!Expression.AsSpan(Position).StartsWith(Token, StringComparison.Ordinal)) return false;
-			Position += Token.Length;
-			return true;
-		}
-
-		private void SkipWhitespace()
-		{
-			while (Position < Expression.Length && char.IsWhiteSpace(Expression[Position])) ++Position;
-		}
-	}
-
-	private Dictionary<string, bool> BuildPreprocessorDefinitions()
-	{
-		var definitions = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+		var definitions = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 		AddDefinitions(definitions, Target.GlobalDefinitions);
 		AddDefinitions(definitions, PublicDefinitions);
 		AddDefinitions(definitions, PrivateDefinitions);
+        definitions["ENGINE_MAJOR_VERSION"]=Target.Version.MajorVersion;
+        definitions["ENGINE_MINOR_VERSION"]=Target.Version.MinorVersion;
+        definitions["ENGINE_PATCH_VERSION"]=Target.Version.PatchVersion;
+        definitions["WITH_EDITOR"]=Target.bBuildEditor?1:0;
+        definitions["WITH_EDITORONLY_DATA"]=Target.bBuildWithEditorOnlyData?1:0;
 		return definitions;
 	}
 
-	private static void AddDefinitions(Dictionary<string, bool> Definitions, IEnumerable<string> RawDefinitions)
+	private static void AddDefinitions(Dictionary<string, long> Definitions, IEnumerable<string> RawDefinitions)
 	{
 		foreach (var rawDefinition in RawDefinitions)
 		{
 			var match = Regex.Match(rawDefinition, @"^(?<name>[A-Za-z_]\w*)(?:=(?<value>.*))?$");
 			if (!match.Success) continue;
-			Definitions[match.Groups["name"].Value] = !match.Groups["value"].Success
-				|| !string.Equals(match.Groups["value"].Value, "0", StringComparison.Ordinal);
+			Definitions[match.Groups["name"].Value] = match.Groups["value"].Success ? ParsePreprocessorInteger(match.Groups["value"].Value) : 1;
 		}
 	}
 
 	private static bool GetDefinitionValue(IEnumerable<string> RawDefinitions, string Name, bool DefaultValue)
 	{
-		var definitions = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+		var definitions = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 		AddDefinitions(definitions, RawDefinitions);
-		return definitions.TryGetValue(Name, out var value) ? value : DefaultValue;
+		return definitions.TryGetValue(Name, out var value) ? value != 0 : DefaultValue;
 	}
 
 	private string BuildSourceSignature()
@@ -1074,10 +1228,10 @@ public abstract class GorgeousModuleRules : ModuleRules
 		return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n", files))));
 	}
 
-	private static string BuildPreprocessorSignature(IReadOnlyDictionary<string, bool> Definitions)
+	private static string BuildPreprocessorSignature(IReadOnlyDictionary<string, long> Definitions)
 	{
 		var text = string.Join("\n", Definitions.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-			.Select(pair => $"{pair.Key}={Convert.ToInt32(pair.Value)}"));
+			.Select(pair => $"{pair.Key}={pair.Value}"));
 		return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)));
 	}
 
@@ -1087,9 +1241,34 @@ public abstract class GorgeousModuleRules : ModuleRules
 		return lineComment >= 0 ? Value.Substring(0, lineComment) : Value;
 	}
 
+
+    private static string StripSourceComments(string line, ref bool block)
+    {
+        var result=new System.Text.StringBuilder(); bool quoted=false, escaped=false;
+        for(int i=0;i<line.Length;++i)
+        {
+            char c=line[i], next=i+1<line.Length?line[i+1]:'\0';
+            if(block){if(c=='*'&&next=='/'){block=false;++i;result.Append(' ');}continue;}
+            if(!quoted&&c=='/'&&next=='*'){block=true;++i;continue;}
+            if(!quoted&&c=='/'&&next=='/')break;
+            result.Append(c);
+            if(c=='"'&&!escaped)quoted=!quoted;
+            escaped=c=='\\'&&!escaped;
+        }
+        return result.ToString();
+    }
+    private static string ResolveVersionInclude(string line, IReadOnlyDictionary<string,long> definitions)
+    {
+        return Regex.Replace(line,@"GORGEOUS_(\d)(\d+)_SWITCH\s*\(\s*""([^""]+)""\s*,\s*""([^""]+)""\s*\)",m=>{
+            definitions.TryGetValue("ENGINE_MAJOR_VERSION",out var major);
+            definitions.TryGetValue("ENGINE_MINOR_VERSION",out var minor);
+            long requiredMajor=long.Parse(m.Groups[1].Value), requiredMinor=long.Parse(m.Groups[2].Value);
+            return "\""+m.Groups[major>requiredMajor||(major==requiredMajor&&minor>=requiredMinor)?4:3].Value+"\"";
+        });
+    }
 	private string? ExtractHeaderCandidate(string Line)
 	{
-		if (!Line.Contains("#include", StringComparison.Ordinal)) return null;
+		if (!Regex.IsMatch(Line, @"^\s*#\s*include\b")) return null;
 		var match = Regex.Match(Line, "#include\\s*[<\"](?<path>[^>\"]+)[>\"]");
 		if (!match.Success) return null;
 
@@ -1099,10 +1278,51 @@ public abstract class GorgeousModuleRules : ModuleRules
 		return candidate.Trim();
 	}
 
+    private static readonly Dictionary<string,Dictionary<string,string>> HeaderMapsThisRun = new(StringComparer.OrdinalIgnoreCase);
+    private static string BuildHeaderSearchSignature(IEnumerable<string> roots)
+    {
+        var entries=new List<string>();
+        try
+        {
+            foreach(var root in roots.Where(Directory.Exists))
+            {
+                entries.Add(root+"|"+Directory.GetLastWriteTimeUtc(root).Ticks);
+                foreach(var rules in Directory.EnumerateFiles(root,"*.Build.cs",SearchOption.AllDirectories))
+                {
+                    entries.Add(rules);
+                    var module=Path.GetDirectoryName(rules)!;
+                    foreach(var folder in new[]{"Public","Private","Classes"})
+                    {
+                        var path=Path.Combine(module,folder); if(!Directory.Exists(path))continue;
+                        entries.Add(path+"|"+Directory.GetLastWriteTimeUtc(path).Ticks);
+                        foreach(var dir in Directory.EnumerateDirectories(path,"*",SearchOption.AllDirectories))
+                            entries.Add(dir+"|"+Directory.GetLastWriteTimeUtc(dir).Ticks);
+                    }
+                }
+            }
+        }
+        catch(IOException) { return Guid.NewGuid().ToString(); }
+        catch(UnauthorizedAccessException) { return Guid.NewGuid().ToString(); }
+        entries.Sort(StringComparer.OrdinalIgnoreCase);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(string.Join("\n",entries))));
+    }
+    private static bool HeaderSignatureMatches(string path,string signature)
+    {
+        try { return File.Exists(path)&&File.ReadAllText(path).Trim()==signature; }
+        catch(IOException) { return false; }
+        catch(UnauthorizedAccessException) { return false; }
+    }
+
 	private Dictionary<string, string> GetOrGenerateHeaderMap(string CachePath)
 	{
-		var regenerate = ShouldForceDependencyRescan();
-		if (!regenerate && File.Exists(CachePath))
+        var regenerate=ShouldForceDependencyRescan();
+        if(!regenerate && HeaderMapsThisRun.TryGetValue(CachePath,out var existing)) return existing;
+        var engineRoot=Path.GetFullPath(Target.RelativeEnginePath);
+        var projectRoot=Target.ProjectFile?.Directory.FullName ?? Path.Combine(engineRoot,"..","Project");
+        var roots=new[]{Path.Combine(engineRoot,"Source","Runtime"),Path.Combine(engineRoot,"Source","Editor"),Path.Combine(engineRoot,"Source","Developer"),Path.Combine(engineRoot,"Plugins"),Path.Combine(projectRoot,"Plugins"),Path.Combine(projectRoot,"Source")};
+        var signature=BuildHeaderSearchSignature(roots);
+        var signatureFile=CachePath+".signature";
+		if (!regenerate && File.Exists(CachePath) && HeaderSignatureMatches(signatureFile,signature))
 		{
 			try
 			{
@@ -1113,7 +1333,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 				{
 					mapLoaded[match.Groups[1].Value] = match.Groups[2].Value;
 				}
-				if (mapLoaded.Count > 0) return mapLoaded;
+				if (mapLoaded.Count > 0) { HeaderMapsThisRun[CachePath]=mapLoaded; return mapLoaded; }
 			}
 			catch (Exception) { }
 		}
@@ -1131,7 +1351,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		ScanDirectoryForHeaders(Path.Combine(projectDir, "Source"), map);
 
 		var cacheDirName = Path.GetDirectoryName(CachePath);
-		if (cacheDirName != null) Directory.CreateDirectory(cacheDirName);
+		// Best-effort directory creation is performed by TryWriteAllLines.
 		
 		var output = new List<string>();
 		output.Add("{");
@@ -1143,7 +1363,9 @@ public abstract class GorgeousModuleRules : ModuleRules
 			i++;
 		}
 		output.Add("}");
-		File.WriteAllLines(CachePath, output);
+		TryWriteAllLines(CachePath, output);
+        TryWriteAllLines(signatureFile,new[]{signature});
+        HeaderMapsThisRun[CachePath]=map;
 
 		return map;
 	}

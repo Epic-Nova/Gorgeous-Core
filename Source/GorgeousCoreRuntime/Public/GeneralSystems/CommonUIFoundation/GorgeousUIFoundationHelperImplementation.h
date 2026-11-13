@@ -60,22 +60,12 @@
 	void Class::OnThemeApplied_BP_Implementation(const UGorgeousUITheme_DA* Theme) {} \
 	void Class::NotifyReadyForStateSwap() \
 	{ \
-		if (UWorld* __World = GetWorld()) \
-		{ \
-			if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-			{ \
-				if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-				{ \
-					if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
-					{ \
-						__Subsystem->NotifyWidgetTransitionComplete(this); \
-					} \
-				} \
-			} \
-		} \
+		if (auto* __Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this)) __Subsystem->NotifyWidgetTransitionComplete(this); \
 	} \
 	void Class::ApplyOverlayConfig(const FGorgeousUIStateConfig& Config) \
 	{ \
+		if (Config.State) { if (auto* __Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this); __Subsystem && __Subsystem->GetMostRecentUIState() != Config.State) return; } \
+		UGorgeousUIFoundationSubsystem::PlayNamedWidgetAnimation(this, Config.AnimationName); \
 		if (UWidget* __Widget = Cast<UWidget>(this)) \
 		{ \
 			__Widget->SetVisibility(Config.bIsVisible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed); \
@@ -143,17 +133,5 @@
 	} \
 	void Class::NotifyReadyForStateSwap() \
 	{ \
-		if (UWorld* __World = GetWorld()) \
-		{ \
-			if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-			{ \
-				if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-				{ \
-					if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
-					{ \
-						__Subsystem->NotifyWidgetTransitionComplete(this); \
-					} \
-				} \
-			} \
-		} \
+		if (auto* __Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this)) __Subsystem->NotifyWidgetTransitionComplete(this); \
 	}

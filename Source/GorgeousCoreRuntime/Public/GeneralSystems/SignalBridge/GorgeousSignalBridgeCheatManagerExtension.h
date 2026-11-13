@@ -35,9 +35,9 @@
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/GorgeousSignalBridgeCheatManagerExtension",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#console-commands-and-stats",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousSignalBridgeCheatManagerExtension : public UCheatManagerExtension

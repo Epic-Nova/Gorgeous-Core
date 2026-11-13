@@ -9,6 +9,10 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousSingleton.h"
+#include "Engine/World.h"
+#include "Engine/GameInstance.h"
+#include "Misc/CoreDelegates.h"
+#include "UObject/UObjectBase.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -41,6 +45,30 @@ namespace
 	}
 
 	TMap<FGorgeousSingletonKey, TStrongObjectPtr<UObject>> GSingletonInstances;
+	FDelegateHandle GSingletonCleanupHandle;
+	FDelegateHandle GSingletonPreExitHandle;
+	bool GSingletonExitStarted = false;
+
+	void BindSingletonCleanup()
+	{
+		if (GSingletonCleanupHandle.IsValid() || GSingletonExitStarted) { return; }
+		GSingletonPreExitHandle = FCoreDelegates::OnPreExit.AddLambda([]
+		{
+			GSingletonExitStarted = true;
+			UGorgeousSingleton::DestroyAllSingletons();
+		});
+		GSingletonCleanupHandle = FWorldDelegates::OnWorldCleanup.AddLambda([](UWorld* World, bool bSessionEnded, bool)
+		{
+			for (auto It = GSingletonInstances.CreateIterator(); It; ++It)
+			{
+				const auto& Key = It.Key();
+				const bool bWorldEnded = Key.Scope == EGorgeousSingletonScope::World && Key.Context.Get() == World;
+				const bool bInstanceEnded = bSessionEnded && Key.Scope == EGorgeousSingletonScope::GameInstance
+					&& Key.Context.Get() == World->GetGameInstance();
+				if (bWorldEnded || bInstanceEnded) { It.RemoveCurrent(); }
+			}
+		});
+	}
 
 	UObject* ResolveContextObject(UObject* WorldContextObject, EGorgeousSingletonScope Scope)
 	{
@@ -85,12 +113,14 @@ namespace
 
 UObject* UGorgeousSingleton::GetOrCreateSingleton(UClass* SingletonClass, UObject* WorldContextObject, EGorgeousSingletonScope Scope)
 {
-	if (!SingletonClass)
+	if (GSingletonExitStarted || !UObjectInitialized() || GExitPurge || !SingletonClass || SingletonClass->HasAnyClassFlags(CLASS_Abstract))
 	{
 		return nullptr;
 	}
 
+	BindSingletonCleanup();
 	UObject* ContextObject = ResolveContextObject(WorldContextObject, Scope);
+	if (!ContextObject && Scope != EGorgeousSingletonScope::Global) { return nullptr; }
 	FGorgeousSingletonKey Key{ SingletonClass, ContextObject, Scope };
 
 	if (TStrongObjectPtr<UObject>* Existing = GSingletonInstances.Find(Key))
@@ -116,7 +146,7 @@ UObject* UGorgeousSingleton::GetOrCreateSingleton(UClass* SingletonClass, UObjec
 
 void UGorgeousSingleton::DestroySingletonByClass(UClass* SingletonClass, UObject* WorldContextObject, EGorgeousSingletonScope Scope)
 {
-	if (!SingletonClass)
+	if (!UObjectInitialized() || GExitPurge || GSingletonExitStarted || !SingletonClass)
 	{
 		return;
 	}
@@ -139,6 +169,13 @@ void UGorgeousSingleton::DestroySingletonByClass(UClass* SingletonClass, UObject
 
 void UGorgeousSingleton::DestroyAllSingletons()
 {
+	FWorldDelegates::OnWorldCleanup.Remove(GSingletonCleanupHandle);
+	GSingletonCleanupHandle.Reset();
+	FCoreDelegates::OnPreExit.Remove(GSingletonPreExitHandle);
+	GSingletonPreExitHandle.Reset();
+	// Module shutdown can occur after UObjectBaseShutdown. Do not inspect a
+	// stale object (even IsValid/IsRooted reads the already destroyed object array).
+	if (!UObjectInitialized() || GExitPurge) { GSingletonInstances.Reset(); return; }
 	for (auto& Pair : GSingletonInstances)
 	{
 		if (UObject* Instance = Pair.Value.Get())

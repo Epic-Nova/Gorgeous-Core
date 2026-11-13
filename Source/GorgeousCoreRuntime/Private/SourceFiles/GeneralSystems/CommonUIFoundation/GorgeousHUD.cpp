@@ -64,9 +64,10 @@ void AGorgeousHUD::BeginPlay()
 	}
 	
 	// Push Default IMC Bindings
-	const ULocalPlayer* LP = GetOwningPlayerController()->GetLocalPlayer();
+	const ULocalPlayer* LP = GetOwningPlayerController() ? GetOwningPlayerController()->GetLocalPlayer() : nullptr;
+	if (!LP) return;
 	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = LP ? LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>() : nullptr;
-	GT_E_LOG_ENSURE(InputSubsystem, "GT.Core.CommonUIFoundation.HUD.DefaultInputMapping", TEXT("Could not find EnhancedInputLocalPlayerSubsystem as InputSubsystem"));
+	if (!InputSubsystem) return;
 
 	const auto FoundationSettings = GetDefault<UGorgeousUIFoundationSettings>();
 	
@@ -149,7 +150,7 @@ void AGorgeousHUD::RefreshActionBar()
 {
 	if (!ActionBarWidget) return;
 
-	UGorgeousUIFoundationSubsystem* Subsystem = GetOwningPlayerController() ? GetOwningPlayerController()->GetLocalPlayer()->GetSubsystem<UGorgeousUIFoundationSubsystem>() : nullptr;
+	UGorgeousUIFoundationSubsystem* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this);
 	if (!Subsystem) return;
 
 	TArray<UGorgeousInputBinding_DA*> Bindings = Subsystem->GetActiveInputBindings();
@@ -158,6 +159,7 @@ void AGorgeousHUD::RefreshActionBar()
 
 	if (Bindings.IsEmpty())
 	{
+		ActionBarWidget->UpdateActionBar({});
 		GT_W_LOG("GT.HUD", TEXT("RefreshActionBar: Skipping refresh. Bindings: %s, Theme: %s"), 
 			Bindings.IsEmpty() ? TEXT("Empty") : TEXT("Valid Data"), 
 			Themes.IsEmpty() ? TEXT("Empty") : TEXT("Valid Data"));
@@ -327,21 +329,8 @@ void AGorgeousHUD::CheckForInputConflicts(FGameplayTag ActionTag, FGameplayTag C
 	FString FirstConsumerName  = FirstConsumer  ? FirstConsumer->GetName()  : TEXT("Unknown");
 	FString SecondConsumerName = SecondConsumer ? SecondConsumer->GetName() : TEXT("Unknown");
 
-	/*GT_W_LOG_FULL_EX(
-		*FString::Printf(TEXT("InputConflict.%s"), *ActionTag.ToString()),
-		TEXT("Input Conflict! Both [%s] and [%s] in context '%s' are fighting for Priority Tier %d on Action '%s'."),
-		4.f,
-		true,  // Screen
-		true,  // Log
-		true,  // Override
-		true,  // TOAST
-		this,
-		nullptr,
-		*FirstConsumerName,
-		*SecondConsumerName,
-		*Context.ToString(),
-		*ActionTag.ToString()
-	);*/
+	GT_W_LOG("GT.UI.InputConflict", TEXT("Input conflict for '%s': '%s' and '%s' share context '%s' at priority %d."),
+		*ActionTag.ToString(), *FirstConsumerName, *SecondConsumerName, *Context.ToString(), Priority);
 }
 
 UGorgeousPrimaryGameLayout* AGorgeousHUD::GetPrimaryLayout() const

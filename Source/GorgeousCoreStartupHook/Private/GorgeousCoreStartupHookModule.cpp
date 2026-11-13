@@ -14,6 +14,8 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Internationalization/Internationalization.h"
 #include "Misc/CoreDelegates.h"
+#include "Misc/App.h"
+#include "../../GorgeousCoreRuntimeUtilities/Public/Helpers/GorgeousVersionComparison.h"
 #include "Runtime/Launch/Resources/Version.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousStartupHook, Log, All);
@@ -29,7 +31,10 @@ public:
 		// so the binary swap can happen before any Gorgeous module loads.
 		// ================================================================
 
-		// --- 0. Resolve GorgeousCore dynamically via IPluginManager ---
+		// Commandlets and unattended runs must never launch or wait on a GUI.
+        if (IsRunningCommandlet() || FApp::IsUnattended()) return;
+
+        // --- 0. Resolve GorgeousCore dynamically via IPluginManager ---
 		// Never hardcode the folder name, the plugin directory can be named anything.
 		TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
 		if (!CorePlugin.IsValid())
@@ -151,7 +156,7 @@ public:
 			const FString PluginName = Plugin->GetName();
 			if (const FString* RequiredVer = MinimumCoreRequirements.Find(PluginName))
 			{
-				if (CurrentCoreVersion != *RequiredVer)
+				if (GorgeousVersionComparison::IsOlder(CurrentCoreVersion, *RequiredVer))
 				{
 					bMismatchDetected = true;
 					MismatchPlugin    = PluginName;
@@ -192,6 +197,8 @@ public:
 				// across installer updates, debug info changes, etc.
 #if PLATFORM_WINDOWS
 				IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dll"), true, false);
+#elif PLATFORM_MAC
+                IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dylib"), true, false);
 #else
 				IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.so"), true, false);
 #endif
@@ -219,6 +226,12 @@ public:
 				UE_LOG(LogGorgeousStartupHook, Log, TEXT("Binary checksum mismatch. Expecting %s, got %s. Launching installer."), *SavedChecksum, *CurrentChecksum);
 			}
 		}
+
+        if (!FParse::Param(FCommandLine::Get(), TEXT("AllowGorgeousStartupRepair")))
+        {
+            UE_LOG(LogGorgeousStartupHook, Warning, TEXT("Core compatibility mismatch. Repair explicitly from Gorgeous Library or use -AllowGorgeousStartupRepair."));
+            return;
+        }
 
 		// --- 6. Mismatch! Update splash and block RIGHT HERE ---
 		// We are still at PostConfigInit, GorgeousCoreRuntime has NOT loaded yet.
@@ -301,8 +314,7 @@ public:
 					FText::AsNumber(ReturnCode)
 				);
 				FMessageDialog::Open(EAppMsgType::Ok, ErrorTitle, ErrorMessage);
-				FPlatformMisc::RequestExit(true);
-				exit(ReturnCode);
+				UE_LOG(LogGorgeousStartupHook, Warning, TEXT("Repair cancelled or failed; editor startup continues."));
 			}
 			else
 			{
@@ -316,16 +328,8 @@ public:
 				*InstallerPath, *Params);
 		}
 
-		// Unload this module once the engine is fully initialized
-		#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
-        FCoreDelegates::GetOnPostEngineInit().AddLambda([]()
-#else
-        FCoreDelegates::OnPostEngineInit.AddLambda([]()
-#endif
-		{
-			FModuleManager::Get().UnloadModule(TEXT("GorgeousCoreStartupHook"));
-			UE_LOG(LogGorgeousStartupHook, Log, TEXT("Unloaded GorgeousCoreStartupHook to free memory."));
-		});
+        // Retain the module until normal shutdown; unloading executing code is unsafe.
+
 	}
 
 	virtual void ShutdownModule() override

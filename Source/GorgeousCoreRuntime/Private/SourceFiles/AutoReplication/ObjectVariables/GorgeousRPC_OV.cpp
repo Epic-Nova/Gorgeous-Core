@@ -33,17 +33,7 @@ void UGorgeousRPC_OV::CaptureResultSet(const TMap<FString, FGorgeousAutoReplicat
 	CachedResultMap = InResults;
 	CachedResults = OrderedResults;
 	bHasCachedResult = CachedResults.Num() > 0;
-	if (bHasCachedResult)
-	{
-		const int32 OwnerIndex = CachedResults.IndexOfByPredicate([](const FGorgeousAutoReplicationRPCResult& Result)
-		{
-			return Result.TargetOwner != nullptr;
-		});
-		if (OwnerIndex > 0)
-		{
-			CachedResults.Swap(0, OwnerIndex);
-		}
-	}
+
 }
 
 void UGorgeousRPC_OV::ResetResult()

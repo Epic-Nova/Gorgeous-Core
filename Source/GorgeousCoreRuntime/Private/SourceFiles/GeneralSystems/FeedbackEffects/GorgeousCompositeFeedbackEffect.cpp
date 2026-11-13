@@ -1,6 +1,6 @@
 #include "FeedbackEffects/GorgeousCompositeFeedbackEffect.h"
 
-void UGorgeousCompositeFeedbackEffect::Execute_Implementation(const FGorgeousFeedbackContext& Context)
+void UGorgeousCompositeFeedbackEffect::PerformExecute(const FGorgeousFeedbackContext& Context)
 {
 	// Execute every child effect whose own execution conditions are satisfied. Children are
 	// responsible for honoring their enabled state, tags and scheduling through CanExecute.
@@ -8,8 +8,20 @@ void UGorgeousCompositeFeedbackEffect::Execute_Implementation(const FGorgeousFee
 	{
 		if (Child && Child->CanExecute(Context))
 		{
-			Child->Execute(Context);
+			Child->PlayFeedback(Context);
 		}
+	}
+}
+
+void UGorgeousCompositeFeedbackEffect::PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted)
+{
+	TArray<UGorgeousFeedbackEffect*> Playable;
+	for (UGorgeousFeedbackEffect* Child : Children) { if (Child && Child->CanExecute(Context)) { Playable.Add(Child); } }
+	if (Playable.IsEmpty()) { OnCompleted.ExecuteIfBound(); return; }
+	const TSharedRef<int32> Remaining = MakeShared<int32>(Playable.Num());
+	for (auto* Child : Playable)
+	{
+		Child->PlayScheduled(Context, FSimpleDelegate::CreateLambda([Remaining, OnCompleted] { if (--*Remaining == 0) { OnCompleted.ExecuteIfBound(); } }));
 	}
 }
 
@@ -40,24 +52,17 @@ bool UGorgeousCompositeFeedbackEffect::CanExecute_Implementation(const FGorgeous
 #if WITH_EDITOR
 void UGorgeousCompositeFeedbackEffect::Preview_Internal()
 {
-	// Iterate the children so the editor preview reflects the full combination of effects.
-	for (UGorgeousFeedbackEffect* Child : Children)
-	{
-		if (Child)
-		{
-			Child->Preview();
-		}
-	}
+	Super::Preview_Internal();
 }
 
 void UGorgeousCompositeFeedbackEffect::StopPreview_Internal()
 {
-	for (UGorgeousFeedbackEffect* Child : Children)
-	{
-		if (Child)
-		{
-			Child->StopPreview();
-		}
-	}
+	Super::StopPreview_Internal();
 }
+
 #endif
+
+void UGorgeousCompositeFeedbackEffect::StopActiveEffects()
+{
+	for (UGorgeousFeedbackEffect* Child : Children) { if (Child) { Child->StopFeedback(); } }
+}

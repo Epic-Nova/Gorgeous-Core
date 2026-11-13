@@ -17,6 +17,7 @@
 #include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCResponder_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousWorldSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -45,19 +46,23 @@
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousWorldSettings",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/WorldSettings/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/#setting-up-the-classes"
 		)
 )
 class GORGEOUSCORERUNTIME_API AGorgeousWorldSettings : public AWorldSettings
 , public IGorgeousQualityOfLifeNodeTarget_I
+, public IGorgeousAutoReplicationRPCResponder_I
 {
 	GENERATED_BODY()
 
 public:
 
 	AGorgeousWorldSettings();
+    virtual void HandleAutoReplicationRPC_Implementation(const FGorgeousQueuedRPC& QueuedRPC) override;
+    UFUNCTION(BlueprintImplementableEvent,Category="Gorgeous World Settings|Networking")
+    void OnAutoReplicationRPCReceived(const FGorgeousQueuedRPC& QueuedRPC,bool bWasHandled);
 
 	virtual void PostInitProperties() override;
 	virtual void PostLoad() override;

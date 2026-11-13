@@ -10,6 +10,7 @@
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
+#include "AutoReplication/Tracking/GorgeousAutoReplicationStatsCollector.h"
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
@@ -279,36 +280,13 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 		return false;
 	}
 
-	if (QueuedRPC.RequestGuid.IsValid())
-	{
-		const FGorgeousAutoReplicationRPCResponderHandle Handle = FGorgeousAutoReplicationRPCResponderHandle::FromController(TargetController);
-		if (Handle.IsValid())
-		{
-			UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, Handle);
-		}
-	}
-
-	UGorgeousAutoReplicationRPCTransporter* TargetTransporter = TargetController->FindComponentByClass<UGorgeousAutoReplicationRPCTransporter>();
-	if (!TargetTransporter)
-	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("PlayerController %s has no AutoReplication transporter. RPC %s dropped."), *TargetController->GetName(), *QueuedRPC.Key.ToString());
-		return false;
-	}
-
-	if (OwningMixin && !OwningMixin->CanControllerReceiveRPC(QueuedRPC, TargetController))
-	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("Blocked AutoReplication RPC %s because controller %s lacks access to key %s."), *QueuedRPC.Payload.HandlerName.ToString(), *TargetController->GetName(), *QueuedRPC.Key.ToString());
-		return false;
-	}
-
-	if (bReliable)
-	{
-		TargetTransporter->ClientReceiveRPCReliable(QueuedRPC);
-	}
-	else
-	{
-		TargetTransporter->ClientReceiveRPCUnreliable(QueuedRPC);
-	}
+    if (OwningMixin && !OwningMixin->CanControllerReceiveRPC(QueuedRPC, TargetController)) return false;
+    UGorgeousAutoReplicationRPCRelayComponent* Relay = TargetController->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+    if (!Relay) return false;
+    if (QueuedRPC.RequestGuid.IsValid())
+        UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, FGorgeousAutoReplicationRPCResponderHandle::FromController(TargetController), GetWorld());
+    if (bReliable) Relay->ClientRelayRPCReliable(QueuedRPC);
+    else Relay->ClientRelayRPCUnreliable(QueuedRPC);
 
 	OnRPCForwarded.Broadcast(QueuedRPC, TargetController);
 	return true;
@@ -316,42 +294,27 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 
 void UGorgeousAutoReplicationRPCTransporter::ForwardRPCToMulticast(const FGorgeousQueuedRPC& QueuedRPC, const bool bReliable)
 {
-	if (QueuedRPC.RequestGuid.IsValid())
-	{
-		if (UWorld* OwnerWorld = GetWorld())
-		{
-			for (FConstPlayerControllerIterator It = OwnerWorld->GetPlayerControllerIterator(); It; ++It)
-			{
-				APlayerController* PlayerController = It->Get();
-				if (!PlayerController)
-				{
-					continue;
-				}
-
-				if (OwningMixin && !OwningMixin->CanControllerReceiveRPC(QueuedRPC, PlayerController))
-				{
-					continue;
-				}
-
-				const FGorgeousAutoReplicationRPCResponderHandle Handle = FGorgeousAutoReplicationRPCResponderHandle::FromController(PlayerController);
-				if (Handle.IsValid())
-				{
-					UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, Handle);
-				}
-			}
-		}
-	}
-
-	if (bReliable)
-	{
-		MulticastReceiveRPCReliable(QueuedRPC);
-	}
-	else
-	{
-		MulticastReceiveRPCUnreliable(QueuedRPC);
-	}
-
-	OnRPCForwarded.Broadcast(QueuedRPC, GetOwner());
+    if (!IsOwnerLocallyAuthoritative() || !GetWorld()) return;
+    TArray<UGorgeousAutoReplicationRPCRelayComponent*> Relays;
+    for (FConstPlayerControllerIterator It=GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        APlayerController* PC=It->Get();
+        if (!PC || PC->IsLocalController() || (OwningMixin && !OwningMixin->CanControllerReceiveRPC(QueuedRPC,PC))) continue;
+        if (Cast<APlayerController>(QueuedRPC.TargetOwnerActor) && PC!=QueuedRPC.TargetOwnerActor) continue;
+        if (auto* Relay=PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>())
+        {
+            Relays.Add(Relay);
+            if (QueuedRPC.RequestGuid.IsValid()) UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid,FGorgeousAutoReplicationRPCResponderHandle::FromController(PC),GetWorld());
+        }
+    }
+    // Expected remote responders must be registered before a synchronous local handler can complete.
+    DeliverRPCLocally(QueuedRPC);
+    for (auto* Relay:Relays)
+    {
+        if (bReliable) Relay->ClientRelayRPCReliable(QueuedRPC);
+        else Relay->ClientRelayRPCUnreliable(QueuedRPC);
+    }
+    OnRPCForwarded.Broadcast(QueuedRPC,GetOwner());
 }
 
 bool UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToClient(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
@@ -546,6 +509,14 @@ bool UGorgeousAutoReplicationRPCTransporter::IsOwnerLocallyControlledClient() co
 
 void UGorgeousAutoReplicationRPCTransporter::DeliverRPCLocally(const FGorgeousQueuedRPC& QueuedRPC)
 {
+
+    if (QueuedRPC.bHasTargetOwnerActor && !QueuedRPC.TargetOwnerActor) return;
+    if (QueuedRPC.TargetOwnerActor && (!OwningMixin || OwningMixin->ResolveOwnerObject()!=QueuedRPC.TargetOwnerActor))
+    {
+        if (auto* Destination=FGorgeousAutoReplicationMixin::ResolveForActor(QueuedRPC.TargetOwnerActor)) Destination->HandleTransportedRPC(QueuedRPC);
+        return;
+    }
+
 	if (OwningMixin)
 	{
 		OwningMixin->HandleTransportedRPC(QueuedRPC);
@@ -563,6 +534,9 @@ void UGorgeousAutoReplicationRPCTransporter::DeliverPropertyPayload(const FGorge
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceiveRPCReliable_Implementation(const FGorgeousQueuedRPC& QueuedRPC)
 {
+    APlayerController* Sender = Cast<APlayerController>(GetOwner());
+    if (!Sender) if (AActor* Actor=GetOwner()) Sender=Cast<APlayerController>(Actor->GetOwner());
+    if (!OwningMixin || !OwningMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
 	if (!OwningMixin)
 	{
 		return;
@@ -586,6 +560,9 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceiveRPCReliable_Implementa
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceiveRPCUnreliable_Implementation(const FGorgeousQueuedRPC& QueuedRPC)
 {
+    APlayerController* Sender = Cast<APlayerController>(GetOwner());
+    if (!Sender) if (AActor* Actor=GetOwner()) Sender=Cast<APlayerController>(Actor->GetOwner());
+    if (!OwningMixin || !OwningMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
 	if (!OwningMixin)
 	{
 		return;
@@ -629,6 +606,7 @@ void UGorgeousAutoReplicationRPCTransporter::MulticastReceiveRPCUnreliable_Imple
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
+    if (RouteType != EGorgeousAutoReplicationRPCType::EReliableServer && RouteType != EGorgeousAutoReplicationRPCType::EUnreliableServer) return;
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received reliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
 	// For server-bound route types the payload is delivered locally without passing through
@@ -647,7 +625,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliabl
 			}
 		}
 
-		if (OwningMixin && !OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, SenderController))
+		if (OwningMixin && !OwningMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 		{
 			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
 				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),
@@ -661,6 +639,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliabl
 
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnreliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
+    if (RouteType != EGorgeousAutoReplicationRPCType::EReliableServer && RouteType != EGorgeousAutoReplicationRPCType::EUnreliableServer) return;
 	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
 	// Same sender validation as the reliable variant, see comment above.
@@ -676,7 +655,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnrelia
 			}
 		}
 
-		if (OwningMixin && !OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, SenderController))
+		if (OwningMixin && !OwningMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 		{
 			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
 				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),

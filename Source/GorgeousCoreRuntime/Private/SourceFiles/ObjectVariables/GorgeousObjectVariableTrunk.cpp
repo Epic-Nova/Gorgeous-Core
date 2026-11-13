@@ -113,7 +113,7 @@ void FGorgeousObjectVariableSerializedPayload::ResetSerializedState()
 void FGorgeousObjectVariableSerializedPayload::ApplyMetadataFromClass(TSubclassOf<UGorgeousObjectVariable> InClass)
 {
 	VariableClass = InClass;
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
 	if (InClass)
 	{
 		if (const UGorgeousObjectVariable* CDO = InClass->GetDefaultObject<UGorgeousObjectVariable>())

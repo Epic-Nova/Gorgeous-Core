@@ -29,12 +29,14 @@ void UGorgeousCommonTabList::NativeConstruct()
 	{
 		FSignalBridgeEventDelegate Delegate;
 		Delegate.BindDynamic(this, &UGorgeousCommonTabList::OnTabSelectSignalReceived);
-		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Cast<AGorgeousPlayerController>(GetOwningPlayer()), Delegate);
+		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, nullptr, Delegate);
 	}
 }
 
 void UGorgeousCommonTabList::NativeDestruct()
 {
+	FSignalBridgeEventDelegate Delegate; Delegate.BindDynamic(this, &UGorgeousCommonTabList::OnTabSelectSignalReceived);
+	USignalBridgeBlueprintFunctionLibrary::Unlisten(this, BindingTag, nullptr, Delegate);
 	UE_UI_UNREGISTER_WIDGET()
 	Super::NativeDestruct();
 }

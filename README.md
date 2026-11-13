@@ -315,3 +315,11 @@ Big thanks to:
 
 [Readme-Template-URL]: https://github.com/othneildrew/Best-README-Template
 [EpicNova-URL]: https://epicnova.net?utm_source=gt_repo&utm_medium=markdown&utm_campaign=gt_readme&utm_content=readme
+
+## Engine and optional tools
+
+This development branch requires Unreal Engine 5.8 for bundled content. The installer is an optional editor tool, built explicitly with preinstalled Go and GCC; normal Unreal builds never build it or install software. The private GorgeousVault source submodule is optional and is not required for a normal build. Its binary is not distributed unless `GORGEOUS_ENABLE_VAULT=1` is explicitly set.
+
+The MIT licence in LICENSE applies to this project source, including files carrying the historical “All rights reserved” copyright notice. Third-party dependencies retain their own licences.
+
+For batch asset migration, use the `GorgeousDataSchemaMappingBatch` commandlet with the editor executable. Start with `-DryRun` and inspect the preview report before running a migration that saves packages. [Command-line arguments and exit codes](https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/DataSchemaMapping/Overview/#run-from-the-command-line)

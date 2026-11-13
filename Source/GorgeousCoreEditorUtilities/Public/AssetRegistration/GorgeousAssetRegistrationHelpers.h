@@ -25,10 +25,12 @@
 namespace GorgeousAssetRegistration
 {
 	// Shorthand constant for the asset category used for all Gorgeous assets. Registered in FGorgeousCoreEditorModule::GorgeousStartupModule().
-	static EAssetTypeCategories::Type GGorgeousThingsCategory = EAssetTypeCategories::Misc;
+	extern GORGEOUSCOREEDITORUTILITIES_API EAssetTypeCategories::Type GGorgeousThingsCategory;
 
 	// The shared pointer to the asset type actions that will hold all registered asset type actions for Gorgeous custom assets, to ensure they can be unregistered properly on module shutdown.
-	static TArray<TSharedPtr<IAssetTypeActions>> GRegisteredAssetTypeActions;
+	GORGEOUSCOREEDITORUTILITIES_API void TrackAssetTypeAction(FName OwningModule, const TSharedRef<IAssetTypeActions>& Action);
+	GORGEOUSCOREEDITORUTILITIES_API void UnregisterAssetTypeAction(const TSharedRef<IAssetTypeActions>& Action);
+	GORGEOUSCOREEDITORUTILITIES_API void UnregisterAssetTypeActions(FName OwningModule);
 
 	/**
 	 * Helper function to create a metadata structure for a custom asset type, which can be used to register the asset type in the Unreal Editor.

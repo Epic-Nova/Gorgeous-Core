@@ -220,6 +220,11 @@ USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousQueuedRPC
 {
 	GENERATED_BODY()
+    UPROPERTY()
+    TObjectPtr<AActor> TargetOwnerActor = nullptr;
+    UPROPERTY()
+    bool bHasTargetOwnerActor = false;
+
 
 	FGorgeousQueuedRPC()
 		: Key(NAME_None)
@@ -290,6 +295,9 @@ USTRUCT(BlueprintType)
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationRPCResult
 {
 	GENERATED_BODY()
+    // Local-only execution world prevents same-process PIE from bypassing network result delivery.
+    TWeakObjectPtr<UWorld> ExecutionWorld;
+
 
 	FGorgeousAutoReplicationRPCResult()
 		: TargetKind(EGorgeousAutoReplicationTargetKind::EAuto)
@@ -383,6 +391,9 @@ USTRUCT()
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationSerializedRPCResult
 {
 	GENERATED_BODY()
+    UPROPERTY()
+    TArray<FString> ExpectedResponderKeys;
+
 
 	FGorgeousAutoReplicationSerializedRPCResult()
 		: TargetKind(EGorgeousAutoReplicationTargetKind::EAuto)

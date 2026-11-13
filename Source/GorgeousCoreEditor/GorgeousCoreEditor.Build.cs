@@ -20,6 +20,7 @@ public class GorgeousCoreEditor : GorgeousModuleRules
             TargetModuleType = GorgeousModuleType.Editor,
             ModulesToExclude = new[] { "GorgeousCoreEditor" }
         });
+        PublicDependencyModuleNames.Add("FunctionalTesting");
 
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         SharedPCHHeaderFile = "../GorgeousCoreRuntimeUtilities/Public/GorgeousCoreRuntimeSharedPCH.h";
@@ -40,6 +41,10 @@ public class GorgeousCoreEditor : GorgeousModuleRules
             "InputCore",
             "GameplayTags",
             "DeveloperSettings",
+            // Editor lifecycle fixtures directly use these exported engine APIs.
+            "EngineSettings",
+            "ReplicationGraph",
+            "OnlineSubsystemUtils",
             "WebBrowser"
         });
     }

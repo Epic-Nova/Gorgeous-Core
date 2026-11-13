@@ -78,6 +78,9 @@ public:
 	 */
 	virtual FName GetParticipantIcon() const { return NAME_None; }
 
+    /** Style containing GetParticipantIcon; override when the plugin uses another registered style name. */
+    virtual FName GetParticipantStyleSetName() const { return FName(*(GetParticipantName().ToString() + TEXT("EditorStyle"))); }
+
 	/**
 	 * Returns all library categories this participant contributes.
 	 * Each category becomes a labelled section in the Library right panel,

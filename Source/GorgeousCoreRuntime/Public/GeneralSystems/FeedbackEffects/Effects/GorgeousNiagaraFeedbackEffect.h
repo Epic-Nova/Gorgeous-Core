@@ -14,9 +14,11 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "FeedbackEffects/GorgeousFeedbackEffect.h"
 //<--------------------------=== Engine Includes ===------------------------->
-#include "NiagaraSystem.h"
+class UNiagaraSystem;
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousNiagaraFeedbackEffect.generated.h"
+
+class UNiagaraComponent;
 //<-------------------------------------------------------------------------->
 
 /*
@@ -36,9 +38,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousNiagaraFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#niagara",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousNiagaraFeedbackEffect : public UGorgeousFeedbackEffect
@@ -55,6 +57,8 @@ public:
 	 * @param Context The runtime situation used to resolve the spawn transform.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted) override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a Niagara system configured.
@@ -96,4 +100,8 @@ public:
 	bool bAutoDestroy = true;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
+private:
+	UNiagaraComponent* SpawnFeedbackSystem(const FGorgeousFeedbackContext& Context);
+	TArray<TWeakObjectPtr<UNiagaraComponent>> ActiveSystems;
+
 };

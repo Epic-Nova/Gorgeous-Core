@@ -17,11 +17,16 @@
 #include "Macros/GorgeousLoggingHelperMacros.h"
 
 #include "Misc/ConfigCacheIni.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "GameplayTagContainer.h"
 #include "Modules/ModuleManager.h"
+#include "TimerManager.h"
 //<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR
 #include "Framework/Notifications/NotificationManager.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
 //<-------------------------------------------------------------------------->
@@ -59,6 +64,11 @@ struct FGorgeousToastParams
 
 	// Optional hyperlink callback
 	FSimpleDelegate HyperlinkDelegate;
+
+#if WITH_EDITOR
+	TArray<FNotificationButtonInfo> Buttons;
+	bool bUseLargeFont = true;
+#endif
 };
 
 //<============================--- Variables ---============================>
@@ -79,9 +89,9 @@ static bool GbToastNotificationsFlushed = false;
  *
  * @param Params Struct containing all notification parameters.
  */
-FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
-{
 #if WITH_EDITOR
+FORCEINLINE static TSharedPtr<SNotificationItem> ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
+{
 	auto& NotificationManager = FSlateNotificationManager::Get();
 
 	FNotificationInfo Info(FText::FromString(Params.Title));
@@ -90,9 +100,13 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
 	Info.ExpireDuration = Params.ExpireDuration;
 	Info.bUseThrobber = Params.bUseThrobber;
 	Info.bUseSuccessFailIcons = Params.bUseIcons;
+	Info.bUseLargeFont = Params.bUseLargeFont;
+	Info.ButtonDetails = Params.Buttons;
 
     switch (Params.ToastIconKind)
     {
+        case INDEX_NONE:
+            break;
         case 0:
             Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
             break;
@@ -114,9 +128,20 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
 		Info.HyperlinkText = Params.HyperlinkText;
 	}
 
-	NotificationManager.AddNotification(Info);
-#endif
+	return NotificationManager.AddNotification(Info);
 }
+
+/** Displays an actionable toast immediately and returns its dismissible Slate item. */
+FORCEINLINE static TSharedPtr<SNotificationItem> ShowTrackedToastNotification(const FGorgeousToastParams& Params)
+{
+	if (IsRunningCommandlet() || !FSlateApplication::IsInitialized()
+		|| !FSlateNotificationManager::Get().AreNotificationsAllowed())
+	{
+		return nullptr;
+	}
+	return ShowToastNotificationImmediate(Params);
+}
+#endif
 
 /**
  * Attempts to flush all queued toast notifications if the editor is ready.
@@ -223,7 +248,7 @@ namespace GorgeousLogging
     inline TMap<FGameplayTag, FString> LoggedMessages;
 
     // The set of logging keys that are currently suppressed.
-    inline TSet<FName> SuppressedLoggingKeys;
+    GORGEOUSCORERUNTIMEUTILITIES_API TSet<FName>& GetSuppressedLoggingKeys();
 
     /**
      * Checks if the GameplayTags module is available for use.
@@ -243,7 +268,7 @@ namespace GorgeousLogging
      */
     FORCEINLINE static bool ShouldSuppressKey(const FName& LoggingKey)
     {
-        return LoggingKey != NAME_None && SuppressedLoggingKeys.Contains(LoggingKey);
+        return LoggingKey != NAME_None && GetSuppressedLoggingKeys().Contains(LoggingKey);
     }
 
     /**
@@ -259,20 +284,19 @@ namespace GorgeousLogging
             return;
         }
 
-        if (SuppressedLoggingKeys.Contains(LoggingKey))
+        if (GetSuppressedLoggingKeys().Contains(LoggingKey) == bShouldSuppress)
         {
-            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' is already suppressed."), *LoggingKey.ToString());
-             return;
+            return;
         }
 
         if (bShouldSuppress)
         {
-            SuppressedLoggingKeys.Add(LoggingKey);
+            GetSuppressedLoggingKeys().Add(LoggingKey);
             UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been suppressed."), *LoggingKey.ToString());
         }
         else
         {
-            SuppressedLoggingKeys.Remove(LoggingKey);
+            GetSuppressedLoggingKeys().Remove(LoggingKey);
             UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been unsuppressed."), *LoggingKey.ToString());
         }
     }
@@ -291,7 +315,7 @@ namespace GorgeousLogging
     // Clears all logging suppressions, allowing all messages to be logged again.
     FORCEINLINE static void ClearAllLoggingSuppressions()
     {
-        SuppressedLoggingKeys.Reset();
+        GetSuppressedLoggingKeys().Reset();
     }
 
     /**
@@ -418,6 +442,12 @@ namespace GorgeousLogging
                                                 const bool bShowAsToast = false, const UObject* WorldContextObject = nullptr,
                                                 const FGorgeousLogHyperlink* Hyperlink = nullptr)
 	{
+        // Fatal is a control-flow contract, even when output is disabled or the key is suppressed.
+        if (Importancy == Logging_Fatal)
+        {
+            UE_LOG(LogGorgeousThings, Fatal, TEXT("[%s] %s"), *LoggingKey, *Message.ToString());
+        }
+
         const FName LoggingKeyName = LoggingKey.IsEmpty() ? NAME_None : FName(*LoggingKey);
         if (ShouldSuppressKey(LoggingKeyName))
         {
@@ -426,10 +456,9 @@ namespace GorgeousLogging
 
         const auto [bEnableGorgeousMessageLog, MessageLogListingName, MinMessageLogVerbosity, bMirrorToOutputLog, bShowOnScreen] = GetLoggingSettingsSnapshot();
         const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(MinMessageLogVerbosity);
-        const bool bShouldSendToMessageLog = bEnableGorgeousMessageLog && bAllowedBySettings;
-        // When a message is already being routed to the Gorgeous Message Log, suppress the parallel
-        // UE_LOG call to avoid duplicating the same line in both output destinations.
-        const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog && !bShouldSendToMessageLog;
+        const bool bShouldSendToMessageLog = WITH_EDITOR && bEnableGorgeousMessageLog && bAllowedBySettings;
+        // Message Log and Output Log are independent destinations; packaged builds have no Message Log.
+        const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog;
         const bool bShouldPrintToScreen = bPrintToScreen && bShowOnScreen;
 
         const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
@@ -451,7 +480,7 @@ namespace GorgeousLogging
 
                 // Remove the on-screen message if it exists.  This requires a bit of a hack since AddOnScreenDebugMessage uses a hash.
                 const uint64 UniqueKey = GetTypeHash(GameplayLoggingKey.GetTagName());
-                GEngine->RemoveOnScreenDebugMessage(UniqueKey);
+                if (GEngine) { GEngine->RemoveOnScreenDebugMessage(UniqueKey); }
             }
 
             LoggedMessages.Add(GameplayLoggingKey, Message.ToString());
@@ -554,7 +583,7 @@ namespace GorgeousLogging
             // Generate a unique key using GameplayLoggingKey when available, otherwise fall back to the logging key name
             const uint64 UniqueKey = GameplayLoggingKey.IsValid()
                 ? GetTypeHash(GameplayLoggingKey.GetTagName())
-                : GetTypeHash(LoggingKeyName);
+                : (LoggingKeyName.IsNone() ? uint64(-1) : uint64(GetTypeHash(LoggingKeyName)));
 
             const FVector2D DefaultTextScale(1.0f, 1.0f);
             constexpr bool bNewerOnTop = true;
@@ -570,8 +599,8 @@ namespace GorgeousLogging
             );
         }
 
-#if WITH_EDITOR
-        if (bShouldSendToMessageLog)
+        // Runtime subscribers (including the optional in-game widget) share this feed.
+        if (bShouldSendToMessageLog || bShouldPrintToLog || bShouldPrintToScreen)
         {
             FGorgeousLogEntry Entry;
             Entry.Message = FinalMessage;
@@ -588,6 +617,7 @@ namespace GorgeousLogging
             GetGorgeousLogEntryDelegate().Broadcast(Entry);
         }
 
+#if WITH_EDITOR
         if (bShowAsToast)
         {
             FGorgeousToastParams ToastParams;

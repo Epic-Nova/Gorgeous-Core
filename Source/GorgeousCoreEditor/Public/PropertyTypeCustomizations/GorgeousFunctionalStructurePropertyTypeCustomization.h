@@ -81,5 +81,6 @@ private:
 	 *
 	 * @note This pointer is used to access and modify the functional structure's properties.
 	 */
-	FGorgeousFunctionalStructure_S* FunctionalStructureInstance = nullptr;
+	TWeakPtr<IPropertyHandle> FunctionalPropertyHandle;
+	void ForEachInstance(TFunctionRef<void(FGorgeousFunctionalStructure_S&)> Callback) const;
 };

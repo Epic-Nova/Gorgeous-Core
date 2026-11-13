@@ -209,20 +209,8 @@ void UGorgeousUIProcessor::ApplyEditorThemeToWidget(UObject* Target)
 
 	if (Target)
 	{
-		if (UWorld* World = Target->GetWorld())
-		{
-			if (APlayerController* PC = World->GetFirstPlayerController())
-			{
-				if (ULocalPlayer* LP = PC->GetLocalPlayer())
-				{
-					if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
-					{
-						Subsystem->ApplyThemeToWidget(Target, DefaultTheme);
-						return;
-					}
-				}
-			}
-		}
+		if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(Target))
+		{ Subsystem->ApplyThemeToWidget(Target, Subsystem->GetMostRecentTheme(), DefaultTheme); return; }
 
 		UClass* BestProcessorClass = nullptr;
 		UClass* BestTargetClass = nullptr;

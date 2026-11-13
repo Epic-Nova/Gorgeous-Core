@@ -13,22 +13,25 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
+#include "GauntletTestController.h"
+#include "GorgeousInsightGauntletController.generated.h"
 //<-------------------------------------------------------------------------->
 
-/*
- * NOTE: The Gauntlet controller class (UGorgeousInsightGauntletController) has been disabled
- * because Gauntlet is an experimental plugin that is only available in Program targets,
- * not in Editor builds. UHT does not support conditional UCLASS inheritance.
- *
- * To use Insight Matrix with Gauntlet automation:
- * 1. Create a separate standalone test program target
- * 2. Enable the Gauntlet plugin for that target
- * 3. Define GORGEOUSCORE_WITH_GAUNTLET=1 in the Build.cs
- * 4. Include the Gauntlet controller implementation manually
- *
- * For now, use FGorgeousInsightHarness and UGorgeousInsightMatrixSubsystem directly
- * for programmatic testing without Gauntlet orchestration.
- */
-
-// Stub forward declaration - no actual UCLASS in Editor builds
-class UGorgeousInsightGauntletController;
+/** Runs an Insight suite through Gauntlet with -gauntlet=GorgeousInsightGauntlet. */
+UCLASS()
+class GORGEOUSCORERUNTIME_API UGorgeousInsightGauntletController : public UGauntletTestController
+{
+	GENERATED_BODY()
+public:
+	virtual void OnInit() override;
+	virtual void OnPostMapChange(UWorld* World) override;
+	virtual void OnTick(float TimeDelta) override;
+private:
+	TWeakObjectPtr<UWorld> TestWorld;
+	FString MatrixParameters;
+	float WarmupSeconds = 2.0f;
+	float TimeoutSeconds = 120.0f;
+	float ElapsedSeconds = 0.0f;
+	float ReadySeconds = 0.0f;
+	bool bFinished = false;
+};

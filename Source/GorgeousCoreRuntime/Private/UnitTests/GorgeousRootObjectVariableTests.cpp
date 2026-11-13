@@ -16,8 +16,10 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Misc/AutomationTest.h"
+#include "SharedTests/GorgeousLimitationAuditTestTypes.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/NativeObjectVariableDefinitions.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 
 namespace GorgeousRootObjectVariableTests
@@ -29,10 +31,10 @@ namespace GorgeousRootObjectVariableTests
 			return nullptr;
 		}
 
-		UGorgeousObjectVariable* Variable = Root->NewObjectVariable(UGorgeousObjectVariable::StaticClass(), OutIdentifier, Root, false, MoveTemp(DisplayLabel));
+		UGorgeousObjectVariable* Variable = Root->NewObjectVariable(UInteger_SOV::StaticClass(), OutIdentifier, Root, false, MoveTemp(DisplayLabel));
 		if (Variable)
 		{
-			Variable->SetRootNetworkStackEnabled(true);
+			Variable->SetSharedNetworkStackEnabled(true);
 			Variable->SetNetworkingEnabled(true);
 		}
 
@@ -77,7 +79,10 @@ bool FGorgeousRootRegistryOwnershipLifecycleTest::RunTest(const FString& Paramet
 		return false;
 	}
 
-	UObject* InitialOwner = NewObject<UObject>();
+    TestTrue(TEXT("Ownership fixture explicitly opts into shared networking"),Variable->bUseSharedNetworkStack);
+    TestTrue(TEXT("Shared fixture is eligible for network-owner promotion"),Variable->IsRootNetworkStackEnabled());
+
+	UObject* InitialOwner = NewObject<UGorgeousLimitationAuditReceiver>();
 	const FString StableId = TEXT("AutomationClient-001");
 
 	const FGorgeousRootRegistryOwnerHandle InitialHandle = UGorgeousRootObjectVariable::ClaimRootRegistryOwnership(SharedRootName, StableId, InitialOwner);
@@ -88,9 +93,9 @@ bool FGorgeousRootRegistryOwnershipLifecycleTest::RunTest(const FString& Paramet
 	TestEqual(TEXT("Variable uses promoted fallback owner"), Variable->GetAutoReplicationOwner(), InitialOwner);
 
 	UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(InitialHandle, InitialOwner);
-	TestEqual(TEXT("Release keeps fallback owner in place"), Variable->GetAutoReplicationOwner(), InitialOwner);
+	TestNull(TEXT("Release clears disconnected fallback owner"), Variable->GetAutoReplicationOwner());
 
-	UObject* ReturningOwner = NewObject<UObject>();
+	UObject* ReturningOwner = NewObject<UGorgeousLimitationAuditReceiver>();
 	FGorgeousRootRegistryOwnerHandle RestoredHandle;
 	const bool bRestored = UGorgeousRootObjectVariable::RestoreRootRegistryOwnership(StableId, ReturningOwner, RestoredHandle);
 	TestTrue(TEXT("Ownership can be restored via stable identifier"), bRestored);
@@ -99,8 +104,10 @@ bool FGorgeousRootRegistryOwnershipLifecycleTest::RunTest(const FString& Paramet
 	UGorgeousRootObjectVariable::PromoteRootRegistryOwner(RestoredHandle.RootName, ReturningOwner);
 	TestEqual(TEXT("Reconnected client becomes the active owner"), Variable->GetAutoReplicationOwner(), ReturningOwner);
 
+	UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(InitialHandle, InitialOwner);
+	TestEqual(TEXT("Stale disconnect cannot release a reconnected owner"), Variable->GetAutoReplicationOwner(), ReturningOwner);
 	UGorgeousRootObjectVariable::CleanupRegistry();
-	TestNotNull(TEXT("Cleanup keeps live variables intact"), UGorgeousRootObjectVariable::FindVariableByIdentifier(VariableIdentifier));
+	TestNull(TEXT("Level cleanup removes nonpersistent variables"), UGorgeousRootObjectVariable::FindVariableByIdentifier(VariableIdentifier));
 
 	Root->RemoveVariableFromRegistry(Variable);
 	return true;

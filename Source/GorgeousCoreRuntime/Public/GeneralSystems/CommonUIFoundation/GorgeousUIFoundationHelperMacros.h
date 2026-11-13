@@ -77,6 +77,7 @@ public: \
 	virtual bool IsInterpTheme() const override { return bIsInterpTheme; } \
 	virtual void SetIsInterpTheme(bool bInInterp) override { bIsInterpTheme = bInInterp; } \
 	virtual FGorgeousUIInterpConfig_S GetThemeInterpConfig() const override { return ThemeInterpConfig; } \
+	virtual void SetThemeInterpolationDuration(float Duration) override { ThemeInterpConfig.Duration = FMath::Max(.001f, Duration); } \
 	virtual TMap<FName, FLinearColor>& GetStartThemeColors() override { return StartThemeColors; } \
 	virtual TMap<FName, FLinearColor>& GetTargetThemeColors() override { return TargetThemeColors; } \
 	virtual TMap<FName, FLinearColor>& GetCurrentThemeColors() override { return CurrentThemeColors; } \
@@ -95,54 +96,15 @@ public:
 
 /** Registration logic for standard UWidgets (Borders, Boxes). Use in SynchronizeProperties. */
 #define UE_UI_REGISTER_WIDGET_RAW() \
-	if (UWorld* __World = GetWorld()) \
-	{ \
-		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-		{ \
-			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-			{ \
-				if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
-				{ \
-					__Subsystem->RegisterWidget(this); \
-				} \
-			} \
-		} \
-	} \
-	\
-	/* Editor-time theme evaluation */ \
-	ApplyEditorThemeIfNeeded();
+    if (UGorgeousUIFoundationSubsystem* __Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this)) { __Subsystem->RegisterWidget(this); } \
+    ApplyEditorThemeIfNeeded();
 
-/** Registration logic for UUserWidgets. Use in NativeConstruct. */
 #define UE_UI_REGISTER_WIDGET_USER() \
-	UE_UI_REGISTER_WIDGET_RAW() \
-	StartOpacity = TargetOpacity = GetRenderOpacity();
+    UE_UI_REGISTER_WIDGET_RAW() \
+    StartOpacity = TargetOpacity = GetRenderOpacity();
 
-/** Unregistration logic. Use in NativeDestruct or OnWidgetRebuilt(false). */
 #define UE_UI_UNREGISTER_WIDGET() \
-	if (UWorld* __World = GetWorld()) \
-	{ \
-		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-		{ \
-			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-			{ \
-				if (UGorgeousUIFoundationSubsystem* __Subsystem = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>()) \
-				{ \
-					__Subsystem->UnregisterWidget(this); \
-				} \
-			} \
-		} \
-	}
+    if (UGorgeousUIFoundationSubsystem* __Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this)) { __Subsystem->UnregisterWidget(this); }
 
-/** Helper to resolve the UGorgeousUIFoundationSubsystem from any UObject context. */
 #define UE_UI_GET_LOCAL_PLAYER_SUBSYSTEM(OutVar) \
-	UGorgeousUIFoundationSubsystem* OutVar = nullptr; \
-	if (UWorld* __World = GetWorld()) \
-	{ \
-		if (APlayerController* __PC = __World->GetFirstPlayerController()) \
-		{ \
-			if (ULocalPlayer* __LP = __PC->GetLocalPlayer()) \
-			{ \
-				OutVar = __LP->GetSubsystem<UGorgeousUIFoundationSubsystem>(); \
-			} \
-		} \
-	}
+    UGorgeousUIFoundationSubsystem* OutVar = UGorgeousUIFoundationSubsystem::GetForContext(this);

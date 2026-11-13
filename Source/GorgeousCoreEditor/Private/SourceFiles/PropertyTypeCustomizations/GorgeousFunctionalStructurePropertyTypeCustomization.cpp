@@ -42,7 +42,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils)
 {
 	//@TODO: Maybe add the case of when SimpleDisplay is added to a property, where its parent property has AdvancedDisplay that the Property with SimpleDisplay gets its simple display form. => At this point it would just be a flex
-	/* @TODO: fix the crash issue*/
+	FunctionalPropertyHandle = PropertyHandle;
 	TArray<TSharedRef<IPropertyHandle>> AdvancedHandles;
 	
 	auto AddToGroup = [&](const TSharedRef<IPropertyHandle>& Handle)
@@ -65,7 +65,9 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 	//Binds a Callback to every property. When changed call PostEditChangeProperty on this struct or when about to be changed call PreEditChangeProperty
 	for (uint32 i = 0; i < NumChildren; i++)
 	{
-		const TSharedRef<IPropertyHandle> ChildHandle = PropertyHandle->GetChildHandle(i).ToSharedRef();
+		TSharedPtr<IPropertyHandle> Child = PropertyHandle->GetChildHandle(i);
+		if (!Child.IsValid() || !Child->IsValidHandle() || !Child->GetProperty()) continue;
+		const TSharedRef<IPropertyHandle> ChildHandle = Child.ToSharedRef();
 		
 		// PREVENT INFINITE RECURSION: Do not draw the OwnerObject pointer.
 		// If drawn, the property editor will recursively evaluate the Outer object and loop forever.
@@ -80,8 +82,7 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 			ChildHandle->GetNumChildren(InnerNumChildren);
 			for (uint32 j = 0; j < InnerNumChildren; j++)
 			{
-				const TSharedRef<IPropertyHandle> GrandChildHandle = ChildHandle->GetChildHandle(j).ToSharedRef();
-				AddToGroup(GrandChildHandle);
+				if (TSharedPtr<IPropertyHandle> GrandChild = ChildHandle->GetChildHandle(j); GrandChild.IsValid() && GrandChild->IsValidHandle() && GrandChild->GetProperty()) AddToGroup(GrandChild.ToSharedRef());
 			}
 		}
 		else
@@ -112,62 +113,41 @@ void FGorgeousFunctionalStructurePropertyTypeCustomization::CustomizeChildren(TS
 			AdvancedGroup.AddPropertyRow(AdvancedHandle);
 		}
 		
-		// Delay the collapse slightly because when we don't do this, we are greeted with an expanded category
-		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([&AdvancedGroup](float)
-		{
-			AdvancedGroup.ToggleExpansion(false);
-			return false; // remove ticker
-		}));
+
 	}
 	
-	//Receive the struct instance from via the property handle
-	if (CastField<FStructProperty>(PropertyHandle->GetProperty()))
+	TArray<UObject*> Owners;
+	PropertyHandle->GetOuterObjects(Owners);
+	int32 OwnerIndex = 0;
+	ForEachInstance([&](FGorgeousFunctionalStructure_S& Instance)
 	{
-		void* StructInstance = nullptr;
-		PropertyHandle->GetValueData(StructInstance);
-
-		if (StructInstance)
+		UObject* Owner = Owners.IsValidIndex(OwnerIndex) ? Owners[OwnerIndex] : (Owners.IsEmpty() ? nullptr : Owners[0]);
+		++OwnerIndex;
+		if (Owner && Instance.OwnerObject != Owner)
 		{
-			FunctionalStructureInstance = static_cast<FGorgeousFunctionalStructure_S*>(StructInstance);
-			if (FunctionalStructureInstance)
-			{
-				GT_I_LOG("GT.FunctionalStructures.Struct_Instance_Received", TEXT("Gorgeous Struct Instance received for: %s"), *FunctionalStructureInstance->Identifier.ToString());
-
-				TArray<UObject*> OuterObjects;
-				PropertyHandle->GetOuterObjects(OuterObjects);
-				if (OuterObjects.Num() > 0)
-				{
-					if (FunctionalStructureInstance->OwnerObject != OuterObjects[0])
-					{
-						FunctionalStructureInstance->OwnerObject = OuterObjects[0];
-						FunctionalStructureInstance->AllocateDefaultValues(FunctionalStructureInstance->OwnerObject);
-					}
-				}
-			}
+			Instance.OwnerObject = Owner;
+			Instance.AllocateDefaultValues(Owner);
 		}
-	}
+	});
+}
+
+void FGorgeousFunctionalStructurePropertyTypeCustomization::ForEachInstance(TFunctionRef<void(FGorgeousFunctionalStructure_S&)> Callback) const
+{
+	TSharedPtr<IPropertyHandle> Handle = FunctionalPropertyHandle.Pin();
+	if (!Handle.IsValid() || !Handle->IsValidHandle()) return;
+	const FStructProperty* Property = CastField<FStructProperty>(Handle->GetProperty());
+	if (!Property || !Property->Struct->IsChildOf(FGorgeousFunctionalStructure_S::StaticStruct())) return;
+	TArray<void*> Instances;
+	Handle->AccessRawData(Instances);
+	for (void* Instance : Instances) if (Instance) Callback(*static_cast<FGorgeousFunctionalStructure_S*>(Instance));
 }
 
 void FGorgeousFunctionalStructurePropertyTypeCustomization::OnPreChildPropertyChanged(TSharedRef<IPropertyHandle> PropertyHandle) const
 {
-	if (!PropertyHandle->IsValidHandle() || !PropertyHandle->GetProperty() || !FunctionalStructureInstance)
-	{
-		GT_E_LOG("GT.FunctionalStructures.PreEditChangeProperty.Invalid", TEXT("Invalid property handle or struct instance in PreEditChangeProperty callback"));
-		return;
-	}
-	
-	FunctionalStructureInstance->PreEditChangeProperty(PropertyHandle);
-	GT_S_LOG("GT.FunctionalStructures.PreEditChangeProperty.Called", TEXT("PreEditChangeProperty called for '%s'"), *FunctionalStructureInstance->Identifier.ToString());
+	ForEachInstance([&](FGorgeousFunctionalStructure_S& Instance) { Instance.PreEditChangeProperty(PropertyHandle); });
 }
 
 void FGorgeousFunctionalStructurePropertyTypeCustomization::OnChildPropertyChangedWithData(const FPropertyChangedEvent& PropertyChangedEvent) const
 {
-	if (!PropertyChangedEvent.Property || !FunctionalStructureInstance)
-	{
-		GT_E_LOG("GT.FunctionalStructures.PostEditChangeProperty.Invalid", TEXT("Invalid property or struct instance in PostEditChangeProperty callback"));
-		return;
-	}
-	
-	FunctionalStructureInstance->PostEditChangeProperty(PropertyChangedEvent);
-	GT_S_LOG("GT.FunctionalStructures.PostEditChangeProperty.Called", TEXT("PostEditChangeProperty called for '%s'"), *FunctionalStructureInstance->Identifier.ToString());
+	ForEachInstance([&](FGorgeousFunctionalStructure_S& Instance) { Instance.PostEditChangeProperty(PropertyChangedEvent); });
 }

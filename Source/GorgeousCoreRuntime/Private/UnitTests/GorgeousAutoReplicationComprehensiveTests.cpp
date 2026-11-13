@@ -692,7 +692,7 @@ namespace GorgeousComprehensiveReplicationTests
 
 		if (!PIEWorlds.IsValid())
 		{
-			Result.AddWarning(TEXT("No play world active -- this scenario requires PIE or Gauntlet."));
+			Result.AddError(TEXT("No play world active -- this scenario requires PIE or Gauntlet."));
 			LogCapture.ApplyToResult(Result);
 			Result.LogCapture = MoveTemp(LogCapture.FullLogLines);
 			return Result;
@@ -1113,7 +1113,7 @@ namespace GorgeousComprehensiveReplicationTests
 		UWorld* World = ResolveWorld(Context);
 		if (!World)
 		{
-			Result.AddWarning(TEXT("No play world active -- requires PIE or Gauntlet."));
+			Result.AddError(TEXT("No play world active -- requires PIE or Gauntlet."));
 			return Result;
 		}
 
@@ -1551,7 +1551,7 @@ namespace GorgeousComprehensiveReplicationTests
 		UWorld* World = ResolveWorld(Context);
 		if (!World)
 		{
-			Result.AddWarning(TEXT("No play world active -- requires PIE or Gauntlet."));
+			Result.AddError(TEXT("No play world active -- requires PIE or Gauntlet."));
 			return Result;
 		}
 
@@ -1720,7 +1720,7 @@ namespace GorgeousComprehensiveReplicationTests
 		UWorld* World = ResolveWorld(Context);
 		if (!World)
 		{
-			Result.AddWarning(TEXT("No play world active -- requires PIE or Gauntlet."));
+			Result.AddError(TEXT("No play world active -- requires PIE or Gauntlet."));
 			return Result;
 		}
 

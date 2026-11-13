@@ -38,9 +38,9 @@ class UUserWidget;
 */
 UCLASS(Config = Game, DefaultConfig, DisplayName = "Core ↪ Logging",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/GorgeousLoggingDeveloperSettings",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/RuntimeUtilities/LoggingSetup/#logging-settings",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousLoggingDeveloperSettings : public UDeveloperSettings
@@ -77,11 +77,11 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "Output")
 	bool bShowOnScreen;
 
-	/** Shows an in-game logging widget. */ //@TODO: I like the idea of the in game wlog widget class, but maybe this property should be for if logs should show in game at all
+	/** Shows a bounded in-game log panel for each local game instance. */
 	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowOnScreen", EditConditionHides))
 	bool bShowInGame;
 
-	// Widget class used for the in-game logging panel.
-	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowInGame", EditConditionHides))
+	// Optional widget implementing GorgeousLogWidgetReceiver. Empty uses the native panel.
+	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowInGame", EditConditionHides, MustImplement = "/Script/GorgeousCoreRuntime.GorgeousLogWidgetReceiver"))
 	TSoftClassPtr<class UUserWidget> InGameLogWidgetClass;
 };

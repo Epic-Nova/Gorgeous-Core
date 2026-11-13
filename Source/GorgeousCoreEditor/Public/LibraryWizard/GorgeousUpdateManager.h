@@ -60,7 +60,12 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Gorgeous|Updates")
     void DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken);
 
+    /** Shared HTTPS downloader. The exact token/version/digest tuple must verify against a pinned release key. */
+    void DownloadZipAndInstall(const FString& URL, const FString& PluginName, const FString& ExpectedSHA256, const FString& Token, const FString& Version, const FString& SignatureEd25519);
+
 private:
+    FString ActiveDownloadChecksum;
+    FHttpRequestPtr ActiveDownloadRequest;
     bool bIsDevMode = false;
 
     void ProbeConnection();

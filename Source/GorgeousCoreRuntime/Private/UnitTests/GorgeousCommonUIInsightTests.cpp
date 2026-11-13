@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 
 #include "Engine/LocalPlayer.h"
+#include "Engine/Engine.h"
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUITheme_DA.h"
@@ -20,23 +21,14 @@ struct FGorgeousCommonUIInsightTests
 			return Result;
 		}
 
-		// Use the UI Foundation Subsystem
-		UGorgeousUIFoundationSubsystem* UISubsystem = nullptr;
-		if (UGameInstance* GI = World->GetGameInstance())
+		// An isolated local player keeps this regression from changing the user's active PIE UI.
+		if (!GEngine)
 		{
-			if (ULocalPlayer* LocalPlayer = GI->GetFirstGamePlayer())
-			{
-				UISubsystem = LocalPlayer->GetSubsystem<UGorgeousUIFoundationSubsystem>();
-			}
-		}
-		
-		if (!UISubsystem)
-		{
-			// If not playing, GameInstance might be null. Try Engine subsystem or just pass early as this is a local Editor test.
-			Result.bSuccess = true;
-			Result.AddNote(TEXT("Test skipped/passed safely. GameInstance UI Subsystem not available in current Editor context."));
+			Result.AddError(TEXT("Engine is not available."));
 			return Result;
 		}
+		ULocalPlayer* Player = NewObject<ULocalPlayer>(GEngine);
+		UGorgeousUIFoundationSubsystem* UISubsystem = NewObject<UGorgeousUIFoundationSubsystem>(Player);
 
 		// Create a mock theme
 		UGorgeousUITheme_DA* MockThemeA = NewObject<UGorgeousUITheme_DA>();

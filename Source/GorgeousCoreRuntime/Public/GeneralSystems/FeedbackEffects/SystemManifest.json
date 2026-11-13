@@ -1,0 +1,9 @@
+{
+    "SystemId": "FeedbackEffects",
+    "Version": "Dev",
+    "PayloadPaths": [
+        "Source/GorgeousCoreRuntime/Public/GeneralSystems/FeedbackEffects",
+        "Source/GorgeousCoreRuntime/Private/SourceFiles/GeneralSystems/FeedbackEffects"
+    ],
+    "bIsCoreSystem": true
+}

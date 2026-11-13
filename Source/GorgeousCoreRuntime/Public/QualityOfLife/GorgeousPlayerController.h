@@ -26,6 +26,7 @@
 #include "GameplayTagContainer.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "GeneralSystems/GorgeousPermissionManagerSubsystem.h"
 #include "GorgeousPlayerController.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -65,9 +66,9 @@ struct FGorgeousAutomationRPCWitnessEntry
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/AGorgeousPlayerController",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/PlayerController/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/QualityOfLife/Overview/#setting-up-the-classes"
 		)
 )
 class GORGEOUSCORERUNTIME_API AGorgeousPlayerController : public APlayerController
@@ -155,10 +156,40 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Gorgeous Player Controller|Defaults", meta = (ShowOnlyInnerProperties))
 	FGorgeousObjectVariableTrunk DefaultObjectVariableTrunk;
 
+    UFUNCTION(Client,Reliable)
+    void Client_ReceiveGorgeousPermissionSnapshot(const FGorgeousOwnerPermissionSnapshot& Snapshot);
+    UFUNCTION(Server,Reliable,BlueprintCallable,Category="Gorgeous|Permissions")
+    void Server_RequestGorgeousPermissionSnapshot();
+    UFUNCTION(Server,Reliable,BlueprintCallable,Category="Gorgeous|Permissions")
+    void Server_RequestGorgeousPermissionMutation(APlayerState* TargetPlayer,EGorgeousPermissionMutation Operation,const FString& Key,bool bAllow);
+    /** Project-owned server authorization. Default denies every remote admin edit. */
+    UFUNCTION(BlueprintNativeEvent,Category="Gorgeous|Permissions")
+    bool CanAdministerGorgeousPermissions(APlayerState* TargetPlayer) const;
+    virtual bool CanAdministerGorgeousPermissions_Implementation(APlayerState* TargetPlayer) const;
+    UPROPERTY(Transient) bool bLastPermissionMutationAccepted=false;
+    UFUNCTION(Client,Reliable)
+    void Client_GorgeousPermissionMutationResult(bool bAccepted);
+
+    /** Explicit survey collection choice, scoped to this owning controller/session. */
+    UFUNCTION(BlueprintCallable,Category="Gorgeous|Visual Data Gathering")
+    void SetVisualDataGatheringConsent(bool bAccepted);
+    UFUNCTION(BlueprintPure,Category="Gorgeous|Visual Data Gathering")
+    bool HasVisualDataGatheringConsent() const { return bVDGConsentGranted; }
+    UFUNCTION(BlueprintPure,Category="Gorgeous|Visual Data Gathering")
+    bool HasVisualDataGatheringConsentDecision() const { return bVDGConsentDecisionMade; }
+    UFUNCTION(BlueprintCallable,Category="Gorgeous|Visual Data Gathering")
+    void ResetVisualDataGatheringConsent();
+    UFUNCTION(Server,Reliable)
+    void Server_SetVisualDataGatheringConsent(bool bAccepted);
+
 	UFUNCTION(Client, Reliable)
 	void Client_ReceiveSignal(FGameplayTag Tag, const FInstancedStruct& Payload);
 
 protected:
+    UPROPERTY(Transient) bool bVDGConsentGranted=false;
+    UPROPERTY(Transient) bool bVDGConsentDecisionMade=false;
+    double LastPermissionSnapshotRequestTime=-1e30;
+    double LastPermissionMutationRequestTime=-1e30;
 
 	// Component responsible for relaying RPC results back to the authority.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Gorgeous Player Controller|Networking", meta = (AllowPrivateAccess = "true"))

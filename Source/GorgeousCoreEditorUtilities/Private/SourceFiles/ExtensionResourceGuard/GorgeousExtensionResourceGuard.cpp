@@ -15,6 +15,7 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 //<--------------------------=== Module Includes ===------------------------->
 #include "Editor.h"
+#include "ModuleCore/GorgeousUsefulSettings.h"
 #include "EditorUtilityObject.h"
 #include "AssetRegistry/AssetData.h"
 #include "Editor/Blutility/Classes/EditorUtilityBlueprint.h"
@@ -156,6 +157,8 @@ bool UGorgeousExtensionResourceGuard::RemovePluginDependencyFromDescriptor(
 
 void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 {
+	if (IsRunningCommandlet() || GetDefault<UGorgeousUsefulSettings>()->bDisableExtensionResourceProtection ||
+		!GetDefault<UGorgeousUsefulSettings>()->bAllowAutomaticPluginDescriptorChanges) return;
 	// At module startup, data assets may not be in memory yet.
 	// Use the AssetRegistry to discover and synchronously load all guards.
 	const IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(
@@ -216,49 +219,7 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 		}
 	}
 
-	// Pass 2 - for each stale guard, only remove dependencies that are NOT
-	// still claimed by another guard with present content on the same owning plugin.
-	for (const FStaleCandidate& Candidate : StaleCandidates)
-	{
-		const UGorgeousExtensionResourceGuard* Guard = Candidate.Guard;
-		const TMap<FName, TArray<FString>>* ActiveMap = ActiveDependencies.Find(Guard->OwningPluginName);
-
-		bool bRemovedAny = false;
-		for (const TPair<FName, bool>& Requirement : Guard->RequiredPlugins)
-		{
-			const FName& RequiredPlugin = Requirement.Key;
-			if (Requirement.Value)
-			{
-				continue;
-			}
-			if (ActiveMap && ActiveMap->Contains(RequiredPlugin))
-			{
-				if (!IPluginManager::Get().FindPlugin(Guard->OwningPluginName.ToString())->GetDescriptor().Plugins.ContainsByPredicate(
-					[&RequiredPlugin](const FPluginReferenceDescriptor& Ref) { return Ref.Name == RequiredPlugin.ToString(); }))
-				{
-					// This is a rare edge case: the guard's content is gone, but another guard on the same plugin still needs this dependency, which is now missing from the descriptor. The safe move is to leave it in place to avoid breaking the other guard, even though it will be reported as an error until fixed.
-					continue;
-				}
-				
-				// Another active guard on the same owning plugin still needs this dependency - skip.
-				GT_I_LOG("GT.ExtensionResourceGuard",
-					TEXT("Keeping dependency '%s' in plugin '%s' - still required by another active guard."),
-					*RequiredPlugin.ToString(), *Guard->OwningPluginName.ToString());
-				continue;
-			}
-
-			RemovePluginDependencyFromDescriptor(Guard->OwningPluginName, RequiredPlugin.ToString());
-			bRemovedAny = true;
-		}
-
-		if (bRemovedAny)
-		{
-			GT_I_LOG("GT.ExtensionResourceGuard",
-				TEXT("Swept stale dependencies for removed system '%s' from plugin '%s'."),
-				*Guard->SystemIdentifier.ToString(), *Guard->OwningPluginName.ToString());
-		}
-	}
-
+	// Dependencies may also be required by native code; removing content never removes descriptor dependencies.
 	// Pass 3 - for each active guard, ensure all required plugins are present
 	// in the owning plugin's .uplugin descriptor. If any are missing, add them.
 	for (const auto& Pair : ActiveDependencies)
@@ -283,7 +244,7 @@ void UGorgeousExtensionResourceGuard::ReconcilePluginDependencies()
 			const bool bAlreadyInDescriptor = DescriptorPlugins.ContainsByPredicate(
 				[&RequiredPluginStr](const FPluginReferenceDescriptor& Ref)
 				{
-					return Ref.Name == RequiredPluginStr;
+					return Ref.Name == RequiredPluginStr && Ref.bEnabled;
 				});
 
 			if (!bAlreadyInDescriptor)

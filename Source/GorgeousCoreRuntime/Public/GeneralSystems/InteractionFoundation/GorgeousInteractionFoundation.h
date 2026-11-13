@@ -35,9 +35,9 @@
 */
 UCLASS(Blueprintable, BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/GorgeousInteractionFoundation",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/InteractionFoundation/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/InteractionFoundation/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousInteractionFoundation : public UGorgeous
@@ -192,7 +192,7 @@ public:
 	static bool TryInteractCancel(AActor* TargetActor, AActor* InteractingActor, const float& HoldDuration, const float& RemainingDuration, const FGameplayTag& KeyTag, const FHitResult& HitResult);
 
 	/**
-	 * Performs a sphere trace and executes the matching interaction on the first valid target supporting the interaction tag.
+	 * Executes an interaction from a supplied sphere-trace or focus hit result. This function does not perform a new trace.
 	 *
 	 * @param WorldContextObject World context used to locate the world for the trace.
 	 * @param HitResult Prior trace or focus hit result that defined the interaction target.

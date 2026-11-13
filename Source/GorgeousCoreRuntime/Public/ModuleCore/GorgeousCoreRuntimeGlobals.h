@@ -44,9 +44,9 @@ class APlayerController;
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Gorgeous",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Globals/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeous : public UObject
@@ -80,7 +80,7 @@ protected:
  * Exposes static functions and properties that are used throughout the module.
  */
 UCLASS(BlueprintType, DisplayName = "Gorgeous Core Globals")
-class UGorgeousCoreRuntimeGlobals : public UGorgeous
+class GORGEOUSCORERUNTIME_API UGorgeousCoreRuntimeGlobals : public UGorgeous
 {
 	GENERATED_BODY()
 

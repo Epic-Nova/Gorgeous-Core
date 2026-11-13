@@ -1,3 +1,6 @@
+#include "UObject/NoExportTypes.h"
+#include "Misc/OutputDeviceNull.h"
+#include "UObject/StrongObjectPtr.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -10,6 +13,9 @@
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
+#include "GeneralSystems/VisualDataGathering/GorgeousVDGConsent.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
+#include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
@@ -18,8 +24,12 @@
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "Engine/NetConnection.h"
+#include "Engine/NetDriver.h"
+#include "Engine/ActorChannel.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+#include "HAL/PlatformTime.h"
 #include "UObject/UnrealType.h"
 #include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 
@@ -27,7 +37,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationRelay, Log, All);
 
 // Server-side map: RequestGuid → originating client PC (populated in ServerRelayRPC*_Implementation).
 // Entries remain valid as long as the PC weak ptr is live; stale entries are lazily removed.
-TMap<FGuid, TWeakObjectPtr<APlayerController>> UGorgeousAutoReplicationRPCRelayComponent::ClientInitiatedRPCOrigins;
+TMap<FGuid, UGorgeousAutoReplicationRPCRelayComponent::FClientRPCOrigin> UGorgeousAutoReplicationRPCRelayComponent::ClientInitiatedRPCOrigins;
 
 // =============================================================================
 // OV tree serialization helpers (file-private)
@@ -44,171 +54,173 @@ namespace
 		FName(TEXT("RootConfiguration")),
 	};
 
-	static bool ShouldSkipOVProperty(const FProperty* Prop)
-	{
-		if (GOVSkippedPropertyNames.Contains(Prop->GetFName()))
-		{
-			return true;
-		}
-		// Skip transient / editor-only / config, not meaningful as captured data
-		if (Prop->HasAnyPropertyFlags(CPF_Transient | CPF_NonPIEDuplicateTransient | CPF_EditorOnly | CPF_Config))
-		{
-			return true;
-		}
-		// Skip UObject / class references, can't safely cross network without a PackageMap
-		if (Prop->IsA<FObjectProperty>() ||
-			Prop->IsA<FWeakObjectProperty>() ||
-			Prop->IsA<FSoftObjectProperty>() ||
-			Prop->IsA<FLazyObjectProperty>() ||
-			Prop->IsA<FClassProperty>() ||
-			Prop->IsA<FSoftClassProperty>())
-		{
-			return true;
-		}
-		return false;
-	}
+    constexpr int32 MaxResultTreeNodes=1024;
+    constexpr int32 MaxResultTreeDepth=64;
+    constexpr int32 MaxResultTreeProperties=8192;
+    constexpr int64 MaxResultTreeBytes=1024*1024;
 
-	// Recursively walk Node and its VariableRegistry children, appending one
-	// FGorgeousSerializedOVNode per OV (depth-first, parent before children).
-	static void AppendOVTreeNodes(const UGorgeousObjectVariable* Node,
-		const FGuid& ParentGuid,
-		TArray<FGorgeousSerializedOVNode>& OutNodes,
-		FName InRegistryKey = NAME_None)
-	{
-		if (!Node)
-		{
-			return;
-		}
-
-		FGorgeousSerializedOVNode SerNode;
-		SerNode.Identifier       = Node->UniqueIdentifier;
-		SerNode.ParentIdentifier = ParentGuid;
-		SerNode.ClassPath        = Node->GetClass()->GetPathName();
-		SerNode.RegistryKey      = InRegistryKey;
-
-		for (TFieldIterator<FProperty> PropIt(Node->GetClass(), EFieldIteratorFlags::IncludeSuper); PropIt; ++PropIt)
-		{
-			FProperty* Prop = *PropIt;
-			if (ShouldSkipOVProperty(Prop))
-			{
-				continue;
-			}
-
-			FGorgeousOVPropertyCapture Capture;
-			Capture.PropertyName = Prop->GetName();
-
-			const void* PropPtr = Prop->ContainerPtrToValuePtr<void>(Node);
-			Prop->ExportTextItem_Direct(Capture.ExportedValue, PropPtr, nullptr,
-				const_cast<UGorgeousObjectVariable*>(Node), PPF_None, nullptr);
-
-			SerNode.Properties.Add(MoveTemp(Capture));
-		}
-
-		OutNodes.Add(MoveTemp(SerNode));
-
-		for (const TPair<FName, TObjectPtr<UGorgeousObjectVariable>>& Pair : Node->VariableRegistry)
-		{
-			AppendOVTreeNodes(Pair.Value.Get(), Node->UniqueIdentifier, OutNodes, Pair.Key);
-		}
-	}
-
-	// Reconstruct an OV tree from the serialized node list.
-	// Returns the root OV (the node whose ParentIdentifier is invalid), or nullptr.
-	static UGorgeousObjectVariable* ReconstructOVTree(const TArray<FGorgeousSerializedOVNode>& Nodes)
-	{
-		if (Nodes.IsEmpty())
-		{
-			return nullptr;
-		}
-
-		TMap<FGuid, UGorgeousObjectVariable*> Created;
-		Created.Reserve(Nodes.Num());
-
-		// Pass 1: create all instances and restore property values
-		for (const FGorgeousSerializedOVNode& Node : Nodes)
-		{
-			UClass* OVClass = FindObject<UClass>(nullptr, *Node.ClassPath);
-			if (!OVClass)
-			{
-				OVClass = LoadObject<UClass>(nullptr, *Node.ClassPath);
-			}
-			if (!OVClass)
-			{
-				UE_LOG(LogGorgeousAutoReplicationRelay, Warning,
-					TEXT("ReconstructOVTree: Could not find class '%s', node skipped."),
-					*Node.ClassPath);
-				continue;
-			}
-
-			UGorgeousObjectVariable* NewOV = NewObject<UGorgeousObjectVariable>(
-				GetTransientPackage(), OVClass);
-			if (!NewOV)
-			{
-				continue;
-			}
-
-			// Restore the original GUID so lookups by identifier still work
-			NewOV->UniqueIdentifier = Node.Identifier;
-
-			// Build a name→property map for O(1) import lookup
-			TMap<FString, FProperty*> PropMap;
-			for (TFieldIterator<FProperty> PropIt(NewOV->GetClass(), EFieldIteratorFlags::IncludeSuper);
-				PropIt; ++PropIt)
-			{
-				PropMap.Add(PropIt->GetName(), *PropIt);
-			}
-
-			for (const FGorgeousOVPropertyCapture& Cap : Node.Properties)
-			{
-				FProperty** Found = PropMap.Find(Cap.PropertyName);
-				if (!Found)
-				{
-					continue;
-				}
-				FProperty* Prop = *Found;
-				if (ShouldSkipOVProperty(Prop))
-				{
-					continue;
-				}
-
-				void* PropPtr = Prop->ContainerPtrToValuePtr<void>(NewOV);
-				Prop->ImportText_Direct(*Cap.ExportedValue, PropPtr, NewOV, PPF_None);
-			}
-
-			Created.Add(Node.Identifier, NewOV);
-		}
-
-		// Pass 2: wire up VariableRegistry parent↔child relationships
-		for (const FGorgeousSerializedOVNode& Node : Nodes)
-		{
-			if (!Node.ParentIdentifier.IsValid())
-			{
-				continue;
-			}
-			UGorgeousObjectVariable** Parent = Created.Find(Node.ParentIdentifier);
-			UGorgeousObjectVariable** Child  = Created.Find(Node.Identifier);
-			if (Parent && Child)
-			{
-				const FName Key = !Node.RegistryKey.IsNone()
-					? Node.RegistryKey
-					: FName(*Node.Identifier.ToString().Left(8));
-				(*Parent)->VariableRegistry.Add(Key, *Child);
-			}
-		}
-
-		// Return the root node (invalid ParentIdentifier)
-		for (const FGorgeousSerializedOVNode& Node : Nodes)
-		{
-			if (!Node.ParentIdentifier.IsValid())
-			{
-				if (UGorgeousObjectVariable** Root = Created.Find(Node.Identifier))
-				{
-					return *Root;
-				}
-			}
-		}
-		return nullptr;
-	}
+    // ImportText may invoke native struct parsers, resolve object paths, and load assets.
+    // This PackageMap-free result format accepts only value types with known-safe parsers.
+    static bool IsSafeResultProperty(const FProperty* Property,int32 Depth=0)
+    {
+        if (!Property || Depth>32) return false;
+        if (Property->IsA<FNumericProperty>() || Property->IsA<FBoolProperty>() || Property->IsA<FEnumProperty>() ||
+            Property->IsA<FStrProperty>() || Property->IsA<FNameProperty>() || Property->IsA<FTextProperty>()) return true;
+        if (const auto* Array=CastField<FArrayProperty>(Property)) return IsSafeResultProperty(Array->Inner,Depth+1);
+        if (const auto* Set=CastField<FSetProperty>(Property)) return IsSafeResultProperty(Set->ElementProp,Depth+1);
+        if (const auto* Map=CastField<FMapProperty>(Property)) return IsSafeResultProperty(Map->KeyProp,Depth+1) && IsSafeResultProperty(Map->ValueProp,Depth+1);
+        if (const auto* Struct=CastField<FStructProperty>(Property))
+        {
+            UScriptStruct* Type=Struct->Struct;
+            if (!Type) return false;
+            const bool KnownValueParser=Type==TBaseStructure<FVector>::Get() || Type==TBaseStructure<FRotator>::Get() ||
+                Type==TBaseStructure<FTransform>::Get() || Type==TBaseStructure<FVector2D>::Get() ||
+                Type==TBaseStructure<FLinearColor>::Get() || Type==TBaseStructure<FColor>::Get() || Type==TBaseStructure<FGuid>::Get() ||
+                Type==FGameplayTag::StaticStruct() || Type==FGameplayTagContainer::StaticStruct();
+            if (KnownValueParser) return true;
+            if (const auto* Ops=Type->GetCppStructOps()) if (Ops->HasImportTextItem()) return false;
+            for (TFieldIterator<FProperty> It(Type);It;++It) if (!IsSafeResultProperty(*It,Depth+1)) return false;
+            return true;
+        }
+        // Includes object, weak/soft/class/interface, delegates, field paths and
+        // containers/structs containing them. No nested reference bypass is allowed.
+        return false;
+    }
+    static bool ContainsTextProperty(const FProperty* Property,int32 Depth=0)
+    {
+        if (!Property || Depth>32) return false;
+        if (Property->IsA<FTextProperty>()) return true;
+        if (const auto* Array=CastField<FArrayProperty>(Property)) return ContainsTextProperty(Array->Inner,Depth+1);
+        if (const auto* Set=CastField<FSetProperty>(Property)) return ContainsTextProperty(Set->ElementProp,Depth+1);
+        if (const auto* Map=CastField<FMapProperty>(Property)) return ContainsTextProperty(Map->KeyProp,Depth+1) || ContainsTextProperty(Map->ValueProp,Depth+1);
+        if (const auto* Struct=CastField<FStructProperty>(Property))
+            for (TFieldIterator<FProperty> It(Struct->Struct);It;++It) if (ContainsTextProperty(*It,Depth+1)) return true;
+        return false;
+    }
+    static bool ShouldSkipOVProperty(const FProperty* Property)
+    {
+        return !Property || GOVSkippedPropertyNames.Contains(Property->GetFName()) ||
+            Property->HasAnyPropertyFlags(CPF_Transient | CPF_NonPIEDuplicateTransient | CPF_EditorOnly | CPF_Config) || !IsSafeResultProperty(Property);
+    }
+    static bool IsSafeResultText(const FProperty* Property,const FString& Text)
+    {
+        // FText's LOCTABLE parser loads string-table assets independently of object
+        // property flags. Ordinary localized/invariant text remains supported.
+        return !ContainsTextProperty(Property) || !Text.Contains(TEXT("LOCTABLE"),ESearchCase::IgnoreCase);
+    }
+    static FName ResultRegistryKey(const FGorgeousSerializedOVNode& Node)
+    { return Node.RegistryKey.IsNone() ? FName(*Node.Identifier.ToString(EGuidFormats::Digits)) : Node.RegistryKey; }
+    static bool ValidateResultTree(const TArray<FGorgeousSerializedOVNode>& Nodes)
+    {
+        if (Nodes.IsEmpty() || Nodes.Num()>MaxResultTreeNodes) return false;
+        TMap<FGuid,int32> Indices; int32 RootCount=0; int32 PropertyCount=0; int64 Bytes=0;
+        TMap<FGuid,TSet<FName>> SiblingKeys;
+        for (int32 Index=0;Index<Nodes.Num();++Index)
+        {
+            const auto& Node=Nodes[Index];
+            if (!Node.Identifier.IsValid() || Indices.Contains(Node.Identifier) || Node.ClassPath.Len()>2048 || Node.RegistryKey.ToString().Len()>1024 || Node.Properties.Num()>1024) return false;
+            Indices.Add(Node.Identifier,Index);
+            if (!Node.ParentIdentifier.IsValid()) ++RootCount;
+            Bytes+=128+int64(Node.ClassPath.Len()+Node.RegistryKey.ToString().Len())*sizeof(TCHAR);
+            UClass* Class=FindObject<UClass>(nullptr,*Node.ClassPath);
+            if (!Class || !Class->IsChildOf(UGorgeousObjectVariable::StaticClass()) || Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists)) return false;
+            TSet<const FProperty*> SeenProperties;
+            for (const auto& Capture:Node.Properties)
+            {
+                Bytes+=(int64(Capture.PropertyName.Len())+Capture.ExportedValue.Len())*sizeof(TCHAR)+32;
+                if (++PropertyCount>MaxResultTreeProperties || Bytes>MaxResultTreeBytes || Capture.PropertyName.Len()>1024) return false;
+                const FProperty* Property=FindFProperty<FProperty>(Class,*Capture.PropertyName);
+                if (ShouldSkipOVProperty(Property) || SeenProperties.Contains(Property) || !IsSafeResultText(Property,Capture.ExportedValue)) return false;
+                SeenProperties.Add(Property);
+            }
+            if (Bytes>MaxResultTreeBytes) return false;
+        }
+        if (RootCount!=1) return false;
+        for (const auto& Node:Nodes)
+        {
+            const FGorgeousSerializedOVNode* Current=&Node; TSet<FGuid> Path; int32 Depth=0;
+            while (Current)
+            {
+                if (++Depth>MaxResultTreeDepth || Path.Contains(Current->Identifier)) return false;
+                Path.Add(Current->Identifier);
+                if (!Current->ParentIdentifier.IsValid()) break;
+                const int32* Parent=Indices.Find(Current->ParentIdentifier); if (!Parent) return false;
+                Current=&Nodes[*Parent];
+            }
+            if (Node.ParentIdentifier.IsValid())
+            {
+                auto& Keys=SiblingKeys.FindOrAdd(Node.ParentIdentifier); const FName Key=ResultRegistryKey(Node);
+                if (Keys.Contains(Key)) return false; Keys.Add(Key);
+            }
+        }
+        return true;
+    }
+    static bool CaptureOVTreeNodes(const UGorgeousObjectVariable* Root,TArray<FGorgeousSerializedOVNode>& OutNodes)
+    {
+        OutNodes.Reset(); TSet<const UGorgeousObjectVariable*> Visited; TSet<FGuid> Identifiers; int64 Bytes=0;
+        TFunction<bool(const UGorgeousObjectVariable*,FGuid,FName,int32)> Append;
+        Append=[&](const UGorgeousObjectVariable* Node,FGuid Parent,FName Key,int32 Depth)
+        {
+            if (!Node || Depth>MaxResultTreeDepth || Visited.Contains(Node) || OutNodes.Num()>=MaxResultTreeNodes) return false;
+            Visited.Add(Node);
+            FGorgeousSerializedOVNode Captured;
+            Captured.Identifier=Node->UniqueIdentifier.IsValid() ? Node->UniqueIdentifier : FGuid::NewGuid();
+            if (Identifiers.Contains(Captured.Identifier)) return false; Identifiers.Add(Captured.Identifier);
+            Captured.ParentIdentifier=Parent; Captured.ClassPath=Node->GetClass()->GetPathName(); Captured.RegistryKey=Key;
+            Bytes+=128+int64(Captured.ClassPath.Len()+Key.ToString().Len())*sizeof(TCHAR);
+            for (TFieldIterator<FProperty> It(Node->GetClass(),EFieldIteratorFlags::IncludeSuper);It;++It)
+            {
+                FProperty* Property=*It; if (ShouldSkipOVProperty(Property)) continue;
+                FGorgeousOVPropertyCapture Capture; Capture.PropertyName=Property->GetName();
+                Property->ExportTextItem_Direct(Capture.ExportedValue,Property->ContainerPtrToValuePtr<void>(Node),nullptr,const_cast<UGorgeousObjectVariable*>(Node),PPF_None);
+                if (!IsSafeResultText(Property,Capture.ExportedValue)) continue;
+                Bytes+=(int64(Capture.PropertyName.Len())+Capture.ExportedValue.Len())*sizeof(TCHAR)+32;
+                if (Bytes>MaxResultTreeBytes || Captured.Properties.Num()>=1024) return false;
+                Captured.Properties.Add(MoveTemp(Capture));
+            }
+            const FGuid Identifier=Captured.Identifier; OutNodes.Add(MoveTemp(Captured));
+            for (const auto& Pair:Node->VariableRegistry) if (Pair.Value && !Append(Pair.Value.Get(),Identifier,Pair.Key,Depth+1)) return false;
+            return true;
+        };
+        if (!Append(Root,FGuid(),NAME_None,1) || !ValidateResultTree(OutNodes)) { OutNodes.Reset(); return false; }
+        return true;
+    }
+    static UGorgeousObjectVariable* ReconstructOVTree(const TArray<FGorgeousSerializedOVNode>& Nodes)
+    {
+        // Preflight the ENTIRE message before constructing any object or invoking a parser.
+        if (!ValidateResultTree(Nodes)) return nullptr;
+        TMap<FGuid,UGorgeousObjectVariable*> Created;
+        TArray<TStrongObjectPtr<UGorgeousObjectVariable>> ConstructionGuards;
+        FOutputDeviceNull Errors;
+        for (const auto& Node:Nodes)
+        {
+            UClass* Class=FindObject<UClass>(nullptr,*Node.ClassPath);
+            auto* NewOV=NewObject<UGorgeousObjectVariable>(GetTransientPackage(),Class);
+            if (!NewOV) return nullptr;
+            ConstructionGuards.Emplace(NewOV); NewOV->UniqueIdentifier=Node.Identifier;
+            for (const auto& Capture:Node.Properties)
+            {
+                FProperty* Property=FindFProperty<FProperty>(Class,*Capture.PropertyName);
+                const TCHAR* End=Property->ImportText_Direct(*Capture.ExportedValue,Property->ContainerPtrToValuePtr<void>(NewOV),NewOV,PPF_None,&Errors);
+                if (!End) return nullptr;
+                while (*End && FChar::IsWhitespace(*End)) ++End;
+                if (*End) return nullptr;
+            }
+            Created.Add(Node.Identifier,NewOV);
+        }
+        UGorgeousObjectVariable* Root=nullptr;
+        for (const auto& Node:Nodes)
+        {
+            auto* Child=Created.FindChecked(Node.Identifier);
+            if (Node.ParentIdentifier.IsValid())
+            {
+                auto* Parent=Created.FindChecked(Node.ParentIdentifier);
+                Parent->VariableRegistry.Add(ResultRegistryKey(Node),Child); Child->SetParentRefOnly(Parent);
+            }
+            else Root=Child;
+        }
+        return Root;
+    }
 } // namespace
 
 UGorgeousAutoReplicationRPCRelayComponent::UGorgeousAutoReplicationRPCRelayComponent()
@@ -217,66 +229,44 @@ UGorgeousAutoReplicationRPCRelayComponent::UGorgeousAutoReplicationRPCRelayCompo
 	SetIsReplicatedByDefault(true);
 }
 
-void UGorgeousAutoReplicationRPCRelayComponent::RegisterClientInitiatedRPCOrigin(
-	const FGuid& RequestGuid, APlayerController* OriginPC)
+void UGorgeousAutoReplicationRPCRelayComponent::RegisterClientInitiatedRPCOrigin(const FGuid& Guid,APlayerController* Controller,float TimeoutSeconds)
 {
-	if (!RequestGuid.IsValid() || !OriginPC)
-	{
-		return;
-	}
-	ClientInitiatedRPCOrigins.Add(RequestGuid, OriginPC);
+    if (!Guid.IsValid() || !Controller) return;
+    const double Now=FPlatformTime::Seconds();
+    for (auto It=ClientInitiatedRPCOrigins.CreateIterator();It;++It) if (!It.Value().Controller.IsValid() || It.Value().ExpiresAt<Now) It.RemoveCurrent();
+    if (ClientInitiatedRPCOrigins.Num()>=1024 && !ClientInitiatedRPCOrigins.Contains(Guid)) return;
+    auto& Origin=ClientInitiatedRPCOrigins.FindOrAdd(Guid);
+    Origin.Controller=Controller; Origin.ExpiresAt=Now+FMath::Clamp(TimeoutSeconds>0 ? TimeoutSeconds : 30.0f,1.0f,300.0f);
 }
-
-void UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(
-	const FGorgeousAutoReplicationRPCResult& Result, EGorgeousRPCReadyState ReadyState)
+APlayerController* UGorgeousAutoReplicationRPCRelayComponent::ResolveClientInitiatedRPCOrigin(const FGuid& Guid)
 {
-	if (!Result.QueuedRPC.RequestGuid.IsValid())
-	{
-		return;
-	}
-
-	// Lazily remove dead (GC'd) entries before looking up.
-	for (auto It = ClientInitiatedRPCOrigins.CreateIterator(); It; ++It)
-	{
-		if (!It->Value.IsValid())
-		{
-			It.RemoveCurrent();
-		}
-	}
-
-	TWeakObjectPtr<APlayerController>* OriginatorPtr = ClientInitiatedRPCOrigins.Find(Result.QueuedRPC.RequestGuid);
-	if (!OriginatorPtr)
-	{
-		return;
-	}
-
-	APlayerController* OriginPC = OriginatorPtr->Get();
-	if (!OriginPC)
-	{
-		ClientInitiatedRPCOrigins.Remove(Result.QueuedRPC.RequestGuid);
-		return;
-	}
-
-	UGorgeousAutoReplicationRPCRelayComponent* Relay =
-		OriginPC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
-	if (!Relay)
-	{
-		return;
-	}
-
-	FGorgeousAutoReplicationSerializedRPCResult Serialized;
-	Relay->SerializeResult(Result, Serialized);
-	Serialized.RelayedReadyState = ReadyState;
-	Relay->ClientRelayAutoReplicationResult(Serialized);
-
-	// For non-multicast types only one result is expected, clean up to avoid accumulation.
-	const bool bIsMulticast =
-		Result.QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EReliableMulticast ||
-		Result.QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast;
-	if (!bIsMulticast)
-	{
-		ClientInitiatedRPCOrigins.Remove(Result.QueuedRPC.RequestGuid);
-	}
+    const auto* Origin=ClientInitiatedRPCOrigins.Find(Guid);
+    return Origin && Origin->ExpiresAt>=FPlatformTime::Seconds() ? Origin->Controller.Get() : nullptr;
+}
+void UGorgeousAutoReplicationRPCRelayComponent::RegisterClientInitiatedExpectedResponder(const FGuid& Guid,const FGorgeousAutoReplicationRPCResponderHandle& Responder)
+{
+    if (auto* Origin=ClientInitiatedRPCOrigins.Find(Guid)) if (Responder.IsValid()) Origin->Expected.Add(Responder.GetStableKey());
+}
+bool UGorgeousAutoReplicationRPCRelayComponent::IsClientInitiatedExpectedResponder(const FGuid& Guid,const FGorgeousAutoReplicationRPCResponderHandle& Responder)
+{
+    const auto* Origin=ClientInitiatedRPCOrigins.Find(Guid);
+    return Origin && Origin->Controller.IsValid() && Origin->ExpiresAt>=FPlatformTime::Seconds() && Origin->Expected.Contains(Responder.GetStableKey());
+}
+void UGorgeousAutoReplicationRPCRelayComponent::TryRelayResultToClientInitiator(const FGorgeousAutoReplicationRPCResult& Result,EGorgeousRPCReadyState ReadyState)
+{
+    auto* Origin=ClientInitiatedRPCOrigins.Find(Result.QueuedRPC.RequestGuid);
+    if (!Origin || !Origin->Controller.IsValid() || Origin->ExpiresAt<FPlatformTime::Seconds()) { ClientInitiatedRPCOrigins.Remove(Result.QueuedRPC.RequestGuid); return; }
+    auto* Relay=Origin->Controller->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
+    if (!Relay) return;
+    FGorgeousAutoReplicationSerializedRPCResult Serialized;
+    Relay->SerializeResult(Result,Serialized);
+    Serialized.ExpectedResponderKeys=Origin->Expected.Array();
+    Serialized.RelayedReadyState=ReadyState;
+    Relay->ClientRelayAutoReplicationResult(Serialized);
+    if (ReadyState==EGorgeousRPCReadyState::Ready) Origin->Completed.Add(Result.Responder.GetStableKey());
+    bool bAllComplete=!Origin->Expected.IsEmpty();
+    for (const FString& Key:Origin->Expected) if (!Origin->Completed.Contains(Key)) { bAllComplete=false; break; }
+    if (bAllComplete) ClientInitiatedRPCOrigins.Remove(Result.QueuedRPC.RequestGuid);
 }
 
 void UGorgeousAutoReplicationRPCRelayComponent::RelayResultToServer(const FGorgeousAutoReplicationRPCResult& Result,
@@ -349,6 +339,21 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToClient(con
 		return false;
 	}
 
+    // An RPC on this PC channel can precede the destination actor's open bunch.
+    // Legacy UE executes unmapped RPC object references as null by default. Do
+    // not acknowledge initial state until that actor channel is acknowledged;
+    // the existing initial-recipient polling retries without losing the snapshot.
+    if (Envelope.OwnerActor && Envelope.OwnerActor!=GetOwner())
+    {
+        UNetConnection* Connection=GetOwner()->GetNetConnection();
+        UNetDriver* Driver=GetWorld() ? GetWorld()->GetNetDriver() : nullptr;
+        if (Connection && Driver && !Driver->IsUsingIrisReplication())
+        {
+            const UActorChannel* Channel=Connection->FindActorChannelRef(Envelope.OwnerActor.Get());
+            if (!Channel || !Channel->OpenAcked) return false;
+        }
+    }
+
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayPropertyPayloadToClient: Server relaying property payload for entry %s to owning client."), *Envelope.EntryKey.ToString());
 	ClientRelayPropertyPayload(Envelope);
 	return true;
@@ -361,11 +366,16 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayAutoReplicationResult
 		return;
 	}
 
+    APlayerController* Sender = Cast<APlayerController>(GetOwner());
+    if (!Sender) return;
+    const auto ActualResponder = FGorgeousAutoReplicationRPCResponderHandle::FromController(Sender);
+    if (!UGorgeousAutoReplicationRPCRequestAsyncAction::IsExpectedRemoteResponder(SerializedResult.RequestGuid, ActualResponder, GetWorld())) return;
 	FGorgeousAutoReplicationRPCResult Result;
+    Result.ExecutionWorld=GetWorld();
 	Result.QueuedRPC.RequestGuid     = SerializedResult.RequestGuid;
 	Result.TargetKind               = SerializedResult.TargetKind;
-	Result.Responder                = SerializedResult.Responder;
-	Result.TargetVariableIdentifier = SerializedResult.TargetVariableIdentifier;
+	Result.Responder                = ActualResponder;
+	Result.TargetVariableIdentifier = FGuid();
 
 	// If the sender included a full OV tree, reconstruct it here so the receiving side
 	// has the actual return OV (including all child entries in VariableRegistry) without
@@ -375,11 +385,13 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayAutoReplicationResult
 		if (UGorgeousObjectVariable* ReconstructedRoot = ReconstructOVTree(SerializedResult.OVTree))
 		{
 			Result.TargetVariable = ReconstructedRoot;
+            Result.TargetVariableIdentifier=ReconstructedRoot->UniqueIdentifier;
 			UE_LOG(LogGorgeousAutoReplicationRelay, Verbose,
 				TEXT("ServerRelayAutoReplicationResult: Reconstructed OV tree (%d nodes) for request %s."),
 				SerializedResult.OVTree.Num(),
 				*SerializedResult.RequestGuid.ToString());
 		}
+        else return;
 	}
 
 	// Route to the correct server-side handler based on the ready state the client declared.
@@ -400,7 +412,8 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 {
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayPropertyPayload: Server received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
-	if (!TargetMixin)
+    FGorgeousAutoReplicationMixin* DestinationMixin = Envelope.OwnerActor && Envelope.OwnerActor->GetWorld() == GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(Envelope.OwnerActor) : nullptr;
+	if (!DestinationMixin)
 	{
 		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
 		return;
@@ -408,7 +421,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 
 	// Validate that the sending client is permitted to push property changes for this entry.
 	APlayerController* SenderController = Cast<APlayerController>(GetOwner());
-	if (!TargetMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, SenderController))
+	if (!DestinationMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 	{
 		UE_LOG(LogGorgeousAutoReplicationRelay, Warning,
 			TEXT("ServerRelayPropertyPayload: Blocked property payload for entry %s from controller %s due to access policy."),
@@ -416,7 +429,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 
 		// Send back the server's authoritative value as a correction so the client's local
 		// instance converges back to the server state instead of silently diverging.
-		if (UGorgeousObjectVariable* TargetVar = TargetMixin->ResolveVariableForKey(Envelope.EntryKey))
+		if (UGorgeousObjectVariable* TargetVar = DestinationMixin->ResolveVariableForKey(Envelope.EntryKey))
 		{
 			FGorgeousAutoReplicationConditionContext CorrectionContext;
 			CorrectionContext.bIsOwnerConnection = true;
@@ -434,6 +447,9 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 			{
 				FGorgeousAutoReplicationPropertyEnvelope CorrectionEnvelope;
 				CorrectionEnvelope.EntryKey = Envelope.EntryKey;
+                CorrectionEnvelope.OwnerActor = Envelope.OwnerActor;
+                CorrectionEnvelope.VariableClass = Envelope.VariableClass;
+                CorrectionEnvelope.StreamConfig = TargetVar->GetAutoReplicationConfig();
 				CorrectionEnvelope.Payload = CorrectionPayload;
 				ClientRelayPropertyPayload(CorrectionEnvelope);
 				UE_LOG(LogGorgeousAutoReplicationRelay, Log,
@@ -444,7 +460,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 		return;
 	}
 
-	TargetMixin->HandleTransportedPropertyPayload(Envelope);
+	DestinationMixin->HandleTransportedPropertyPayload(Envelope);
 }
 
 bool UGorgeousAutoReplicationRPCRelayComponent::RelayRPCToServer(const FGorgeousQueuedRPC& QueuedRPC, bool bReliable, FGorgeousAutoReplicationMixin* InTargetMixin)
@@ -482,6 +498,10 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayRPCToServer(const FGorgeous
 
 void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implementation(const FGorgeousQueuedRPC& QueuedRPC)
 {
+    APlayerController* Sender=Cast<APlayerController>(GetOwner());
+    AActor* TargetActor=QueuedRPC.TargetOwnerActor;
+    FGorgeousAutoReplicationMixin* DestinationMixin=TargetActor && TargetActor->GetWorld()==GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(TargetActor) : TargetMixin;
+    if (!DestinationMixin || !DestinationMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCReliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
 
 	// Register the originating PC so results can be relayed back to the initiating client.
@@ -489,11 +509,12 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
 	{
 		if (APlayerController* OriginPC = Cast<APlayerController>(GetOwner()))
 		{
-			RegisterClientInitiatedRPCOrigin(QueuedRPC.RequestGuid, OriginPC);
+			RegisterClientInitiatedRPCOrigin(QueuedRPC.RequestGuid, OriginPC, QueuedRPC.Payload.TimeoutSeconds);
 		}
 	}
 
-	if (!TargetMixin)
+    if ((FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Key) || FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Payload.HandlerName)) && ResolveClientInitiatedRPCOrigin(QueuedRPC.RequestGuid)!=Sender) return;
+	if (!DestinationMixin)
 	{
 		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCReliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
 		return;
@@ -504,11 +525,11 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
 	{
 	case EGorgeousAutoReplicationRPCType::EReliableServer:
 		// Server-bound RPC, deliver locally
-		TargetMixin->HandleTransportedRPC(QueuedRPC);
+		DestinationMixin->HandleTransportedRPC(QueuedRPC);
 		break;
 	case EGorgeousAutoReplicationRPCType::EReliableClient:
 		// Client RPC needs to be forwarded through transporter
-		TargetMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, nullptr);
+		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, nullptr);
 		break;
 	case EGorgeousAutoReplicationRPCType::EReliableMulticast:
 	{
@@ -516,10 +537,10 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
 		// ForwardRPCToMulticast call.  The previous per-GPS PlayerArray loop fired
 		// the server-side handler once per PlayerState (3× with a listen-server +
 		// 2 clients), producing duplicate "Server" tracker entries and incorrect
-		// responder labels.  Using TargetMixin->RequestRPC once mirrors the path
+		// responder labels.  Using DestinationMixin->RequestRPC once mirrors the path
 		// taken by server-originated multicasts and is both correct and efficient.
 		FGuid MulticastGuid = QueuedRPC.RequestGuid;
-		TargetMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
+		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
 		UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCReliable: Forwarded reliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
 		break;
 	}
@@ -531,6 +552,10 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
 
 void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Implementation(const FGorgeousQueuedRPC& QueuedRPC)
 {
+    APlayerController* Sender=Cast<APlayerController>(GetOwner());
+    AActor* TargetActor=QueuedRPC.TargetOwnerActor;
+    FGorgeousAutoReplicationMixin* DestinationMixin=TargetActor && TargetActor->GetWorld()==GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(TargetActor) : TargetMixin;
+    if (!DestinationMixin || !DestinationMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCUnreliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
 
 	// Register the originating PC so results can be relayed back to the initiating client.
@@ -538,11 +563,12 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
 	{
 		if (APlayerController* OriginPC = Cast<APlayerController>(GetOwner()))
 		{
-			RegisterClientInitiatedRPCOrigin(QueuedRPC.RequestGuid, OriginPC);
+			RegisterClientInitiatedRPCOrigin(QueuedRPC.RequestGuid, OriginPC, QueuedRPC.Payload.TimeoutSeconds);
 		}
 	}
 
-	if (!TargetMixin)
+    if ((FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Key) || FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Payload.HandlerName)) && ResolveClientInitiatedRPCOrigin(QueuedRPC.RequestGuid)!=Sender) return;
+	if (!DestinationMixin)
 	{
 		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCUnreliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
 		return;
@@ -553,18 +579,18 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
 	{
 	case EGorgeousAutoReplicationRPCType::EUnreliableServer:
 		// Server-bound RPC, deliver locally
-		TargetMixin->HandleTransportedRPC(QueuedRPC);
+		DestinationMixin->HandleTransportedRPC(QueuedRPC);
 		break;
 	case EGorgeousAutoReplicationRPCType::EUnreliableClient:
 		// Client RPC needs to be forwarded through transporter
-		TargetMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, nullptr);
+		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, nullptr);
 		break;
 	case EGorgeousAutoReplicationRPCType::EUnreliableMulticast:
 	{
 		// Same fix as the reliable path, route through target mixin's transporter
 		// rather than the per-GPS PlayerArray loop.
 		FGuid MulticastGuid = QueuedRPC.RequestGuid;
-		TargetMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
+		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
 		UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCUnreliable: Forwarded unreliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
 		break;
 	}
@@ -588,9 +614,17 @@ void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayPropertyPayload_Imple
 {
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ClientRelayPropertyPayload: Client received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
-	if (TargetMixin)
+    // Multiple PIE worlds share a process. A malformed or unresolved level
+    // reference must never apply a received client snapshot to another world.
+    if (Envelope.OwnerActor && Envelope.OwnerActor->GetWorld()!=GetWorld())
+    {
+        UE_LOG(LogGorgeousAutoReplicationRelay,Warning,TEXT("Rejected property payload %s: destination actor belongs to another world."),*Envelope.EntryKey.ToString());
+        return;
+    }
+    FGorgeousAutoReplicationMixin* DestinationMixin = Envelope.OwnerActor ? FGorgeousAutoReplicationMixin::ResolveForActor(Envelope.OwnerActor) : nullptr;
+	if (DestinationMixin)
 	{
-		TargetMixin->HandleTransportedPropertyPayload(Envelope);
+		DestinationMixin->HandleTransportedPropertyPayload(Envelope);
 	}
 	else
 	{
@@ -606,8 +640,10 @@ void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayAutoReplicationResult
 		return;
 	}
 
+    UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponderKeys(SerializedResult.RequestGuid,SerializedResult.ExpectedResponderKeys,GetWorld());
 	// Reconstruct the result on the client side (mirrors ServerRelayAutoReplicationResult_Implementation).
 	FGorgeousAutoReplicationRPCResult Result;
+    Result.ExecutionWorld=GetWorld();
 	Result.QueuedRPC.RequestGuid     = SerializedResult.RequestGuid;
 	Result.TargetKind                = SerializedResult.TargetKind;
 	Result.Responder                 = SerializedResult.Responder;
@@ -618,7 +654,9 @@ void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayAutoReplicationResult
 		if (UGorgeousObjectVariable* ReconstructedRoot = ReconstructOVTree(SerializedResult.OVTree))
 		{
 			Result.TargetVariable = ReconstructedRoot;
+            Result.TargetVariableIdentifier=ReconstructedRoot->UniqueIdentifier;
 		}
+        else return;
 	}
 
 	// Route to the correct client-side handler.
@@ -653,9 +691,14 @@ void UGorgeousAutoReplicationRPCRelayComponent::SerializeResult(const FGorgeousA
 
 	if (RootOV)
 	{
-		AppendOVTreeNodes(RootOV, FGuid{}, OutSerialized.OVTree);
+        if (!CaptureOVTreeNodes(RootOV,OutSerialized.OVTree)) OutSerialized.RequestGuid=FGuid();
 	}
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+UGorgeousObjectVariable* UGorgeousAutoReplicationRPCRelayComponent::ReconstructResultTreeForAutomation(const TArray<FGorgeousSerializedOVNode>& Nodes) { return ReconstructOVTree(Nodes); }
+bool UGorgeousAutoReplicationRPCRelayComponent::CaptureResultTreeForAutomation(const UGorgeousObjectVariable* Root,TArray<FGorgeousSerializedOVNode>& Nodes) { return CaptureOVTreeNodes(Root,Nodes); }
+#endif
 
 void UGorgeousAutoReplicationRPCRelayComponent::Automation_HandleRPC_WithReturnOV(
 	UInteger_SOV* ReturnValue,
@@ -675,4 +718,40 @@ void UGorgeousAutoReplicationRPCRelayComponent::Automation_HandleRPC_WithReturnO
 	UE_LOG(LogGorgeousAutoReplicationRelay, Log,
 		TEXT("[AutomationRPC] RelayComponent handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"),
 		*GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
+}
+
+void UGorgeousAutoReplicationRPCRelayComponent::ServerRelaySignalBridge_Implementation(uint8 Operation, FGameplayTag Tag, AActor* TargetActor, const FInstancedStruct& Payload)
+{
+    AGorgeousPlayerController* Sender = Cast<AGorgeousPlayerController>(GetOwner());
+    if (!Sender || !Sender->HasAuthority() || !Tag.IsValid() || Operation > 3) return;
+    if (TargetActor && TargetActor->GetWorld() != Sender->GetWorld()) return;
+    USignalBridgeStorage_OV* Storage = USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeStorage(Sender);
+    if (!Storage) return;
+    switch (Operation)
+    {
+    case 0: Storage->Server_RegisterListener_Implementation(Tag, Sender); break;
+    case 1: Storage->Server_RegisterActorListener_Implementation(Tag, TargetActor, Sender); break;
+    case 2: Storage->Server_UnregisterListener_Implementation(Tag, Sender); break;
+    case 3:
+    {
+        FInstancedStruct Sanitized=Payload;
+        if (const UScriptStruct* Struct=Sanitized.GetScriptStruct())
+        {
+            if (const FObjectProperty* Interactor=CastField<FObjectProperty>(Struct->FindPropertyByName(TEXT("Interactor"))))
+                if (Interactor->PropertyClass && Interactor->PropertyClass->IsChildOf(AActor::StaticClass())) Interactor->SetObjectPropertyValue_InContainer(Sanitized.GetMutableMemory(),Sender->GetPawn() ? static_cast<AActor*>(Sender->GetPawn()) : Sender);
+        }
+        Storage->Server_RequestDispatch_Implementation(Tag,Sanitized,Sender); break;
+    }
+    }
+}
+
+void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayRPCReliable_Implementation(const FGorgeousQueuedRPC& Request)
+{
+    if (Request.bHasTargetOwnerActor && !Request.TargetOwnerActor) return;
+    auto* Destination = Request.TargetOwnerActor ? FGorgeousAutoReplicationMixin::ResolveForActor(Request.TargetOwnerActor) : TargetMixin;
+    if (Destination) Destination->HandleTransportedRPC(Request);
+}
+void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayRPCUnreliable_Implementation(const FGorgeousQueuedRPC& Request)
+{
+    ClientRelayRPCReliable_Implementation(Request);
 }

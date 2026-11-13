@@ -9,10 +9,12 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "Engine/GameInstance.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include "ModuleCore/GorgeousObjectVariableRootSettings.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Templates/Function.h"
+#include "Serialization/ArchiveReplaceObjectRef.h"
 #include "Misc/CoreMisc.h"
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
@@ -23,7 +25,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogGorgeousRootObjectVariable, Log, All);
 // UGorgeousRootObjectVariable Implementation
 //=============================================================================
 
-TMap<FName, TObjectPtr<UGorgeousRootObjectVariable>> UGorgeousRootObjectVariable::NamedRootInstances;
+TMap<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>> UGorgeousRootObjectVariable::NamedRootInstances;
 FName UGorgeousRootObjectVariable::CachedDefaultRootName = NAME_None;
 TMap<FGuid, TWeakObjectPtr<UGorgeousObjectVariable>> UGorgeousRootObjectVariable::IdentifierLookup;
 TMap<FName, FGuid> UGorgeousRootObjectVariable::DisplayNameToIdentifier;
@@ -74,9 +76,9 @@ namespace GorgeousRootObjectVariable_Private
 			return;
 		}
 
-		for (TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
+		for (TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : UGorgeousRootObjectVariable::NamedRootInstances)
 		{
-			if (IsValid(Pair.Value))
+			if (IsValid(Pair.Value.Get()))
 			{
 				Callback(Pair.Value->VariableRegistry, Pair.Value.Get());
 			}
@@ -183,6 +185,15 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetRootObjectVariable(
 	return GetOrCreateRootInternal(ResolvedName);
 }
 
+void UGorgeousRootObjectVariable::BeginDestroy()
+{
+    // Static registries are not traversed by GC. Remove this exact registration
+    // while the UObject is still alive; weak entries also tolerate forced PIE GC.
+    for (auto It=NamedRootInstances.CreateIterator(); It; ++It)
+        if (!It.Value().IsValid() || It.Value().Get()==this) It.RemoveCurrent();
+    Super::BeginDestroy();
+}
+
 void UGorgeousRootObjectVariable::SetRootCreationAllowed(const bool bAllowed)
 {
 	GorgeousRootObjectVariable_Private::bAllowRootCreation = bAllowed;
@@ -197,9 +208,9 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::TryGetExistingRoot(con
 {
 	if (RootName.IsNone())
 	{
-		for (TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : NamedRootInstances)
+		for (TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : NamedRootInstances)
 		{
-			if (IsValid(Pair.Value))
+			if (IsValid(Pair.Value.Get()))
 			{
 				return Pair.Value.Get();
 			}
@@ -207,7 +218,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::TryGetExistingRoot(con
 		return nullptr;
 	}
 
-	if (TObjectPtr<UGorgeousRootObjectVariable>* Entry = NamedRootInstances.Find(RootName))
+	if (TWeakObjectPtr<UGorgeousRootObjectVariable>* Entry = NamedRootInstances.Find(RootName))
 	{
 		if (IsValid(Entry->Get()))
 		{
@@ -360,11 +371,12 @@ void UGorgeousRootObjectVariable::ReleaseRootRegistryOwnership(const FGorgeousRo
 	{
 		if (State->Handle.OwnerToken == Handle.OwnerToken)
 		{
-			State->Owner.Reset();
-			if (CachedOwner)
-			{
-				PromoteRootRegistryOwner(ResolvedRootName, CachedOwner);
-			}
+            // A matching token may release only the current owner. A stale caller
+            // must not detach an owner that has already reconnected.
+            if (CachedOwner && State->Owner.IsValid() && State->Owner.Get()!=CachedOwner) return;
+            State->Owner.Reset();
+            if (UGorgeousRootObjectVariable* Root=TryGetExistingRoot(ResolvedRootName))
+                GorgeousRootObjectVariable_Private::ForEachVariableRecursive(Root, [](UGorgeousObjectVariable* Variable) { Variable->EnsureSharedNetworkStackOwner(nullptr); });
 			OnRootRegistryChanged.Broadcast();
 		}
 	}
@@ -414,7 +426,7 @@ void UGorgeousRootObjectVariable::PromoteRootRegistryOwner(const FName RootName,
 TArray<UGorgeousObjectVariable*> UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(const FName RootName)
 {
 	TArray<UGorgeousObjectVariable*> Result;
-	TArray<UGorgeousObjectVariable*> Visited;
+	TSet<UGorgeousObjectVariable*> Visited;
 
 	TFunction<void(UGorgeousObjectVariable*)> GatherEntries;
 	GatherEntries = [&GatherEntries, &Visited, &Result](UGorgeousObjectVariable* Variable)
@@ -542,10 +554,13 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 			});
 	}
 
-	if (!bRemoved)
-	{
-		return;
-	}
+    if (!bRemoved && VariableToRemove->GetParent())
+    {
+        auto& ParentRegistry=VariableToRemove->GetParent()->VariableRegistry;
+        for (auto It=ParentRegistry.CreateIterator(); It; ++It)
+            if (It.Value()==VariableToRemove) { It.RemoveCurrent(); bRemoved=true; break; }
+    }
+	if (!bRemoved) return;
 
 	IdentifierLookup.Remove(VariableToRemove->UniqueIdentifier);
 	ReleaseDisplayName(VariableToRemove);
@@ -597,11 +612,35 @@ void UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(UWorld* DyingWo
 			}
 
 			// Check if this entry belongs to the dying world
-			if (Entry->GetWorld() == DyingWorld)
-			{
-				Entry->SetFallbackOwner(nullptr);
-				KeysToRemove.Add(Key);
-			}
+            if (Entry->GetWorld()==DyingWorld)
+            {
+                if (Entry->bPersistent && !bSessionEnded && DyingWorld->GetGameInstance())
+                {
+                    // Persistent data survives travel; references to dying actors/worlds must not.
+                    Entry->SetNetworkingEnabled(false);
+                    Entry->AutoReplicationOwner.Reset();
+                    Entry->AutoReplicationEntryKey=NAME_None;
+                    UGameInstance* Instance=DyingWorld->GetGameInstance();
+                    Entry->SetFallbackOwner(Instance);
+                    if (Entry->GetOuter()!=Instance && Entry->IsIn(DyingWorld))
+                        Entry->Rename(nullptr,Instance,GORGEOUS_58_SWITCH(REN_DontCreateRedirectors | REN_ForceNoResetLoaders,REN_DontCreateRedirectors));
+                    // Persistent scalar/container data may survive; strong Value references
+                    // into the destroyed level must be removed before its GC leak check.
+                    TArray<UObject*> References;
+                    FReferenceFinder Finder(References,nullptr,false,true,false,false);
+                    Finder.FindReferences(Entry);
+                    TMap<UObject*,UObject*> Replacements;
+                    for (UObject* Reference:References)
+                        if (Reference && !Reference->IsA<UGorgeousObjectVariable>() &&
+                            (Reference==DyingWorld || Reference->IsIn(DyingWorld))) Replacements.Add(Reference,nullptr);
+                    if (!Replacements.IsEmpty())
+                    {
+                        FArchiveReplaceObjectRef<UObject> Replace(Entry,Replacements,EArchiveReplaceObjectFlags::IgnoreOuterRef | EArchiveReplaceObjectFlags::IgnoreArchetypeRef);
+                    }
+                    PurgeFromRegistry(Entry->VariableRegistry);
+                }
+                else { Entry->SetFallbackOwner(nullptr); KeysToRemove.Add(Key); }
+            }
 			else
 			{
 				// Recurse into children
@@ -628,9 +667,12 @@ void UGorgeousRootObjectVariable::PurgeWorldOwnedRegistryEntries(UWorld* DyingWo
 	// weak-pointer based GetWorld() fallback doesn't keep anything reachable.
 	for (auto& [RootName, Root] : NamedRootInstances)
 	{
-		if (Root && Root->GetWorld() == DyingWorld)
+		if (Root.IsValid() && Root->GetWorld() == DyingWorld)
 		{
-			Root->SetFallbackOwner(nullptr);
+            Root->SetFallbackOwner(nullptr);
+            Root->EnsureSharedNetworkStackOwner(nullptr);
+            // A rooted root object must not keep its former GameInstance outer alive.
+            Root->Rename(nullptr,GetTransientPackage(),GORGEOUS_58_SWITCH(REN_DontCreateRedirectors | REN_ForceNoResetLoaders,REN_DontCreateRedirectors));
 		}
 	}
 }
@@ -668,7 +710,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 		{
 			UGorgeousObjectVariable* Entry = OVPtr.Get();
 			const bool bEntryValid = IsValid(Entry);
-			const bool bShouldRemove = !bEntryValid || (bFullCleanup && Entry && !Entry->bPersistent);
+			const bool bShouldRemove = !bEntryValid || (!bFullCleanup && Entry && !Entry->bPersistent) || bFullCleanup;
 			if (bShouldRemove)
 			{
 				// Reset FallbackOwner (TStrongObjectPtr / FGCObject) BEFORE
@@ -735,14 +777,14 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 		};
 
 		TArray<FName> NamesToRelease;
-		for (const TPair<FName, TObjectPtr<UGorgeousRootObjectVariable>>& Pair : NamedRootInstances)
+		for (const TPair<FName, TWeakObjectPtr<UGorgeousRootObjectVariable>>& Pair : NamedRootInstances)
 		{
 			NamesToRelease.Add(Pair.Key);
 		}
 
 		for (const FName& RootName : NamesToRelease)
 		{
-			if (TObjectPtr<UGorgeousRootObjectVariable>* Entry = NamedRootInstances.Find(RootName))
+			if (TWeakObjectPtr<UGorgeousRootObjectVariable>* Entry = NamedRootInstances.Find(RootName))
 			{
 				if (UGorgeousRootObjectVariable* Root = Entry->Get())
 				{
@@ -809,6 +851,10 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 	}
 
 	DefaultOrphanResolution = PreviousResolution;
+    if (bFullCleanup && !IsEngineExitRequested())
+    {
+        FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float) { if (!IsEngineExitRequested()) SetRootCreationAllowed(true); return false; }));
+    }
 }
 
 DEFINE_FUNCTION(UGorgeousRootObjectVariable::execSetUniversalVariable)
@@ -825,16 +871,7 @@ DEFINE_FUNCTION(UGorgeousRootObjectVariable::execSetUniversalVariable)
 		OptionalPropertyName = "Value";
 	}
 
-	UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-	for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-	{
-		if (ObjectVariable->UniqueIdentifier == Identifier)
-		{
-			FoundObjectVariable = ObjectVariable;
-			break;
-		}
-	}
+UGorgeousObjectVariable* FoundObjectVariable = FindVariableByIdentifier(Identifier);
 
 	if (FoundObjectVariable && SourceProperty && SourcePropertyAddress)
 	{
@@ -871,16 +908,7 @@ DEFINE_FUNCTION(UGorgeousRootObjectVariable::execGetUniversalVariable)
 		OptionalPropertyName = "Value";
 	}
 
-	UGorgeousObjectVariable* FoundObjectVariable = nullptr;
-
-	for (const auto ObjectVariable : GetVariableHierarchyRegistry())
-	{
-		if (ObjectVariable->UniqueIdentifier == Identifier)
-		{
-			FoundObjectVariable = ObjectVariable;
-			break;
-		}
-	}
+UGorgeousObjectVariable* FoundObjectVariable = FindVariableByIdentifier(Identifier);
 
 	if (FoundObjectVariable)
 	{
@@ -1002,10 +1030,7 @@ FName UGorgeousRootObjectVariable::ResolveRootName(const FName RequestedRootName
 			return RequestedRootName;
 		}
 
-		if (CachedDefaultRootName.IsNone() || !Settings->FindRootEntry(CachedDefaultRootName))
-		{
-			CachedDefaultRootName = Settings->GetDefaultRootName();
-		}
+        CachedDefaultRootName = Settings->GetDefaultRootName();
 
 		if (!CachedDefaultRootName.IsNone())
 		{
@@ -1033,7 +1058,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetOrCreateRootInterna
 		return TryGetExistingRoot(RootName);
 	}
 
-	if (TObjectPtr<UGorgeousRootObjectVariable>* ExistingRoot = NamedRootInstances.Find(RootName))
+	if (TWeakObjectPtr<UGorgeousRootObjectVariable>* ExistingRoot = NamedRootInstances.Find(RootName))
 	{
 		if (IsValid(ExistingRoot->Get()))
 		{
@@ -1103,7 +1128,7 @@ void UGorgeousRootObjectVariable::HandleOrphanedChildren(UGorgeousObjectVariable
 	}
 
 	const FName OwningRootName = GorgeousRootObjectVariable_Private::ResolveRootNameForVariable(RemovedParent);
-	const bool bSharedRootAllowsReparent = GorgeousRootObjectVariable_Private::SupportsSharedOwnership(OwningRootName);
+	const bool bSharedRootAllowsReparent = true; // Orphan policy applies to local and network roots alike.
 	UGorgeousRootObjectVariable* TargetRootForReparent = nullptr;
 	if (bSharedRootAllowsReparent && Resolution == EGorgeousObjectVariableOrphanResolution::ReparentToRoot)
 	{
@@ -1112,7 +1137,7 @@ void UGorgeousRootObjectVariable::HandleOrphanedChildren(UGorgeousObjectVariable
 
 	TArray<TObjectPtr<UGorgeousObjectVariable>> OrphanedChildren;
 	RemovedParent->VariableRegistry.GenerateValueArray(OrphanedChildren);
-	RemovedParent->VariableRegistry.Reset();
+	// Keep entries reachable until recursive removal has visited descendants.
 
 	for (UGorgeousObjectVariable* Orphan : OrphanedChildren)
 	{
@@ -1145,7 +1170,6 @@ void UGorgeousRootObjectVariable::HandleOrphanedChildren(UGorgeousObjectVariable
 			if (TargetRootForReparent)
 			{
 				Orphan->SetParent(TargetRootForReparent);
-				TargetRootForReparent->RegisterWithRegistry(Orphan);
 			}
 			break;
 		}

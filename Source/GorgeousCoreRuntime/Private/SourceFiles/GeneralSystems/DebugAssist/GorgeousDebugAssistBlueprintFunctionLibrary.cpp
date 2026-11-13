@@ -82,7 +82,7 @@ static void TickAndRenderGhosts(const UObject* WorldContextObject)
 {
     if (!WorldContextObject || CVarDebugAssist.GetValueOnGameThread() == 0) return;
     UWorld* World = WorldContextObject->GetWorld();
-    if (!World) return;
+    if (!World || World->IsNetMode(NM_DedicatedServer) || CVarDebugAssist.GetValueOnGameThread() == 0) return;
 
     const double Time = World->GetTimeSeconds();
 
@@ -98,6 +98,8 @@ static void TickAndRenderGhosts(const UObject* WorldContextObject)
             continue;
         }
 
+        if (It.Key()->GetWorld() != World) continue;
+
         // Cleanup expired ghosts
         for (int32 i = GhostRegistry.Num() - 1; i >= 0; --i)
         {
@@ -109,10 +111,7 @@ static void TickAndRenderGhosts(const UObject* WorldContextObject)
 
         if (GhostRegistry.Num() == 0)
         {
-            if (!It.Key().IsValid())
-            {
-                It.RemoveCurrent();
-            }
+            It.RemoveCurrent();
             continue;
         }
 
@@ -284,8 +283,6 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTextBlock(cons
         return;
     }
 
-    (void)bPersistentLines;
-
     UWorld* World = WorldContextObject->GetWorld();
     if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters()))
     {
@@ -293,7 +290,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTextBlock(cons
     }
 
     const float LineStep = FMath::Max(0.1f, TextBlockParameters.LineStep);
-    const float LineDuration = TextBlockParameters.bFollowTrace ? 0.0f : FMath::Max(0.0f, Duration);
+    const float LineDuration = bPersistentLines ? -1.0f : TextBlockParameters.bFollowTrace ? 0.0f : FMath::Max(0.0f, Duration);
     for (int32 Index = 0; Index < TextBlockParameters.Lines.Num(); ++Index)
     {
         const FGorgeousDebugAssistTextLineParameters& Line = TextBlockParameters.Lines[Index];
@@ -303,7 +300,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTextBlock(cons
         }
 
         const FVector LineLocation = Location + FVector(0.0f, 0.0f, -LineStep * static_cast<float>(Index));
-        DrawDebugString(World, LineLocation, Line.Text, nullptr, Line.Color.ToFColor(true), LineDuration, bPersistentLines);
+        DrawDebugString(World, LineLocation, Line.Text, nullptr, Line.Color.ToFColor(true), LineDuration, false);
     }
 }
 
@@ -551,6 +548,16 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
     const float Duration = ResolveDebugDuration(VisualParameters);
     const bool bPersistent = VisualParameters.bPersistent;
     const double Time = World->GetTimeSeconds();
+    if (VisualParameters.bDrawTracePath)
+    {
+        DrawDebugLine(World, TraceStart, TraceEnd, VisualParameters.TracePathColor.ToFColor(true), bPersistent, Duration, 0, VisualParameters.TracePathThickness);
+    }
+    if (!HitResult.bBlockingHit && !HitResult.bStartPenetrating)
+    {
+        TickAndRenderGhosts(WorldContextObject);
+        return;
+    }
+
 
     if (VisualParameters.HitPoint.bDraw)
     {
@@ -610,6 +617,16 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistHitResult(cons
     {
         if (const AActor* Actor = HitResult.GetActor())
         {
+            if (VisualParameters.HitBounds.bFollowTrace)
+            {
+                FVector Origin, Extent;
+                Actor->GetActorBounds(false, Origin, Extent);
+                Extent += FVector(VisualParameters.HitBounds.Inflation);
+                if (VisualParameters.HitBounds.bDraw) DrawDebugBox(World, Origin, Extent, VisualParameters.HitBounds.Color.ToFColor(true), false, 0.0f, 0, VisualParameters.HitBounds.Thickness);
+                if (VisualParameters.HitBounds.bDrawFilled) DrawDebugSolidBox(World, Origin, Extent, VisualParameters.HitBounds.FillColor.ToFColor(true), false, 0.0f, 0);
+                TickAndRenderGhosts(WorldContextObject);
+                return;
+            }
             TArray<FGhostBox>& GhostRegistry = GlobalGhostRegistryMap.FindOrAdd(Actor);
 
             FVector Origin;
@@ -776,21 +793,8 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistTrace(const UO
 
 void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistCircle(const UObject* WorldContextObject, const FVector& Location, const float Radius, const FLinearColor& Color, const bool bWireframe, const float Duration, const bool bPersistentLines, const float Thickness, const FVector& Normal)
 {
-    if (!WorldContextObject)
-    {
-        return;
-    }
-
-    UWorld* World = WorldContextObject->GetWorld();
-    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters())) // Uses default params for basic check
-    {
-        return;
-    }
-
-    const FVector AxisX = FMath::Abs(Normal.Z) < 0.99f ? FVector::VectorPlaneProject(FVector::UpVector, Normal).GetSafeNormal() : FVector::ForwardVector;
-    const FVector AxisY = FVector::CrossProduct(Normal, AxisX);
-
-    DrawDebugCircle(World, Location, Radius, 32, Color.ToFColor(true), bPersistentLines, Duration, 0, Thickness, Normal, AxisX, false);
+    // A disc is a ring with no hole. Both axes must lie in the requested normal's plane.
+    DrawDebugAssistRing(WorldContextObject, Location, 0.0f, Radius, Color, bWireframe, Duration, bPersistentLines, Thickness, Normal);
 }
 
 void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistRing(const UObject* WorldContextObject, const FVector& Location, const float InnerRadius, const float OuterRadius, const FLinearColor& Color, const bool bWireframe, const float Duration, const bool bPersistentLines, const float Thickness, const FVector& Normal)
@@ -813,8 +817,9 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistRing(const UOb
         return;
     }
 
-    const FVector AxisX = FMath::Abs(Normal.Z) < 0.99f ? FVector::VectorPlaneProject(FVector::UpVector, Normal).GetSafeNormal() : FVector::ForwardVector;
-    const FVector AxisY = FVector::CrossProduct(Normal, AxisX);
+    const FVector PlaneNormal = Normal.GetSafeNormal(KINDA_SMALL_NUMBER, FVector::UpVector);
+    FVector AxisX, AxisY;
+    PlaneNormal.FindBestAxisVectors(AxisX, AxisY);
 
     DrawDebugCircle(World, Location, SafeOuterRadius, 32, Color.ToFColor(true), bPersistentLines, Duration, 0, Thickness, AxisX, AxisY, false);
 
@@ -1094,7 +1099,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistDiamond(const 
 {
     if (!WorldContextObject) return;
     UWorld* World = WorldContextObject->GetWorld();
-    if (!World) return;
+    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters())) return;
 
     const FColor DrawColor = Color.ToFColor(true);
     const FVector Up = FVector::UpVector * Size;
@@ -1122,7 +1127,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistPointWithState
 {
     if (!WorldContextObject || !VisualParameters.StatePoints.bDraw) return;
     UWorld* World = WorldContextObject->GetWorld();
-    if (!World) return;
+    if (!ShouldDrawDebug(World, VisualParameters)) return;
 
     FLinearColor StateColor;
     switch (State)
@@ -1147,7 +1152,7 @@ void UGorgeousDebugAssistBlueprintFunctionLibrary::DrawDebugAssistArrow(const UO
 {
     if (!WorldContextObject) return;
     UWorld* World = WorldContextObject->GetWorld();
-    if (!World) return;
+    if (!ShouldDrawDebug(World, FGorgeousDebugAssistVisualParameters())) return;
 
     const FColor DrawColor = Color.ToFColor(true);
     

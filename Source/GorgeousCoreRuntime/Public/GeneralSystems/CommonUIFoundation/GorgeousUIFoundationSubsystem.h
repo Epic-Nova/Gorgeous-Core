@@ -9,6 +9,12 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #pragma once
+class UWidget;
+class AGorgeousPlayerController;
+
+#include "Input/Events.h"
+#include "Layout/WidgetPath.h"
+#include "Blueprint/WidgetNavigation.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -36,6 +42,14 @@ class UGorgeousUIProcessor;
 class UGorgeousCommonWidget;
 class UGorgeousSignalBridgeTagForwarder;
 //<------------------------------------------------------------->
+// Preserve authored navigation when temporary state routes are removed.
+struct FGorgeousUIAppliedFocusRoute
+{
+	TWeakObjectPtr<UWidget> Widget;
+	EUINavigation Direction = EUINavigation::Invalid;
+	FWidgetNavigationData Previous;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateTransitionStarted, UGorgeousUIState_DA*, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateTransitionFinished, UGorgeousUIState_DA*, NewState);
 
@@ -57,14 +71,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUIStateTransitionFinished, UGorge
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Core/Subsystem/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#quick-start"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousUIFoundationSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
 {
 	GENERATED_BODY()
+	friend class FGorgeousUIEmptyStackRegression;
 	friend class UGorgeousSignalBridgeTagForwarder;
 
 
@@ -91,6 +106,10 @@ public:
 
 	// Initializes state, processors, and Signal Bridge listeners.
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+	static UGorgeousUIFoundationSubsystem* GetForContext(const UObject* Context);
+	int32 GetLocalPlayerIndex() const;
+	static bool PlayNamedWidgetAnimation(UObject* Widget, FName AnimationName);
 	//<----------------------=== End USubsystem Overrides ===------------------>
 	//<------------------------------------------------------------------------->
 	#pragma endregion Overrides
@@ -116,6 +135,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation", DisplayName = "Remove UI State")
 	void RemoveUIState(TSubclassOf<UGorgeousUIState_DA> StateClass, bool bImmediate = false);
+	UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Common UI Foundation")
+	void RemoveUIStateByObject(UGorgeousUIState_DA* State, bool bImmediate = false);
+	void CompleteMessagePresentation(FGuid RequestID);
 
 	/**
 	 * Records completion of a widget's outgoing transition.
@@ -239,7 +261,7 @@ public:
 	TArray<UGorgeousInputBinding_DA*> GetActiveInputBindings() const { return ActiveInputBindings; }
 
 	UFUNCTION(BlueprintPure, Category = "Gorgeous Core|Common UI Foundation")
-	UGorgeousInputBinding_DA* GetMostRecentInputBindings() const { return ActiveInputBindings.Last(); }
+	UGorgeousInputBinding_DA* GetMostRecentInputBindings() const { return ActiveInputBindings.IsEmpty() ? nullptr : ActiveInputBindings.Last(); }
 
 	/**
 	 * Pushes input bindings onto the active stack.
@@ -390,13 +412,37 @@ protected:
 	/** Active Enhanced Input action binding handles. Used to clean up previously bound actions on the HUD player controller. */
 	TArray<uint32> BridgedBindingHandles;
 
+	TWeakObjectPtr<APlayerController> SignalController;
+	TWeakObjectPtr<UWorld> SignalWorld;
+	void DetachSignalListeners();
+	TArray<FGorgeousUIAppliedFocusRoute> AppliedFocusRoutes;
+	int32 ManualThemeDepth = 0;
 	bool bSignalsRegistered = false;
+	bool bStateTransitionPending = false;
+	bool bPendingStateIsPush = true;
+	double TransitionDeadline = 0;
+	TWeakObjectPtr<class UEnhancedInputComponent> BridgedInputComponent;
+	UPROPERTY(Transient) TArray<TObjectPtr<UGorgeousInputBinding_DA>> StateOwnedInputBindings;
+	UPROPERTY(Transient) TMap<FGuid, TObjectPtr<UGorgeousUIState_DA>> MessageStates;
+	UPROPERTY(Transient) TSet<TObjectPtr<UGorgeousUIState_DA>> MessageOwnedStates;
+	UPROPERTY(Transient) TMap<FGuid, TObjectPtr<UGorgeousUITheme_DA>> MessageThemes;
+	UPROPERTY(Transient) TArray<FGuid> MessageOrder;
+	TSet<FGuid> ActiveMessageRequests;
+	UFUNCTION() void OnMessageResultReceived(FGameplayTag Tag, const FInstancedStruct& Payload);
+	FSignalBridgeEventDelegate MessageResultDelegate;
+	friend class FGorgeousUIStateLifecycleRegressionTest;
+	friend class FGorgeousUIFocusAndInputRegressionTest;
 
 	/** Internal helper to setup the input bridge on the HUD. */
 	void SetupInputBridgeOnHUD();
 
 	/** Actually performs the state swap after transitions are complete. */
 	void ExecuteStateSwap();
+	void BeginStateTransition(UGorgeousUIState_DA* State, bool bPush, bool bImmediate);
+	void ReconcileStateInputBindings();
+	void RefreshLocalActionBar();
+	void ApplyFocusRoutes();
+	bool TryFocusWidget(FGameplayTag Tag, FName RoutingID);
 
 	// Target state waiting for transition completion.
 	UPROPERTY()

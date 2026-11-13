@@ -69,7 +69,7 @@ public:
 	/**
 	 * Returns the stable string ID registered in GorgeousLocalPlayerRegistry_GIS.
 	 * Non-empty only for locally controlled players on the machine that owns them.
-	 * Returns an empty string for remote players since they are never registered
+	 * PlayerState exposes the replicated stable identifier for remote players; locally registered players resolve their identifier
 	 * in the local machine's stable ID registry.
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Gorgeous Core|Player Connection",

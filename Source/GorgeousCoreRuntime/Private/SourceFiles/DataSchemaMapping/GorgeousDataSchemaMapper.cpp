@@ -141,6 +141,7 @@ bool FGorgeousDataSchemaMapper::ResolvePropertyPath(
 	}
 
 	return ResolveStructPropertyPath(
+		RootObject,
 		RootObject->GetClass(),
 		RootObject,
 		Segments,
@@ -151,6 +152,7 @@ bool FGorgeousDataSchemaMapper::ResolvePropertyPath(
 }
 
 bool FGorgeousDataSchemaMapper::ResolveStructPropertyPath(
+	UObject* TargetOwner,
 	UStruct* CurrentStruct,
 	void* CurrentContainerPtr,
 	const TArray<FString>& Segments,
@@ -201,6 +203,7 @@ bool FGorgeousDataSchemaMapper::ResolveStructPropertyPath(
 		}
 
 		return ResolveStructPropertyPath(
+			TargetOwner,
 			StructProperty->Struct,
 			NextContainerPtr,
 			Segments,
@@ -221,7 +224,14 @@ bool FGorgeousDataSchemaMapper::ResolveStructPropertyPath(
 			return false;
 		}
 
-		return ResolveStructPropertyPath(
+		if (NextObject != TargetOwner && !NextObject->IsIn(TargetOwner))
+            {
+                OutError = FString::Printf(TEXT("Target path cannot modify external object '%s'; use an instanced subobject owned by the migration target."), *NextObject->GetPathName());
+                return false;
+            }
+
+            return ResolveStructPropertyPath(
+			TargetOwner,
 			NextObject->GetClass(),
 			NextObject,
 			Segments,
@@ -329,7 +339,15 @@ bool FGorgeousDataSchemaMapper::ApplyTransformDefinition(
 			{
 				bSourceBooleanValue = false;
 			}
-			else if (!LexTryParseString(bSourceBooleanValue, *NormalizedSourceValue))
+			else if (NormalizedSourceValue.Equals(TEXT("true"), ESearchCase::IgnoreCase))
+			{
+				bSourceBooleanValue = true;
+			}
+			else if (NormalizedSourceValue.Equals(TEXT("false"), ESearchCase::IgnoreCase))
+			{
+				bSourceBooleanValue = false;
+			}
+			else
 			{
 				OutError = FString::Printf(TEXT("Source value '%s' is not a valid boolean."), *SourceValue);
 				return false;

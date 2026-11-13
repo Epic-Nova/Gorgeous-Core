@@ -61,6 +61,12 @@ struct FGorgeousSelfReferenceInsightTests
 		
 		UWorld* World = Ctx.WorldContextObject ? Ctx.WorldContextObject->GetWorld() : nullptr;
 
+		if (!World)
+		{
+			Result.AddError(TEXT("Requires a valid world for self-reference resolution."));
+			return Result;
+		}
+
 		// Seed the registry with objects
 		for (int32 i = 0; i < NumItems; ++i)
 		{

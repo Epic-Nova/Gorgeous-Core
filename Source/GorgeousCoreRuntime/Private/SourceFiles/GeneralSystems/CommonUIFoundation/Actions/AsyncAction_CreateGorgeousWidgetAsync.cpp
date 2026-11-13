@@ -6,6 +6,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 
 #include "GameFramework/PlayerController.h"
+#include "Engine/LocalPlayer.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIExtensions.h"
 
 #include "UObject/Stack.h"
@@ -41,7 +42,8 @@ void UAsyncAction_CreateGorgeousWidgetAsync::Activate()
 	// 1. Optional Input Suspension
 	if (bSuspendInput && WorldContextObject)
 	{
-		if (APlayerController* PC = WorldContextObject->GetWorld()->GetFirstPlayerController())
+		if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject))
+		if (APlayerController* PC = Subsystem->GetLocalPlayer() ? Subsystem->GetLocalPlayer()->GetPlayerController(Subsystem->GetWorld()) : nullptr)
 		{
 			SuspendToken = UGorgeousUIExtensions::SuspendGorgeousInput(PC, FName("AsyncWidgetCreation"));
 		}
@@ -64,7 +66,8 @@ void UAsyncAction_CreateGorgeousWidgetAsync::OnWidgetClassLoaded()
 	// 4. Resume Input before firing result
 	if (bSuspendInput && !SuspendToken.IsNone() && WorldContextObject)
 	{
-		if (APlayerController* PC = WorldContextObject->GetWorld()->GetFirstPlayerController())
+		if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject))
+		if (APlayerController* PC = Subsystem->GetLocalPlayer() ? Subsystem->GetLocalPlayer()->GetPlayerController(Subsystem->GetWorld()) : nullptr)
 		{
 			UGorgeousUIExtensions::ResumeGorgeousInput(PC, SuspendToken);
 		}
@@ -78,27 +81,11 @@ void UAsyncAction_CreateGorgeousWidgetAsync::OnWidgetClassLoaded()
 		return;
 	}
 
-	// 5. Create the widget
-	UUserWidget* NewWidget = CreateWidget<UUserWidget>(WorldContextObject->GetWorld(), LoadedClass);
-	
-	if (NewWidget)
-	{
-		// 6. WOW FACTOR: Automatically apply the current global theme
-		// UGorgeousUIFoundationSubsystem is a LocalPlayerSubsystem; resolve via the first local player/controller
-		if (APlayerController* PC = WorldContextObject->GetWorld()->GetFirstPlayerController())
-		{
-			if (ULocalPlayer* LP = PC->GetLocalPlayer())
-			{
-				if (UGorgeousUIFoundationSubsystem* Subsystem = LP->GetSubsystem<UGorgeousUIFoundationSubsystem>())
-				{
-					if (UGorgeousUITheme_DA* Theme = Subsystem->GetMostRecentTheme())
-					{
-						Subsystem->BroadcastThemeApplied(Theme);
-					}
-				}
-			}
-		}
-	}
+	// Preserve the requesting local player rather than assigning player zero.
+	auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(WorldContextObject);
+	APlayerController* Owner = Subsystem && Subsystem->GetLocalPlayer() ? Subsystem->GetLocalPlayer()->GetPlayerController(Subsystem->GetWorld()) : nullptr;
+	UUserWidget* NewWidget = Owner ? CreateWidget<UUserWidget>(Owner, LoadedClass) : nullptr;
+	if (NewWidget && Subsystem) if (auto* Theme = Subsystem->GetMostRecentTheme()) Subsystem->ApplyThemeToWidget(NewWidget, Theme);
 
 	OnComplete.Broadcast(NewWidget);
 	SetReadyToDestroy();

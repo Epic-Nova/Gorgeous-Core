@@ -12,6 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "Engine/DeveloperSettings.h"
 #include "GorgeousUsefulSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -66,6 +67,17 @@ protected:
 	//<------------------------------------------------------------------------->
 
 public:
+
+	/** Disabling protection can permanently remove asset references when required content is missing. */
+	UPROPERTY(EditAnywhere, Config, Category = "Extension Resource Protection", meta = (DisplayName = "Disable Extension Resource Protection (Risk of Asset Data Loss)", ToolTip = "WARNING: Saving assets with missing dependencies may permanently remove their references. Leave enabled unless you understand this risk. See the Extension Resource Guards documentation."))
+	bool bDisableExtensionResourceProtection = false;
+
+	/** Descriptor changes are opt-in; validation itself never edits other plugins. */
+	UPROPERTY(EditAnywhere, Config, Category = "Extension Resource Protection")
+	bool bAllowAutomaticPluginDescriptorChanges = false;
+
+	UFUNCTION(CallInEditor, Category = "Extension Resource Protection", meta = (DisplayName = "Read Extension Resource Protection Documentation"))
+	void OpenExtensionResourceProtectionDocumentation();
 
 	// Toggle for Editor -> Data Validation -> Validate on Save (UDataValidationSettings::bValidateOnSave).
 	UPROPERTY(EditAnywhere, Transient, Category = "Data Validation")

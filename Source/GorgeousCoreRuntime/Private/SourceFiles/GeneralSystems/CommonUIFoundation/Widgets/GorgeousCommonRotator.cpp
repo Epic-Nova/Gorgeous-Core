@@ -28,12 +28,14 @@ void UGorgeousCommonRotator::NativeConstruct()
 	{
 		FSignalBridgeEventDelegate Delegate;
 		Delegate.BindDynamic(this, &UGorgeousCommonRotator::OnRotatorSignalReceived);
-		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Cast<AGorgeousPlayerController>(GetOwningPlayer()), Delegate);
+		USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, nullptr, Delegate);
 	}
 }
 
 void UGorgeousCommonRotator::NativeDestruct()
 {
+	FSignalBridgeEventDelegate Delegate; Delegate.BindDynamic(this, &UGorgeousCommonRotator::OnRotatorSignalReceived);
+	USignalBridgeBlueprintFunctionLibrary::Unlisten(this, BindingTag, nullptr, Delegate);
 	UE_UI_UNREGISTER_WIDGET()
 	Super::NativeDestruct();
 }

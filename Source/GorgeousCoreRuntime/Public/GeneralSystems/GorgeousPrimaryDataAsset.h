@@ -54,9 +54,9 @@ struct FGorgeousAssetRegistrationConfig_S
 */
 UCLASS(Abstract, BlueprintType, Config = Game,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GorgeousPrimaryDataAsset",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Anatomy/#ugorgeousprimarydataasset",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousPrimaryDataAsset : public UPrimaryDataAsset

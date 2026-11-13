@@ -15,6 +15,8 @@
 #include "FeedbackEffects/GorgeousFeedbackEffect.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousCascadeFeedbackEffect.generated.h"
+
+class UParticleSystemComponent;
 //<-------------------------------------------------------------------------->
 
 /*
@@ -34,9 +36,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousCascadeFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#cascade",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousCascadeFeedbackEffect : public UGorgeousFeedbackEffect
@@ -53,6 +55,8 @@ public:
 	 * @param Context The runtime situation used to resolve the spawn transform.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted) override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a particle system configured.
@@ -94,4 +98,8 @@ public:
 	bool bAutoDestroy = true;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
+private:
+	UParticleSystemComponent* SpawnFeedbackEmitter(const FGorgeousFeedbackContext& Context);
+	TArray<TWeakObjectPtr<UParticleSystemComponent>> ActiveEmitters;
+
 };

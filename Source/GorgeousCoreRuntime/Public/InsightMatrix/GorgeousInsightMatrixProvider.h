@@ -41,6 +41,8 @@ public:
 
 	/** Gather provider-defined charts. */
 	virtual void GatherCharts(TArray<FGorgeousInsightChartDefinition>& OutCharts) const {}
+	/** Context-aware chart gathering; existing providers retain their legacy implementation. */
+	virtual void GatherCharts(const FGorgeousInsightGatherContext& Context, TArray<FGorgeousInsightChartDefinition>& OutCharts) const { GatherCharts(OutCharts); }
 
 	/** Declare available actions. */
 	virtual void GetActions(TArray<FGorgeousInsightAction>& OutActions) const {}
@@ -48,7 +50,14 @@ public:
 	/** Execute a specific action. */
 	virtual void ExecuteAction(FName ActionId, const FGorgeousInsightActionContext& Context) {}
 
-	/** Declare available tests. */
+	/** Override when execution can report a real outcome. Legacy void actions are only marked Dispatched. */
+    virtual FGorgeousInsightActionResult ExecuteActionWithResult(FName ActionId, const FGorgeousInsightActionContext& Context)
+    {
+        ExecuteAction(ActionId, Context);
+        return FGorgeousInsightActionResult();
+    }
+
+    /** Declare available tests. */
 	virtual void GetTests(TArray<FGorgeousInsightTest>& OutTests) const {}
 
 	/** Run a specific test. */

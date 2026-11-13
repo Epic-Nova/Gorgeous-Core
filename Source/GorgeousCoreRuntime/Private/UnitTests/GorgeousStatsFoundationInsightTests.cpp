@@ -7,6 +7,10 @@
 #include "GeneralSystems/StatsFoundation/GorgeousStatFoundationStorage_OV.h"
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "NativeGameplayTags.h"
+#include "Misc/ScopeExit.h"
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_GorgeousLimitationsStatHealth, "Gorgeous.Test.Stat.Health");
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_GorgeousLimitationsStatModifier, "Gorgeous.Test.Stat.Modify");
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 
@@ -26,8 +30,8 @@ struct FGorgeousStatsFoundationInsightTests
 
 		// Inject test stat into CDO
 		UGorgeousStatFoundationSettings* Settings = GetMutableDefault<UGorgeousStatFoundationSettings>();
-		FGameplayTag TestStatTag = FGameplayTag::RequestGameplayTag(TEXT("Gorgeous.Test.Stat.Health"));
-		FGameplayTag TestModSignal = FGameplayTag::RequestGameplayTag(TEXT("Gorgeous.Test.SignalBridge.Perf")); // Reusing this dummy tag
+		FGameplayTag TestStatTag = TAG_GorgeousLimitationsStatHealth.GetTag();
+		const FGameplayTag TestModSignal = TAG_GorgeousLimitationsStatModifier.GetTag();
 		
 		FGorgeousStat_S TestStat;
 		TestStat.DefaultValue = 100.0f;
@@ -37,6 +41,10 @@ struct FGorgeousStatsFoundationInsightTests
 		TestStat.ModificationSignal = TestModSignal;
 		TestStat.bSignalIsDelta = true;
 		
+		const TMap<FGameplayTag, FGorgeousStat_S> PreviousRegistry = Settings->StatRegistry;
+		const bool bPreviousAutoDispatch = Settings->bAutoDispatchChangeSignals;
+		ON_SCOPE_EXIT { Settings->StatRegistry = PreviousRegistry; Settings->bAutoDispatchChangeSignals = bPreviousAutoDispatch; };
+		Settings->bAutoDispatchChangeSignals = false;
 		Settings->StatRegistry.Add(TestStatTag, TestStat);
 
 		// Act: Create dummy actor and component
@@ -48,11 +56,14 @@ struct FGorgeousStatsFoundationInsightTests
 		// Force server authority
 		DummyActor->SetRole(ROLE_Authority);
 		
-		// Trigger BeginPlay manually to setup storage and listeners
-		StatComp->BeginPlay();
+		// Exercise the actual signal handler with isolated storage rather than requiring a game-specific WorldSettings.
+		StatComp->StatStorage = NewObject<UGorgeousStatFoundationStorage_OV>(World);
+		StatComp->RegisterSignalListeners();
 
 		// Fire signal
 		FGorgeousStatModificationPayload_S PayloadData;
+		PayloadData.Target = DummyActor;
+		PayloadData.Stat = TestStatTag;
 		PayloadData.Value = 50.0f; // +50 health
 		FInstancedStruct TestPayload = FInstancedStruct::Make(PayloadData);
 		
@@ -60,10 +71,15 @@ struct FGorgeousStatsFoundationInsightTests
 
 		float FinalValue = StatComp->GetStat(TestStatTag);
 		
-		Result.bSuccess = true;
-		Result.AddNote(FString::Printf(TEXT("Test completed safely without crashing. Value: %f"), FinalValue));
+		Result.bSuccess = FMath::IsNearlyEqual(FinalValue, 150.0f);
+		Result.Metrics.Add(TEXT("ExpectedValue"), TEXT("150"));
+		Result.Metrics.Add(TEXT("FinalValue"), FString::SanitizeFloat(FinalValue));
+		if (!Result.bSuccess) Result.AddError(FString::Printf(TEXT("Modifier expected clamped health 150, got %f."), FinalValue));
 
 		// Cleanup
+		FSignalBridgeEventDelegate Listener;
+		Listener.BindUFunction(StatComp, TEXT("OnSignalReceived"));
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TestModSignal, nullptr, Listener);
 		Settings->StatRegistry.Remove(TestStatTag);
 		DummyActor->Destroy();
 
@@ -96,8 +112,8 @@ struct FGorgeousStatsFoundationInsightTests
 
 		// Inject test stat into CDO
 		UGorgeousStatFoundationSettings* Settings = GetMutableDefault<UGorgeousStatFoundationSettings>();
-		FGameplayTag TestStatTag = FGameplayTag::RequestGameplayTag(TEXT("Gorgeous.Test.Stat.Health"));
-		FGameplayTag TestModSignal = FGameplayTag::RequestGameplayTag(TEXT("Gorgeous.Test.SignalBridge.Perf")); // Reusing this dummy tag
+		FGameplayTag TestStatTag = TAG_GorgeousLimitationsStatHealth.GetTag();
+		const FGameplayTag TestModSignal = TAG_GorgeousLimitationsStatModifier.GetTag();
 		
 		FGorgeousStat_S TestStat;
 		TestStat.DefaultValue = 100.0f;
@@ -107,6 +123,10 @@ struct FGorgeousStatsFoundationInsightTests
 		TestStat.ModificationSignal = TestModSignal;
 		TestStat.bSignalIsDelta = true;
 		
+		const TMap<FGameplayTag, FGorgeousStat_S> PreviousRegistry = Settings->StatRegistry;
+		const bool bPreviousAutoDispatch = Settings->bAutoDispatchChangeSignals;
+		ON_SCOPE_EXIT { Settings->StatRegistry = PreviousRegistry; Settings->bAutoDispatchChangeSignals = bPreviousAutoDispatch; };
+		Settings->bAutoDispatchChangeSignals = false;
 		Settings->StatRegistry.Add(TestStatTag, TestStat);
 
 		// Act: Create dummy actor and component
@@ -118,11 +138,14 @@ struct FGorgeousStatsFoundationInsightTests
 		// Force server authority
 		DummyActor->SetRole(ROLE_Authority);
 		
-		// Trigger BeginPlay manually to setup storage and listeners
-		StatComp->BeginPlay();
+		// Exercise the actual signal handler with isolated storage rather than requiring a game-specific WorldSettings.
+		StatComp->StatStorage = NewObject<UGorgeousStatFoundationStorage_OV>(World);
+		StatComp->RegisterSignalListeners();
 
 		// Fire signal
 		FGorgeousStatModificationPayload_S PayloadData;
+		PayloadData.Target = DummyActor;
+		PayloadData.Stat = TestStatTag;
 		PayloadData.Value = -200.0f; // -200 health, should clamp to 0
 		FInstancedStruct TestPayload = FInstancedStruct::Make(PayloadData);
 		
@@ -130,10 +153,15 @@ struct FGorgeousStatsFoundationInsightTests
 
 		float FinalValue = StatComp->GetStat(TestStatTag);
 		
-		Result.bSuccess = true;
-		Result.AddNote(FString::Printf(TEXT("Drain Test completed safely without crashing. Value: %f"), FinalValue));
+		Result.bSuccess = FMath::IsNearlyEqual(FinalValue, 0.0f);
+		Result.Metrics.Add(TEXT("ExpectedValue"), TEXT("0"));
+		Result.Metrics.Add(TEXT("FinalValue"), FString::SanitizeFloat(FinalValue));
+		if (!Result.bSuccess) Result.AddError(FString::Printf(TEXT("Drain expected clamped health 0, got %f."), FinalValue));
 
 		// Cleanup
+		FSignalBridgeEventDelegate Listener;
+		Listener.BindUFunction(StatComp, TEXT("OnSignalReceived"));
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TestModSignal, nullptr, Listener);
 		Settings->StatRegistry.Remove(TestStatTag);
 		DummyActor->Destroy();
 

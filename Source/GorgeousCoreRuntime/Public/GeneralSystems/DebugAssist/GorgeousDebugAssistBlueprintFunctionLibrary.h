@@ -38,9 +38,9 @@
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/#features",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/DebugAssist/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousDebugAssistBlueprintFunctionLibrary : public UBlueprintFunctionLibrary

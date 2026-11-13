@@ -1,0 +1,131 @@
+{
+  "SchemaVersion": 1,
+  "PluginName": "GorgeousCore",
+  "GuardFolders": [
+    "Content/Data/CoreData/ExtensionResourceGuards"
+  ],
+  "Sources": [
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_CommonUIFoundation.uasset",
+      "Sha1": "dfd3111b46131f68c5a5deb1183c12b5ad7d24af"
+    },
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_General.uasset",
+      "Sha1": "6996a72914f289278113e197e23ce80585449542"
+    },
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_InteractionFoundation.uasset",
+      "Sha1": "2b82590ccdd371f76d0dd42e3e74b98e3e6e88ee"
+    },
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_Playlist.uasset",
+      "Sha1": "d187284ff28c210dbdb082bbfed435123d7a63bd"
+    },
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_Team.uasset",
+      "Sha1": "2ca49c327b4ff24498847e5615384a5dbf636b6f"
+    },
+    {
+      "Path": "Content/Data/CoreData/ExtensionResourceGuards/DA_VisualDataGeathering.uasset",
+      "Sha1": "f4ae8288db7df935a0cbe9d033b2c2207197f43d"
+    }
+  ],
+  "Guards": [
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_CommonUIFoundation.DA_CommonUIFoundation",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_CommonUIFoundation.uasset",
+      "SystemIdentifier": "CommonUIFoundation",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": true,
+      "ContentSubPath": "Systems/CommonUIFoundation",
+      "RequiredPlugins": [
+        {
+          "Name": "CommonUI",
+          "Optional": false
+        }
+      ],
+      "RequiredBlueprintPacks": []
+    },
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_General.DA_General",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_General.uasset",
+      "SystemIdentifier": "General",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": false,
+      "ContentSubPath": "Systems/General",
+      "RequiredPlugins": [
+        {
+          "Name": "DataValidation",
+          "Optional": false
+        }
+      ],
+      "RequiredBlueprintPacks": []
+    },
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_InteractionFoundation.DA_InteractionFoundation",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_InteractionFoundation.uasset",
+      "SystemIdentifier": "InteractionFoundation",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": true,
+      "ContentSubPath": "/Systems/InteractionFoundation",
+      "RequiredPlugins": [],
+      "RequiredBlueprintPacks": []
+    },
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_Playlist.DA_Playlist",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_Playlist.uasset",
+      "SystemIdentifier": "Playlist",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": true,
+      "ContentSubPath": "Systems/Playlist",
+      "RequiredPlugins": [
+        {
+          "Name": "DataRegistry",
+          "Optional": false
+        },
+        {
+          "Name": "GameFeatures",
+          "Optional": false
+        }
+      ],
+      "RequiredBlueprintPacks": []
+    },
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_Team.DA_Team",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_Team.uasset",
+      "SystemIdentifier": "Team",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": true,
+      "ContentSubPath": "Systems/Team",
+      "RequiredPlugins": [
+        {
+          "Name": "CommonUI",
+          "Optional": false
+        }
+      ],
+      "RequiredBlueprintPacks": []
+    },
+    {
+      "AssetPath": "/GorgeousCore/Data/CoreData/ExtensionResourceGuards/DA_VisualDataGeathering.DA_VisualDataGeathering",
+      "GuardClass": "/Script/GorgeousCoreEditorUtilities.GorgeousExtensionResourceGuard",
+      "SourceAsset": "Content/Data/CoreData/ExtensionResourceGuards/DA_VisualDataGeathering.uasset",
+      "SystemIdentifier": "VisualDataGeathering",
+      "OwningPluginName": "GorgeousCore",
+      "IsContentPackGuard": true,
+      "ContentSubPath": "Systems/VisualDataGeathering",
+      "RequiredPlugins": [
+        {
+          "Name": "CommonUI",
+          "Optional": false
+        }
+      ],
+      "RequiredBlueprintPacks": []
+    }
+  ],
+  "HashAlgorithm": "SHA1"
+}

@@ -4,6 +4,7 @@
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "Engine/World.h"
+#include "GeneralSystems/SignalBridge/GorgeousSignalBridgeWorldSubsystem.h"
 
 static const FName SignalBridgeEntryKey = TEXT("SignalBridge");
 
@@ -23,7 +24,7 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 	GT_I_LOG("GT.SignalBridge", TEXT("Retrieving Signal Bridge for world %s (Context: %s)"), *World->GetName(), *GetNameSafe(WorldContextObject));
 
 	UGorgeousObjectVariable* ExistingVar = nullptr;
-	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, SignalBridgeEntryKey, ExistingVar))
+	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World->GetWorldSettings(), SignalBridgeEntryKey, ExistingVar))
 	{
 		if (USignalBridgeStorage_OV* Storage = Cast<USignalBridgeStorage_OV>(ExistingVar))
 		{
@@ -32,7 +33,7 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 		}
 	}
 
-	if (bRequireNetworking)
+	if (bRequireNetworking && World->GetNetMode() != NM_Client)
 	{
 		AGorgeousWorldSettings* WorldSettings = Cast<AGorgeousWorldSettings>(World->GetWorldSettings());
 		if (WorldSettings)
@@ -43,7 +44,7 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 				{
 					UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(WorldContextObject, AGorgeousWorldSettings::StaticClass());
 
-					if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, SignalBridgeEntryKey, ExistingVar))
+					if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World->GetWorldSettings(), SignalBridgeEntryKey, ExistingVar))
 					{
 						return Cast<USignalBridgeStorage_OV>(ExistingVar);
 					}
@@ -54,21 +55,7 @@ USignalBridgeStorage_OV* USignalBridgeBlueprintFunctionLibrary::GetSignalBridgeS
 
 	// FALLBACK: If we are here, AutoReplication failed to resolve (likely misconfigured level settings).
 	// We'll look for a transient storage attached to the world as a local-only fallback.
-	USignalBridgeStorage_OV* LocalStorage = nullptr;
-	for (TObjectIterator<USignalBridgeStorage_OV> It; It; ++It)
-	{
-		if (It->GetVariableWorld() == World && !It->IsTemplate())
-		{
-			LocalStorage = *It;
-			break;
-		}
-	}
-
-	if (!LocalStorage)
-	{
-		GT_W_LOG("GT.SignalBridge", TEXT("Signal Bridge: AutoReplication failed and no local storage found. Creating transient fallback for world %s."), *World->GetName());
-		LocalStorage = NewObject<USignalBridgeStorage_OV>(World);
-	}
+    USignalBridgeStorage_OV* LocalStorage = World->GetSubsystem<UGorgeousSignalBridgeWorldSubsystem>()->GetStorage();
 
 	GT_I_LOG("GT.SignalBridge", TEXT("Returning Signal Bridge: %s"), *LocalStorage->GetName());
 	return LocalStorage; 
@@ -138,4 +125,9 @@ void USignalBridgeBlueprintFunctionLibrary::RemoveAllowedController(UObject* Wor
 	{
 		Storage->RemoveAllowedController(Tag, Controller);
 	}
+}
+
+void USignalBridgeBlueprintFunctionLibrary::Unlisten(UObject* WorldContextObject, FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
+{
+    if (USignalBridgeStorage_OV* Storage = GetSignalBridgeStorage(WorldContextObject)) Storage->Unlisten(Tag, Controller, Delegate);
 }

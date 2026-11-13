@@ -88,7 +88,10 @@ struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationStreamConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Object Variable|Networking", meta = (ClampMin = "0.5"))
 	float BandwidthBudgetKB;
 
-	float GetEffectiveUpdateFrequency() const { return FMath::Max(UpdateFrequency, MinUpdateFrequency); }
+	bool operator==(const FGorgeousAutoReplicationStreamConfig& Other) const
+    { return Backend==Other.Backend && UpdateFrequency==Other.UpdateFrequency && MinUpdateFrequency==Other.MinUpdateFrequency && Priority==Other.Priority && bSupportsMulticast==Other.bSupportsMulticast && bRespectAccessPolicy==Other.bRespectAccessPolicy && BandwidthBudgetKB==Other.BandwidthBudgetKB; }
+
+    float GetEffectiveUpdateFrequency() const { return FMath::Max(UpdateFrequency, MinUpdateFrequency); }
 };
 
 /** Simple description of an active data stream tracked by the coordinator. */
@@ -220,6 +223,14 @@ USTRUCT()
 struct GORGEOUSCORERUNTIME_API FGorgeousAutoReplicationPropertyEnvelope
 {
 	GENERATED_BODY()
+    /** Network actor identity prevents another player's identically named slot being overwritten. */
+    UPROPERTY()
+    TObjectPtr<AActor> OwnerActor = nullptr;
+    UPROPERTY()
+    TSubclassOf<UGorgeousObjectVariable> VariableClass;
+    UPROPERTY()
+    FGorgeousAutoReplicationStreamConfig StreamConfig;
+
 
 	UPROPERTY()
 	FName EntryKey;

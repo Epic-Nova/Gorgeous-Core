@@ -76,6 +76,7 @@ void UGorgeousCommonBorderProcessor::ApplyThemeToWidget(UObject* Widget, const U
 			Border->GetStartThemeColors().Add("BrushColor", Border->GetCurrentThemeColors().FindOrAdd("BrushColor", *ColorPtr));
 			Border->GetTargetThemeColors().Add("BrushColor", *ColorPtr);
 			Border->SetElapsedThemeTime(0.0f);
+			Border->SetThemeInterpolationDuration(1.f / FMath::Max(.01f, Border->ThemeInterpSpeed));
 			Border->SetIsInterpTheme(true);
 		}
 	}

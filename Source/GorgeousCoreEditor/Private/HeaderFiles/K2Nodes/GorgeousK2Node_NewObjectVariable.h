@@ -8,7 +8,6 @@
 |                    Epic Nova is an independent entity,                    |
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
-#if 0
 #pragma once
 
 //<=============================--- Includes ---=============================>
@@ -66,4 +65,3 @@ private:
 };
 
 
-#endif

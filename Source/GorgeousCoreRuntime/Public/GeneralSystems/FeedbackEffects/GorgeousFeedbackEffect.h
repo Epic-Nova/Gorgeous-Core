@@ -14,6 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousBaseWorldContextUObject.h"
 #include "GorgeousFeedbackEffectTypes.h"
+#include "TimerManager.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousFeedbackEffect.generated.h"
 //<-------------------------------------------------------------------------->
@@ -46,9 +47,9 @@ class APlayerController;
 //<------------------------------------------------------------->
 UCLASS(Abstract, Blueprintable, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/GorgeousFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-properties",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousFeedbackEffect : public UGorgeousBaseWorldContextUObject
@@ -117,7 +118,7 @@ public:
 
     // Transform applied relative to the attach point or world location when spawning the effect.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Attachment")
-	FTransform RelativeTransform;
+	FTransform RelativeTransform = FTransform::Identity;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
 
@@ -135,6 +136,10 @@ protected:
     virtual void PerformExecute(const FGorgeousFeedbackContext& Context)
     {
     }
+    virtual void PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted);
+    virtual void StopActiveEffects() {}
+    virtual float GetPlaybackDuration(const FGorgeousFeedbackContext& Context) const { return 0.f; }
+    void WaitForPlayback(UWorld* World, TFunction<bool()> IsFinished, FSimpleDelegate OnCompleted);
 
     /**
      * Resolves the most appropriate player controller from the feedback context.
@@ -145,6 +150,7 @@ protected:
      * @return The resolved player controller, or nullptr if none could be found.
      */
     APlayerController* ResolvePlayerController(const FGorgeousFeedbackContext& Context) const;
+	USceneComponent* ResolveAttachComponent(const FGorgeousFeedbackContext& Context) const;
 
     /**
      * Resolves the world-space transform the effect should spawn at, preferring an attached
@@ -153,7 +159,7 @@ protected:
      * @param Context The feedback context describing the current situation.
      * @return The resolved spawn transform.
 	 */
-	static FTransform ResolveEffectTransform(const FGorgeousFeedbackContext& Context);
+	FTransform ResolveEffectTransform(const FGorgeousFeedbackContext& Context) const;
 	//<------------------------------------------------------------------------->
 	#pragma endregion C++ Only
 
@@ -167,6 +173,27 @@ public:
      *
      * @param Context The runtime situation the effect executes against.
      */
+    /** Scheduling entry point for native and Blueprint effects. */
+    UFUNCTION(BlueprintCallable, Category="Feedback")
+    void PlayFeedback(const FGorgeousFeedbackContext& Context);
+
+    void PlayScheduled(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted = FSimpleDelegate());
+    virtual void BeginDestroy() override;
+
+    UFUNCTION(BlueprintCallable, Category="Feedback")
+    void CancelPendingExecutions();
+
+    UFUNCTION(BlueprintCallable, Category="Feedback")
+    void StopFeedback();
+
+    /** Async Blueprint execution hook. Call CompleteFeedbackExecution once actual playback is done. */
+    UFUNCTION(BlueprintImplementableEvent, Category="Feedback", meta=(DisplayName="Execute Feedback Asynchronously"))
+    void OnExecuteAsync(const FGorgeousFeedbackContext& Context, FGuid ExecutionId);
+
+    UFUNCTION(BlueprintCallable, Category="Feedback")
+    void CompleteFeedbackExecution(FGuid ExecutionId);
+
+    // Execution hook. Dispatchers call PlayFeedback so Blueprint overrides retain scheduling.
     UFUNCTION(BlueprintNativeEvent, Category="Feedback")
     void Execute(const FGorgeousFeedbackContext& Context);
 
@@ -249,7 +276,11 @@ private:
      *
      * @param Context The feedback context to forward to the underlying implementation.
 	 */
-	void ExecuteWithScheduling(const FGorgeousFeedbackContext& Context);
+	bool bPerformingScheduledExecution = false;
+	bool bNativeCompletionStarted = false;
+	FGuid CurrentExecutionId;
+	TMap<FGuid, FSimpleDelegate> PendingCompletions;
+	TMap<FGuid, TPair<TWeakObjectPtr<UWorld>, FTimerHandle>> PendingTimers;
 	//<------------------------------------------------------------------------->
 	#pragma endregion C++ Only
 };

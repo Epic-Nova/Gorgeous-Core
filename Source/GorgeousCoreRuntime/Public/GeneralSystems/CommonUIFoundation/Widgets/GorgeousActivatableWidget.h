@@ -18,6 +18,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "GameplayTagContainer.h"
+#include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStructures.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousActivatableWidget.generated.h"
 //<-------------------------------------------------------------------------->
@@ -44,9 +45,9 @@ class UGorgeousUIState_DA;
 
 UCLASS(Abstract, BlueprintType, Blueprintable,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/UGorgeousActivatableWidget",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Widgets/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#user-widget-classes",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Features/Widgets/#pushing-widgets"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousActivatableWidget : public UCommonActivatableWidget, public IGorgeousUIWidget_I
 {
@@ -56,6 +57,18 @@ public:
 	
 	// Initializes the widget and sets up its Signal Bridge interface boilerplate.
 	UGorgeousActivatableWidget();
+
+	/** Initializes a dialog before activation. Blueprint implementations populate their controls here. */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Messages")
+	void InitializeMessage(const FGorgeousUIMessageRequest& Request);
+
+	/** Completes only this dialog request and removes it from its layer. */
+	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Common UI Foundation|Messages")
+	void SubmitMessageResult(FName ResultTag);
+
+	UPROPERTY(BlueprintReadOnly, Transient, Category = "Gorgeous Core|Common UI Foundation|Messages")
+	FGorgeousUIMessageRequest MessageRequest;
+
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides

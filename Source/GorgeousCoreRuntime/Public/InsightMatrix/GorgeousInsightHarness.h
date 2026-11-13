@@ -50,7 +50,7 @@ public:
 	/** Start shared harness resources for a matrix run.
 	 *  TODO: integrate Gauntlet or native automation orchestration.
 	 */
-	static bool StartHarness(const FGorgeousInsightMatrixRequest& Request);
+	static bool StartHarness(const FGorgeousInsightMatrixRequest& Request, FAutomationTestBase* NativeTest = nullptr);
 
 	/** Stop shared harness resources. */
 	static void StopHarness();
@@ -58,12 +58,12 @@ public:
 	/** Save scenario result to disk under the given folder.
 	 *  Path is relative to Saved/Automation/InsightMatrix.
 	 */
-	static bool SaveScenarioResult(const FGorgeousInsightScenarioDescriptor& Descriptor, const FGorgeousInsightScenarioResult& Result, const FString& Folder = TEXT(""));
+	static bool SaveScenarioResult(const FGorgeousInsightScenarioDescriptor& Descriptor, const FGorgeousInsightScenarioResult& Result, const FString& Folder = TEXT(""), FAutomationTestBase* NativeTest = nullptr);
 
 	/** Save provider test result to disk under the given folder.
 	 *  Path is relative to Saved/Automation/InsightMatrix.
 	 */
-	static bool SaveTestResult(const FName ProviderName, const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result, const FString& Folder = TEXT("Tests"));
+	static bool SaveTestResult(const FName ProviderName, const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result, const FString& Folder = TEXT("Tests"), FAutomationTestBase* NativeTest = nullptr);
 
 	/** Returns a snapshot of the current harness status. */
 	static FGorgeousInsightHarnessStatus GetStatus();

@@ -85,12 +85,6 @@ public:
 	//<============================--- Variables ---============================>
 private:
 
-	// The delegate handles for the BeginPIE and EndPIE editor delegates, used to unregister the delegates on module shutdown.
-	FDelegateHandle BeginPIEHandle;
-
-	// The delegate handle for the EndPIE editor delegate, used to unregister the delegate on module shutdown.
-	FDelegateHandle EndPIEHandle;
-
 	//@TODO: Planned for version 1.1 and upwards
 	//TSharedPtr<FRainbowPinFactory> Factory;
 	//TSharedPtr<FGorgeousRainbowGraphPinFactory> RainbowPinFactory;

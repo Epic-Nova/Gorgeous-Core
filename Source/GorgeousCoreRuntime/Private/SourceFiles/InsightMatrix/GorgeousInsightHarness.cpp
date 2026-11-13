@@ -1,3 +1,5 @@
+#include "InsightMatrix/GorgeousInsightHarness.h"
+#include "InsightMatrix/GorgeousInsightMatrixSubsystem.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Insight Matrix Harness (Runtime)            |
@@ -9,7 +11,6 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 
-#include "InsightMatrix/GorgeousInsightHarness.h"
 
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Misc/Paths.h"
@@ -34,8 +35,10 @@ namespace
     static bool GInsightGauntletCachedValue = false;
 }
 
-bool FGorgeousInsightHarness::StartHarness(const FGorgeousInsightMatrixRequest& Request)
+bool FGorgeousInsightHarness::StartHarness(const FGorgeousInsightMatrixRequest& Request, FAutomationTestBase* NativeTest)
 {
+    if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() && !UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(NativeTest)) return false;
+
 	GT_I_LOG("GT.InsightMatrix.Harness.Start", TEXT("[InsightHarness] StartHarness: %s"), *Request.Describe());
 
 	if (!Request.bEnableSharedHarness)
@@ -76,7 +79,8 @@ void FGorgeousInsightHarness::StopHarness()
 FGorgeousInsightHarnessStatus FGorgeousInsightHarness::GetStatus()
 {
 	FGorgeousInsightHarnessStatus Status;
-	Status.bHarnessEnabled = true;
+	Status.bHarnessEnabled = UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled();
+	if (!Status.bHarnessEnabled) return Status;
 	Status.bUsingGauntlet = IsGauntletActive();
 	Status.bHarnessActive = Status.bUsingGauntlet;
 	Status.bRequiresMultiSession = Status.bUsingGauntlet;
@@ -120,6 +124,7 @@ FGauntletModule* FGorgeousInsightHarness::GetGauntletModule()
 
 void FGorgeousInsightHarness::BroadcastGauntletState(FName NewState)
 {
+	if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled()) return;
 #if GORGEOUSCORE_WITH_GAUNTLET
 	if (FGauntletModule* Module = GetGauntletModule())
 	{
@@ -154,6 +159,7 @@ double FGorgeousInsightHarness::GetGauntletStateSeconds()
 
 void FGorgeousInsightHarness::MarkGauntletHeartbeat(const FString& OptionalStatusMessage)
 {
+	if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled()) return;
 #if GORGEOUSCORE_WITH_GAUNTLET
 	if (FGauntletModule* Module = GetGauntletModule())
 	{
@@ -164,8 +170,10 @@ void FGorgeousInsightHarness::MarkGauntletHeartbeat(const FString& OptionalStatu
 #endif
 }
 
-bool FGorgeousInsightHarness::SaveScenarioResult(const FGorgeousInsightScenarioDescriptor& Descriptor, const FGorgeousInsightScenarioResult& Result, const FString& Folder)
+bool FGorgeousInsightHarness::SaveScenarioResult(const FGorgeousInsightScenarioDescriptor& Descriptor, const FGorgeousInsightScenarioResult& Result, const FString& Folder, FAutomationTestBase* NativeTest)
 {
+    if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() && !UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(NativeTest)) return false;
+
 	const FString BaseDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("InsightMatrix"), Folder);
 	FString FileName = Descriptor.ScenarioName.IsNone() ? Descriptor.GetDisplayName() : Descriptor.ScenarioName.ToString();
 	FileName = FileName.Replace(TEXT("/"), TEXT("_"));
@@ -226,8 +234,10 @@ bool FGorgeousInsightHarness::SaveScenarioResult(const FGorgeousInsightScenarioD
 	return true;
 }
 
-bool FGorgeousInsightHarness::SaveTestResult(const FName ProviderName, const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result, const FString& Folder)
+bool FGorgeousInsightHarness::SaveTestResult(const FName ProviderName, const FGorgeousInsightTest& Test, const FGorgeousInsightTestResult& Result, const FString& Folder, FAutomationTestBase* NativeTest)
 {
+    if (!UGorgeousInsightMatrixSubsystem::IsDevelopmentToolsEnabled() && !UGorgeousInsightMatrixSubsystem::IsNativeAutomationExecution(NativeTest)) return false;
+
 	const FString BaseDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("InsightMatrix"), Folder, ProviderName.ToString());
 	FString FileName = Test.Id.IsNone() ? Test.DisplayName.ToString() : Test.Id.ToString();
 	FileName = FileName.Replace(TEXT("/"), TEXT("_"));

@@ -62,9 +62,9 @@ struct GORGEOUSCORERUNTIME_API FGorgeousBlueprintSystemStatsData
 */
 UCLASS(BlueprintType, Blueprintable,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/GorgeousInsightBlueprintStats_OV",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#blueprint-system-stats",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/InsightMatrix/Overview/#adding-your-own-scenario"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousInsightBlueprintStats_OV : public UGorgeousObjectVariable

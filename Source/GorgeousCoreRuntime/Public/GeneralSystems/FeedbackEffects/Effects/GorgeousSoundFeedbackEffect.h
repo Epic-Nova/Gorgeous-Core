@@ -15,6 +15,8 @@
 #include "FeedbackEffects/GorgeousFeedbackEffect.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousSoundFeedbackEffect.generated.h"
+
+class UAudioComponent;
 //<-------------------------------------------------------------------------->
 
 /*
@@ -34,9 +36,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/GorgeousSoundFeedbackEffect",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/Effects/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#effect-types",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#sound",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/FeedbackEffects/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousSoundFeedbackEffect : public UGorgeousFeedbackEffect
@@ -53,6 +55,8 @@ public:
 	 * @param Context The runtime situation used to resolve the playback location.
 	 */
 	virtual void PerformExecute(const FGorgeousFeedbackContext& Context) override;
+	virtual void PerformExecuteWithCompletion(const FGorgeousFeedbackContext& Context, FSimpleDelegate OnCompleted) override;
+	virtual void StopActiveEffects() override;
 
 	/**
 	 * Determines whether this effect is enabled and has a sound asset configured.
@@ -97,9 +101,13 @@ public:
 protected:
 
 #if WITH_EDITOR
-	// Editor preview hook; intentionally a no-op because the properties fully describe this effect.
+	// Plays the configured sound through the shared preview scheduler.
 	virtual void Preview_Internal() override;
 #endif
 	//<------------------------------------------------------------------------->
 	#pragma endregion Callbacks
+private:
+	UAudioComponent* SpawnAudio(const FGorgeousFeedbackContext& Context);
+	TArray<TWeakObjectPtr<UAudioComponent>> ActiveAudio;
+
 };

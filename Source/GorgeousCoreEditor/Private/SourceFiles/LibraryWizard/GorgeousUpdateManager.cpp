@@ -3,6 +3,15 @@
 #include "LibraryWizard/GorgeousLibrarySettings.h"
 
 #include "HttpModule.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
+#include "LibraryWizard/GorgeousReleaseVerification.h"
+#include "FileHelpers.h"
+#include "Widgets/Input/SButton.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
+#include "Misc/MessageDialog.h"
+#include "Misc/ScopeExit.h"
+#include "Algo/AllOf.h"
+#include "Helpers/GorgeousVersionComparison.h"
 #include "IGorgeousThingsModuleInterface.h"
 #include "Interfaces/IPluginManager.h"
 #include "HAL/FileManager.h"
@@ -38,21 +47,7 @@ void UGorgeousUpdateManager::Initialize(FSubsystemCollectionBase& Collection)
 
 void UGorgeousUpdateManager::ProbeConnection()
 {
-    if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
-    {
-        if (Helper->GetForceDevMode())
-        {
-            bIsDevMode = true;
-            GT_W_LOG_FULL_EX(
-                TEXT("Gorgeous Dev Mode Activated"),
-                TEXT("Operating in HTTP is dangerous."),
-                GT_DURATION,
-                true, true, true, true, nullptr, nullptr
-            );
-            FetchSystemsCatalog();
-            return;
-        }
-    }
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
 
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnProbeConnectionResponse);
@@ -63,6 +58,7 @@ void UGorgeousUpdateManager::ProbeConnection()
 
 void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
     FString RequestURL = Request->GetURL();
 
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
@@ -89,19 +85,7 @@ void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, 
 
         FetchSystemsCatalog();
     }
-    else
-    {
-        if (RequestURL.StartsWith(TEXT("https://")))
-        {
-            // Fallback to HTTP probe
-            FString FallbackURL = RequestURL.Replace(TEXT("https://"), TEXT("http://"));
-            TSharedRef<IHttpRequest, ESPMode::ThreadSafe> FallbackRequest = FHttpModule::Get().CreateRequest();
-            FallbackRequest->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnProbeConnectionResponse);
-            FallbackRequest->SetURL(FallbackURL);
-            FallbackRequest->SetVerb(TEXT("GET"));
-            FallbackRequest->ProcessRequest();
-        }
-    }
+
 }
 
 FString UGorgeousUpdateManager::HashDirectory(const FString& DirectoryPath)
@@ -154,7 +138,7 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
     FString SourceDir = FPaths::Combine(PluginBaseDir, TEXT("Source"));
     TArray<FString> ModuleDirs;
     
-    IFileManager::Get().FindFiles(ModuleDirs, *SourceDir, false, true);
+    IFileManager::Get().FindFiles(ModuleDirs, *(SourceDir / TEXT("*")), false, true);
     
     TArray<FString> FinalFileHashes;
     
@@ -206,7 +190,7 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
                 }
             }
 
-            if (!bShouldExclude)
+            if (bShouldExclude)
             {
                 FilesToExclude.Add(File);
             }
@@ -221,7 +205,7 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
         for (const FString& File : FinalFilesToHash)
         {
             IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-            PlatformFile.OpenRead(*File);
+
             
             if (TUniquePtr<FArchive> FileReader(IFileManager::Get().CreateFileReader(*File)); FileReader)            
             {
@@ -261,6 +245,7 @@ FString UGorgeousUpdateManager::CalculatePluginChecksum(const FString& PluginNam
 
 void UGorgeousUpdateManager::Deinitialize()
 {
+    if (ActiveDownloadRequest.IsValid()) { ActiveDownloadRequest->OnProcessRequestComplete().Unbind(); ActiveDownloadRequest->OnRequestProgress64().Unbind(); ActiveDownloadRequest->CancelRequest(); ActiveDownloadRequest.Reset(); }
     Super::Deinitialize();
     if (ActiveProgressWindow.IsValid())
     {
@@ -273,6 +258,7 @@ void UGorgeousUpdateManager::Deinitialize()
 
 void UGorgeousUpdateManager::CheckForUpdates()
 {
+    if (!GorgeousNetworkConsent::IsAllowed(true)) return;
     TArray<TSharedRef<IPlugin>> EnabledPlugins = IPluginManager::Get().GetEnabledPlugins();
     TArray<TSharedPtr<FJsonValue>> PluginJsonArray;
 
@@ -301,7 +287,7 @@ void UGorgeousUpdateManager::CheckForUpdates()
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
     FJsonSerializer::Serialize(PayloadObj.ToSharedRef(), Writer);
 
-    FString Endpoint = bIsDevMode ? FString(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/plugins/update-check")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/plugins/update-check"));
+    FString Endpoint = bIsDevMode ? FString(TEXT("https://api.gorgeous.simsalabim.studio/api/v1/plugins/update-check")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/plugins/update-check"));
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnUpdateCheckResponse);
     Request->SetURL(Endpoint);
@@ -313,6 +299,7 @@ void UGorgeousUpdateManager::CheckForUpdates()
 
 void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
     bool bUpdatesAvailable = false;
 
     if (bWasSuccessful && Response.IsValid())
@@ -344,7 +331,7 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
                             FString MinCoreVer;
                             if (PluginData->TryGetStringField(TEXT("MinimumCoreVersion"), MinCoreVer) && !MinCoreVer.IsEmpty())
                             {
-                                if (MinCoreVer > CurrentCoreVersion)
+                                if (GorgeousVersionComparison::IsOlder(CurrentCoreVersion, MinCoreVer))
                                 {
                                     //@TODO: Replace with the gorgeous toast system
                                     FString ToastMsg = FString::Printf(TEXT("Update blocked for %s: Minimum Core Version %s required."), *Elem.Key, *MinCoreVer);
@@ -372,6 +359,8 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
                                 Entry.ChangelogUrl = ChangelogUrlStr;
                             }
                             Entry.DownloadToken = PluginData->GetStringField(TEXT("DownloadToken"));
+                            PluginData->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+                            PluginData->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
                             PluginCache.Add(Entry);
                             
                             GT_I_LOG("GT.Updates", TEXT("Update available for plugin '%s': latest=%s, minCore=%s"), 
@@ -401,7 +390,8 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
 
 void UGorgeousUpdateManager::FetchSystemsCatalog()
 {
-    FString Endpoint = bIsDevMode ? FString(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/systems")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/systems"));
+    if (!GorgeousNetworkConsent::IsAllowed(false)) return;
+    FString Endpoint = bIsDevMode ? FString(TEXT("https://api.gorgeous.simsalabim.studio/api/v1/systems")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/systems"));
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnFetchSystemsCatalogResponse);
     Request->SetURL(Endpoint);
@@ -411,6 +401,7 @@ void UGorgeousUpdateManager::FetchSystemsCatalog()
 
 void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
     if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
         TSharedPtr<FJsonObject> JsonObject;
@@ -456,6 +447,9 @@ void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Reque
                             Entry.Description = Obj->GetStringField(TEXT("Description"));
                             Entry.Version = Obj->GetStringField(TEXT("Version"));
                             Entry.DownloadUrl = Obj->GetStringField(TEXT("DownloadUrl"));
+                            Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
+                            Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
+                            Obj->TryGetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
                             
                             FString ChangelogUrl;
                             if (Obj->TryGetStringField(TEXT("ChangelogUrl"), ChangelogUrl)) { Entry.ChangelogUrl = ChangelogUrl; }
@@ -498,18 +492,48 @@ void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Reque
 
 void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, const FString& DownloadToken)
 {
+    if (!GorgeousNetworkConsent::IsAllowed(true)) return;
     if (DownloadToken.IsEmpty())
     {
         GT_E_LOG("GT.Updates", TEXT("Download token is empty for plugin %s"), *PluginName);
         return;
     }
 
+    const auto* Helper = UGorgeousPluginHelper::GetSingleton();
+    const FString URL = FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/")) + FGenericPlatformHttp::UrlEncode(DownloadToken);
+    if (Helper)
+    {
+        for (const auto& Entry : Helper->GetPluginUpdateCache())
+        {
+            if (Entry.PluginName==PluginName && Entry.DownloadToken==DownloadToken)
+            {
+                DownloadZipAndInstall(URL,PluginName,Entry.ChecksumSha256,DownloadToken,Entry.AvailableVersion,Entry.SignatureEd25519);
+                return;
+            }
+        }
+    }
+    GT_E_LOG("GT.Updates", TEXT("Download rejected: no matching signed catalog entry."));
+}
+
+void UGorgeousUpdateManager::DownloadZipAndInstall(const FString& URL, const FString& PluginName, const FString& ExpectedSHA256, const FString& Token, const FString& Version, const FString& SignatureEd25519)
+{
+    if (!GorgeousNetworkConsent::IsAllowed(true)) return;
+    const bool bValidPluginName = !PluginName.IsEmpty() && Algo::AllOf(PluginName, [](TCHAR C) { return (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z') || (C >= '0' && C <= '9') || C=='_' || C=='-'; });
+    if (!GorgeousReleaseVerification::VerifyWithPinnedKey(Token,Version,ExpectedSHA256,SignatureEd25519) ||
+        !bValidPluginName || !GorgeousNetworkConsent::IsSafeURL(URL) || ExpectedSHA256.Len()!=64 ||
+        PluginName.IsEmpty() || PluginName.Contains(TEXT("/")) || PluginName.Contains(TEXT("\\")) || PluginName.Contains(TEXT(":")))
+    {
+        FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GorgeousUpdates", "InvalidCatalog", "Download unavailable: configure the trusted release public key and use a valid signed catalog entry with an HTTPS URL and target plugin name."));
+        return;
+    }
+    if (ActiveDownloadRequest.IsValid()) return;
+    ActiveDownloadChecksum=ExpectedSHA256;
     FString WindowTitle = FString::Printf(TEXT("Downloading %s Update"), *PluginName);
 
     TSharedRef<SWindow> ProgressWindow = SNew(SWindow)
         .Title(FText::FromString(WindowTitle))
         .SizingRule(ESizingRule::FixedSize)
-        .ClientSize(FVector2D(420.f, 80.f))
+        .ClientSize(FVector2D(420.f, 125.f))
         .SupportsMinimize(false)
         .SupportsMaximize(false)
         .IsTopmostWindow(true)
@@ -528,8 +552,11 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
                 [
                     SAssignNew(ActiveProgressBar, SProgressBar)
                     .Percent(0.f)
-                    .Percent(TOptional<float>())
+
                 ]
+                + SVerticalBox::Slot().AutoHeight()
+                [ SNew(SButton).Text(NSLOCTEXT("GorgeousUpdates", "Cancel", "Cancel"))
+                    .OnClicked_Lambda([WeakThis=TWeakObjectPtr<UGorgeousUpdateManager>(this)] { if (auto* Self=WeakThis.Get()) { if (Self->ActiveDownloadRequest.IsValid()) { Self->ActiveDownloadRequest->OnProcessRequestComplete().Unbind(); Self->ActiveDownloadRequest->OnRequestProgress64().Unbind(); Self->ActiveDownloadRequest->CancelRequest(); Self->ActiveDownloadRequest.Reset(); } if (Self->ActiveProgressWindow.IsValid()) Self->ActiveProgressWindow->RequestDestroyWindow(); Self->ActiveProgressWindow.Reset(); Self->ActiveProgressBar.Reset(); Self->ActiveProgressStatusText.Reset(); } return FReply::Handled(); }) ]
             ]
         ];
 
@@ -537,34 +564,45 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
     FSlateApplication::Get().AddWindow(ProgressWindow);
     ProgressWindow->SetWindowMode(EWindowMode::Windowed);
 
-    FString Endpoint = bIsDevMode
-        ? FString::Printf(TEXT("http://api.gorgeous.simsalabim.studio/api/v1/downloads/%s"), *DownloadToken)
-        : FString::Printf(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/%s"), *DownloadToken);
+    const FString Endpoint = URL;
 
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnDownloadPluginUpdateResponse, PluginName);
-    Request->OnRequestProgress64().BindLambda([this, PluginName](FHttpRequestPtr Request, int64 Sent, int64 Received)
+    Request->OnRequestProgress64().BindLambda([WeakThis = TWeakObjectPtr<UGorgeousUpdateManager>(this), PluginName](FHttpRequestPtr Request, int64 Sent, int64 Received)
     {
-        const int64 TotalBytes = Request->GetContentLength();
-        AsyncTask(ENamedThreads::GameThread, [this, PluginName, Received, TotalBytes]()
+        const auto Response = Request->GetResponse();
+        const int64 Total = Response.IsValid() ? Response->GetContentLength() : 0;
+        AsyncTask(ENamedThreads::GameThread, [WeakThis, Request, PluginName, Received, Total]()
         {
-            if (ActiveProgressBar.IsValid() && ActiveProgressStatusText.IsValid())
-            {
-                FString StatusText = TotalBytes > 0
-                    ? FString::Printf(TEXT("Downloading %s: %.1f / %.1f MB"), *PluginName, Received / (1024.0 * 1024.0), TotalBytes / (1024.0 * 1024.0))
-                    : FString::Printf(TEXT("Downloading %s..."), *PluginName);
-                ActiveProgressStatusText->SetText(FText::FromString(StatusText));
-            }
+            auto* Self = WeakThis.Get();
+            if (!Self || Self->ActiveDownloadRequest!=Request || !Self->ActiveProgressBar.IsValid() || !Self->ActiveProgressStatusText.IsValid()) return;
+            const FString Status = Total > 0
+                ? FString::Printf(TEXT("Downloading %s: %.1f / %.1f MB"), *PluginName, Received/(1024.0*1024.0), Total/(1024.0*1024.0))
+                : FString::Printf(TEXT("Downloading %s: %.1f MB"), *PluginName, Received/(1024.0*1024.0));
+            Self->ActiveProgressStatusText->SetText(FText::FromString(Status));
+            Self->ActiveProgressBar->SetPercent(Total > 0 ? TOptional<float>(float(Received)/float(Total)) : TOptional<float>());
         });
     });
     Request->SetURL(Endpoint);
     Request->SetVerb(TEXT("GET"));
     Request->SetHeader(TEXT("Accept"), TEXT("application/zip"));
-    Request->ProcessRequest();
+    ActiveDownloadRequest=Request;
+    if (!Request->ProcessRequest()) { ActiveDownloadRequest.Reset(); if (ActiveProgressWindow.IsValid()) ActiveProgressWindow->RequestDestroyWindow(); }
 }
 
 void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FString PluginName)
 {
+    if (Request!=ActiveDownloadRequest) return;
+    ActiveDownloadRequest.Reset();
+    ON_SCOPE_EXIT
+    {
+        if (ActiveProgressWindow.IsValid()) ActiveProgressWindow->RequestDestroyWindow();
+        ActiveProgressWindow.Reset();
+        ActiveProgressBar.Reset();
+        ActiveProgressStatusText.Reset();
+        ActiveDownloadChecksum.Reset();
+    };
+    if (!GorgeousNetworkConsent::IsAllowed()) return;
     if (ActiveProgressBar.IsValid())
     {
         ActiveProgressBar->SetPercent(1.0f);
@@ -579,6 +617,7 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
 
     if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
+        FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GorgeousUpdates", "DownloadFailed", "The update download failed. Your project was not changed."));
         GT_E_LOG("GT.Updates", TEXT("Failed to download update for plugin %s. Response code: %d"), *PluginName, Response.IsValid() ? Response->GetResponseCode() : 0);
         if (ActiveProgressWindow.IsValid())
         {
@@ -592,7 +631,17 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
     const FString Directory = FPaths::GetPath(ZipPath);
     IFileManager::Get().MakeDirectory(*Directory, true);
 
+    const FString ExpectedHash = ActiveDownloadChecksum;
     const TArray<uint8>& Content = Response->GetContent();
+    uint8 Digest[SHA256_DIGEST_LENGTH];
+    SHA256(Content.GetData(), Content.Num(), Digest);
+    FString ActualHash;
+    for (uint8 Byte : Digest) ActualHash += FString::Printf(TEXT("%02x"), Byte);
+    if (ExpectedHash.Len() != 64 || !ActualHash.Equals(ExpectedHash, ESearchCase::IgnoreCase))
+    {
+        GT_E_LOG("GT.Updates", TEXT("Update rejected: missing or mismatched SHA-256 from the authenticated catalog."));
+        return;
+    }
     if (!FFileHelper::SaveArrayToFile(Content, *ZipPath))
     {
         GT_E_LOG("GT.Updates", TEXT("Failed to save update zip to %s"), *ZipPath);
@@ -612,7 +661,7 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
     }
     
     const FString InstallerPath = IPluginManager::Get().FindPlugin("GorgeousCore")->GetBaseDir() / "Binaries" / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer");
-    FString FullInstallerPath = InstallerPath;
+    FString FullInstallerPath = FPaths::ConvertRelativePathToFull(InstallerPath);
 #if PLATFORM_WINDOWS
     FullInstallerPath += TEXT(".exe");
 #endif
@@ -621,8 +670,9 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
     uint32 EditorProcessID = FPlatformProcess::GetCurrentProcessId();
 
     uint32 InstallerProcessID = 0;
-    FString Params = FString::Printf(TEXT("--install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project"), *ZipPath, *ProjectPath, EditorProcessID);
+    FString Params = FString::Printf(TEXT("--install-zip \"%s\" --project \"%s\" --wait-for-pid %u --reopen-project --target-plugin \"%s\""), *ZipPath, *ProjectPath, EditorProcessID, *PluginName);
 
+    if (!FEditorFileUtils::SaveDirtyPackages(true, true, true, false, false, false)) return;
     FProcHandle ProcHandle = FPlatformProcess::CreateProc(*FullInstallerPath, *Params, true, false, false, &InstallerProcessID, 0, nullptr, nullptr);
     if (ProcHandle.IsValid())
     {

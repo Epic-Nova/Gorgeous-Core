@@ -79,6 +79,9 @@ public:
 	 */
 	virtual void GorgeousStartupModule() = 0;
 
+	/** Runs startup and provider registration exactly once, including deferred registration. */
+	void CompleteGorgeousStartup();
+
 	/**
 	 * The public wrapper function of the module interface that is called to unload this module.
 	 */
@@ -155,10 +158,14 @@ public:
 	virtual void ValidateGorgeousModule(FDataValidationContext& InContext) {}
 #endif
 
+private:
+	bool bGorgeousModuleStarted = false;
+
 protected:
 
 	/** Returns the Insight Matrix provider instance for this module (if any). */
-	class IGorgeousInsightMatrixProvider* GetInsightProvider() const { return (class IGorgeousInsightMatrixProvider*)InsightProvider; }
+	template <typename TProvider = IGorgeousInsightMatrixProvider>
+	TProvider* GetInsightProvider() const { return static_cast<TProvider*>(InsightProvider); }
 	//<------------------------------------------------------------------------->
 
 
@@ -167,7 +174,7 @@ protected:
 	// Optional style set for editor modules.
 	TSharedPtr<FSlateStyleSet> ModuleStyleSet;
 
-	// Optional Insight Matrix provider for runtime modules.
+	// Non-owning modular-feature view. The concrete module owns and deletes the actual provider type.
 	IModularFeature* InsightProvider = nullptr;
 
 	/**

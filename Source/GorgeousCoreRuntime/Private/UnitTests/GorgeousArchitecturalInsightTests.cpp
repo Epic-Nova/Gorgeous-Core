@@ -4,6 +4,8 @@
 #include "GeneralSystems/SignalBridge/SignalBridgeStorage_OV.h"
 #include "GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary.h"
 #include "Engine/World.h"
+#include "NativeGameplayTags.h"
+UE_DEFINE_GAMEPLAY_TAG_STATIC(TAG_GorgeousArchitecturePlaylist, "Gorgeous.UI.Action.PlaylistScoreboard");
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 
@@ -29,7 +31,7 @@ struct FGorgeousArchitecturalInsightTests
 		}
 
 		// Act: We trigger a "Playlist UI" request blindly. We don't have CommonUIFoundation hooked up to listen to it!
-		FGameplayTag PlaylistUITag = FGameplayTag::RequestGameplayTag(TEXT("Gorgeous.UI.Action.PlaylistScoreboard"));
+		FGameplayTag PlaylistUITag = TAG_GorgeousArchitecturePlaylist.GetTag();
 		FInstancedStruct EmptyPayload;
 
 		// Dispatch should silently hit a dead end, proving decoupled fallback.

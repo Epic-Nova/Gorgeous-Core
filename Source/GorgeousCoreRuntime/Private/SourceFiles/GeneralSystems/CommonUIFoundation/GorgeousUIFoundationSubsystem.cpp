@@ -2,6 +2,11 @@
 #include "Layout/WidgetPath.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/ScrollBox.h"
+#include "Animation/WidgetAnimation.h"
+#include "Components/Widget.h"
+#include "Engine/GameInstance.h"
+#include "Framework/Application/SlateUser.h"
+#include "UObject/UnrealType.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStats.h"
@@ -33,39 +38,52 @@
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 #include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 DECLARE_CYCLE_STAT(TEXT("Set UI Theme"), STAT_GUI_SetTheme, STATGROUP_GorgeousUIFoundation);
-DECLARE_DWORD_COUNTER_STAT(TEXT("Total Theme Swaps"), STAT_GUI_ThemeSwaps, STATGROUP_GorgeousUIFoundation);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Total Theme Swaps"), STAT_GUI_ThemeSwaps, STATGROUP_GorgeousUIFoundation);
 
 void UGorgeousUIFoundationSubsystem::Tick(float DeltaTime)
 {
-	// Lazy signal registration for system-wide Signal Bridge routing
+	APlayerController* CurrentController = GetLocalPlayer() ? GetLocalPlayer()->GetPlayerController(GetWorld()) : nullptr;
+	if (bSignalsRegistered && (SignalController.Get() != CurrentController || SignalWorld.Get() != GetWorld())) DetachSignalListeners();
+	// Lazy registration also retries after controller replacement or map travel.
 	if (!bSignalsRegistered)
 	{
 		if (ULocalPlayer* LP = GetLocalPlayer())
 		{
-			if (AGorgeousPlayerController* GPC = Cast<AGorgeousPlayerController>(LP->GetPlayerController(GetWorld())))
+			if (APlayerController* GPC = LP->GetPlayerController(GetWorld()))
 			{
 				FGorgeousSignalBridgeAccessRules_S Rules;
+				Rules.bNetworked = false;
+				SignalController = GPC;
+				SignalWorld = GetWorld();
 
 				// Focus Routing
 				const FGameplayTag FocusRequestTag = TAG_Gorgeous_UI_Focus_Request;
 				FocusRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnFocusRequestReceived);
-				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, GPC);
-				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, GPC, FocusRequestDelegate);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), FocusRequestTag, Rules, nullptr);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), FocusRequestTag, nullptr, FocusRequestDelegate);
 
 				// Input Action Routing
 				const FGameplayTag InputActionTag = TAG_Gorgeous_UI_Input_Action;
 				InputActionDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnInputActionReceived);
-				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, GPC);
-				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, GPC, InputActionDelegate);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), InputActionTag, Rules, nullptr);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), InputActionTag, nullptr, InputActionDelegate);
 
 				// Message Routing
 				const FGameplayTag MessagePushTag = TAG_Gorgeous_UI_System_Message_Push;
 				const FGameplayTag MessageResultTag = TAG_Gorgeous_UI_System_Message_Result;
 				MessageRequestDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageRequestReceived);
-				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, GPC);
-				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, GPC);
-				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, GPC, MessageRequestDelegate);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessagePushTag, Rules, nullptr);
+				USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), MessageResultTag, Rules, nullptr);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessagePushTag, nullptr, MessageRequestDelegate);
+				MessageResultDelegate.BindDynamic(this, &UGorgeousUIFoundationSubsystem::OnMessageResultReceived);
+				USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), MessageResultTag, nullptr, MessageResultDelegate);
 
+				for (const auto& Entry : TagForwarders) if (Entry.Value)
+				{
+					FSignalBridgeEventDelegate Delegate; Delegate.BindDynamic(Entry.Value.Get(), &UGorgeousSignalBridgeTagForwarder::OnBridgePayload);
+					USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), Entry.Key, Rules, nullptr);
+					USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), Entry.Key, nullptr, Delegate);
+				}
 				bSignalsRegistered = true;
 				GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered system-wide signals for LocalPlayer via Tick lazy-init."));
 			}
@@ -73,23 +91,31 @@ void UGorgeousUIFoundationSubsystem::Tick(float DeltaTime)
 	}
 
 	// Self-healing check for input bridge setup (in case PlayerController/InputComponent was null on first call)
-	if (BridgedBindingHandles.IsEmpty() && !ActiveInputBindings.IsEmpty())
+	if (!ActiveInputBindings.IsEmpty() && (BridgedBindingHandles.IsEmpty() || !CurrentController || BridgedInputComponent.Get() != CurrentController->InputComponent))
 	{
 		SetupInputBridgeOnHUD();
 	}
 
-	// Process Juicy interpolation for all registered widgets
-	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
+	// Callbacks can unregister widgets; iterate a snapshot instead of the live array.
+	RegisteredWidgets.RemoveAll([](const auto& Entry) { return !IsValid(Entry.GetObject()); });
+	const auto TickWidgets = RegisteredWidgets;
+	for (const auto& Entry : TickWidgets)
 	{
-		if (UObject* WidgetObject = It->GetObject())
-		{
-			IGorgeousUIWidget_I::Execute_TickInterpolation(WidgetObject, DeltaTime);
-		}
-		else
-		{
-			It.RemoveCurrent();
-		}
+		if (IsValid(Entry.GetObject()) && RegisteredWidgets.Contains(Entry)) IGorgeousUIWidget_I::Execute_TickInterpolation(Entry.GetObject(), DeltaTime);
 	}
+	PendingFocusRequests.RemoveAll([](const auto& Request) { return Request.ExpirationTime < FPlatformTime::Seconds(); });
+	if (bStateTransitionPending)
+	{
+		for (auto It = TransitioningWidgets.CreateIterator(); It; ++It)
+		{
+			UObject* Object = It->Get();
+			UUserWidget* Widget = Cast<UUserWidget>(Object);
+			IGorgeousUIWidget_I* Interface = IsValid(Object) ? Cast<IGorgeousUIWidget_I>(Object) : nullptr;
+			if (!IsValid(Widget) || !Widget->IsVisible() || (!Widget->IsAnyAnimationPlaying() && (!Interface || (!Interface->IsInterpOpacity() && !Interface->IsInterpTheme())))) It.RemoveCurrent();
+		}
+		if (TransitioningWidgets.IsEmpty() || FPlatformTime::Seconds() >= TransitionDeadline) ExecuteStateSwap();
+	}
+
 }
 
 TStatId UGorgeousUIFoundationSubsystem::GetStatId() const
@@ -129,7 +155,7 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 		}
 	}
 
-	// 2. Register system-wide signals (moved to OnPlayerControllerAdded)
+	if (FSlateApplication::IsInitialized()) SlateFocusHandle = FSlateApplication::Get().OnFocusChanging().AddUObject(this, &UGorgeousUIFoundationSubsystem::HandleGlobalFocusChanging);
 }
 
 
@@ -139,28 +165,41 @@ void UGorgeousUIFoundationSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 TArray<UGorgeousUITheme_DA*> UGorgeousUIFoundationSubsystem::GetCurrentThemes() const
 {
-	TArray<UGorgeousUITheme_DA*> AffectedThemes;
-	
-	if (CurrentThemes.IsValidIndex(CurrentThemes.Num() - 1))
+	TArray<UGorgeousUITheme_DA*> Themes;
+	UGorgeousUITheme_DA* Default = const_cast<UGorgeousUITheme_DA*>(UGorgeousUIProcessor::GetDefaultTheme());
+	if (Default) Themes.Add(Default);
+	const int32 EffectiveManualThemeDepth = FMath::Clamp(ManualThemeDepth, 0, CurrentStates.Num());
+	if (EffectiveManualThemeDepth == 0) for (UGorgeousUITheme_DA* Theme : CurrentThemes) { if (IsValid(Theme)) Themes.AddUnique(Theme); }
+	for (int32 Index = 0; Index < CurrentStates.Num(); ++Index)
 	{
-		AffectedThemes.Add(const_cast<TArray<UGorgeousUITheme_DA*>::ElementType>(UGorgeousUIProcessor::GetDefaultTheme()));
+		UGorgeousUIState_DA* State = CurrentStates[Index];
+		if (IsValid(State) && IsValid(State->Theme))
+		{
+			if (!State->bAdditiveToCurrentTheme) { Themes.Reset(); if (Default) Themes.Add(Default); }
+			Themes.AddUnique(State->Theme);
+		}
+		if (Index + 1 == EffectiveManualThemeDepth) for (UGorgeousUITheme_DA* Theme : CurrentThemes) if (IsValid(Theme)) Themes.AddUnique(Theme);
 	}
-	AffectedThemes.Append(CurrentThemes);
-	
-	return AffectedThemes;
+	for (const FGuid& Id : MessageOrder) { if (auto* Theme = MessageThemes.FindRef(Id).Get(); IsValid(Theme)) Themes.AddUnique(Theme); }
+	return Themes;
 }
 
 UGorgeousUITheme_DA* UGorgeousUIFoundationSubsystem::GetMostRecentTheme() const
 {	
-	return GetCurrentThemes().Last();
+	const TArray<UGorgeousUITheme_DA*> Themes = GetCurrentThemes();
+	return Themes.IsEmpty() ? nullptr : Themes.Last();
 }
 
 void UGorgeousUIFoundationSubsystem::SetCurrentTheme(UGorgeousUITheme_DA* NewTheme)
 {
 	SCOPE_CYCLE_COUNTER(STAT_GUI_SetTheme);
+	if (!IsValid(NewTheme)) return;
 	if (const UGorgeousUITheme_DA* AffectedTheme = CurrentThemes.IsValidIndex(CurrentThemes.Num() - 1) ? CurrentThemes.Last() : nullptr; 
-		AffectedTheme== NewTheme) return;
-	CurrentThemes.Push(NewTheme);
+		AffectedTheme == NewTheme && ManualThemeDepth == CurrentStates.Num()) return;
+	CurrentThemes.Reset();
+	CurrentThemes.Add(NewTheme);
+	ManualThemeDepth = CurrentStates.Num();
+	IncrementThemeSwapsTriggered();
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Applying Theme '%s'"), NewTheme ? *NewTheme->GetName() : TEXT("None"));
 
@@ -195,16 +234,10 @@ void UGorgeousUIFoundationSubsystem::IncrementThemeSwapsTriggered()
 void UGorgeousUIFoundationSubsystem::BroadcastThemeApplied(UGorgeousUITheme_DA* Theme)
 {
 	if (!Theme) return;
-	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
+	const auto Widgets = RegisteredWidgets;
+	for (const auto& Entry : Widgets)
 	{
-		if (IGorgeousUIWidget_I* WidgetInterface = It->GetInterface())
-		{
-			WidgetInterface->OnThemeApplied(Theme);
-		}
-		else
-		{
-			It.RemoveCurrent();
-		}
+		if (IsValid(Entry.GetObject()) && Entry.GetInterface() && RegisteredWidgets.Contains(Entry)) Entry.GetInterface()->OnThemeApplied(Theme);
 	}
 }
 
@@ -231,10 +264,11 @@ void UGorgeousUIFoundationSubsystem::OnInputMethodChanged(ECommonInputType NewIn
 	// When the input method changes, we re-broadcast the current theme.
 	// Every widget will receive OnThemeApplied and re-fetch its Action Icons 
 	// from the theme based on the new platform/input type.
-	if (CurrentThemes.Last())
+	if (UGorgeousUITheme_DA* Theme = GetMostRecentTheme())
 	{
-		BroadcastThemeApplied(CurrentThemes.Last());
+		BroadcastThemeApplied(Theme);
 	}
+	RefreshLocalActionBar();
 }
 
 void UGorgeousUIFoundationSubsystem::PushInputBinding(UGorgeousInputBinding_DA* NewBindings)
@@ -244,7 +278,8 @@ void UGorgeousUIFoundationSubsystem::PushInputBinding(UGorgeousInputBinding_DA* 
 	if (const UGorgeousInputBinding_DA* AffectedBinding = ActiveInputBindings.IsValidIndex(ActiveInputBindings.Num() - 1) ? ActiveInputBindings.Last() : nullptr; 
 		AffectedBinding == NewBindings) return;
 	
-	ActiveInputBindings.Push(NewBindings);
+	ActiveInputBindings.Remove(NewBindings);
+	ActiveInputBindings.Add(NewBindings);
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Pushed Input Bindings '%s'"), *NewBindings->GetName());
 
@@ -296,14 +331,12 @@ void UGorgeousUIFoundationSubsystem::PopInputBinding()
 			{
 				for (const FGorgeousInputMappingConfig_S& Config : PoppedBinding->InputMappingContexts)
 				{
-					if (Config.bIsDefaultMapping)
-					{
-						continue;
-					}
-
 					if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 					{
-						InputSubsystem->RemoveMappingContext(IMC);
+						bool bStillUsed = false;
+					for (const UGorgeousInputBinding_DA* Remaining : ActiveInputBindings)
+					{ if (Remaining) for (const auto& Other : Remaining->InputMappingContexts) if (Other.InputMapping.Get() == IMC) bStillUsed = true; }
+					if (!bStillUsed) InputSubsystem->RemoveMappingContext(IMC);
 					}
 				}
 			}
@@ -341,14 +374,12 @@ void UGorgeousUIFoundationSubsystem::RemoveInputBinding(UGorgeousInputBinding_DA
 		{
 			for (const FGorgeousInputMappingConfig_S& Config : BindingToRemove->InputMappingContexts)
 			{
-				if (Config.bIsDefaultMapping)
-				{
-					continue;
-				}
-
 				if (UInputMappingContext* IMC = Config.InputMapping.LoadSynchronous())
 				{
-					InputSubsystem->RemoveMappingContext(IMC);
+					bool bStillUsed = false;
+					for (const UGorgeousInputBinding_DA* Remaining : ActiveInputBindings)
+					{ if (Remaining) for (const auto& Other : Remaining->InputMappingContexts) if (Other.InputMapping.Get() == IMC) bStillUsed = true; }
+					if (!bStillUsed) InputSubsystem->RemoveMappingContext(IMC);
 				}
 			}
 		}
@@ -371,66 +402,34 @@ void UGorgeousUIFoundationSubsystem::RemoveInputBinding(UGorgeousInputBinding_DA
 
 void UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD()
 {
+	if (UEnhancedInputComponent* Old = BridgedInputComponent.Get()) for (uint32 Handle : BridgedBindingHandles) Old->RemoveBindingByHandle(Handle);
+	BridgedBindingHandles.Reset();
+	BridgedInputComponent.Reset();
 	if (ActiveInputBindings.IsEmpty()) return;
-
-	ULocalPlayer* LP = GetLocalPlayer();
-	APlayerController* PC = LP ? LP->GetPlayerController(GetWorld()) : nullptr;
-	AGorgeousHUD* HUD = PC ? Cast<AGorgeousHUD>(PC->GetHUD()) : nullptr;
-
-	if (!HUD || !PC) 
+	ULocalPlayer* Player = GetLocalPlayer();
+	APlayerController* Controller = Player ? Player->GetPlayerController(GetWorld()) : nullptr;
+	UEnhancedInputComponent* Input = Controller ? Cast<UEnhancedInputComponent>(Controller->InputComponent) : nullptr;
+	if (!Input) return; // Tick retries after controller/input creation.
+	BridgedInputComponent = Input;
+	TMap<UInputAction*, TSet<ETriggerEvent>> BoundEvents;
+	for (UGorgeousInputBinding_DA* Asset : ActiveInputBindings)
 	{
-		if (UWorld* World = GetWorld())
+		if (!Asset) continue;
+		for (const auto& Pair : Asset->Bindings)
 		{
-			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
-		}
-		return;
-	}
-
-	UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PC->InputComponent);
-	if (!EIC) 
-	{
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().SetTimerForNextTick(this, &UGorgeousUIFoundationSubsystem::SetupInputBridgeOnHUD);
-		}
-		return;
-	}
-
-	// Clear previously bridged action bindings using stored handles to prevent duplicate callbacks
-	for (uint32 Handle : BridgedBindingHandles)
-	{
-		EIC->RemoveBindingByHandle(Handle);
-	}
-	BridgedBindingHandles.Empty();
-
-	for (auto ActiveInputBinding : ActiveInputBindings)
-	{
-		if (!ActiveInputBinding) continue;
-
-		for (const auto& Pair : ActiveInputBinding->Bindings)
-		{
-			if (UInputAction* Action = Pair.Value.Action)
+			UInputAction* Action = Pair.Value.Action;
+			if (!Action) continue;
+			TArray<ETriggerEvent> Events = Pair.Value.TriggerEventsToBind;
+			if (Events.IsEmpty()) Events = {ETriggerEvent::Started, ETriggerEvent::Triggered, ETriggerEvent::Completed, ETriggerEvent::Canceled};
+			for (ETriggerEvent Event : Events)
 			{
-				// CRITICAL: Tells Enhanced Input whether to swallow the hardware key or let it pass through
-				Action->bConsumeInput = Pair.Value.bConsumeInput;
-				
-				// Determine which trigger events to bind (custom configuration)
-				TArray<ETriggerEvent> EventsToBind = Pair.Value.TriggerEventsToBind;
-				if (EventsToBind.IsEmpty())
-				{
-					EventsToBind = { ETriggerEvent::Started, ETriggerEvent::Triggered, ETriggerEvent::Completed, ETriggerEvent::Canceled };
-				}
-
-				for (ETriggerEvent Event : EventsToBind)
-				{
-					FEnhancedInputActionEventBinding& Binding = EIC->BindAction(Action, Event, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction);
-					BridgedBindingHandles.Add(Binding.GetHandle());
-				}
+				if (BoundEvents.FindOrAdd(Action).Contains(Event)) continue;
+				BoundEvents.FindOrAdd(Action).Add(Event);
+				BridgedBindingHandles.Add(Input->BindAction(Action, Event, this, &UGorgeousUIFoundationSubsystem::HandleBridgedInputAction).GetHandle());
 			}
 		}
 	}
 }
-
 // ReSharper disable once CppMemberFunctionMayBeConst (If we would make it const, then the BindAction is not satisfied)
 void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputActionInstance& Instance)
 {
@@ -446,6 +445,7 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 	if (!Action) return;
 
 	bool bInputWasConsumed = false;
+	TSet<FGameplayTag> DispatchedTags;
 
 	// Iterate in reverse priority order (state-specific bindings first, then default mappings)
 	for (int32 i = ActiveInputBindings.Num() - 1; i >= 0; --i)
@@ -457,7 +457,7 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 
 		for (const auto& Pair : ActiveInputBinding->Bindings)
 		{
-			if (Pair.Value.Action == Action)
+			if (Pair.Value.Action == Action && (Pair.Value.TriggerEventsToBind.IsEmpty() || Pair.Value.TriggerEventsToBind.Contains(Instance.GetTriggerEvent())))
 			{
 				FGameplayTag DispatchedTag = Pair.Key;
 				if (const FGameplayTag* RedirectedTag = ActiveInputRedirects.Find(DispatchedTag))
@@ -465,7 +465,9 @@ void UGorgeousUIFoundationSubsystem::HandleBridgedInputAction(const FInputAction
 					DispatchedTag = *RedirectedTag;
 				}
 
-				// Pass the custom bConsumeInput rule down to the HUD dispatcher
+				if (DispatchedTags.Contains(DispatchedTag)) continue;
+				DispatchedTags.Add(DispatchedTag);
+				// Per-player consumption applies within Gorgeous routing, without mutating the shared action asset.
 				bool bHandled = HUD->DispatchGorgeousInput(DispatchedTag, Instance, Pair.Value.bConsumeInput);
 				
 				// If a consumer handled the action AND it's configured to consume, we kill further routing
@@ -519,27 +521,38 @@ FName UGorgeousUIFoundationSubsystem::GetCurrentPlatformName() const
 
 void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
-	const FGorgeousUIMessageRequest* Request = Payload.GetPtr<FGorgeousUIMessageRequest>();
-	if (!Request || !Request->Config) return;
-
-	// 1. WOW FACTOR: Environmental Shift
-	// If the message has a state (e.g. Pause), apply it now
+	const auto* Request = Payload.GetPtr<FGorgeousUIMessageRequest>();
+	if (!Request || !Request->Config || (Request->LocalPlayerIndex == INDEX_NONE ? 0 : Request->LocalPlayerIndex) != GetLocalPlayerIndex() || ActiveMessageRequests.Contains(Request->RequestID)) return;
+	ActiveMessageRequests.Add(Request->RequestID);
+	MessageOrder.Add(Request->RequestID);
 	if (Request->Config->State)
 	{
-		BroadcastStateSwitch(Request->Config->State);
+		MessageStates.Add(Request->RequestID, Request->Config->State);
+		if (!CurrentStates.Contains(Request->Config->State)) { MessageOwnedStates.Add(Request->Config->State); PushUIState(Request->Config->State, true); }
 	}
+	if (Request->Config->MessageTheme) MessageThemes.Add(Request->RequestID, Request->Config->MessageTheme);
+	BroadcastThemeApplied(GetMostRecentTheme());
+	USignalBridgeBlueprintFunctionLibrary::DispatchLocal(this, TAG_Gorgeous_UI_Layout_PushWidget, Payload);
+}
 
-	// 2. THEME OVERRIDE
-	// If the message has a specific theme (e.g. "Danger Mode"), apply it globally
-	if (Request->Config->MessageTheme)
+void UGorgeousUIFoundationSubsystem::CompleteMessagePresentation(FGuid RequestID)
+{
+	if (!ActiveMessageRequests.Remove(RequestID)) return;
+	UGorgeousUIState_DA* State = MessageStates.FindRef(RequestID);
+	MessageStates.Remove(RequestID); MessageThemes.Remove(RequestID); MessageOrder.Remove(RequestID);
+	if (State && MessageOwnedStates.Contains(State))
 	{
-		BroadcastThemeApplied(Request->Config->MessageTheme);
+		bool bStillUsed = false;
+		for (const auto& Entry : MessageStates) if (Entry.Value == State) bStillUsed = true;
+		if (!bStillUsed) { MessageOwnedStates.Remove(State); RemoveUIStateByObject(State, true); }
 	}
+	BroadcastThemeApplied(GetMostRecentTheme());
+	RefreshLocalActionBar();
+}
 
-	// 3. WIDGET SPAWNING (Deferred to the UI Layout System)
-	// In a real implementation, we would push this to a CommonActivatableWidgetStack
-	// For this foundation, we broadcast a signal that the UI Layout should handle.
-	USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Layout_PushWidget, Payload);
+void UGorgeousUIFoundationSubsystem::OnMessageResultReceived(FGameplayTag, const FInstancedStruct& Payload)
+{
+	if (const auto* Result = Payload.GetPtr<FGorgeousUIMessageResult>()) CompleteMessagePresentation(Result->RequestID);
 }
 
 #include "CommonButtonBase.h"
@@ -547,7 +560,7 @@ void UGorgeousUIFoundationSubsystem::OnMessageRequestReceived(FGameplayTag Signa
 void UGorgeousUIFoundationSubsystem::OnInputActionReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
 	const FGorgeousInputActionPayload* ActionPayload = Payload.GetPtr<FGorgeousInputActionPayload>();
-	if (!ActionPayload || !ActionPayload->ActionTag.IsValid()) return;
+	if (!ActionPayload || !ActionPayload->ActionTag.IsValid() || (ActionPayload->LocalPlayerIndex == INDEX_NONE ? 0 : ActionPayload->LocalPlayerIndex) != GetLocalPlayerIndex()) return;
 
 	UUserWidget* TargetWidget = nullptr;
 
@@ -622,72 +635,45 @@ void UGorgeousUIFoundationSubsystem::OnInputActionReceived(FGameplayTag SignalTa
 	// We'll use the reflection helper from the Processor class
 	// Note: We'll assume a dummy payload for the function call if needed, 
 	// or just call it as a parameterless function.
-	UGorgeousUIProcessor::ApplyPropertyToTarget(TargetWidget, *FString::Printf(TEXT("Handle%s"), *ActionName), FInstancedStruct());
-	UGorgeousUIProcessor::ApplyPropertyToTarget(TargetWidget, *FString::Printf(TEXT("On%s"), *ActionName), FInstancedStruct());
+	FString ShortName;
+	if (ActionName.Split(TEXT("."), nullptr, &ShortName, ESearchCase::CaseSensitive, ESearchDir::FromEnd)) ActionName = ShortName;
+	for (const FString& Prefix : { FString(TEXT("Handle")), FString(TEXT("On")) })
+	{
+		if (UFunction* Function = TargetWidget->FindFunction(FName(*(Prefix + ActionName))); Function && Function->ParmsSize == 0 && !Function->HasAnyFunctionFlags(FUNC_Net | FUNC_Static))
+		{ TargetWidget->ProcessEvent(Function, nullptr); break; }
+	}
 }
 
 void UGorgeousUIFoundationSubsystem::OnFocusRequestReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
 {
-	const FGorgeousFocusRequestPayload* FocusPayload = Payload.GetPtr<FGorgeousFocusRequestPayload>();
-	if (!FocusPayload || !FocusPayload->TargetTag.IsValid()) return;
-
-	// Find the widget with the target tag
-	bool bFound = false;
-	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
-	{
-		if (IGorgeousUIWidget_I* WidgetInterface = It->GetInterface())
-		{
-			if (WidgetInterface->GetBindingTag() == FocusPayload->TargetTag)
-			{
-				if (FocusPayload->RoutingID.IsNone() || WidgetInterface->GetRoutingID() == FocusPayload->RoutingID)
-				{
-					UUserWidget* Widget = Cast<UUserWidget>(It->GetObject());
-					
-					// If it's an activatable widget, activate it (which usually handles focus)
-					if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(Widget))
-					{
-						Activatable->ActivateWidget();
-					}
-					else
-					{
-						Widget->SetFocus();
-					}
-					bFound = true;
-					break;
-				}
-			}
-		}
-	}
-
-	// Defer focus request if the widget hasn't registered yet
-	if (!bFound && GetWorld())
-	{
-		FGorgeousPendingFocusRequest PendingReq;
-		PendingReq.TargetTag = FocusPayload->TargetTag;
-		PendingReq.RoutingID = FocusPayload->RoutingID;
-		PendingReq.ExpirationTime = GetWorld()->GetTimeSeconds() + 1.0; // 1 second expiry
-		PendingFocusRequests.Add(PendingReq);
-	}
+	const auto* Request = Payload.GetPtr<FGorgeousFocusRequestPayload>();
+	if (!Request || !Request->TargetTag.IsValid() || (Request->LocalPlayerIndex == INDEX_NONE ? 0 : Request->LocalPlayerIndex) != GetLocalPlayerIndex()) return;
+	if (TryFocusWidget(Request->TargetTag, Request->RoutingID)) return;
+	FGorgeousPendingFocusRequest Pending;
+	Pending.TargetTag = Request->TargetTag; Pending.RoutingID = Request->RoutingID; Pending.ExpirationTime = FPlatformTime::Seconds() + 1.;
+	PendingFocusRequests.RemoveAll([&](const auto& Entry) { return Entry.TargetTag == Pending.TargetTag && Entry.RoutingID == Pending.RoutingID; });
+	PendingFocusRequests.Add(Pending);
 }
 
 void UGorgeousUIFoundationSubsystem::HandleGlobalFocusChanging(const FFocusEvent& FocusEvent, const FWeakWidgetPath& OldFocusedWidgetPath, const TSharedPtr<SWidget>& OldFocusedWidget, const FWidgetPath& NewFocusedWidgetPath, const TSharedPtr<SWidget>& NewFocusedWidget)
 {
 	if (!NewFocusedWidget.IsValid()) return;
+	if (GetLocalPlayer() && GetLocalPlayer()->GetSlateUser().IsValid() && FocusEvent.GetUser() != GetLocalPlayer()->GetSlateUser()->GetUserIndex()) return;
 
 	// Check if this was a navigation event for sound ticks
 	if (FocusEvent.GetCause() == EFocusCause::Navigation)
 	{
 		if (GetWorld())
 		{
-			USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Navigated, FInstancedStruct());
+			USignalBridgeBlueprintFunctionLibrary::DispatchLocal(GetWorld(), TAG_Gorgeous_UI_Focus_Navigated, FInstancedStruct());
 		}
 	}
 
 	// Find if the new focused SWidget belongs to one of our registered IGorgeousUIWidget_I objects
 	for (auto& Entry : RegisteredWidgets)
 	{
-		UUserWidget* UserWidget = Cast<UUserWidget>(Entry.GetObject());
-		if (UserWidget && UserWidget->GetCachedWidget() == NewFocusedWidget)
+		UWidget* UserWidget = Cast<UWidget>(Entry.GetObject());
+		if (UserWidget && UserWidget->GetCachedWidget().IsValid() && (UserWidget->GetCachedWidget() == NewFocusedWidget || NewFocusedWidgetPath.ContainsWidget(UserWidget->GetCachedWidget().Get())))
 		{
 			// Enforce ScrollBox visibility automatically
 			UWidget* CurrentParent = UserWidget->GetParent();
@@ -710,7 +696,8 @@ void UGorgeousUIFoundationSubsystem::HandleGlobalFocusChanging(const FFocusEvent
 					PayloadOut.FocusedTag = Tag;
 					PayloadOut.RoutingID = WidgetInterface->GetRoutingID();
 					
-					USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Changed, FInstancedStruct::Make(PayloadOut));
+					if (!StateFocusHistory.IsEmpty()) StateFocusHistory.Last() = Tag;
+					USignalBridgeBlueprintFunctionLibrary::DispatchLocal(GetWorld(), TAG_Gorgeous_UI_Focus_Changed, FInstancedStruct::Make(PayloadOut));
 				}
 			}
 			break;
@@ -735,6 +722,12 @@ void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const
 				if (TargetRoutingID.IsNone() || WidgetInterface->GetRoutingID() == TargetRoutingID)
 				{
 					UObject* Obj = Entry.GetObject();
+					if (UpdatePayload && UpdatePayload->InventoryID.IsValid())
+					{
+						const FStructProperty* IdProperty = FindFProperty<FStructProperty>(Obj->GetClass(), TEXT("InventoryID"));
+						if (!IdProperty || IdProperty->Struct != TBaseStructure<FGuid>::Get() || *IdProperty->ContainerPtrToValuePtr<FGuid>(Obj) != UpdatePayload->InventoryID) continue;
+					}
+					if (UpdatePayload && UpdatePayload->AnimationTag.IsValid()) PlayNamedWidgetAnimation(Obj, UpdatePayload->AnimationTag.GetTagName());
 					if (UGorgeousUIProcessor* SharedProcessor = GetSharedProcessorForWidget(Obj))
 					{
 						SharedProcessor->OnSignalReceived(Obj, Tag, Payload);
@@ -747,118 +740,45 @@ void UGorgeousUIFoundationSubsystem::HandlePayloadForTag(FGameplayTag Tag, const
 
 void UGorgeousUIFoundationSubsystem::PushUIState(UGorgeousUIState_DA* NewState, bool bImmediate)
 {
-	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
-	if (!NewState || AffectedState == NewState) return;
-
-	if (bImmediate)
-	{
-		PendingState = NewState;
-		ExecuteStateSwap();
-		return;
-	}
-
-	PendingState = NewState;
-	TransitioningWidgets.Empty();
-
-	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
-	{
-		if (UObject* WidgetObj = It->GetObject())
-		{
-			if (const UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
-			{
-				if (UserWidget->IsVisible())
-				{
-					TransitioningWidgets.Add(WidgetObj);
-				}
-			}
-		}
-	}
-
-	if (TransitioningWidgets.Num() > 0)
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Starting State Transition to '%s'. Waiting for %d widgets..."), *NewState->GetName(), TransitioningWidgets.Num());
-		OnTransitionStarted.Broadcast(NewState);
-	}
-	else
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Pushing State '%s' (Immediate)."), *NewState->GetName());
-		ExecuteStateSwap();
-	}
+	if (!IsValid(NewState) || GetMostRecentUIState() == NewState) return;
+	BeginStateTransition(NewState, true, bImmediate);
 }
 
 void UGorgeousUIFoundationSubsystem::RemoveUIState(TSubclassOf<UGorgeousUIState_DA> StateClass, bool bImmediate)
 {
 	if (!StateClass) return;
+	for (int32 Index = CurrentStates.Num() - 1; Index >= 0; --Index)
+	{ if (CurrentStates[Index] && CurrentStates[Index]->IsA(StateClass)) { RemoveUIStateByObject(CurrentStates[Index], bImmediate); return; } }
+}
 
-	int32 RemoveIndex = INDEX_NONE;
-	for (int32 i = CurrentStates.Num() - 1; i >= 0; --i)
+void UGorgeousUIFoundationSubsystem::RemoveUIStateByObject(UGorgeousUIState_DA* State, bool bImmediate)
+{
+	if (bStateTransitionPending && bPendingStateIsPush && PendingState == State)
+	{ bStateTransitionPending = false; PendingState = nullptr; TransitioningWidgets.Reset(); }
+	const int32 Index = CurrentStates.FindLast(State);
+	if (Index == INDEX_NONE) return;
+	const bool bWasTop = Index == CurrentStates.Num() - 1;
+	CurrentStates.RemoveAt(Index);
+	if (Index < ManualThemeDepth) --ManualThemeDepth;
+	if (StateFocusHistory.IsValidIndex(Index)) StateFocusHistory.RemoveAt(Index);
+	if (bWasTop) BeginStateTransition(GetMostRecentUIState(), false, bImmediate);
+	else { ReconcileStateInputBindings(); BroadcastThemeApplied(GetMostRecentTheme()); }
+}
+
+void UGorgeousUIFoundationSubsystem::BeginStateTransition(UGorgeousUIState_DA* State, bool bPush, bool bImmediate)
+{
+	PendingState = State;
+	bStateTransitionPending = true;
+	bPendingStateIsPush = bPush;
+	TransitionDeadline = FPlatformTime::Seconds() + 10.;
+	TransitioningWidgets.Reset();
+	if (!bImmediate)
 	{
-		if (UGorgeousUIState_DA* State = CurrentStates[i])
-		{
-			if (State->IsA(StateClass))
-			{
-				RemoveIndex = i;
-				break;
-			}
-		}
+		for (const auto& Entry : RegisteredWidgets)
+		{ if (const UUserWidget* Widget = Cast<UUserWidget>(Entry.GetObject()); IsValid(Widget) && Widget->IsVisible()) TransitioningWidgets.Add(Entry.GetObject()); }
 	}
-
-	if (RemoveIndex == INDEX_NONE) return;
-
-	const bool bWasTopState = (RemoveIndex == CurrentStates.Num() - 1);
-	CurrentStates.RemoveAt(RemoveIndex);
-	if (StateFocusHistory.IsValidIndex(RemoveIndex))
-	{
-		StateFocusHistory.RemoveAt(RemoveIndex);
-	}
-
-	if (!bWasTopState)
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removed non-active state '%s' from stack."), *StateClass->GetName());
-		return;
-	}
-
-	UGorgeousUIState_DA* NewTopState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
-	if (!NewTopState)
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removed active state '%s'. No fallback state available."), *StateClass->GetName());
-		return;
-	}
-
-	if (bImmediate)
-	{
-		PendingState = NewTopState;
-		ExecuteStateSwap();
-		return;
-	}
-
-	PendingState = NewTopState;
-	TransitioningWidgets.Empty();
-
-	for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
-	{
-		if (UObject* WidgetObj = It->GetObject())
-		{
-			if (const UUserWidget* UserWidget = Cast<UUserWidget>(WidgetObj))
-			{
-				if (UserWidget->IsVisible())
-				{
-					TransitioningWidgets.Add(WidgetObj);
-				}
-			}
-		}
-	}
-
-	if (TransitioningWidgets.Num() > 0)
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removing state '%s'. Waiting for %d widgets..."), *StateClass->GetName(), TransitioningWidgets.Num());
-		OnTransitionStarted.Broadcast(NewTopState);
-	}
-	else
-	{
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Removing state '%s' (Immediate)."), *StateClass->GetName());
-		ExecuteStateSwap();
-	}
+	if (TransitioningWidgets.IsEmpty()) ExecuteStateSwap();
+	else OnTransitionStarted.Broadcast(State);
 }
 
 UGorgeousUIState_DA* UGorgeousUIFoundationSubsystem::GetUIStateByObject(
@@ -878,145 +798,60 @@ UGorgeousUITheme_DA* UGorgeousUIFoundationSubsystem::GetThemeByObject(UGorgeousU
 
 void UGorgeousUIFoundationSubsystem::NotifyWidgetTransitionComplete(UObject* Widget)
 {
-	if (!PendingState || !Widget) return;
-
+	if (!bStateTransitionPending || !Widget) return;
 	TransitioningWidgets.Remove(Widget);
-
-	if (TransitioningWidgets.Num() == 0)
-	{
-		ExecuteStateSwap();
-	}
+	if (TransitioningWidgets.IsEmpty()) ExecuteStateSwap();
 }
 
 void UGorgeousUIFoundationSubsystem::ExecuteStateSwap()
 {
-	if (!PendingState) return;
-
-	UGorgeousUIState_DA* NewState = PendingState;
+	if (!bStateTransitionPending) return;
+	UGorgeousUIState_DA* State = PendingState;
 	PendingState = nullptr;
-	
-	// Restore focus memory if available
-	bool bRestoredMemory = false;
-	if (StateFocusHistory.IsValidIndex(StateFocusHistory.Num() - 1))
+	bStateTransitionPending = false;
+	TransitioningWidgets.Reset();
+	if (bPendingStateIsPush && IsValid(State))
 	{
-		const FGameplayTag TagToRestore = StateFocusHistory.Last();
-		if (TagToRestore.IsValid() && GetWorld())
+		if (StateFocusHistory.IsValidIndex(CurrentStates.Num() - 1))
 		{
-			FGorgeousFocusRequestPayload FocusReq;
-			FocusReq.TargetTag = TagToRestore;
-			USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Request, FInstancedStruct::Make(FocusReq));
-			bRestoredMemory = true;
+			for (const auto& Entry : RegisteredWidgets)
+			{ if (const UWidget* Widget = Cast<UWidget>(Entry.GetObject()); Widget && Widget->HasAnyUserFocus() && Entry.GetInterface()) { StateFocusHistory.Last() = Entry.GetInterface()->GetBindingTag(); break; } }
 		}
+		CurrentStates.Add(State);
+		StateFocusHistory.Add(FGameplayTag());
 	}
-
-	// Apply Fallback focus strategy if memory restoration didn't occur
-	if (!bRestoredMemory && NewState)
+	ReconcileStateInputBindings();
+	BroadcastThemeApplied(GetMostRecentTheme());
+	IncrementThemeSwapsTriggered();
+	const auto Widgets = RegisteredWidgets;
+	for (const auto& Entry : Widgets)
 	{
-		if (NewState->FocusFallback.Strategy == EGorgeousFocusFallbackStrategy_E::FocusSpecificWidget)
-		{
-			if (NewState->FocusFallback.TargetTag.IsValid() && GetWorld())
-			{
-				FGorgeousFocusRequestPayload FocusReq;
-				FocusReq.TargetTag = NewState->FocusFallback.TargetTag;
-				USignalBridgeBlueprintFunctionLibrary::Dispatch(GetWorld(), TAG_Gorgeous_UI_Focus_Request, FInstancedStruct::Make(FocusReq));
-			}
-		}
+		UObject* Object = Entry.GetObject();
+		if (!IsValid(Object) || !Entry.GetInterface()) continue;
+		if (auto* Common = Cast<UGorgeousCommonWidget>(Object)) Common->OnUIStateChanged(State);
+		else if (auto* Activatable = Cast<UGorgeousActivatableWidget>(Object)) Activatable->OnUIStateChanged(State);
+		if (State && State->OverlayConfig)
+		{ if (const auto* Config = State->OverlayConfig->WidgetConfigs.Find(Entry.GetInterface()->GetBindingTag()); Config && (!Config->State || Config->State == State)) Entry.GetInterface()->ApplyOverlayConfig(*Config); }
+		if (State) PlayNamedWidgetAnimation(Object, State->TransitionInAnimation);
 	}
+	ApplyFocusRoutes();
+	FGameplayTag FocusTag = StateFocusHistory.IsEmpty() ? FGameplayTag() : StateFocusHistory.Last();
+	if (!FocusTag.IsValid() && State && State->FocusFallback.Strategy == EGorgeousFocusFallbackStrategy_E::FocusSpecificWidget) FocusTag = State->FocusFallback.TargetTag;
+	if (FocusTag.IsValid())
+	{ FGorgeousFocusRequestPayload Request; Request.TargetTag = FocusTag; Request.LocalPlayerIndex = GetLocalPlayerIndex(); OnFocusRequestReceived(TAG_Gorgeous_UI_Focus_Request, FInstancedStruct::Make(Request)); }
+	RefreshLocalActionBar();
+	OnTransitionFinished.Broadcast(State);
+}
 
-	TransitioningWidgets.Empty();
-
-	const UGorgeousUIState_DA* AffectedState = CurrentStates.IsValidIndex(CurrentStates.Num() - 1) ? CurrentStates.Last() : nullptr;
-	
-	// 1. Remove old Input Bindings
-	if (AffectedState && !NewState->bAdditiveToCurrentState)
-	{
-		if (AffectedState->InputBindings)
-		{
-			RemoveInputBinding(AffectedState->InputBindings);
-		}
-	}
-
-	if (!CurrentStates.IsValidIndex(CurrentStates.Num() - 1) || CurrentStates.Last() != NewState)
-	{
-		// Track the focus of the current state before we push the new one
-		FGameplayTag LastFocusedTag = FGameplayTag::EmptyTag;
-		for (auto& Entry : RegisteredWidgets)
-		{
-			if (UUserWidget* UserWidget = Cast<UUserWidget>(Entry.GetObject()))
-			{
-				if (UserWidget->HasAnyUserFocus())
-				{
-					if (IGorgeousUIWidget_I* WidgetInterface = Entry.GetInterface())
-					{
-						LastFocusedTag = WidgetInterface->GetBindingTag();
-					}
-					break;
-				}
-			}
-		}
-		StateFocusHistory.Push(LastFocusedTag);
-
-		CurrentStates.Push(NewState);
-	}
-
-	if (CurrentStates.Last())
-	{
-		// 2. Apply Theme
-		if (GetMostRecentUIState()->Theme)
-		{
-			SetCurrentTheme(GetMostRecentUIState()->Theme);
-		}
-
-		// 4. Apply Input Bindings
-		if (CurrentStates.Last()->InputBindings)
-		{
-			PushInputBinding(CurrentStates.Last()->InputBindings);
-		}
-
-		// 5. Notify all registered widgets of the state change
-		for (auto It = RegisteredWidgets.CreateIterator(); It; ++It)
-		{
-			if (IGorgeousUIWidget_I* WidgetInterface = It->GetInterface())
-			{
-				UObject* RawObj = It->GetObject();
-				if (RawObj)
-				{
-					// Trigger state change notification
-					if (RawObj->IsA(UGorgeousCommonWidget::StaticClass()))
-					{
-						UGorgeousCommonWidget* CommonWidget = static_cast<UGorgeousCommonWidget*>(RawObj);
-						CommonWidget->OnUIStateChanged(CurrentStates.Last());
-					}
-					else if (RawObj->IsA(UGorgeousActivatableWidget::StaticClass()))
-					{
-						UGorgeousActivatableWidget* Activatable = static_cast<UGorgeousActivatableWidget*>(RawObj);
-						Activatable->OnUIStateChanged(CurrentStates.Last());
-					}
-
-					// Apply Overlay Configuration if defined for this widget's tag
-					if (CurrentStates.Last()->OverlayConfig)
-					{
-						const FGameplayTag BindingTag = WidgetInterface->GetBindingTag();
-						if (BindingTag.IsValid())
-						{
-							if (const FGorgeousUIStateConfig* Config = CurrentStates.Last()->OverlayConfig->WidgetConfigs.Find(BindingTag))
-							{
-								WidgetInterface->ApplyOverlayConfig(*Config);
-							}
-						}
-					}
-				}
-			}
-			else
-			{
-				It.RemoveCurrent();
-			}
-		}
-
-		OnTransitionFinished.Broadcast(CurrentStates.Last());
-
-		GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: State Transition to '%s' Complete."), *CurrentStates.Last()->GetName());
-	}
+void UGorgeousUIFoundationSubsystem::ReconcileStateInputBindings()
+{
+	TArray<UGorgeousInputBinding_DA*> Desired;
+	int32 Start = 0;
+	for (int32 Index = CurrentStates.Num() - 1; Index >= 0; --Index) { if (CurrentStates[Index] && !CurrentStates[Index]->bAdditiveToCurrentState) { Start = Index; break; } }
+	for (int32 Index = Start; Index < CurrentStates.Num(); ++Index) { if (CurrentStates[Index] && CurrentStates[Index]->InputBindings) Desired.AddUnique(CurrentStates[Index]->InputBindings); }
+	const auto Old = StateOwnedInputBindings;
+	for (UGorgeousInputBinding_DA* Binding : Old) { if (!Desired.Contains(Binding)) { StateOwnedInputBindings.Remove(Binding); RemoveInputBinding(Binding); } }
+	for (UGorgeousInputBinding_DA* Binding : Desired) { if (!ActiveInputBindings.Contains(Binding)) { PushInputBinding(Binding); StateOwnedInputBindings.AddUnique(Binding); } }
 }
 
 void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
@@ -1025,17 +860,12 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 
 	UObject* WidgetObj = Widget->GetAsWidget();
 	RegisteredWidgets.AddUnique(TScriptInterface<IGorgeousUIWidget_I>(WidgetObj));
+	ApplyFocusRoutes();
 
 	GT_I_LOG("GT.UI", TEXT("UI Foundation Subsystem: Registered Widget '%s' (Binding Tag: %s)"), *WidgetObj->GetName(), *Widget->GetBindingTag().ToString());
 
-	// 1. Initial Aesthetic Application
-	if (!CurrentThemes.IsEmpty())
-	{
-		for (auto Theme : CurrentThemes)
-		{
-			Widget->OnThemeApplied(Theme);
-		}
-	}
+	// Newly constructed widgets receive the effective state/message theme stack.
+	for (UGorgeousUITheme_DA* Theme : GetCurrentThemes()) Widget->OnThemeApplied(Theme);
 
 	// 2. Setup Shared Processor for Signal Handling
 	const FGameplayTag BindingTag = Widget->GetBindingTag();
@@ -1045,10 +875,11 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 		// receive the raw payload and ask the subsystem to dispatch to the appropriate
 		// shared processors for registered widgets that match the tag.
 		FGorgeousSignalBridgeAccessRules_S Rules;
+		Rules.bNetworked = false;
 		AGorgeousPlayerController* Controller = nullptr;
 		if (UWorld* __World = GetWorld())
 		{
-			if (APlayerController* PC = __World->GetFirstPlayerController())
+			if (APlayerController* PC = GetLocalPlayer() ? GetLocalPlayer()->GetPlayerController(__World) : nullptr)
 			{
 				Controller = Cast<AGorgeousPlayerController>(PC);
 			}
@@ -1064,8 +895,8 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 			FSignalBridgeEventDelegate ListenDelegate;
 			ListenDelegate.BindDynamic(Forwarder, &UGorgeousSignalBridgeTagForwarder::OnBridgePayload);
 
-			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), BindingTag, Rules, Controller);
-			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, Controller, ListenDelegate);
+			USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), BindingTag, Rules, nullptr);
+			USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), BindingTag, nullptr, ListenDelegate);
 		}
 	}
 
@@ -1077,19 +908,12 @@ void UGorgeousUIFoundationSubsystem::RegisterWidget(IGorgeousUIWidget_I* Widget)
 		{
 			for (int32 i = PendingFocusRequests.Num() - 1; i >= 0; --i)
 			{
+				if (PendingFocusRequests[i].ExpirationTime < FPlatformTime::Seconds()) { PendingFocusRequests.RemoveAt(i); continue; }
 				if (PendingFocusRequests[i].TargetTag == Tag)
 				{
 					if (PendingFocusRequests[i].RoutingID.IsNone() || PendingFocusRequests[i].RoutingID == WidgetInterface->GetRoutingID())
 					{
-						UUserWidget* UserWidget = Cast<UUserWidget>(Widget->GetAsWidget());
-						if (UCommonActivatableWidget* Activatable = Cast<UCommonActivatableWidget>(UserWidget))
-						{
-							Activatable->ActivateWidget();
-						}
-						else if (UserWidget)
-						{
-							UserWidget->SetFocus();
-						}
+						TryFocusWidget(Tag, PendingFocusRequests[i].RoutingID);
 						PendingFocusRequests.RemoveAt(i);
 						break;
 					}
@@ -1105,6 +929,9 @@ void UGorgeousUIFoundationSubsystem::UnregisterWidget(IGorgeousUIWidget_I* Widge
 
 	UObject* WidgetObj = Widget->GetAsWidget();
 	RegisteredWidgets.Remove(TScriptInterface<IGorgeousUIWidget_I>(WidgetObj));
+	ApplyFocusRoutes();
+	TransitioningWidgets.Remove(WidgetObj);
+	if (bStateTransitionPending && TransitioningWidgets.IsEmpty()) ExecuteStateSwap();
 
 	// Cleanup signal listeners for this specific widget
 	if (Widget->GetBindingTag().IsValid())
@@ -1112,7 +939,7 @@ void UGorgeousUIFoundationSubsystem::UnregisterWidget(IGorgeousUIWidget_I* Widge
 		AGorgeousPlayerController* Controller = nullptr;
 		if (UWorld* __World = GetWorld())
 		{
-			if (APlayerController* PC = __World->GetFirstPlayerController())
+			if (APlayerController* PC = GetLocalPlayer() ? GetLocalPlayer()->GetPlayerController(__World) : nullptr)
 			{
 				Controller = Cast<AGorgeousPlayerController>(PC);
 			}
@@ -1134,7 +961,8 @@ void UGorgeousUIFoundationSubsystem::UnregisterWidget(IGorgeousUIWidget_I* Widge
 
 		if (!bAnyRemaining)
 		{
-			USignalBridgeBlueprintFunctionLibrary::Clear(GetWorld(), Tag, Controller);
+			if (auto* Forwarder = TagForwarders.FindRef(Tag).Get())
+			{ FSignalBridgeEventDelegate Delegate; Delegate.BindDynamic(Forwarder, &UGorgeousSignalBridgeTagForwarder::OnBridgePayload); USignalBridgeBlueprintFunctionLibrary::Unlisten(GetWorld(), Tag, nullptr, Delegate); }
 			TagForwarders.Remove(Tag);
 		}
 	}
@@ -1159,7 +987,7 @@ UGorgeousUIProcessor* UGorgeousUIFoundationSubsystem::GetSharedProcessorForWidge
 	}
 	
 	// 1.5: Check and early return if the processor class is abstract
-	if (TargetProcessorClass.GetDefaultObject()->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject) || TargetProcessorClass->HasAnyClassFlags(CLASS_Abstract))
+	if (!TargetProcessorClass || TargetProcessorClass->HasAnyClassFlags(CLASS_Abstract))
 	{
 		return nullptr;
 	}
@@ -1186,4 +1014,136 @@ void UGorgeousUIFoundationSubsystem::ClearInputRedirect(FGameplayTag HardwareTag
 	if (!HardwareTag.IsValid()) return;
 	
 	ActiveInputRedirects.Remove(HardwareTag);
+}
+
+UGorgeousUIFoundationSubsystem* UGorgeousUIFoundationSubsystem::GetForContext(const UObject* Context)
+{
+	if (!IsValid(Context)) return nullptr;
+	if (const auto* Subsystem = Cast<UGorgeousUIFoundationSubsystem>(Context)) return const_cast<UGorgeousUIFoundationSubsystem*>(Subsystem);
+	const UUserWidget* UserWidget = Cast<UUserWidget>(Context);
+	if (!UserWidget) UserWidget = Context->GetTypedOuter<UUserWidget>();
+	ULocalPlayer* Player = UserWidget ? UserWidget->GetOwningLocalPlayer() : const_cast<ULocalPlayer*>(Cast<ULocalPlayer>(Context));
+	if (!Player) Player = Context->GetTypedOuter<ULocalPlayer>();
+	if (!Player) { if (const UWidget* Widget = Cast<UWidget>(Context)) if (auto* Controller = Widget->GetOwningPlayer()) Player = Controller->GetLocalPlayer(); }
+	if (!Player) { if (const APlayerController* Controller = Cast<APlayerController>(Context)) Player = Controller->GetLocalPlayer(); }
+	if (!Player) { if (const AHUD* HUD = Cast<AHUD>(Context)) { if (auto* Controller = HUD->GetOwningPlayerController()) Player = Controller->GetLocalPlayer(); } }
+	if (!Player && !UserWidget) { if (UWorld* World = Context->GetWorld()) Player = World->GetFirstLocalPlayerFromController(); }
+	return Player ? Player->GetSubsystem<UGorgeousUIFoundationSubsystem>() : nullptr;
+}
+
+int32 UGorgeousUIFoundationSubsystem::GetLocalPlayerIndex() const
+{
+	const ULocalPlayer* Player = GetLocalPlayer();
+	return Player && Player->GetGameInstance() ? Player->GetGameInstance()->GetLocalPlayers().IndexOfByKey(Player) : (Player ? 0 : INDEX_NONE);
+}
+
+bool UGorgeousUIFoundationSubsystem::PlayNamedWidgetAnimation(UObject* Object, FName Name)
+{
+	UUserWidget* Widget = Cast<UUserWidget>(Object);
+	if (!Widget || Name.IsNone()) return false;
+	const FObjectPropertyBase* Property = FindFProperty<FObjectPropertyBase>(Widget->GetClass(), Name);
+	UWidgetAnimation* Animation = Property ? Cast<UWidgetAnimation>(Property->GetObjectPropertyValue_InContainer(Widget)) : nullptr;
+	if (!Animation) Animation = FindObject<UWidgetAnimation>(Widget->GetClass(), *Name.ToString());
+	if (!Animation)
+	{
+		FString ShortName;
+		if (Name.ToString().Split(TEXT("."), nullptr, &ShortName, ESearchCase::CaseSensitive, ESearchDir::FromEnd))
+		{
+			const FObjectPropertyBase* ShortProperty = FindFProperty<FObjectPropertyBase>(Widget->GetClass(), FName(*ShortName));
+			Animation = ShortProperty ? Cast<UWidgetAnimation>(ShortProperty->GetObjectPropertyValue_InContainer(Widget)) : nullptr;
+			if (!Animation) Animation = FindObject<UWidgetAnimation>(Widget->GetClass(), *ShortName);
+		}
+	}
+	if (!Animation) return false;
+	Widget->PlayAnimation(Animation);
+	return true;
+}
+
+bool UGorgeousUIFoundationSubsystem::TryFocusWidget(FGameplayTag Tag, FName Routing)
+{
+	for (const auto& Entry : RegisteredWidgets)
+	{
+		UWidget* Widget = Cast<UWidget>(Entry.GetObject());
+		if (!IsValid(Widget) || !Entry.GetInterface() || Entry.GetInterface()->GetBindingTag() != Tag || (!Routing.IsNone() && Entry.GetInterface()->GetRoutingID() != Routing)) continue;
+		if (auto* Activatable = Cast<UCommonActivatableWidget>(Widget)) Activatable->ActivateWidget();
+		if (APlayerController* Controller = GetLocalPlayer() ? GetLocalPlayer()->GetPlayerController(GetWorld()) : nullptr) Widget->SetUserFocus(Controller);
+		else if (FSlateApplication::IsInitialized() && Widget->GetCachedWidget().IsValid()) Widget->SetFocus();
+		return true;
+	}
+	return false;
+}
+
+void UGorgeousUIFoundationSubsystem::RefreshLocalActionBar()
+{
+	if (APlayerController* Controller = GetLocalPlayer() ? GetLocalPlayer()->GetPlayerController(GetWorld()) : nullptr)
+	{ if (auto* HUD = Cast<AGorgeousHUD>(Controller->GetHUD())) HUD->RefreshActionBar(); }
+}
+
+namespace
+{
+	FWidgetNavigationData* GorgeousNavigationData(UWidgetNavigation* Navigation, EUINavigation Direction)
+	{
+		if (!Navigation) return nullptr;
+		switch (Direction)
+		{
+		case EUINavigation::Up: return &Navigation->Up;
+		case EUINavigation::Down: return &Navigation->Down;
+		case EUINavigation::Left: return &Navigation->Left;
+		case EUINavigation::Right: return &Navigation->Right;
+		case EUINavigation::Next: return &Navigation->Next;
+		case EUINavigation::Previous: return &Navigation->Previous;
+		default: return nullptr;
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::ApplyFocusRoutes()
+{
+	// Reverse order also restores duplicate route overrides to their original rule.
+	for (int32 Index = AppliedFocusRoutes.Num() - 1; Index >= 0; --Index)
+	{
+		const auto& Backup = AppliedFocusRoutes[Index];
+		if (auto* Widget = Backup.Widget.Get()) if (auto* Data = GorgeousNavigationData(Widget->Navigation, Backup.Direction))
+		{ *Data = Backup.Previous; Widget->BuildNavigation(); }
+	}
+	AppliedFocusRoutes.Reset();
+	const UGorgeousUIState_DA* State = GetMostRecentUIState();
+	if (!State) return;
+	for (const auto& Route : State->FocusRoutes)
+	{
+		UWidget* Source = nullptr; UWidget* Target = nullptr;
+		for (const auto& Entry : RegisteredWidgets) if (Entry.GetInterface())
+		{ if (Entry.GetInterface()->GetBindingTag() == Route.SourceTag) Source = Cast<UWidget>(Entry.GetObject()); if (Entry.GetInterface()->GetBindingTag() == Route.TargetTag) Target = Cast<UWidget>(Entry.GetObject()); }
+		if (Source && Target && Route.Direction != EUINavigation::Invalid)
+		{
+			const auto* Previous = GorgeousNavigationData(Source->Navigation, Route.Direction);
+			AppliedFocusRoutes.Add({Source, Route.Direction, Previous ? *Previous : FWidgetNavigationData()});
+			Source->SetNavigationRuleExplicit(Route.Direction, Target);
+		}
+	}
+}
+
+void UGorgeousUIFoundationSubsystem::DetachSignalListeners()
+{
+	if (UWorld* World = SignalWorld.Get())
+	{
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TAG_Gorgeous_UI_Focus_Request, nullptr, FocusRequestDelegate);
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TAG_Gorgeous_UI_Input_Action, nullptr, InputActionDelegate);
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TAG_Gorgeous_UI_System_Message_Push, nullptr, MessageRequestDelegate);
+		USignalBridgeBlueprintFunctionLibrary::Unlisten(World, TAG_Gorgeous_UI_System_Message_Result, nullptr, MessageResultDelegate);
+		for (const auto& Entry : TagForwarders) if (Entry.Value)
+		{ FSignalBridgeEventDelegate Delegate; Delegate.BindDynamic(Entry.Value.Get(), &UGorgeousSignalBridgeTagForwarder::OnBridgePayload); USignalBridgeBlueprintFunctionLibrary::Unlisten(World, Entry.Key, nullptr, Delegate); }
+	}
+	bSignalsRegistered = false; SignalController.Reset(); SignalWorld.Reset();
+}
+
+void UGorgeousUIFoundationSubsystem::Deinitialize()
+{
+	if (FSlateApplication::IsInitialized()) FSlateApplication::Get().OnFocusChanging().Remove(SlateFocusHandle);
+	if (GetLocalPlayer()) if (auto* Input = GetLocalPlayer()->GetSubsystem<UCommonInputSubsystem>()) Input->OnInputMethodChangedNative.RemoveAll(this);
+	DetachSignalListeners();
+	CurrentStates.Reset(); ApplyFocusRoutes();
+	if (auto* Input = BridgedInputComponent.Get()) for (uint32 Handle : BridgedBindingHandles) Input->RemoveBindingByHandle(Handle);
+	BridgedBindingHandles.Reset(); TagForwarders.Reset(); RegisteredWidgets.Reset();
+	Super::Deinitialize();
 }

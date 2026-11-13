@@ -29,6 +29,9 @@ public:
 
 	static void RegisterExtension(UGorgeousDetailExtension* Extension);
 	static void UnregisterExtension(FName ExtensionName);
+	static void ClearExtensions() { ExtensionRegistry.Empty(); }
+	static void RegisterPropertyCustomizations();
+	static void UnregisterPropertyCustomizations();
 
 	static TMap<FName, TStrongObjectPtr<UGorgeousDetailExtension>> ExtensionRegistry;
 private:

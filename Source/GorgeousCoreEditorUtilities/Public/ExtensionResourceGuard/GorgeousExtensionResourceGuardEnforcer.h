@@ -29,12 +29,13 @@
 <--------------------------=== Class Description ===------------------------>
 | Editor subsystem that enforces Extension Resource Guard compliance.
 |
-| This subsystem is activated ONLY when the user actively rejects the
-| prompt to restart th engine. Once activated it:
+| Missing mandatory resources of present content can activate enforcement
+| during startup validation. Protection can be explicitly disabled in settings.
+| While enforcement is active it:
 |   1. Displays a toast reminder every 2 minutes via the Gorgeous Things
 |      logging system.
-|   3. After 10 minutes of continued rejection, saves all unsaved assets
-|      and shuts down the editor gracefully - no data is lost.
+|   3. After 10 minutes, attempts to save dirty map/content packages and exits
+|      only when saving succeeds. Failed saving cancels automatic shutdown.
 <--------------------------------------------------------------------------->
 <===========================================================================>
 */
@@ -80,6 +81,15 @@ public:
 
 private:
 
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FGorgeousGuardClosureWorkflowTest;
+	friend class FGorgeousGuardClosureResourceLifecycleTest;
+	// Per-instance boundaries for an isolated Editor workflow test. Empty in
+	// production; never replace the process-wide save or exit implementations.
+	TFunction<bool()> TestSaveDirtyPackages;
+	TFunction<void()> TestRequestExit;
+#endif
+
 	/**
 	 * Ticker callback that runs periodically to check enforcement status.
 	 * Displays reminder toasts and triggers shutdown when deadlines are reached.
@@ -88,6 +98,10 @@ private:
 	 * @return Returns true to continue ticking, false to stop.
 	 */
 	bool OnTick(float DeltaTime);
+	void ShowProtectionBanner();
+	void ToggleProtectionFromBanner(bool bWasDisabled);
+	TWeakPtr<class SNotificationItem> ProtectionBanner;
+	bool bBannerProtectionDisabled = false;
 
 	/**
 	 * Runs once at subsystem initialization.

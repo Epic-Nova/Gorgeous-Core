@@ -29,6 +29,11 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "ObjectTools.h"
+#include "ScopedTransaction.h"
+#include "Editor.h"
+#include "Editor/Transactor.h"
+#include "Misc/Change.h"
+#include "UObject/GCObject.h"
 #include "UObject/Package.h"
 #include "UObject/UnrealType.h"
 //<-------------------------------------------------------------------------->
@@ -37,6 +42,35 @@
 
 namespace
 {
+    /** Asset registry membership and object identity are part of migration Undo, not just property values. */
+    class FMigratedAssetCreationChange final : public FCommandChange
+    {
+    public:
+        explicit FMigratedAssetCreationChange(UObject* Asset)
+            : Package(Asset->GetOutermost()), Name(Asset->GetFName()), Flags(Asset->GetFlags()) {}
+        virtual void Apply(UObject* Asset) override
+        {
+            if (FindObject<UObject>(Package, *Name.ToString())) return;
+            Asset->Rename(*Name.ToString(), Package, REN_DontCreateRedirectors | REN_NonTransactional);
+            Asset->SetFlags(Flags & (RF_Public | RF_Standalone | RF_Transactional));
+            FAssetRegistryModule::AssetCreated(Asset);
+            Package->MarkPackageDirty();
+        }
+        virtual void Revert(UObject* Asset) override
+        {
+            FAssetRegistryModule::AssetDeleted(Asset);
+            Asset->ClearFlags(RF_Public | RF_Standalone);
+            Asset->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
+            Package->MarkPackageDirty();
+        }
+        virtual void AddReferencedObjects(FReferenceCollector& Collector) override { Collector.AddReferencedObject(Package); }
+        virtual FString ToString() const override { return TEXT("Create migrated asset"); }
+    private:
+        TObjectPtr<UPackage> Package;
+        FName Name;
+        EObjectFlags Flags;
+    };
+
 	bool IsMapCompatibleWithAsset(const UGorgeousDataSchemaMapping_DA* SchemaMap, const FAssetData& SelectedAsset)
 	{
 		if (!SchemaMap)
@@ -696,7 +730,8 @@ namespace
 	}
 
 	bool ResolveStructPropertyPath(
-		UStruct* CurrentStruct,
+		UObject* TargetOwner,
+	UStruct* CurrentStruct,
 		void* CurrentContainerPtr,
 		const TArray<FString>& Segments,
 		const int32 SegmentIndex,
@@ -740,7 +775,7 @@ namespace
 				return false;
 			}
 
-			return ResolveStructPropertyPath(StructProperty->Struct, NextContainerPtr, Segments, SegmentIndex + 1, OutLeafProperty, OutLeafContainerPtr, OutError);
+			return ResolveStructPropertyPath(TargetOwner, StructProperty->Struct, NextContainerPtr, Segments, SegmentIndex + 1, OutLeafProperty, OutLeafContainerPtr, OutError);
 		}
 
 		if (FObjectPropertyBase* ObjectProperty = CastField<FObjectPropertyBase>(ResolvedProperty))
@@ -752,7 +787,13 @@ namespace
 				return false;
 			}
 
-			return ResolveStructPropertyPath(NextObject->GetClass(), NextObject, Segments, SegmentIndex + 1, OutLeafProperty, OutLeafContainerPtr, OutError);
+			if (NextObject != TargetOwner && !NextObject->IsIn(TargetOwner))
+            {
+                OutError = FString::Printf(TEXT("Target path cannot modify external object '%s'; use an instanced subobject owned by the migration target."), *NextObject->GetPathName());
+                return false;
+            }
+
+            return ResolveStructPropertyPath(TargetOwner, NextObject->GetClass(), NextObject, Segments, SegmentIndex + 1, OutLeafProperty, OutLeafContainerPtr, OutError);
 		}
 
 		OutError = FString::Printf(TEXT("Property '%s' is not a struct/object bridge but path traversal continues."), *ResolvedProperty->GetName());
@@ -783,7 +824,7 @@ namespace
 			return false;
 		}
 
-		return ResolveStructPropertyPath(RootObject->GetClass(), RootObject, Segments, 0, OutLeafProperty, OutLeafContainerPtr, OutError);
+		return ResolveStructPropertyPath(RootObject, RootObject->GetClass(), RootObject, Segments, 0, OutLeafProperty, OutLeafContainerPtr, OutError);
 	}
 
 	bool TryExportResolvedTargetValue(UObject* TargetObject, const FString& TargetPath, FString& OutValue, FString& OutError)
@@ -995,7 +1036,9 @@ namespace
 				ItemResult.ChangedFieldCount,
 				ItemResult.Warnings.Num(),
 				ItemResult.Errors.Num()));
-		}
+            for (const FString& Warning : ItemResult.Warnings) Lines.Add(TEXT("      Warning: ") + SanitizeForSingleLine(Warning));
+            for (const FString& Error : ItemResult.Errors) Lines.Add(TEXT("      Error: ") + SanitizeForSingleLine(Error));
+        }
 
 		Lines.Add(TEXT(""));
 		Lines.Add(TEXT("Diff Lines:"));
@@ -1020,6 +1063,25 @@ namespace
 		FFileHelper::SaveStringArrayToFile(Lines, *ReportPath);
 		return ReportPath;
 	}
+
+    FString LogMigrationDiagnostics(const FGorgeousDataSchemaMigrationResult_S& Result)
+    {
+        FString First;
+        auto Log = [&First](const FString& Label, const FString& Message, EGorgeousLoggingImportance Importance)
+        {
+            const FString Text = Label.IsEmpty() ? Message : Label + TEXT(": ") + Message;
+            if (First.IsEmpty()) First = Text;
+            GorgeousLogging::LogMessage_Internal(FText::FromString(Text), Importance,
+                TEXT("GorgeousDataSchemaMapping"), 0.0f, false, false, true, true, nullptr, nullptr);
+        };
+        for (const FString& Error : Result.GlobalErrors) Log(FString(), Error, Logging_Error);
+        for (const auto& Item : Result.ItemResults)
+        {
+            for (const FString& Error : Item.Errors) Log(Item.SourceLabel, Error, Logging_Error);
+            for (const FString& Warning : Item.Warnings) Log(Item.SourceLabel, Warning, Logging_Warning);
+        }
+        return First;
+    }
 
 	void AddNotification(const FText& MessageText, const EGorgeousLoggingImportance Importance)
 	{
@@ -1222,13 +1284,14 @@ void FGorgeousDataSchemaMappingEditorService::PreviewMigration(
 	const FString TargetRootPath = SchemaMap->GetNormalizedTargetContentRootPath();
 	if (TargetRootPath.IsEmpty())
 	{
-		MigrationResult.GlobalErrors.Add(TEXT("TargetContentRootPath is invalid or empty. Configure a /Game/... destination in the schema map."));
+		MigrationResult.GlobalErrors.Add(TEXT("TargetContentRootPath is invalid or empty. Configure a mounted writable project or plugin content destination in the schema map."));
 	}
 
 	if (!MigrationResult.GlobalErrors.IsEmpty())
 	{
 		MigrationResult.bSucceeded = false;
 		AppendMigrationHistoryLine(TEXT("DryRun"), SchemaMap, SelectedAssets, MigrationResult);
+        LogMigrationDiagnostics(MigrationResult);
 		AddNotification(LOCTEXT("SchemaPreview_InvalidConfig", "Schema preview failed: mapping configuration is invalid."), Logging_Error);
 		return;
 	}
@@ -1295,7 +1358,8 @@ void FGorgeousDataSchemaMappingEditorService::PreviewMigration(
 		FText::AsNumber(FailedItemCount),
 		FText::AsNumber(SumChangedFields(MigrationResult)));
 
-	AddNotification(SummaryText, MigrationResult.bSucceeded ? Logging_Success : Logging_Error);
+	const FString FirstDiagnostic = LogMigrationDiagnostics(MigrationResult);
+    AddNotification(FirstDiagnostic.IsEmpty() ? SummaryText : FText::Format(LOCTEXT("MigrationDetailSummary", "{0} {1}"), SummaryText, FText::FromString(FirstDiagnostic)), MigrationResult.bSucceeded ? Logging_Success : Logging_Error);
 	AddNotification(
 		FText::Format(LOCTEXT("SchemaPreviewReportPath", "Dry-run report saved: {0}"), FText::FromString(ReportPath)),
 		Logging_Information);
@@ -1303,18 +1367,18 @@ void FGorgeousDataSchemaMappingEditorService::PreviewMigration(
 	AppendMigrationHistoryLine(TEXT("DryRun"), SchemaMap, SelectedAssets, MigrationResult, ReportPath);
 }
 
-void FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDataSchemaMapping_DA* SchemaMap, const TArray<FAssetData>& SelectedAssets)
+bool FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDataSchemaMapping_DA* SchemaMap, const TArray<FAssetData>& SelectedAssets, TArray<UPackage*>* OutCreatedPackages)
 {
 	if (!SchemaMap)
 	{
 		AddNotification(LOCTEXT("SchemaMigration_NoMap", "Schema migration failed: map is invalid."), Logging_Error);
-		return;
+		return false;
 	}
 
 	if (SelectedAssets.IsEmpty())
 	{
 		AddNotification(LOCTEXT("SchemaMigration_NoSelection", "Schema migration skipped: no assets selected."), Logging_Error);
-		return;
+		return false;
 	}
 
 	FGorgeousDataSchemaMigrationResult_S MigrationResult;
@@ -1332,16 +1396,19 @@ void FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDa
 	const FString TargetRootPath = SchemaMap->GetNormalizedTargetContentRootPath();
 	if (TargetRootPath.IsEmpty())
 	{
-		MigrationResult.GlobalErrors.Add(TEXT("TargetContentRootPath is invalid or empty. Configure a /Game/... destination in the schema map."));
+		MigrationResult.GlobalErrors.Add(TEXT("TargetContentRootPath is invalid or empty. Configure a mounted writable project or plugin content destination in the schema map."));
 	}
 
 	if (!MigrationResult.GlobalErrors.IsEmpty())
 	{
 		MigrationResult.bSucceeded = false;
 		AppendMigrationHistoryLine(TEXT("Execute"), SchemaMap, SelectedAssets, MigrationResult);
+        LogMigrationDiagnostics(MigrationResult);
 		AddNotification(LOCTEXT("SchemaMigration_InvalidConfig", "Schema migration failed: mapping configuration is invalid."), Logging_Error);
-		return;
+		return false;
 	}
+
+	FScopedTransaction Transaction(LOCTEXT("MigrateSchemaAssetsTransaction", "Migrate data schema assets"), !IsRunningCommandlet());
 
 	FAssetToolsModule& AssetToolsModule = FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry"));
@@ -1385,7 +1452,10 @@ void FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDa
 				continue;
 			}
 
-			UObject* NewAsset = NewObject<UObject>(Package, TargetClass, *UniqueAssetName, RF_Public | RF_Standalone | RF_Transactional);
+			// Transactional construction automatically creates an object snapshot in
+			// UObjectGlobals. It would restore the old outer after our custom Undo
+			// moved the asset away. This change owns creation/identity atomically.
+			UObject* NewAsset = NewObject<UObject>(Package, TargetClass, *UniqueAssetName, RF_Public | RF_Standalone);
 			if (!NewAsset)
 			{
 				ItemResult.Errors.Add(FString::Printf(TEXT("Failed to create target asset '%s'."), *UniqueAssetName));
@@ -1417,6 +1487,9 @@ void FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDa
 				Package->MarkPackageDirty();
 				ItemResult.CreatedAssetPath = FString::Printf(TEXT("%s.%s"), *UniquePackageName, *UniqueAssetName);
 				++MigrationResult.CreatedAssetCount;
+				if (OutCreatedPackages) OutCreatedPackages->AddUnique(Package);
+                NewAsset->SetFlags(RF_Transactional);
+                if (GUndo && !IsRunningCommandlet()) GUndo->StoreUndo(NewAsset, MakeUnique<FMigratedAssetCreationChange>(NewAsset));
 			}
 			else
 			{
@@ -1441,15 +1514,17 @@ void FGorgeousDataSchemaMappingEditorService::ExecuteMigration(const UGorgeousDa
 		FText::AsNumber(MigrationResult.CreatedAssetCount),
 		FText::AsNumber(FailedItemCount));
 
-	AddNotification(SummaryText, MigrationResult.bSucceeded ? Logging_Success : Logging_Error);
+	const FString FirstDiagnostic = LogMigrationDiagnostics(MigrationResult);
+    AddNotification(FirstDiagnostic.IsEmpty() ? SummaryText : FText::Format(LOCTEXT("MigrationDetailSummary", "{0} {1}"), SummaryText, FText::FromString(FirstDiagnostic)), MigrationResult.bSucceeded ? Logging_Success : Logging_Error);
 
-	if (MigrationResult.CreatedAssetCount > 0)
+	if (MigrationResult.CreatedAssetCount > 0 && !IsRunningCommandlet())
 	{
 		FContentBrowserModule& ContentBrowserModule = FModuleManager::LoadModuleChecked<FContentBrowserModule>(TEXT("ContentBrowser"));
 		ContentBrowserModule.Get().SetSelectedPaths({TargetRootPath}, true);
 	}
 
 	AppendMigrationHistoryLine(TEXT("Execute"), SchemaMap, SelectedAssets, MigrationResult);
+	return MigrationResult.bSucceeded;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -27,7 +27,7 @@ struct FGorgeousDamageContext_S
     TObjectPtr<AActor> DamagedActor;
 
     UPROPERTY(BlueprintReadWrite)
-    float BaseDamage;
+    float BaseDamage = 0.0f;
 
     UPROPERTY(BlueprintReadWrite)
     TObjectPtr<AController> EventInstigator;
@@ -39,10 +39,10 @@ struct FGorgeousDamageContext_S
     TSubclassOf<UDamageType> DamageTypeClass;
 
     UPROPERTY(BlueprintReadWrite)
-    FVector HitLocation;
+    FVector HitLocation = FVector::ZeroVector;
 
     UPROPERTY(BlueprintReadWrite)
-    FVector ShotDirection;
+    FVector ShotDirection = FVector::ZeroVector;
 
     UPROPERTY(BlueprintReadWrite)
     FGameplayTagContainer DamageTags;

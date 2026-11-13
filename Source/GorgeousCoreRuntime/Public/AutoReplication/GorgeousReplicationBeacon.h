@@ -23,7 +23,8 @@
 class UGorgeousObjectVariable;
 class UGorgeousRootObjectVariable;
 //<------------------------------------------------------------->
-//@TODO: This is a highly theoretical concept, this will probably introduced in v1.3
+// Bounded binary Object Variable snapshots over an explicitly configured Unreal beacon.
+// This class does not provide an HTTP server/client or automatic JSON conversion.
 
 // ════════════════════════════════════════════════════════════════════════════
 //  AGorgeousReplicationBeaconClient
@@ -32,19 +33,15 @@ class UGorgeousRootObjectVariable;
 //  independent of the game's primary networking channel.
 //
 //  Purpose:
-//    • Send outgoing HTTP requests (e.g. to LLM APIs, REST endpoints)
-//      and receive the response structured as an Object Variable tree.
-//      JSON responses are automatically parsed into OVs for convenience.
-//    • Receive incoming HTTP API calls and populate Object Variable
-//      values from the request payload.
+//    • Request a binary snapshot of a root explicitly exposed by the host.
+//    • Receive binary variable/root trees into this connection's snapshot maps.
 //
-//  This is the stable networking bridge for handling large data sets
-//  through external HTTP services while keeping all results accessible
-//  as first-class Object Variables within the Gorgeous ecosystem.
+//  The host application configures the beacon connection and exposed roots.
+//  External services and JSON-to-OV mapping require a separate application
+//  adapter; no such service integration is performed by these snapshot RPCs.
 //
-//  Once connected, the beacon claims root registry ownership so that
-//  all Object Variables under managed roots use it as the networking
-//  context (CachedOwner / FallbackOwner).
+//  Once connected, the beacon can claim its configured local managed roots.
+//  Received snapshots are retained per connection and released on teardown.
 // ════════════════════════════════════════════════════════════════════════════
 
 /*
@@ -63,9 +60,9 @@ class UGorgeousRootObjectVariable;
 */
 UCLASS(Transient, NotPlaceable, Config = Engine,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/AGorgeousReplicationBeaconClient",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/KnownLimitations/#placeholders",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API AGorgeousReplicationBeaconClient : public AOnlineBeaconClient
@@ -82,20 +79,30 @@ public:
 
 	/** Called on connection failure, releases ownership claims. */
 	virtual void OnFailure() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    /** Last received snapshot for this connection; independent of process-wide gameplay roots. */
+    UFUNCTION(BlueprintPure,Category="Gorgeous Core|AutoReplication|Beacon")
+    UGorgeousObjectVariable* GetReceivedRootSnapshot(FName RootName) const { return ReceivedRootSnapshots.FindRef(RootName); }
+    UFUNCTION(BlueprintPure,Category="Gorgeous Core|AutoReplication|Beacon")
+    UGorgeousObjectVariable* GetReceivedVariableSnapshot(FGuid Identifier) const { return ReceivedVariableSnapshots.FindRef(Identifier); }
+    UPROPERTY(Transient)
+    TMap<FName,TObjectPtr<UGorgeousObjectVariable>> ReceivedRootSnapshots;
+    UPROPERTY(Transient)
+    TMap<FGuid,TObjectPtr<UGorgeousObjectVariable>> ReceivedVariableSnapshots;
 
-	// ── HTTP ↔ Object Variable RPCs ────────────────────────────────────────
-	// Transport layer for bridging HTTP API calls to/from Object Variables.
-	// Responses (typically JSON) are structured into OV trees automatically.
 
-	/** Server → Client: push an API response payload for a specific variable. */
+	// ── Binary Object Variable snapshot RPCs ───────────────────────────────
+	// Uses the OV snapshot format, not an HTTP body or a JSON document.
+
+	/** Server → Client: receive a bounded binary snapshot for a specific variable. */
 	UFUNCTION(Client, Reliable)
 	void ClientReceiveVariableSnapshot(const FGuid& VariableIdentifier, const TArray<uint8>& Payload);
 
-	/** Client → Server: request a full variable tree for a root (e.g. after an API response). */
+	/** Client → Server: request a full variable tree for an explicitly exposed root. */
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRequestFullSync(const FName& RootName);
 
-	/** Server → Client: deliver the full variable tree built from an API response. */
+	/** Server → Client: receive the root's binary tree in this connection's snapshot map. */
 	UFUNCTION(Client, Reliable)
 	void ClientReceiveFullSync(const FName& RootName, const TArray<uint8>& Payload);
 
@@ -120,14 +127,11 @@ protected:
 //
 //  Server-side factory/manager registered with AOnlineBeaconHost.
 //  Spawns AGorgeousReplicationBeaconClient actors for incoming
-//  connections and manages the HTTP ↔ Object Variable bridge lifecycle.
+//  connections and configures their explicitly exposed root names.
 //
-//  This is the entry point for external HTTP API integration:
-//  incoming API calls are received here and their payloads are
-//  converted into Object Variable trees.  Outgoing HTTP requests
-//  (e.g. to LLM APIs for processing large data sets) are dispatched
-//  through connected beacon clients, and their responses flow back
-//  as structured OVs.
+//  This is an Unreal beacon host object, not an HTTP endpoint. It does not
+//  send external API requests or convert JSON automatically. Applications
+//  which need those features must provide their own service adapter.
 // ════════════════════════════════════════════════════════════════════════════
 
 UCLASS(Transient, NotPlaceable, Config = Engine)

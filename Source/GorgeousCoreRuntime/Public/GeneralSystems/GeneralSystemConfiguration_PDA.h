@@ -37,9 +37,9 @@ class UGorgeousGeneralSystemAction;
 //<------------------------------------------------------------->
 UCLASS(BlueprintType,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GeneralSystemConfiguration_PDA",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Anatomy/#ugeneralsystemconfiguration_pda",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGeneralSystemConfiguration_PDA : public UGorgeousPrimaryDataAsset
@@ -49,6 +49,12 @@ class GORGEOUSCORERUNTIME_API UGeneralSystemConfiguration_PDA : public UGorgeous
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
 public:
+
+#if WITH_EDITOR
+    virtual void PreSave(FObjectPreSaveContext SaveContext) override;
+    /** Refreshes the cooked requirement mirror; returns whether serialized data changed. */
+    bool RefreshRuntimeRequirements();
+#endif
 
     // Returns the primary asset type used for system configurations.
     virtual FPrimaryAssetType GetPrimaryAssetType() const override { return TEXT("GorgeousBlueprintSystems"); }
@@ -195,6 +201,14 @@ public:
     // Extensible lifecycle actions, patterned after Game Feature Actions.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Instanced, Category = "General Core System Configuration|Actions")
     TArray<TObjectPtr<UGorgeousGeneralSystemAction>> Actions;
+
+    /** Cooked mirror of runtime-capable plugin requirements. False means mandatory. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "General Core System Configuration|Requirements")
+    TMap<FName, bool> RuntimeRequiredPlugins;
+
+    /** Cooked mirror of system requirements. False means mandatory. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "General Core System Configuration|Requirements")
+    TMap<FName, bool> RuntimeRequiredSystems;
 
 private:
 	

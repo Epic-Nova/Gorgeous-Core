@@ -34,9 +34,9 @@
 */
 UCLASS(BlueprintType, EditInlineNew, DisplayName = "AutoReplication RPC OV", Category = "Gorgeous Core|AutoReplication|Networking",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/GorgeousRPC_OV",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/ObjectVariables/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCResults/#the-result-container",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCResults/#the-result-container",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCResults/#the-result-container"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousRPC_OV : public UGorgeousObjectVariable

@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "QualityOfLife/GorgeousQualityOfLifeStatics.h"
+#include "AutoReplication/Globals/GorgeousAutoReplicationNetworkingGlobals.h"
 
 // Set to 1 to enable experimental memory leak fixes for PIE teardown and replication crashes.
 #ifndef GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
@@ -70,9 +71,7 @@ namespace FGorgeousQualityOfLifeStatics
 {
 	void SanitizeCDOAdditionalData(UObject* Owner, TMap<FName, FGorgeousObjectVariableEntry>& AdditionalData)
 	{
-		if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject) 
-			|| !Owner->HasAnyFlags(RF_ArchetypeObject)
-			|| !Owner->GetOutermost()->HasAnyPackageFlags(PKG_EditorOnly))
+        if (!Owner || !Owner->HasAnyFlags(RF_ClassDefaultObject | RF_ArchetypeObject))
 		{
 			return;
 		}
@@ -148,7 +147,7 @@ namespace FGorgeousQualityOfLifeStatics
 					{
 						if (UObject_AOTOV* Candidate = Cast<UObject_AOTOV>(OVPtr.Get()))
 						{
-							if (Candidate->GetOuter() == SelfRefOuter)
+							if (Candidate->bIsQualityOfLifeSelfReference && Candidate->GetOuter() == SelfRefOuter)
 							{
 								SelfVariable = Candidate;
 								Entry.DefaultValue = SelfVariable;
@@ -162,11 +161,12 @@ namespace FGorgeousQualityOfLifeStatics
 			if (!SelfVariable)
 			{
 				constexpr EObjectFlags SelfReferenceFlags = RF_Transactional;
-				SelfVariable = NewObject<UObject_AOTOV>(SelfRefOuter, MakeSubobjectName(SelfRefOuter), SelfReferenceFlags);
+				SelfVariable = NewObject<UObject_AOTOV>(SelfRefOuter, MakeUniqueObjectName(SelfRefOuter, UObject_AOTOV::StaticClass(), MakeSubobjectName(SelfRefOuter)), SelfReferenceFlags);
 				Entry.DefaultValue = SelfVariable;
 			}
 		}
 
+        if (SelfVariable) { SelfVariable->bPersistent=true; SelfVariable->bIsQualityOfLifeSelfReference=true; }
 		if (SelfVariable && !SelfVariable->UniqueIdentifier.IsValid())
 		{
 			SelfVariable->UniqueIdentifier = FGuid::NewGuid();
@@ -197,26 +197,10 @@ namespace FGorgeousQualityOfLifeStatics
 		{
 			if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(PreferredRoot))
 			{
-#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
-				SelfVariable->SetParentRefOnly(Root);
-				// We add to VariableRegistry + TrackRegisteredVariable so the SelfVariable is discoverable
-				// and properly cleaned up. We do NOT call SetParent() because that would Rename the Outer
-				// to the Root, making the SelfVariable immortal.
-				// The strong TObjectPtr in VariableRegistry is safe because PurgeWorldOwnedRegistryEntries
-				// (registered on FWorldDelegates::OnWorldCleanup) removes these entries BEFORE
-				// CheckForWorldGCLeaks runs, preventing the "2 leaked objects" fatal.
-				Root->VariableRegistry.Add(SelfVariable->GetFName(), SelfVariable);
-				UGorgeousRootObjectVariable::TrackRegisteredVariable(SelfVariable);
-#else
-				// @TODO: Cannot add SelfVariable to Root->VariableRegistry here.
-				// The Root is immortal (AddToRoot) and VariableRegistry uses TObjectPtr (strong ref).
-				// This creates a strong reference chain: Root → SelfVariable → GameInstance/World.
-				// Unreal's CheckForWorldGCLeaks runs BEFORE BeginDestroy/GC, so the cleanup in
-				// EnsureRemovedFromRegistry never gets a chance to fire, causing "2 leaked objects" fatal.
-				// Needs a proper pre-world-destroy cleanup hook (e.g. FWorldDelegates::OnPreWorldFinishDestroy)
-				// to remove the SelfVariable from the registry before the leak check runs.
-				// SelfVariable->SetParent(Root);
-#endif
+                SelfVariable->SetParentRefOnly(Root);
+                Root->VariableRegistry.Add(SelfVariable->GetFName(), SelfVariable);
+                UGorgeousRootObjectVariable::TrackRegisteredVariable(SelfVariable);
+
 			}
 		}
 
@@ -226,15 +210,10 @@ namespace FGorgeousQualityOfLifeStatics
 			if (int32 UnderscoreIndex; ContextName.FindLastChar('_', UnderscoreIndex)) { ContextName = ContextName.Left(UnderscoreIndex); }
 			SelfVariable->SetDisplayName(ContextName);
 		}
-#if GORGEOUS_EXPERIMENTAL_MEMORY_FIXES
-		// CRITICAL: A shared SelfReference OV is owned by the GameInstance.
-		// It MUST NEVER be registered as a replicated subobject on the Actor (Entry.bReplicate = true),
-		// because replicating a subobject whose Outer is not the Actor completely breaks Unreal's 
-		// replication layout and causes fatal Realloc memory corruption crashes in PIE with multiple clients.
-		Entry.bReplicate = false;
-#else
-		Entry.bReplicate = bExposeThroughNetworkStack;
-#endif
+        // These variables use the relay payload transport. Their GameInstance outer
+        // must never be registered as a native actor replication subobject.
+        Entry.bReplicate = false;
+
 
 		if (bIsClassDefaultObject || !Entry.bOverrideStreamConfig)
 		{
@@ -353,6 +332,7 @@ namespace FGorgeousQualityOfLifeStatics
 				// substring checks that break when names have _X collision suffixes.
 				if (const UObject_AOTOV* SelfRefOV = Cast<UObject_AOTOV>(EntryPtr.Get()))
 				{
+                    if (!SelfRefOV->bIsQualityOfLifeSelfReference) continue;
 					for (const TArray<UObject*> ReferencedObject = IGorgeousArrayObjectVariablesGetter_I::Execute_GetObjectObjectArrayObjectVariable(SelfRefOV, NAME_None);
 						const auto Object : ReferencedObject)
 					{
@@ -427,7 +407,7 @@ namespace FGorgeousQualityOfLifeStatics
 			for (const auto& [EntryKey, EntryPtr] : Root->VariableRegistry)
 			{
 				const UObject_AOTOV* SelfRefOV = Cast<UObject_AOTOV>(EntryPtr.Get());
-				if (!SelfRefOV) { continue; }
+				if (!SelfRefOV || !SelfRefOV->bIsQualityOfLifeSelfReference) { continue; }
 
 				// Skip OVs that belong to a different GameInstance (PIE cross-world bleed guard).
 				if (CallerGI)
@@ -512,7 +492,9 @@ namespace FGorgeousQualityOfLifeStatics
 			if (Registry->GetStableId(PC).IsEmpty())
 			{
 				const int32 NextIdx = Registry->GetNextAutoIndex();
-				Registry->RegisterPC(PC, FString::Printf(TEXT("LocalPlayer_%d"), NextIdx));
+				FString Stable=UGorgeousAutoReplicationNetworkingGlobals::MakeStablePlayerConnectionId(PC);
+                if (Stable.IsEmpty()) Stable=FGuid::NewGuid().ToString(EGuidFormats::DigitsWithHyphens);
+                Registry->RegisterPC(PC,Stable);
 			}
 		}
 	}

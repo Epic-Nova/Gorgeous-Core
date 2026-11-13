@@ -6,6 +6,7 @@
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/World.h"
+#include "AutoReplication/GorgeousAutoReplicationRPCRelayComponent.h"
 
 DECLARE_STATS_GROUP(TEXT("Gorgeous Signal Bridge"), STATGROUP_GorgeousSignalBridge, STATCAT_Advanced);
 DECLARE_DWORD_COUNTER_STAT(TEXT("Local Signals Fired"), STAT_SignalBridge_LocalFired, STATGROUP_GorgeousSignalBridge);
@@ -66,7 +67,7 @@ bool USignalBridgeStorage_OV::Listen(FGameplayTag Tag, AGorgeousPlayerController
 	}
 
 	// Bind local delegate - Always allowed locally
-	LocalBindings.FindOrAdd(Tag).AddUnique(Delegate);
+	LocalBindings.FindOrAdd(Tag).AddUnique({Delegate, Controller, nullptr, false});
 	GT_I_LOG("GT.SignalBridge", TEXT("[%s] Registered local listener for tag %s."), *GetName(), *Tag.ToString());
 
 	if (!Controller) return true; // Local only success
@@ -74,7 +75,7 @@ bool USignalBridgeStorage_OV::Listen(FGameplayTag Tag, AGorgeousPlayerController
 	// Register with server if we are a client
 	if (!HasAuthority())
 	{
-		Server_RegisterListener(Tag, Controller);
+		if (auto* Relay = Controller->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>()) Relay->ServerRelaySignalBridge(0, Tag, nullptr, FInstancedStruct());
 	}
 	else
 	{
@@ -89,16 +90,11 @@ bool USignalBridgeStorage_OV::ListenToActor(FGameplayTag Tag, AActor* TargetActo
 {
 	if (!Controller || !TargetActor || !Tag.IsValid() || !Delegate.IsBound()) return false;
 
-	// For local bindings, we currently don't have per-actor filtering in the multicast delegate.
-	// But we can wrap the delegate in a lambda that filters by source.
-	// However, to stay consistent with the server-side optimization, we'll use a special local binding map or just filter in the delegate.
-	
-	// Actually, let's just use the standard local bindings but the server will only send us relevant ones.
-	LocalBindings.FindOrAdd(Tag).AddUnique(Delegate);
+    LocalBindings.FindOrAdd(Tag).AddUnique({Delegate, Controller, TargetActor, true});
 
 	if (!HasAuthority())
 	{
-		Server_RegisterActorListener(Tag, TargetActor, Controller);
+		if (auto* Relay = Controller->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>()) Relay->ServerRelaySignalBridge(1, Tag, TargetActor, FInstancedStruct());
 	}
 	else
 	{
@@ -114,14 +110,16 @@ void USignalBridgeStorage_OV::Dispatch(FGameplayTag Tag, const FInstancedStruct&
 	// 1. Fire local bindings first
 	FireLocalSignal(Tag, Payload);
 
-	// 2. Relay to server if we are a client and this bridge is replicated
+    const FGorgeousSignalBridgeAccessRules_S* Rules = AccessRules.Find(Tag);
+    if (Rules && !Rules->bNetworked) return;
+	// 2. Relay through the owning player connection.
 	if (!HasAuthority() && IsReplicationActive())
 	{
 		if (UWorld* World = GetWorld())
 		{
 			if (AGorgeousPlayerController* PC = Cast<AGorgeousPlayerController>(World->GetFirstPlayerController()))
 			{
-				Server_RequestDispatch(Tag, Payload, PC);
+				if (auto* Relay = PC->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>()) Relay->ServerRelaySignalBridge(3, Tag, nullptr, Payload);
 			}
 		}
 	}
@@ -171,7 +169,7 @@ void USignalBridgeStorage_OV::Dispatch(FGameplayTag Tag, const FInstancedStruct&
 			// SEND RPCs
 			for (AGorgeousPlayerController* Target : Targets)
 			{
-				Target->Client_ReceiveSignal(Tag, Payload);
+				if (!Target->IsLocalController()) Target->Client_ReceiveSignal(Tag, Payload);
 			}
 		}
 	}
@@ -179,11 +177,15 @@ void USignalBridgeStorage_OV::Dispatch(FGameplayTag Tag, const FInstancedStruct&
 
 void USignalBridgeStorage_OV::Clear(FGameplayTag Tag, AGorgeousPlayerController* Controller)
 {
-	LocalBindings.Remove(Tag);
+    if (TArray<FLocalSignalBinding>* Bindings = LocalBindings.Find(Tag))
+    {
+        Bindings->RemoveAll([Controller](const FLocalSignalBinding& Binding) { return Binding.Controller.Get() == Controller; });
+        if (Bindings->IsEmpty()) LocalBindings.Remove(Tag);
+    }
 
 	if (!HasAuthority())
 	{
-		Server_UnregisterListener(Tag, Controller);
+		if (Controller) { if (auto* Relay = Controller->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>()) Relay->ServerRelaySignalBridge(2, Tag, nullptr, FInstancedStruct()); }
 	}
 	else
 	{
@@ -201,17 +203,28 @@ void USignalBridgeStorage_OV::Clear(FGameplayTag Tag, AGorgeousPlayerController*
 
 void USignalBridgeStorage_OV::FireLocalSignal(FGameplayTag Tag, const FInstancedStruct& Payload)
 {
-	if (FSignalBridgeEventMulticastDelegate* Delegate = LocalBindings.Find(Tag))
-	{
-		INC_DWORD_STAT(STAT_SignalBridge_LocalFired);
-		FPlatformAtomics::InterlockedIncrement(&GSignalBridgeLocalFiredCount);
-		Delegate->Broadcast(Tag, Payload);
-	}
-	else
-	{
-		INC_DWORD_STAT(STAT_SignalBridge_NoListeners);
-		FPlatformAtomics::InterlockedIncrement(&GSignalBridgeNoListenersCount);
-	}
+    AActor* Source = nullptr;
+    if (const UScriptStruct* Struct = Payload.GetScriptStruct())
+    {
+        if (const FObjectProperty* Prop = CastField<FObjectProperty>(Struct->FindPropertyByName(TEXT("Source"))))
+            Source = Cast<AActor>(Prop->GetObjectPropertyValue_InContainer(Payload.GetMemory()));
+    }
+    bool bFired = false;
+    if (const TArray<FLocalSignalBinding>* Bindings = LocalBindings.Find(Tag))
+    {
+        // Copy because a callback may clear or register listeners while dispatching.
+        const TArray<FLocalSignalBinding> Snapshot = *Bindings;
+        for (const FLocalSignalBinding& Binding : Snapshot)
+        {
+            if ((!Binding.bActorScoped || Binding.Source.Get() == Source) && Binding.Delegate.IsBound())
+            {
+                Binding.Delegate.ExecuteIfBound(Tag, Payload);
+                bFired = true;
+            }
+        }
+    }
+    if (bFired) { INC_DWORD_STAT(STAT_SignalBridge_LocalFired); FPlatformAtomics::InterlockedIncrement(&GSignalBridgeLocalFiredCount); }
+    else { INC_DWORD_STAT(STAT_SignalBridge_NoListeners); FPlatformAtomics::InterlockedIncrement(&GSignalBridgeNoListenersCount); }
 }
 
 int64 USignalBridgeStorage_OV::GetTotalLocalSignalsFired()
@@ -254,13 +267,14 @@ void USignalBridgeStorage_OV::RemoveAllowedController(FGameplayTag Tag, AGorgeou
 
 void USignalBridgeStorage_OV::Server_RegisterListener_Implementation(FGameplayTag Tag, AGorgeousPlayerController* Controller)
 {
+    if (!Controller || !Tag.IsValid() || !EvaluateTagAccess(Controller, Tag)) return;
 	FGorgeousSignalBridgeListener_S& Registry = GetOrCreateListenerRegistry(Tag);
 	Registry.RegisteredListeners.AddUnique(Controller);
 }
 
 void USignalBridgeStorage_OV::Server_RegisterActorListener_Implementation(FGameplayTag Tag, AActor* TargetActor, AGorgeousPlayerController* Controller)
 {
-	if (TargetActor && Controller)
+	if (TargetActor && Controller && Tag.IsValid() && EvaluateTagAccess(Controller, Tag))
 	{
 		FGorgeousSignalBridgeListener_S& Registry = GetOrCreateListenerRegistry(Tag);
 		Registry.ActorScopedListeners.FindOrAdd(TargetActor).Controllers.AddUnique(Controller);
@@ -282,7 +296,7 @@ void USignalBridgeStorage_OV::Server_UnregisterListener_Implementation(FGameplay
 void USignalBridgeStorage_OV::Server_RequestDispatch_Implementation(FGameplayTag Tag, FInstancedStruct Payload, AGorgeousPlayerController* Requester)
 {
 	// Validate access before dispatching from client
-	if (EvaluateTagAccess(Requester, Tag))
+	if (Requester && Tag.IsValid() && AccessRules.Contains(Tag) && AccessRules[Tag].bNetworked && AccessRules[Tag].bAllowClientDispatch && EvaluateTagAccess(Requester,Tag))
 	{
 		Dispatch(Tag, Payload);
 	}
@@ -310,7 +324,7 @@ bool USignalBridgeStorage_OV::EvaluateTagAccess(AGorgeousPlayerController* Contr
 	case EGorgeousObjectVariableAccessPolicy::Everyone:
 		return true;
 	case EGorgeousObjectVariableAccessPolicy::OwningControllerOnly:
-		return Controller != nullptr; // Simplified
+		return Controller && Controller == Rules->RegisteredBy;
 	case EGorgeousObjectVariableAccessPolicy::Custom:
 		{
 			if (!Controller) return false;
@@ -325,4 +339,13 @@ bool USignalBridgeStorage_OV::EvaluateTagAccess(AGorgeousPlayerController* Contr
 		break;
 	}
 	return false;
+}
+
+void USignalBridgeStorage_OV::Unlisten(FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate)
+{
+    TArray<FLocalSignalBinding>* Bindings = LocalBindings.Find(Tag);
+    if (!Bindings) return;
+    Bindings->RemoveAll([&](const FLocalSignalBinding& Binding) { return Binding.Controller.Get() == Controller && Binding.Delegate == Delegate; });
+    const bool bHasControllerListeners = Bindings->ContainsByPredicate([Controller](const FLocalSignalBinding& Binding) { return Binding.Controller.Get() == Controller; });
+    if (!bHasControllerListeners) Clear(Tag, Controller);
 }

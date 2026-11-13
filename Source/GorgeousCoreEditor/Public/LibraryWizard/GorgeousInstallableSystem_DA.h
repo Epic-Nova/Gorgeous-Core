@@ -56,6 +56,15 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "System|Remote")
     FString DownloadUrl;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="System|Remote")
+    FString ChecksumSha256;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="System|Remote")
+    FString SignatureEd25519;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="System|Remote")
+    FString DownloadToken;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "System|Structure")
     TArray<FString> SourcePaths;
 

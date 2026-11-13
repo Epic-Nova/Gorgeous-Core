@@ -10,7 +10,7 @@ Welcome to the **Gorgeous Core Development Guide!** This document will walk you 
 
 ### 📦 Install Unreal Engine
 
-Gorgeous Core is developed and tested with **Unreal Engine 5.3+**.
+Gorgeous Core is developed and tested with **Unreal Engine 5.8**. The bundled content contains UE 5.8 packages; older editors cannot load that content. Cross-platform support requires validation on each platform.
 
 To install Unreal Engine:
 

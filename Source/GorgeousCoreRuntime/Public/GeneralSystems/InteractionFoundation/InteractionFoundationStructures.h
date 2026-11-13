@@ -67,7 +67,7 @@ struct GORGEOUSCORERUNTIME_API FGorgeousInteractionSphereTraceParameters
 
 	// Radius of the swept sphere.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Interaction Foundation")
-	float Radius = 15.0f;
+	float Radius = 100.0f;
 
 	// Collision channel the trace queries against.
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Interaction Foundation")

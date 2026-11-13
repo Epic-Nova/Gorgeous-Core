@@ -11,6 +11,7 @@
 
 #include "AutoReplication/GorgeousReplicationBeacon.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariable.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousReplicationBeacon, Log, All);
 
@@ -24,13 +25,13 @@ AGorgeousReplicationBeaconClient::AGorgeousReplicationBeaconClient(const FObject
 	// The beacon type is derived from the class name by the engine.
 	// No additional setup required, the host object sets
 	// ClientBeaconActorClass in its own constructor.
-	// This beacon provides the networking bridge for HTTP API ↔ OV conversion.
+	// Snapshot payloads use the existing binary OV format on this beacon connection.
 }
 
 void AGorgeousReplicationBeaconClient::OnConnected()
 {
 	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("HTTP API beacon connected. Claiming managed roots."));
+		TEXT("Replication snapshot beacon connected. Claiming configured managed roots."));
 
 	ClaimManagedRoots();
 }
@@ -38,49 +39,46 @@ void AGorgeousReplicationBeaconClient::OnConnected()
 void AGorgeousReplicationBeaconClient::OnFailure()
 {
 	UE_LOG(LogGorgeousReplicationBeacon, Warning,
-		TEXT("HTTP API beacon connection failed. Releasing managed roots."));
+		TEXT("Replication snapshot beacon connection failed. Releasing managed roots."));
 
 	ReleaseManagedRoots();
 
 	Super::OnFailure();
 }
 
-// ── HTTP ↔ Object Variable RPCs (stubs, JSON→OV conversion to be implemented) ──
+// ── Bounded binary Object Variable snapshot RPCs ───────────────────────────
 
-void AGorgeousReplicationBeaconClient::ClientReceiveVariableSnapshot_Implementation(
-	const FGuid& VariableIdentifier, const TArray<uint8>& Payload)
+void AGorgeousReplicationBeaconClient::ClientReceiveVariableSnapshot_Implementation(const FGuid& Identifier,const TArray<uint8>& Payload)
 {
-	// TODO: Deserialize the HTTP API response payload and populate the local OV.
-	//       Typically the payload is JSON that should be parsed into an OV tree.
-	UE_LOG(LogGorgeousReplicationBeacon, Verbose,
-		TEXT("Received API response for variable %s (%d bytes)."),
-		*VariableIdentifier.ToString(), Payload.Num());
+    if (!Identifier.IsValid() || Payload.IsEmpty() || Payload.Num()>1024*1024) return;
+    UGorgeousObjectVariable* Snapshot=UGorgeousObjectVariable::DeserializeOVFromRPCArgumentBytes(Payload,false);
+    if (!Snapshot) return;
+    if (auto* Existing=ReceivedVariableSnapshots.FindRef(Identifier).Get()) UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Existing);
+    Snapshot->SetFallbackOwner(this);
+    ReceivedVariableSnapshots.Add(Identifier,Snapshot);
 }
-
 bool AGorgeousReplicationBeaconClient::ServerRequestFullSync_Validate(const FName& RootName)
 {
-	// Allow any root name, the handler will validate existence.
-	return true;
+    // The host must explicitly expose a root. A beacon connection never grants private gameplay access.
+    return !RootName.IsNone() && ClaimedRootNames.Contains(RootName) && UGorgeousRootObjectVariable::TryGetExistingRoot(RootName)!=nullptr;
 }
-
 void AGorgeousReplicationBeaconClient::ServerRequestFullSync_Implementation(const FName& RootName)
 {
-	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("Full variable tree requested for root '%s'."), *RootName.ToString());
-
-	// TODO: Serialize the root's OV tree (built from API responses) and deliver.
-	TArray<uint8> EmptyPayload;
-	ClientReceiveFullSync(RootName, EmptyPayload);
+    if (!ServerRequestFullSync_Validate(RootName)) return;
+    UGorgeousRootObjectVariable* Root=UGorgeousRootObjectVariable::TryGetExistingRoot(RootName);
+    for (auto* Variable:UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(RootName))
+        if (Variable && Variable->GetEffectiveAccessPolicy()!=EGorgeousObjectVariableAccessPolicy::Everyone) return;
+    TArray<uint8> Bytes;
+    if (UGorgeousObjectVariable::SerializeOVToRPCArgumentBytes(Root,Bytes) && Bytes.Num()<=1024*1024) ClientReceiveFullSync(RootName,Bytes);
 }
-
-void AGorgeousReplicationBeaconClient::ClientReceiveFullSync_Implementation(
-	const FName& RootName, const TArray<uint8>& Payload)
+void AGorgeousReplicationBeaconClient::ClientReceiveFullSync_Implementation(const FName& RootName,const TArray<uint8>& Payload)
 {
-	UE_LOG(LogGorgeousReplicationBeacon, Verbose,
-		TEXT("Received full OV tree for root '%s' (%d bytes)."),
-		*RootName.ToString(), Payload.Num());
-
-	// TODO: Parse the payload (JSON→OV) and rebuild the local variable tree.
+    if (RootName.IsNone() || Payload.IsEmpty() || Payload.Num()>1024*1024) return;
+    UGorgeousObjectVariable* Snapshot=UGorgeousObjectVariable::DeserializeOVFromRPCArgumentBytes(Payload,false);
+    if (!Snapshot) return;
+    if (auto* Existing=ReceivedRootSnapshots.FindRef(RootName).Get()) UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Existing);
+    Snapshot->SetFallbackOwner(this);
+    ReceivedRootSnapshots.Add(RootName,Snapshot);
 }
 
 // ── Root ownership ─────────────────────────────────────────────────────────
@@ -94,11 +92,7 @@ void AGorgeousReplicationBeaconClient::ClaimManagedRoots()
 		ClaimedRootNames = HostObj->ManagedRootNames;
 	}
 
-	// If no roots configured, claim all registered roots.
-	if (ClaimedRootNames.IsEmpty())
-	{
-		ClaimedRootNames = UGorgeousRootObjectVariable::GetRegisteredRootNames();
-	}
+    // No implicit exposure of every project root. Managed roots are an explicit host opt-in.
 
 	for (const FName& RootName : ClaimedRootNames)
 	{
@@ -115,6 +109,10 @@ void AGorgeousReplicationBeaconClient::ClaimManagedRoots()
 
 void AGorgeousReplicationBeaconClient::ReleaseManagedRoots()
 {
+    for (const auto& Pair:ReceivedRootSnapshots) if (Pair.Value) UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Pair.Value);
+    for (const auto& Pair:ReceivedVariableSnapshots) if (Pair.Value) UGorgeousRootObjectVariable::RemoveVariableFromRegistry(Pair.Value);
+    ReceivedRootSnapshots.Reset(); ReceivedVariableSnapshots.Reset();
+
 	for (const FName& RootName : ClaimedRootNames)
 	{
 		if (UGorgeousRootObjectVariable* Root = UGorgeousRootObjectVariable::GetRootObjectVariable(RootName))
@@ -140,8 +138,8 @@ AGorgeousReplicationBeaconHostObject::AGorgeousReplicationBeaconHostObject(
 	: Super(ObjectInitializer)
 {
 	// The engine uses these to route incoming beacon connections
-	// to the correct host object.  This host manages the HTTP API
-	// bridge lifecycle, dispatching requests and converting responses.
+	// to the correct host object. The host exposes configured roots through
+	// binary snapshot RPCs; external HTTP/JSON adapters are outside this class.
 	ClientBeaconActorClass = AGorgeousReplicationBeaconClient::StaticClass();
 	BeaconTypeName = ClientBeaconActorClass->GetName();
 }
@@ -167,7 +165,7 @@ void AGorgeousReplicationBeaconHostObject::OnClientConnected(
 	Super::OnClientConnected(NewClientActor, ClientConnection);
 
 	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("HTTP API beacon client connected: %s"),
+		TEXT("Replication snapshot beacon client connected: %s"),
 		*NewClientActor->GetName());
 }
 
@@ -183,6 +181,12 @@ void AGorgeousReplicationBeaconHostObject::NotifyClientDisconnected(
 	Super::NotifyClientDisconnected(LeavingClientActor);
 
 	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("HTTP API beacon client disconnected: %s"),
+		TEXT("Replication snapshot beacon client disconnected: %s"),
 		*LeavingClientActor->GetName());
+}
+
+void AGorgeousReplicationBeaconClient::EndPlay(const EEndPlayReason::Type Reason)
+{
+    ReleaseManagedRoots();
+    Super::EndPlay(Reason);
 }

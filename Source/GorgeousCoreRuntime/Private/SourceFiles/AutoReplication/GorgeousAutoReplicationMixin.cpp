@@ -1,3 +1,4 @@
+#include "AutoReplication/GorgeousAutoReplicationOwnerComponent.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -16,8 +17,10 @@
 #include "AutoReplication/GorgeousAutoReplicationCoordinator.h"
 #include "AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction.h"
 #include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
+#include "AutoReplication/Tracking/GorgeousAutoReplicationStatsCollector.h"
 #include "ModuleCore/GorgeousCoreRuntimeGlobals.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
 #include "AutoReplication/ObjectVariables/GorgeousRPC_OV.h"
 #include "ObjectVariables/GorgeousRootNetworkStackSubsystem.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
@@ -32,6 +35,8 @@
 #include "Net/UnrealNetwork.h"
 #include "TimerManager.h"
 #include "QualityOfLife/GorgeousGameMode.h"
+#include "QualityOfLife/GorgeousPlayerState.h"
+#include "QualityOfLife/GorgeousPlayerController.h"
 #include "QualityOfLife/GorgeousGameState.h"
 #include "QualityOfLife/GorgeousWorldSettings.h"
 
@@ -98,7 +103,8 @@ static APlayerController* ResolveLocalPlayerController(UObject* ContextObject)
 		return nullptr;
 	}
 
-	return ContextWorld->GetFirstPlayerController();
+	APlayerController* Candidate = ContextWorld->GetFirstPlayerController();
+    return Candidate && Candidate->IsLocalController() ? Candidate : nullptr;
 }
 
 static void RelayResultToAuthority(UObject* ContextObject, const FGorgeousAutoReplicationRPCResult& Result)
@@ -214,8 +220,10 @@ FGorgeousAutoReplicationMixin::FGorgeousAutoReplicationMixin()
 void FGorgeousAutoReplicationMixin::Bind(
 	UObject* InOwner,
 	TMap<FName, FGorgeousObjectVariableEntry>* InAdditionalData,
-	TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables)
+	TArray<FGorgeousReplicatedVariableEntry>* InReplicatedVariables,FGorgeousObjectVariableTrunk* InTrunk)
 {
+    if (Owner.Get()!=InOwner) bHasInitializedAdditionalData=false;
+    ExplicitTrunk=InTrunk;
 	Owner = InOwner;
 	AdditionalData = InAdditionalData;
 	ReplicatedVariables = InReplicatedVariables;
@@ -226,8 +234,27 @@ void FGorgeousAutoReplicationMixin::Bind(
 void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivateNetworkingCapabilities)
 {
 	EnsureBound();
+    bHasInitializedAdditionalData=true;
 
 	bNetworkingEnabled = bActivateNetworkingCapabilities;
+    if (AdditionalData)
+    {
+        if (auto* Trunk=ExplicitTrunk ? ExplicitTrunk : GorgeousObjectVariableTrunkUtils::ResolveTrunk(Owner.Get(),TEXT("DefaultObjectVariableTrunk")))
+        {
+            for (auto& Pair:*AdditionalData)
+            {
+                auto& Entry=Pair.Value;
+                if (!Entry.DefaultValue && Entry.SerializedVariableIdentifier.IsValid()) Entry.DefaultValue=Trunk->GetOrCreateRuntimeInstance(Entry.SerializedVariableIdentifier,Owner.Get());
+                if (Entry.DefaultValue)
+                {
+                    GorgeousAutoReplicationMixin_Private::EnsureVariableIdentifier(Entry.DefaultValue);
+                    FGorgeousObjectVariableSerializedPayload Payload;
+                    if (Entry.DefaultValue->SerializeToPayload(Payload)) { Trunk->SetPayload(Payload); Entry.SerializedVariableIdentifier=Payload.VariableIdentifier; }
+                }
+            }
+        }
+    }
+
 
 	if (!AdditionalData)
 	{
@@ -249,7 +276,7 @@ void FGorgeousAutoReplicationMixin::InitializeAdditionalData(const bool bActivat
 			Entry.Handle.Reset();
 			Entry.Handle.Assign(Pair.Key, FGorgeousAutoReplicationHandle::InvalidReplicationIndex, OwnerObject);
 			const FGorgeousAutoReplicationStreamConfig* StreamOverride = Entry.bOverrideStreamConfig ? &Entry.StreamConfigOverride : nullptr;
-			Entry.Handle.CacheValue(Entry.DefaultValue, StreamOverride, Entry.bReplicate);
+			Entry.Handle.CacheValue(Entry.DefaultValue, StreamOverride, false);
 		}
 
 		return;
@@ -427,8 +454,18 @@ void FGorgeousAutoReplicationMixin::RefreshCachedValues()
 
 		if (!RepEntry.Value && RepEntry.ValueClass)
 		{
-			UObject* OuterObject = OwnerObject ? OwnerObject : GetTransientPackage();
-			RepEntry.Value = NewObject<UGorgeousObjectVariable>(OuterObject, RepEntry.ValueClass, NAME_None, RF_Transactional);
+            // A property RPC can materialize this owner/key before the native
+            // metadata array arrives with an unresolved server UObject reference.
+            // Preserve that hydrated state instead of replacing it with defaults.
+            UGorgeousObjectVariable* Existing=Entry->Handle.GetCachedValue();
+            if (!Existing) Existing=Entry->DefaultValue.Get();
+            if (IsValid(Existing) && Existing->GetClass()==RepEntry.ValueClass.Get())
+                RepEntry.Value=Existing;
+            else
+            {
+                UObject* OuterObject = OwnerObject ? OwnerObject : GetTransientPackage();
+                RepEntry.Value = NewObject<UGorgeousObjectVariable>(OuterObject, RepEntry.ValueClass, NAME_None, RF_Transactional);
+            }
 			Entry->DefaultValue = RepEntry.Value;
 		}
 
@@ -483,13 +520,23 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 		return false;
 	}
 
+    const bool bWantsMulticast = Type==EGorgeousAutoReplicationRPCType::EReliableMulticast || Type==EGorgeousAutoReplicationRPCType::EUnreliableMulticast;
+    if (ResolvedVariable && bWantsMulticast && !ResolvedVariable->GetAutoReplicationConfig().bSupportsMulticast) return false;
 	FGorgeousQueuedRPC QueuedRPC;
 	QueuedRPC.Key = Key;
 	QueuedRPC.Type = Type;
-	QueuedRPC.TargetKind = ResolvedKind;
+	QueuedRPC.TargetKind = TargetKind;
+    QueuedRPC.TargetOwnerActor = Cast<AActor>(ResolveOwnerObject());
+    QueuedRPC.bHasTargetOwnerActor = QueuedRPC.TargetOwnerActor != nullptr;
 	QueuedRPC.Payload = Payload;
 	const bool bHasPreallocatedGuid = (OutRequestGuid && OutRequestGuid->IsValid());
 	QueuedRPC.RequestGuid = bHasPreallocatedGuid ? *OutRequestGuid : FGuid::NewGuid();
+    if (FGorgeousAutoReplicationStatsCollector::IsEnabled())
+    {
+        int32 Bytes=0; for (const auto& Argument:Payload.Arguments) Bytes+=Argument.ValueBytes.Num();
+        FGorgeousAutoReplicationStatsCollector::Get().RecordRPCSent(QueuedRPC.RequestGuid,Key.ToString(),Bytes);
+    }
+
 
 	if (OutRequestGuid)
 	{
@@ -513,6 +560,11 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 	const bool bIsMulticast = (Type == EGorgeousAutoReplicationRPCType::EReliableMulticast || Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast);
 	const bool bIsOnClient = !IsAuthorityContext();
 	
+    if (bIsClientBound && bIsOnClient)
+    {
+        HandleTransportedRPC(QueuedRPC);
+        return true;
+    }
 	if ((bIsServerBound || bIsClientBound || bIsMulticast) && bIsOnClient)
 	{
 		// Resolve the correct relay component. If the owner is a PlayerState, we must use the
@@ -535,6 +587,8 @@ bool FGorgeousAutoReplicationMixin::RequestRPC(const FName Key, const EGorgeousA
 			}
 		}
 		
+        if (!RelayToUse && Owner.IsValid() && Owner->GetWorld())
+            if (APlayerController* Local = Owner->GetWorld()->GetFirstPlayerController()) RelayToUse = Local->FindComponentByClass<UGorgeousAutoReplicationRPCRelayComponent>();
 		if (RelayToUse)
 		{
 			const bool bReliable = (Type == EGorgeousAutoReplicationRPCType::EReliableServer || Type == EGorgeousAutoReplicationRPCType::EReliableClient || Type == EGorgeousAutoReplicationRPCType::EReliableMulticast);
@@ -594,6 +648,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 	auto EmitResult = [this, &QueuedRPC](const EGorgeousAutoReplicationTargetKind TargetKind, UGorgeousObjectVariable* TargetVariable, UObject* TargetOwner, bool bIsDeferred)
 	{
 		FGorgeousAutoReplicationRPCResult Result;
+        if (auto* Context=ResolveOwnerObject()) Result.ExecutionWorld=Context->GetWorld();
 		Result.QueuedRPC = QueuedRPC;
 		Result.TargetKind = TargetKind;
 		Result.TargetVariable = TargetVariable;
@@ -616,7 +671,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 			QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EReliableMulticast ||
 			QueuedRPC.Type == EGorgeousAutoReplicationRPCType::EUnreliableMulticast;
 
-		if (!bIsMulticastType && IsAuthorityContext())
+		if (IsAuthorityContext() && (QueuedRPC.Type==EGorgeousAutoReplicationRPCType::EReliableServer || QueuedRPC.Type==EGorgeousAutoReplicationRPCType::EUnreliableServer || (Result.ExecutionWorld.IsValid() && Result.ExecutionWorld->GetNetMode()==NM_DedicatedServer)))
 		{
 			Result.Responder = FGorgeousAutoReplicationRPCResponderHandle::MakeServerHandle();
 		}
@@ -635,7 +690,7 @@ bool FGorgeousAutoReplicationMixin::ExecuteAutoReplicationRPC(const FGorgeousQue
 
 		if (QueuedRPC.RequestGuid.IsValid() && Result.Responder.IsValid())
 		{
-			UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, Result.Responder);
+			UGorgeousAutoReplicationRPCRequestAsyncAction::RegisterExpectedResponder(QueuedRPC.RequestGuid, Result.Responder, Result.ExecutionWorld.Get());
 		}
 
 		if (bIsDeferred && QueuedRPC.RequestGuid.IsValid())
@@ -875,16 +930,13 @@ void FGorgeousAutoReplicationMixin::DispatchPendingRPCs()
 		return;
 	}
 
-	if (!OwnerObject->GetClass()->ImplementsInterface(UGorgeousAutoReplicationRPCResponder_I::StaticClass()))
-	{
-		return;
-	}
-
+    const bool bHasResponder=OwnerObject->GetClass()->ImplementsInterface(UGorgeousAutoReplicationRPCResponder_I::StaticClass());
 	while (PendingRPCs.Num() > 0)
 	{
 		FGorgeousQueuedRPC RPC = PendingRPCs[0];
 		PendingRPCs.RemoveAt(0);
-		IGorgeousAutoReplicationRPCResponder_I::Execute_HandleAutoReplicationRPC(OwnerObject, RPC);
+        if (bHasResponder) IGorgeousAutoReplicationRPCResponder_I::Execute_HandleAutoReplicationRPC(OwnerObject,RPC);
+        else ExecuteAutoReplicationRPC(RPC);
 	}
 }
 
@@ -1019,6 +1071,13 @@ bool FGorgeousAutoReplicationMixin::EnqueueRPCInternal(const FGorgeousQueuedRPC&
 
 bool FGorgeousAutoReplicationMixin::HandleTransportedRPC(const FGorgeousQueuedRPC& QueuedRPC)
 {
+    EnsureBound();
+    if (!bNetworkingEnabled) return false;
+    if (FGorgeousAutoReplicationStatsCollector::IsEnabled())
+    {
+        int32 Bytes=0; for (const auto& Argument:QueuedRPC.Payload.Arguments) Bytes+=Argument.ValueBytes.Num();
+        FGorgeousAutoReplicationStatsCollector::Get().RecordRPCReceived(QueuedRPC.RequestGuid,QueuedRPC.Key.ToString(),Bytes);
+    }
 	return EnqueueRPCInternal(QueuedRPC);
 }
 
@@ -1027,6 +1086,26 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 	GT_I_LOG("GT.AutoReplication.Mixin.Payload.Received", TEXT("Received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 	
 	EnsureBound();
+
+    if (!bNetworkingEnabled && !bHasInitializedAdditionalData)
+    {
+        // An owning-PC RPC may precede its actor's BeginPlay. Initialize only
+        // from that remote actor's explicit configuration, never from wire data
+        // and never after a caller has deliberately initialized networking off.
+        AActor* ReceiverActor=Cast<AActor>(Owner.Get());
+        if (ReceiverActor && !ReceiverActor->HasAuthority() &&
+            !ReceiverActor->HasActorBegunPlay() && !ReceiverActor->IsActorBeginningPlay() &&
+            !ReceiverActor->IsActorBeingDestroyed())
+        {
+            bool bConfiguredNetworking=false;
+            if (auto* PC=Cast<AGorgeousPlayerController>(ReceiverActor)) bConfiguredNetworking=PC->bActivateNetworkingCapabilities;
+            else if (auto* PS=Cast<AGorgeousPlayerState>(ReceiverActor)) bConfiguredNetworking=PS->bActivateNetworkingCapabilities;
+            else if (auto* GS=Cast<AGorgeousGameState>(ReceiverActor)) bConfiguredNetworking=GS->bActivateNetworkingCapabilities;
+            else if (auto* GM=Cast<AGorgeousGameMode>(ReceiverActor)) bConfiguredNetworking=GM->bActivateNetworkingCapabilities;
+            else if (auto* WS=Cast<AGorgeousWorldSettings>(ReceiverActor)) bConfiguredNetworking=WS->bActivateNetworkingCapabilities;
+            if (bConfiguredNetworking) InitializeAdditionalData(true);
+        }
+    }
 
 	if (!bNetworkingEnabled)
 	{
@@ -1040,6 +1119,20 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 		return;
 	}
 
+    if (Envelope.OwnerActor && Envelope.OwnerActor != ResolveOwnerObject())
+    {
+        if (auto* Destination = ResolveForActor(Envelope.OwnerActor)) Destination->HandleTransportedPropertyPayload(Envelope);
+        return;
+    }
+    // Dynamic server-created slots (Signal Bridge, Stats) are introduced to the client by their class.
+    if (!AdditionalData->Contains(Envelope.EntryKey) && !IsAuthorityContext() && Envelope.VariableClass && !Envelope.VariableClass->HasAnyClassFlags(CLASS_Abstract))
+    {
+        FGorgeousObjectVariableEntry Entry;
+        Entry.DefaultValue = NewObject<UGorgeousObjectVariable>(ResolveOwnerObject(), Envelope.VariableClass);
+        Entry.bReplicate = true;
+        AdditionalData->Add(Envelope.EntryKey, Entry);
+        InitializeAdditionalData(true);
+    }
 	FGorgeousObjectVariableEntry* TargetEntry = AdditionalData->Find(Envelope.EntryKey);
 	if (!TargetEntry)
 	{
@@ -1047,6 +1140,11 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 		return;
 	}
 
+    if (!IsAuthorityContext())
+    {
+        TargetEntry->bOverrideStreamConfig=true;
+        TargetEntry->StreamConfigOverride=Envelope.StreamConfig;
+    }
 	if (!TargetEntry->bReplicate)
 	{
 		GT_I_LOG("GT.AutoReplication.Mixin.Payload.NotReplicated", TEXT("AutoReplication property payload for entry %s was ignored because the entry is not marked for replication."), *Envelope.EntryKey.ToString());
@@ -1083,6 +1181,8 @@ void FGorgeousAutoReplicationMixin::HandleTransportedPropertyPayload(const FGorg
 		return;
 	}
 
+    if (!IsAuthorityContext() && !(TargetVariable->GetAutoReplicationConfig()==Envelope.StreamConfig))
+        TargetVariable->SetAutoReplicationBinding(ResolveOwnerObject(),Envelope.EntryKey,ReplicatedEntry ? ReplicatedEntry->ReplicationIndex : INDEX_NONE,&Envelope.StreamConfig,true);
 	const FGuid PreferredIdentifier = ReplicatedEntry ? ReplicatedEntry->VariableIdentifier : FGuid();
 	const FGuid TargetIdentifier = GorgeousAutoReplicationMixin_Private::EnsureVariableIdentifier(TargetVariable, PreferredIdentifier);
 
@@ -1303,13 +1403,16 @@ bool FGorgeousAutoReplicationMixin::CanControllerReceiveRPC(const FGorgeousQueue
 		return true;
 	}
 
+    if (AActor* OwnerActor=Cast<AActor>(ResolveOwnerObject()))
+        if (APlayerController* PC=Cast<APlayerController>(Controller))
+            if (OwnerActor->FindComponentByClass<UGorgeousAutoReplicationOwnerComponent>() &&
+                !OwnerActor->IsNetRelevantFor(PC,PC->GetViewTarget(),PC->GetFocalLocation())) return false;
 	UGorgeousObjectVariable* TargetVariable = ResolveVariableForKey(QueuedRPC.Key);
 	if (!TargetVariable || !TargetVariable->ShouldUseRootNetworkStack())
 	{
 		return true;
 	}
 
-	AutoSubscribeControllerForVariable(Controller, TargetVariable);
 
 	if (UWorld* VariableWorld = TargetVariable->GetWorld())
 	{
@@ -1335,7 +1438,6 @@ bool FGorgeousAutoReplicationMixin::CanControllerReceivePropertyPayload(const FN
 		return true;
 	}
 
-	AutoSubscribeControllerForVariable(Controller, TargetVariable);
 
 	if (UWorld* VariableWorld = TargetVariable->GetWorld())
 	{
@@ -1367,4 +1469,45 @@ void FGorgeousAutoReplicationMixin::AutoSubscribeControllerForVariable(AControll
 			RootNetworkStack->TryAutoSubscribeController(TargetVariable, Controller);
 		}
 	}
+}
+
+bool FGorgeousAutoReplicationMixin::CanControllerWritePropertyPayload(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, APlayerController* Sender) const
+{
+    UGorgeousObjectVariable* Variable = ResolveVariableForKey(Envelope.EntryKey);
+    AGorgeousPlayerController* GorgeousSender = Cast<AGorgeousPlayerController>(Sender);
+    if (!Variable || !GorgeousSender || !Variable->bAllowClientPropertyWrites || Envelope.Payload.Properties.Num() > 1024) return false;
+    for (const auto& Property : Envelope.Payload.Properties)
+    {
+        if (!Variable->ValidateClientPropertyWrite(GorgeousSender, Property.PropertyName)) return false;
+    }
+    return CanControllerReceivePropertyPayload(Envelope.EntryKey, Sender);
+}
+
+FGorgeousAutoReplicationMixin* FGorgeousAutoReplicationMixin::ResolveForActor(AActor* Actor)
+{
+    if (auto* PC=Cast<AGorgeousPlayerController>(Actor)) return &PC->GetAutoReplicationMixin();
+    if (auto* PS=Cast<AGorgeousPlayerState>(Actor)) return &PS->GetAutoReplicationMixin();
+    if (auto* GS=Cast<AGorgeousGameState>(Actor)) return &GS->GetAutoReplicationMixin();
+    if (auto* GM=Cast<AGorgeousGameMode>(Actor)) return &GM->GetAutoReplicationMixin();
+    if (auto* WS=Cast<AGorgeousWorldSettings>(Actor)) return &WS->GetAutoReplicationMixin();
+    if (Actor) if (auto* Component=Actor->FindComponentByClass<UGorgeousAutoReplicationOwnerComponent>()) return &Component->GetAutoReplicationMixin();
+    return nullptr;
+}
+
+bool FGorgeousAutoReplicationMixin::CanControllerInvokeRPC(const FGorgeousQueuedRPC& Request, APlayerController* Sender) const
+{
+    if (!Sender || !Request.RequestGuid.IsValid()) return false;
+    AActor* OwnerActor = Cast<AActor>(ResolveOwnerObject());
+    if (!OwnerActor || OwnerActor->GetWorld()!=Sender->GetWorld()) return false;
+    if (auto* PC=Cast<APlayerController>(OwnerActor)) if (PC!=Sender) return false;
+    if (auto* PS=Cast<APlayerState>(OwnerActor)) if (PS!=Sender->PlayerState) return false;
+    const bool bServer = Request.Type==EGorgeousAutoReplicationRPCType::EReliableServer || Request.Type==EGorgeousAutoReplicationRPCType::EUnreliableServer;
+    if (auto* Variable = ResolveVariableForKey(Request.Key))
+    {
+        if ((Request.TargetKind==EGorgeousAutoReplicationTargetKind::EObjectVariable || Request.TargetKind==EGorgeousAutoReplicationTargetKind::EAuto) && Variable->IsRPCBindingAllowed(Request.Payload.HandlerName,Request.Type))
+            return Variable->EvaluateAccessPolicyForController(Sender);
+    }
+    // Owner and component handlers need their receiving object's explicit runtime allowlist,
+    // enforced by InvokeNativeHandler. Client-supplied fanout is only allowed by an OV binding.
+    return bServer && Request.TargetKind!=EGorgeousAutoReplicationTargetKind::EObjectVariable;
 }

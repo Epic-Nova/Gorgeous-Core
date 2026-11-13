@@ -108,121 +108,13 @@ public class GorgeousCoreRuntimeUtilities : GorgeousModuleRules
             }
         }*/
 
-        // Auto-Build Gorgeous Installer (Skip if invoked by the installer itself or already built in this UBT run)
-        if (System.Environment.GetEnvironmentVariable("GORGEOUS_SKIP_INSTALLER_BUILD") != "1" &&
-            System.Environment.GetEnvironmentVariable("GORGEOUS_ALREADY_BUILT_INSTALLER") != "1")
+        // Installer is an editor tool, built explicitly by a developer. UBT must
+        // never install toolchains, accept licences, fetch code or block on a GUI.
+        if (Target.Type == TargetType.Editor)
         {
-            try
-            {
-                System.Environment.SetEnvironmentVariable("GORGEOUS_ALREADY_BUILT_INSTALLER", "1");
-                var InstallerDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousInstaller"));
-                var GoFiles = Directory.GetFiles(InstallerDir, "*.go", SearchOption.AllDirectories);
-                var FilteredGoFiles = new System.Collections.Generic.List<string>();
-                foreach (var F in GoFiles)
-                {
-                    if (!F.Replace('\\', '/').EndsWith("/internal/buildinfo/buildinfo.go"))
-                    {
-                        FilteredGoFiles.Add(F);
-                        ExternalDependencies.Add(F);
-                    }
-                }
-
-                var BinariesDir = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", Target.Platform.ToString()));
-                var ExeName = Target.Platform == UnrealTargetPlatform.Win64 ? "gorgeous-installer.exe" : "gorgeous-installer";
-                var ExeSrc = Path.Combine(InstallerDir, "build", ExeName);
-                var ExeDst = Path.Combine(BinariesDir, ExeName);
-
-                RuntimeDependencies.Add(ExeDst);
-
-                if (!Directory.Exists(BinariesDir))
-                {
-                    Directory.CreateDirectory(BinariesDir);
-                }
-
-                var ProcInfo = new System.Diagnostics.ProcessStartInfo();
-				ProcInfo.WorkingDirectory = InstallerDir;
-				if (Target.Platform == UnrealTargetPlatform.Win64)
-				{
-					ProcInfo.FileName = "powershell.exe";
-					ProcInfo.Arguments = $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"{Path.Combine(InstallerDir, "build.ps1")}\" -SkipUPX";
-				}
-				else if (Target.Platform == UnrealTargetPlatform.Linux)
-				{
-					ProcInfo.FileName = "bash";
-					ProcInfo.Arguments = $"\"{Path.Combine(InstallerDir, "build.sh")}\" --skip-upx";
-				}
-                else
-                {
-                    ProcInfo = null;
-                }
-
-                bool bNeedsBuild = false;
-                if (ProcInfo != null)
-                {
-                    bNeedsBuild = !File.Exists(ExeDst);
-                    if (!bNeedsBuild)
-                    {
-                        System.DateTime ExeTime = File.GetLastWriteTimeUtc(ExeDst);
-                        foreach (var F in FilteredGoFiles)
-                        {
-                            if (File.GetLastWriteTimeUtc(F) > ExeTime)
-                            {
-                                bNeedsBuild = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (bNeedsBuild && ProcInfo != null)
-                {
-                    ProcInfo.UseShellExecute = false;
-                    var Proc = System.Diagnostics.Process.Start(ProcInfo);
-                    Proc.WaitForExit();
-
-                    if (Proc.ExitCode != 0)
-                    {
-                        System.Console.WriteLine($"[Gorgeous] Installer build process exited with non-zero code: {Proc.ExitCode}");
-                    }
-
-                    if (File.Exists(ExeSrc))
-                    {
-                        try
-                        {
-                            File.Copy(ExeSrc, ExeDst, true);
-                        }
-                        catch (System.Exception CopyEx)
-                        {
-                            System.Console.WriteLine($"[Gorgeous] Failed to copy installer binary from {ExeSrc} to {ExeDst}: {CopyEx.Message}");
-                        }
-
-                        if (Target.Platform == UnrealTargetPlatform.Linux)
-                        {
-                            var DesktopSrc = Path.Combine(InstallerDir, "build", "gorgeous-installer.desktop");
-                            var DesktopDst = Path.Combine(BinariesDir, "gorgeous-installer.desktop");
-                            if (File.Exists(DesktopSrc))
-                            {
-                                try
-                                {
-                                    File.Copy(DesktopSrc, DesktopDst, true);
-                                }
-                                catch (System.Exception CopyEx)
-                                {
-                                    System.Console.WriteLine($"[Gorgeous] Failed to copy desktop entry: {CopyEx.Message}");
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        System.Console.WriteLine($"[Gorgeous] Installer source binary not found at expected path: {ExeSrc}");
-                    }
-                }
-            }
-            catch (System.Exception e)
-            {
-                System.Console.WriteLine("Failed to auto-build Gorgeous Installer: " + e.Message);
-            }
+            var exe = Target.Platform == UnrealTargetPlatform.Win64 ? "gorgeous-installer.exe" : "gorgeous-installer";
+            var tool = Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..", "Binaries", Target.Platform.ToString(), exe));
+            if (File.Exists(tool)) RuntimeDependencies.Add(tool, StagedFileType.NonUFS);
         }
 
         if (Target.Type == TargetType.Editor)

@@ -26,6 +26,14 @@
 #include "IMessageLogListing.h"
 #include "MessageLogModule.h"
 #include "PropertyEditorModule.h"
+#include "PropertyTypeCustomizations/GorgeousFunctionalStructurePropertyTypeCustomization.h"
+#include "PropertyTypeCustomizations/GorgeousObjectVariablePropertyTypeCustomization.h"
+#include "ObjectVariables/GorgeousObjectVariableTrunk.h"
+#include "FunctionalStructures/GorgeousFunctionalStructure.h"
+#include "FeedbackEffects/GorgeousFeedbackEffect.h"
+#include "DetailCustomizations/GorgeousFeedbackEffectCustomization.h"
+#include "DetailCustomizations/GorgeousProtectionSettingsCustomization.h"
+#include "UObject/UObjectIterator.h"
 #include "ToolMenus.h"
 #include "ISettingsModule.h"
 #include "LibraryWizard/GorgeousLibrarySettings.h"
@@ -52,7 +60,6 @@
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousUIOverlayConfig_DA.h"
 #include "GeneralSystems/CommonUIFoundation/DataAssets/GorgeousInputBinding_DA.h"
 #include "DetailExtensions/GorgeousDetailExtension.h"
-#include "DetailExtensions/GorgeousTestDetailExtension.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
 #include "GorgeousCoreBlueprintTypes.h"
 #include "DetailCustomizations/GorgeousGlobalDetailCustomization.h"
@@ -76,7 +83,6 @@
 
 namespace
 {
-	static const FName GDebugMenuOwnerName{TEXT("GorgeousCoreEditorUtilities")};
 	static const FName GGorgeousHelpMenuOwnerName{TEXT("GorgeousCoreEditor.HelpMenu")};
 	static const FName GorgeousLibraryTabName("GorgeousLibrary");
 	static FDelegateHandle GGorgeousHelpMenuStartupCallbackHandle;
@@ -328,63 +334,6 @@ void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
 	inline bool GBDataRegistryValidationTriggered = false;
 	inline bool GBValidationRan = false;
 
-	void RegisterDebugMenuEntry()
-	{
-		if (!UToolMenus::IsToolMenuUIEnabled())
-		{
-			return;
-		}
-
-		UToolMenus* ToolMenus = UToolMenus::Get();
-		if (!ToolMenus)
-		{
-			return;
-		}
-
-		FToolMenuOwnerScoped GDebugMenuOwner{ GDebugMenuOwnerName };
-
-		UToolMenu* AuditMenu = ToolMenus->ExtendMenu("LevelEditor.MainMenu.Tools.Audit");
-		if (!AuditMenu)
-		{
-			return;
-		}
-
-		FToolMenuSection& AuditSection = AuditMenu->FindOrAddSection("GorgeousCoreAudit");
-		AuditSection.AddMenuEntry(
-			"GorgeousCore_ShowDebugPanel",
-			NSLOCTEXT("GorgeousCoreAudit", "ShowDebugPanel", "Gorgeous Insight Matrix"),
-			NSLOCTEXT("GorgeousCoreAudit", "ShowDebugPanel_Tooltip", "Open the Gorgeous Insight Matrix debug panel."),
-			FSlateIcon(FCoreStyle::Get().GetStyleSetName(), "Icons.Info"),
-			FUIAction(
-				FExecuteAction::CreateLambda([]
-				{
-					if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-					{
-						Subsystem->ShowDebugPanel();
-					}
-				}),
-				FCanExecuteAction::CreateLambda([]
-				{
-					return UGorgeousInsightMatrixSubsystem::Get() != nullptr;
-				})));
-	}
-
-	void UnregisterDebugMenuEntry()
-	{
-		if (!UToolMenus::IsToolMenuUIEnabled())
-		{
-			return;
-		}
-
-		UToolMenus* ToolMenus = UToolMenus::Get();
-		if (!ToolMenus)
-		{
-			return;
-		}
-
-		ToolMenus->UnregisterOwner(GDebugMenuOwnerName);
-	}
-	
 	void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry)
 	{
 		if (GBValidationRan)
@@ -449,6 +398,8 @@ void FGorgeousCoreEditorModule::ValidateGorgeousModule(FDataValidationContext& I
 // FGorgeousCoreEditorModule Implementation
 //=============================================================================
 
+static TArray<FName> GFunctionalStructureCustomizationNames;
+
 void FGorgeousCoreEditorModule::GorgeousStartupModule()
 {
 	//@TODO: Planned for version 1.1 and upwards
@@ -466,17 +417,34 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateStatic(&RegisterLibraryMenuEntry));
 
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	PropertyEditorModule.RegisterCustomPropertyTypeLayout(FGorgeousObjectVariableSerializedPayload::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousObjectVariablePropertyTypeCustomization::MakeInstance));
 	PropertyEditorModule.RegisterCustomClassLayout(
 		UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName(),
 		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousDataSchemaMappingDetailCustomization::MakeInstance));
-
-	// Register Global Detail Customization for all Objects
 	PropertyEditorModule.RegisterCustomClassLayout(
-		UObject::StaticClass()->GetFName(),
-		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousGlobalDetailCustomization::MakeInstance));
+		UGorgeousFeedbackEffect::StaticClass()->GetFName(),
+		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousFeedbackEffectCustomization::MakeInstance));
+	if (!IsRunningCommandlet())
+	{
+		PropertyEditorModule.RegisterCustomClassLayout(
+			UGorgeousUsefulSettings::StaticClass()->GetFName(),
+			FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousProtectionSettingsCustomization::MakeInstance));
+	}
+
+	for (TObjectIterator<UScriptStruct> It; It; ++It)
+	{
+		if (It->IsChildOf(FGorgeousFunctionalStructure_S::StaticStruct()))
+		{
+			PropertyEditorModule.RegisterCustomPropertyTypeLayout(It->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FGorgeousFunctionalStructurePropertyTypeCustomization::MakeInstance));
+			GFunctionalStructureCustomizationNames.AddUnique(It->GetFName());
+		}
+	}
+
+	// Metadata identifiers apply only to explicitly tagged properties at any nesting depth.
+	FGorgeousGlobalDetailCustomization::RegisterPropertyCustomizations();
 
 	// Register Default Extensions
-	FGorgeousGlobalDetailCustomization::RegisterExtension(NewObject<UGorgeousTestDetailExtension>());
+	// Example detail extensions are registered explicitly by development tools, not by customer editor startup.
 
 	PropertyEditorModule.NotifyCustomizationModuleChanged();
 
@@ -498,7 +466,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		GORGEOUS_STYLE_MAP_ENGINE_SVG_BRUSHES(TEXT("GorgeousWorldSettingsBlueprint"), TEXT("Common/WorldSettings.svg"));
 
 		// Emoji font, bundled with the plugin so it works on all platforms
-		GORGEOUS_STYLE_REGISTER_FONT(TEXT("GorgeousCore.EmojiFont"), TEXT("Fonts/NotoColorEmoji/NotoColorEmoji-Regular"), 14);
+		GorgeousStyleRegistration::GGorgeousStyleSet->Set(TEXT("GorgeousCore.EmojiFont"), FAppStyle::Get().GetFontStyle(TEXT("NormalFont")));
 	});
 	
 	GORGEOUS_REGISTER_ASSET_CATEGORY("GorgeousThings", "Gorgeous Things");
@@ -650,46 +618,20 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
 		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
 
+	if (ISettingsModule* Settings = FModuleManager::LoadModulePtr<ISettingsModule>(TEXT("Settings")))
+	{
+		Settings->RegisterSettings(TEXT("Project"), TEXT("Gorgeous Things"), TEXT("CoreLibrary"),
+			NSLOCTEXT("GorgeousLibrary", "SettingsTitle", "Core Library and Privacy"),
+			NSLOCTEXT("GorgeousLibrary", "SettingsDescription", "Gorgeous Library, update consent and validation settings."),
+			GetMutableDefault<UGorgeousLibrarySettings>());
+	}
+
 	CoreLibraryParticipant = MakeUnique<FGorgeousCoreLibraryParticipant>();
 	LibraryParticipant = CoreLibraryParticipant.Get();
-
-	BeginPIEHandle = FEditorDelegates::BeginPIE.AddLambda([](bool bIsSimulating)
-	{
-		if (FModuleManager::Get().IsModuleLoaded("MessageLog") || FModuleManager::Get().LoadModule("MessageLog"))
-		{
-			FMessageLogModule& MessageLogModule = FModuleManager::LoadModuleChecked<FMessageLogModule>("MessageLog");
-			const FName ListingName = GorgeousLogging::GetLoggingSettingsSnapshot().MessageLogListingName;
-			MessageLogModule.GetLogListing(ListingName)->ClearMessages();
-		}
-
-		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-		{
-			if (Subsystem->IsDebugPanelOpen())
-			{
-				Subsystem->ShowInGamePanel();
-			}
-			
-			if (Subsystem->GetQueuedTestCount() > 0)
-			{
-				Subsystem->RunQueuedTests();
-				Subsystem->RefreshDebugPanel();
-			}
-		}
-	});
-	
-	EndPIEHandle = FEditorDelegates::EndPIE.AddLambda([](bool bIsSimulating)
-	{
-		if (UGorgeousInsightMatrixSubsystem* Subsystem = UGorgeousInsightMatrixSubsystem::Get())
-		{
-			Subsystem->HideInGamePanel();
-			Subsystem->RefreshDebugPanel();
-		}
-	});
 
 	FGorgeousDataSchemaMappingAssetMenu::Register();
 	
 	RegisterLibraryMenuEntry();
-	RegisterDebugMenuEntry();
 	UToolMenus::Get()->RefreshAllWidgets();
 
 	GGorgeousHelpMenuStartupCallbackHandle = UToolMenus::RegisterStartupCallback(
@@ -699,16 +641,8 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 
 void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 {
-	if (BeginPIEHandle.IsValid())
-	{
-		FEditorDelegates::BeginPIE.Remove(BeginPIEHandle);
-		BeginPIEHandle.Reset();
-	}
-	if (EndPIEHandle.IsValid())
-	{
-		FEditorDelegates::EndPIE.Remove(EndPIEHandle);
-		EndPIEHandle.Reset();
-	}
+	FGorgeousGlobalDetailCustomization::UnregisterPropertyCustomizations();
+	FGorgeousGlobalDetailCustomization::ClearExtensions();
 	if (GPostEngineInitHandle.IsValid())
 	{
 		GORGEOUS_58_SWITCH(FCoreDelegates::OnPostEngineInit, FCoreDelegates::GetOnPostEngineInit()).Remove(GPostEngineInitHandle);
@@ -733,13 +667,19 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
 		SettingsModule->UnregisterSettings("Project", "Gorgeous", "Core");
+		SettingsModule->UnregisterSettings(TEXT("Project"), TEXT("Gorgeous Things"), TEXT("CoreLibrary"));
 	}
 
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
 		FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+		PropertyEditorModule.UnregisterCustomPropertyTypeLayout(FGorgeousObjectVariableSerializedPayload::StaticStruct()->GetFName());
+		for (FName StructName : GFunctionalStructureCustomizationNames) PropertyEditorModule.UnregisterCustomPropertyTypeLayout(StructName);
+		GFunctionalStructureCustomizationNames.Empty();
 		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName());
-		PropertyEditorModule.UnregisterCustomClassLayout(UObject::StaticClass()->GetFName());
+		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousFeedbackEffect::StaticClass()->GetFName());
+		if (!IsRunningCommandlet())
+			PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousUsefulSettings::StaticClass()->GetFName());
 		PropertyEditorModule.NotifyCustomizationModuleChanged();
 	}
 
@@ -747,7 +687,6 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	
 	FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(GorgeousLibraryTabName);
 
-	UnregisterDebugMenuEntry();
 	UnregisterGorgeousHelpMenus();
 	
 	UNREGISTER_GORGEOUS_ASSETS;

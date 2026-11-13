@@ -68,9 +68,9 @@ enum class EGorgeousClassComparison : uint8
 */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/GorgeousGeneralSystemAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousGeneralSystemAction : public UObject
 {
@@ -81,6 +81,9 @@ class GORGEOUSCORERUNTIME_API UGorgeousGeneralSystemAction : public UObject
 public:
 
     // Implements the ShouldActivateForSystem_Implementation override.
+    /** Runtime registry operations remain available; prompt/content/config mutations require an interactive editor. */
+    bool CanExecuteInCurrentSession() const;
+
     virtual bool ShouldActivateForSystem_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration) const;
 
     // Implements the PredictAction_Implementation override.
@@ -189,9 +192,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Add Data Registry Source Asset",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousAddDataRegistrySourceAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousAddDataRegistrySourceAction : public UGorgeousGeneralSystemAction
 {
@@ -295,13 +298,16 @@ enum class EGorgeousPromptCondition : uint8
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Manage Configuration",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousManageConfigurationAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousManageConfigurationAction : public UGorgeousGeneralSystemAction
 {
 	GENERATED_BODY()
+	friend class UGorgeousProjectSettingsContribution;
+public:
+	UGorgeousManageConfigurationAction() { Target = EGorgeousSystemActionTarget::Editor; }
 
 	//<============================--- Overrides ---============================>
 	#pragma region Overrides
@@ -400,7 +406,7 @@ public:
 private:
 	TArray<FString> ResolveConfigFiles() const;
 	bool IsTriggerSatisfied() const;
-	void ApplyConfiguration(UGeneralSystemConfiguration_PDA* SystemConfiguration) const;
+	bool ApplyConfiguration(UGeneralSystemConfiguration_PDA* SystemConfiguration) const;
 #if WITH_EDITOR
 	void BindAssetOpenedEvent();
 	void UnbindAssetOpenedEvent();
@@ -463,9 +469,9 @@ enum class EGorgeousPromptButtonStyle : uint8
 */
 UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousSystemCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousSystemCondition : public UObject
 {
@@ -514,9 +520,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Configuration Value Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousConfigValueCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousConfigValueCondition : public UGorgeousSystemCondition
 {
@@ -590,9 +596,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Class In Configuration Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousClassInheritanceCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousClassInheritanceCondition : public UGorgeousConfigValueCondition
 {
@@ -638,9 +644,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Asset Exists Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousAssetExistsCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousAssetExistsCondition : public UGorgeousSystemCondition
 {
@@ -682,9 +688,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Plugin Enabled Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousPluginEnabledCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousPluginEnabledCondition : public UGorgeousSystemCondition
 {
@@ -726,9 +732,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "System Present Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousSystemPresentCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousSystemPresentCondition : public UGorgeousSystemCondition
 {
@@ -774,9 +780,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Action Prediction Condition",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousActionPredictionCondition",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousActionPredictionCondition : public UGorgeousSystemCondition
 {
@@ -822,9 +828,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced,
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousPromptOption",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousPromptOption : public UObject
 {
@@ -869,9 +875,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Reparent Blueprint",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousReparentBlueprintAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousReparentBlueprintAction : public UGorgeousGeneralSystemAction
 {
@@ -928,9 +934,9 @@ public:
 */
 UCLASS(BlueprintType, EditInlineNew, DefaultToInstanced, DisplayName = "Trigger Prompt",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/UGorgeousTriggerPromptAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#general-system-configuration",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/General/Overview/"
 		))
 class GORGEOUSCORERUNTIME_API UGorgeousTriggerPromptAction : public UGorgeousGeneralSystemAction
 {

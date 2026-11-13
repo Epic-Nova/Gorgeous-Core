@@ -83,6 +83,17 @@ void FGorgeousDataSchemaMappingEditorToolkit::Initialize(const EToolkitMode::Typ
 	RegenerateMenusAndToolbars();
 }
 
+void FGorgeousDataSchemaMappingEditorToolkit::RefreshEligibilityCache() const
+{
+	const double Now = FPlatformTime::Seconds();
+	if (LastEligibilityCheck >= 0.0 && Now - LastEligibilityCheck < 0.5) return;
+	LastEligibilityCheck = Now;
+	MigrationFailureCached = FText::GetEmpty();
+	PreviewFailureCached = FText::GetEmpty();
+	bCanMigrateCached = EditingAsset && FGorgeousDataSchemaMappingEditorService::CanExecuteBulkMigrationFromSchemaMap(EditingAsset, &MigrationFailureCached);
+	bCanPreviewCached = EditingAsset && FGorgeousDataSchemaMappingEditorService::CanOpenDryRunSummaryFromSchemaMap(EditingAsset, &PreviewFailureCached);
+}
+
 void FGorgeousDataSchemaMappingEditorToolkit::ExtendToolbar()
 {
 	if (ToolbarExtender.IsValid())
@@ -195,8 +206,8 @@ void FGorgeousDataSchemaMappingEditorToolkit::HandleBulkMigrateClicked()
 
 bool FGorgeousDataSchemaMappingEditorToolkit::CanBulkMigrateFromSchema() const
 {
-	return EditingAsset
-		&& FGorgeousDataSchemaMappingEditorService::CanExecuteBulkMigrationFromSchemaMap(EditingAsset, nullptr);
+	RefreshEligibilityCache();
+	return bCanMigrateCached;
 }
 
 FText FGorgeousDataSchemaMappingEditorToolkit::GetBulkMigrateTooltipText() const
@@ -206,8 +217,9 @@ FText FGorgeousDataSchemaMappingEditorToolkit::GetBulkMigrateTooltipText() const
 		return LOCTEXT("BulkMigrateTooltipNoAsset", "Bulk Migrate is unavailable because no schema asset is active.");
 	}
 
-	FText FailureReason;
-	if (!FGorgeousDataSchemaMappingEditorService::CanExecuteBulkMigrationFromSchemaMap(EditingAsset, &FailureReason))
+	RefreshEligibilityCache();
+	const FText& FailureReason = MigrationFailureCached;
+	if (!bCanMigrateCached)
 	{
 		return FText::Format(LOCTEXT("BulkMigrateTooltipUnavailableFmt", "Bulk Migrate is unavailable: {0}"), FailureReason);
 	}
@@ -237,8 +249,8 @@ void FGorgeousDataSchemaMappingEditorToolkit::HandleOpenDryRunSummaryClicked()
 
 bool FGorgeousDataSchemaMappingEditorToolkit::CanOpenDryRunSummary() const
 {
-	return EditingAsset
-		&& FGorgeousDataSchemaMappingEditorService::CanOpenDryRunSummaryFromSchemaMap(EditingAsset, nullptr);
+	RefreshEligibilityCache();
+	return bCanPreviewCached;
 }
 
 FText FGorgeousDataSchemaMappingEditorToolkit::GetOpenDryRunSummaryTooltipText() const
@@ -248,8 +260,9 @@ FText FGorgeousDataSchemaMappingEditorToolkit::GetOpenDryRunSummaryTooltipText()
 		return LOCTEXT("OpenDryRunSummaryTooltipNoAsset", "Dry-run summary is unavailable because no schema asset is active.");
 	}
 
-	FText FailureReason;
-	if (!FGorgeousDataSchemaMappingEditorService::CanOpenDryRunSummaryFromSchemaMap(EditingAsset, &FailureReason))
+	RefreshEligibilityCache();
+	const FText& FailureReason = PreviewFailureCached;
+	if (!bCanPreviewCached)
 	{
 		return FText::Format(
 			LOCTEXT("OpenDryRunSummaryTooltipUnavailableFmt", "Dry-run summary is unavailable: {0}"),

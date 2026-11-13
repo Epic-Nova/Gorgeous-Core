@@ -89,13 +89,12 @@ namespace GorgeousRPCPayloadLibrary_Private
 			return UGorgeousObjectVariable::SerializeOVToRPCArgumentBytes(AsOV, OutBytes);
 		}
 
-		// All remaining types (int32, float, double, bool, FName, int64, byte, etc.) are
-		// either POD or have a fixed in-place representation that is safe to memcpy.
-		GORGEOUS_55_HIGHER(const int32 PropSize = Property->GetElementSize();)
-		GORGEOUS_54_LOWER(const int32 PropSize  = Property->GetSize();)
-		OutBytes.SetNumUninitialized(PropSize);
-		FMemory::Memcpy(OutBytes.GetData(), ValuePtr, PropSize);
-		return true;
+        // Never copy process-owned pointers or FName table indices onto the wire.
+        if (CastField<FDelegateProperty>(Property) || CastField<FMulticastDelegateProperty>(Property) || CastField<FInterfaceProperty>(Property)) return false;
+        FMemoryWriter Writer(OutBytes, true);
+        FObjectAndNameAsStringProxyArchive ProxyWriter(Writer, false);
+        Property->SerializeItem(FStructuredArchiveFromArchive(ProxyWriter).GetSlot(), const_cast<void*>(ValuePtr));
+        return !ProxyWriter.IsError();
 	}
 }
 
@@ -222,8 +221,9 @@ FGorgeousRPCPayload& UGorgeousAutoReplicationRPCPayloadGlobals::AddAutoReplicati
 {
 	FGorgeousRPCArgumentContainer Arg(ArgumentName);
 	Arg.PropertyClassName = FName("NameProperty");
-	Arg.ValueBytes.SetNumUninitialized(sizeof(FName));
-	FMemory::Memcpy(Arg.ValueBytes.GetData(), &Value, sizeof(FName));
+	FMemoryWriter Writer(Arg.ValueBytes, true);
+    FString NameString = Value.ToString();
+    Writer << NameString;
 	Payload.Arguments.Add(MoveTemp(Arg));
 	return Payload;
 }

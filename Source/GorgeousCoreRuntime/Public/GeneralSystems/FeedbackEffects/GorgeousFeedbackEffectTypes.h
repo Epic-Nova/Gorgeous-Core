@@ -105,35 +105,35 @@ struct FGorgeousFeedbackContext
 	GENERATED_BODY()
 
 	// The object that initiated the feedback (e.g. the attacking actor or ability).
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	TObjectPtr<UObject> Instigator;
 
 	// The object the feedback is directed at (e.g. the victim or impacted actor).
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	TObjectPtr<UObject> Target;
 
 	// The actor that owns the feedback context, used as a world/fallback reference.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	TObjectPtr<AActor> OwnerActor;
 
 	// The scene component the effect should attach to when an attachment mode requires it.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	TObjectPtr<USceneComponent> AttachComponent;
 
 	// The world-space location the effect should spawn at when not attached to a component.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
-	FVector WorldLocation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
+	FVector WorldLocation = FVector::ZeroVector;
 
 	// The world-space rotation the effect should spawn with when not attached to a component.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
-	FRotator WorldRotation;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
+	FRotator WorldRotation = FRotator::ZeroRotator;
 
 	// Gameplay tags describing the situation, used by effects for tag-gated execution.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	FGameplayTagContainer ContextTags;
 
 	// Optional arbitrary user data forwarded alongside the feedback for custom effects.
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Gorgeous Core|Feedback Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gorgeous Core|Feedback Effects")
 	TObjectPtr<UObject> UserData;
 
 	/**

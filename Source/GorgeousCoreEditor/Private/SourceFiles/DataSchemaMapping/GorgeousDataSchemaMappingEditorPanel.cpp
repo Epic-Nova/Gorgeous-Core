@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "DataSchemaMapping/GorgeousDataSchemaMappingEditorPanel.h"
+#include "ScopedTransaction.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -879,6 +880,7 @@ FReply SGorgeousDataSchemaMappingEditorPanel::HandleRemoveMappingRow(const int32
 		return FReply::Handled();
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->FieldMappings.RemoveAt(MappingIndex);
 	RebuildMappingDiagnostics();
@@ -900,6 +902,7 @@ void SGorgeousDataSchemaMappingEditorPanel::SetMappingVariablePath(const int32 M
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	PathToUpdate = NewPath;
 	RebuildMappingDiagnostics();
@@ -978,6 +981,7 @@ void SGorgeousDataSchemaMappingEditorPanel::SetTransformKind(const int32 Mapping
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	Mapping.TransformDefinition.TransformKind = NewKind;
 
@@ -1017,6 +1021,7 @@ void SGorgeousDataSchemaMappingEditorPanel::SetMappingRequiredState(const int32 
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->FieldMappings[MappingIndex].bRequired = bNewRequired;
 }
@@ -1054,6 +1059,7 @@ void SGorgeousDataSchemaMappingEditorPanel::HandleTransformParameterACommitted(c
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->FieldMappings[MappingIndex].TransformDefinition.ParameterA = NewValue;
 }
@@ -1071,6 +1077,7 @@ void SGorgeousDataSchemaMappingEditorPanel::HandleTransformParameterBCommitted(c
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->FieldMappings[MappingIndex].TransformDefinition.ParameterB = NewValue;
 }
@@ -1753,6 +1760,7 @@ void SGorgeousDataSchemaMappingEditorPanel::SetTargetRootPath(const FString& New
 		return;
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->TargetDefinition.TargetContentRootPath = NewPath;
 }
@@ -1916,6 +1924,7 @@ FReply SGorgeousDataSchemaMappingEditorPanel::HandleAddEmptyMappingRow()
 		return FReply::Handled();
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	SchemaMapAsset->FieldMappings.AddDefaulted();
 	RebuildMappingRows();
@@ -1987,6 +1996,7 @@ FReply SGorgeousDataSchemaMappingEditorPanel::HandleAddSelectedMappingRow()
 		return FReply::Handled();
 	}
 
+	FScopedTransaction SchemaEditTransaction(NSLOCTEXT("GorgeousDataSchemaMapping", "EditMapping", "Edit schema mapping"));
 	MarkSchemaMapModified();
 	for (const TPair<FString, FString>& RowToAdd : RowsToAdd)
 	{

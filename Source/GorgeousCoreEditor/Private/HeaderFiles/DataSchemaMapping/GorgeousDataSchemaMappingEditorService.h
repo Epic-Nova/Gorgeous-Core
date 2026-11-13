@@ -18,6 +18,7 @@
 //<-------------------------------------------------------------------------->
 
 class UGorgeousDataSchemaMapping_DA;
+class UPackage;
 //<-------------------------------------------------->
 
 /**
@@ -28,7 +29,7 @@ class FGorgeousDataSchemaMappingEditorService
 public:
 	static TArray<TWeakObjectPtr<UGorgeousDataSchemaMapping_DA>> FindMatchingMigrationMaps(const TArray<FAssetData>& SelectedAssets);
 	static void PreviewMigration(const UGorgeousDataSchemaMapping_DA* SchemaMap, const TArray<FAssetData>& SelectedAssets, FString* OutReportPath = nullptr);
-	static void ExecuteMigration(const UGorgeousDataSchemaMapping_DA* SchemaMap, const TArray<FAssetData>& SelectedAssets);
+	static bool ExecuteMigration(const UGorgeousDataSchemaMapping_DA* SchemaMap, const TArray<FAssetData>& SelectedAssets, TArray<UPackage*>* OutCreatedPackages = nullptr);
 	static bool CanExecuteBulkMigrationFromSchemaMap(const UGorgeousDataSchemaMapping_DA* SchemaMap, FText* OutFailureReason = nullptr);
 	static void ExecuteBulkMigrationFromSchemaMap(const UGorgeousDataSchemaMapping_DA* SchemaMap);
 	static bool CanOpenDryRunSummaryFromSchemaMap(const UGorgeousDataSchemaMapping_DA* SchemaMap, FText* OutFailureReason = nullptr);

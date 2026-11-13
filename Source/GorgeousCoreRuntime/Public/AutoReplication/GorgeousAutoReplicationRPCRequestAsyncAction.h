@@ -92,9 +92,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FGorgeousAutoReplicationRPCAsyncDele
 */
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/GorgeousAutoReplicationRPCRequestAsyncAction",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/RPCAsyncRequests/",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/AutoReplication/Overview/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationRPCRequestAsyncAction : public UBlueprintAsyncActionBase
@@ -111,9 +111,11 @@ public:
 
 	/** Invoked by the AutoReplication runtime whenever a queued RPC finishes executing. */
 	static void NotifyRequestCompleted(const FGorgeousAutoReplicationRPCResult& Result);
+    static bool IsExpectedRemoteResponder(const FGuid& RequestGuid, const FGorgeousAutoReplicationRPCResponderHandle& Responder, UWorld* World=nullptr);
 
 	/** Allows transporters/mixins to declare responders that are expected to submit results. */
-	static void RegisterExpectedResponder(const FGuid& RequestGuid, const FGorgeousAutoReplicationRPCResponderHandle& Responder);
+	static void RegisterExpectedResponder(const FGuid& RequestGuid, const FGorgeousAutoReplicationRPCResponderHandle& Responder,UWorld* World=nullptr);
+    static void RegisterExpectedResponderKeys(const FGuid& RequestGuid,const TArray<FString>& Keys,UWorld* World=nullptr);
 
 	/**
 	 * Stores the result from a deferred handler and marks it as NotReadyToCollect in the debug
@@ -250,6 +252,7 @@ private:
 		FGorgeousAutoReplicationPendingRequestState& PendingState);
 
 	static TMap<FGuid, FGorgeousAutoReplicationPendingRequestState> PendingRequests;
+    static FGorgeousAutoReplicationPendingRequestState* FindPendingForWorld(const FGuid& Guid,UWorld* World);
 
 	/**
 	 * Client-side cache for deferred results that have no matching PendingRequests entry
@@ -260,6 +263,7 @@ private:
 	static TMap<FGuid, TMap<FString, FGorgeousAutoReplicationRPCResult>> ClientDeferredResultCache;
 
 	TWeakObjectPtr<UObject> WeakContext;
+    TWeakObjectPtr<UObject> WeakRequestingContext;
 	FName RequestKey;
 	EGorgeousAutoReplicationRPCType RequestType;
 	FGorgeousRPCPayload RequestPayload;

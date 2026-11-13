@@ -18,7 +18,6 @@
 //<-------------------------------------------------------------------------->
 
 //<=================--- Forward Declarations ---=================>
-class FGorgeousCoreInsightMatrixProvider;
 //<------------------------------------------------------------->
 /**
  * This module defines the core runtime of the Gorgeous Things plugin.
@@ -42,6 +41,7 @@ public:
 	virtual void GorgeousShutdownModule() override;
 
 private:
+	FDelegateHandle WorldCleanupHandle;
 
 public:
 

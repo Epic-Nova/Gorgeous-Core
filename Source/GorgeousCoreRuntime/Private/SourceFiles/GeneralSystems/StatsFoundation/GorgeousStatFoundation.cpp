@@ -9,6 +9,19 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
 
+#include "GameFramework/PlayerState.h"
+#include "GameFramework/CheatManager.h"
+#include "Components/ActorComponent.h"
+static AGorgeousPlayerController* ResolveStatRequester(UObject* Context)
+{
+    if (!Context) return nullptr;
+    if (auto* PC=Cast<AGorgeousPlayerController>(Context)) return PC;
+    if (auto* Pawn=Cast<APawn>(Context)) return Cast<AGorgeousPlayerController>(Pawn->GetController());
+    if (auto* PS=Cast<APlayerState>(Context)) return Cast<AGorgeousPlayerController>(PS->GetOwningController());
+    if (auto* Component=Cast<UActorComponent>(Context)) return ResolveStatRequester(Component->GetOwner());
+    if (auto* Manager=Cast<UCheatManager>(Context)) return Cast<AGorgeousPlayerController>(Manager->GetOuterAPlayerController());
+    return Context->GetTypedOuter<AGorgeousPlayerController>();
+}
 static const FName StatStorageEntryKey = TEXT("StatStorage");
 
 UGorgeousStatFoundationStorage_OV* UGorgeousStatFoundation::GetGorgeousStatStorage(UObject* WorldContextObject, bool bRequireNetworking)
@@ -19,7 +32,7 @@ UGorgeousStatFoundationStorage_OV* UGorgeousStatFoundation::GetGorgeousStatStora
 	if (!World) return nullptr;
 
 	UGorgeousObjectVariable* ExistingVar = nullptr;
-	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, StatStorageEntryKey, ExistingVar))
+	if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World->GetWorldSettings(), StatStorageEntryKey, ExistingVar))
 	{
 		if (UGorgeousStatFoundationStorage_OV* Storage = Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar))
 		{
@@ -38,7 +51,7 @@ UGorgeousStatFoundationStorage_OV* UGorgeousStatFoundation::GetGorgeousStatStora
 				{
 					UGorgeousCoreRuntimeGlobals::RefreshQualityOfLifeReplication(WorldContextObject, AGorgeousWorldSettings::StaticClass());
 
-					if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(WorldContextObject, StatStorageEntryKey, ExistingVar))
+					if (UGorgeousCoreRuntimeGlobals::GetNetGorgeousAutoReplicationValue(World->GetWorldSettings(), StatStorageEntryKey, ExistingVar))
 					{
 						return Cast<UGorgeousStatFoundationStorage_OV>(ExistingVar);
 					}
@@ -57,11 +70,11 @@ UGorgeousStatComponent_AC* UGorgeousStatFoundation::GetStatComponent(UObject* Wo
 	UWorld* World = WorldContextObject->GetWorld();
 	if (!World) return nullptr;
 
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (PC && PC->GetPawn())
-	{
-		return PC->GetPawn()->FindComponentByClass<UGorgeousStatComponent_AC>();
-	}
+    if (auto* Component=Cast<UGorgeousStatComponent_AC>(WorldContextObject)) return Component;
+    if (auto* Actor=Cast<AActor>(WorldContextObject))
+        if (auto* Component=Actor->FindComponentByClass<UGorgeousStatComponent_AC>()) return Component;
+    if (auto* PC=ResolveStatRequester(WorldContextObject))
+        if (PC->GetPawn()) return PC->GetPawn()->FindComponentByClass<UGorgeousStatComponent_AC>();
 	return nullptr;
 }
 
@@ -74,26 +87,15 @@ float UGorgeousStatFoundation::GetStatValue(UObject* WorldContextObject, AActor*
 	return 0.0f;
 }
 
-void UGorgeousStatFoundation::SetStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Value)
+bool UGorgeousStatFoundation::SetStatValue(UObject* Context,AActor* Actor,FGameplayTag Tag,float Value)
 {
-	APlayerController* PC = WorldContextObject ? WorldContextObject->GetWorld()->GetFirstPlayerController() : nullptr;
-	AGorgeousPlayerController* GPC = PC ? Cast<AGorgeousPlayerController>(PC) : nullptr;
-
-	if (UGorgeousStatComponent_AC* Component = Actor ? Actor->FindComponentByClass<UGorgeousStatComponent_AC>() : GetStatComponent(WorldContextObject))
-	{
-		Component->SetStat(StatTag, Value, GPC);
-	}
+    if (auto* Component=Actor ? Actor->FindComponentByClass<UGorgeousStatComponent_AC>() : GetStatComponent(Context)) return Component->SetStat(Tag,Value,ResolveStatRequester(Context));
+    return false;
 }
-
-void UGorgeousStatFoundation::ModifyStatValue(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, float Delta)
+bool UGorgeousStatFoundation::ModifyStatValue(UObject* Context,AActor* Actor,FGameplayTag Tag,float Delta)
 {
-	APlayerController* PC = WorldContextObject ? WorldContextObject->GetWorld()->GetFirstPlayerController() : nullptr;
-	AGorgeousPlayerController* GPC = PC ? Cast<AGorgeousPlayerController>(PC) : nullptr;
-
-	if (UGorgeousStatComponent_AC* Component = Actor ? Actor->FindComponentByClass<UGorgeousStatComponent_AC>() : GetStatComponent(WorldContextObject))
-	{
-		Component->ModifyStat(StatTag, Delta, GPC);
-	}
+    if (auto* Component=Actor ? Actor->FindComponentByClass<UGorgeousStatComponent_AC>() : GetStatComponent(Context)) return Component->ModifyStat(Tag,Delta,ResolveStatRequester(Context));
+    return false;
 }
 
 void UGorgeousStatFoundation::AddAllowedController(UObject* WorldContextObject, AActor* Actor, FGameplayTag StatTag, AGorgeousPlayerController* Controller)

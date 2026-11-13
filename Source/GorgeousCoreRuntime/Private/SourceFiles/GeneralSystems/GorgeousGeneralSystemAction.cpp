@@ -1,5 +1,8 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/GorgeousGeneralSystemAction.h"
+#include "GeneralSystems/GorgeousConfigurationText.h"
+#include "GeneralSystems/GorgeousProjectSettingsContribution.h"
+#include "Misc/App.h"
 
 #include "DataRegistrySubsystem.h"
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
@@ -18,6 +21,7 @@
 #include "UObject/Class.h"
 #if WITH_EDITOR
 #include "UnrealEdMisc.h"
+#include "SourceControlHelpers.h"
 #endif
 
 namespace
@@ -63,21 +67,7 @@ namespace
 		return ConfigFile;
 	}
 
-	void PromptForEditorRestart()
-	{
-#if WITH_EDITOR
-		const EAppReturnType::Type Result = FMessageDialog::Open(
-			EAppMsgType::YesNo,
-			NSLOCTEXT(
-				"GorgeousCore",
-				"ConfigurationRestartRequired",
-				"The project configuration was permanently updated. Restart the editor now to apply the change?"));
-		if (Result == EAppReturnType::Yes)
-		{
-			FUnrealEdMisc::Get().RestartEditor(false);
-		}
-#endif
-	}
+
 }
 
 #if WITH_EDITOR
@@ -115,8 +105,17 @@ bool UGorgeousGeneralSystemAction::ShouldActivateForSystem_Implementation(UGener
     return true;
 }
 
+bool UGorgeousGeneralSystemAction::CanExecuteInCurrentSession() const
+{
+    if (!IsRunningCommandlet() && !FApp::IsUnattended()) return true;
+    const auto* ConfigAction = Cast<UGorgeousManageConfigurationAction>(this);
+    return !IsA<UGorgeousTriggerPromptAction>() && !IsA<UGorgeousReparentBlueprintAction>() &&
+        !IsA<UGorgeousProjectSettingsContribution>() && (!ConfigAction || ConfigAction->Operation == EGorgeousConfigOperation::Read);
+}
+
 bool UGorgeousGeneralSystemAction::PredictAction_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration) const
 {
+    if (!CanExecuteInCurrentSession()) return false;
     if ((Target == EGorgeousSystemActionTarget::Editor && !GIsEditor)
         || (Target == EGorgeousSystemActionTarget::Game && GIsEditor))
     {
@@ -128,6 +127,7 @@ bool UGorgeousGeneralSystemAction::PredictAction_Implementation(UGeneralSystemCo
 
 bool UGorgeousGeneralSystemAction::ExecuteAction_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration)
 {
+    if (!CanExecuteInCurrentSession()) return false;
     if (!PredictAction(SystemConfiguration))
     {
         return false;
@@ -395,6 +395,14 @@ bool UGorgeousActionPredictionCondition::Evaluate_Implementation(
 bool UGorgeousManageConfigurationAction::IsTriggerSatisfied() const
 {
     const TArray<FString> ConfigFiles = ResolveConfigFiles();
+    if (Trigger == EGorgeousConfigTrigger::OnFirstStart)
+    {
+        FConfigFile History;
+        History.Read(FPaths::ProjectSavedDir() / TEXT("GorgeousThings/ConfigurationActionHistory.ini"));
+        bool bApplied = false;
+        History.GetBool(TEXT("AppliedActions"), *GetPathName(), bApplied);
+        if (bApplied) return false;
+    }
     if (ConfigFiles.IsEmpty() || Section.IsEmpty() || Key.IsEmpty())
     {
         return false;
@@ -424,9 +432,10 @@ bool UGorgeousManageConfigurationAction::IsTriggerSatisfied() const
         }
     }
 
-    if (Trigger == EGorgeousConfigTrigger::OnAssetOpened && !bHandlingAssetOpened)
+    if (Trigger == EGorgeousConfigTrigger::OnAssetOpened)
     {
 #if WITH_EDITOR
+        if (bHandlingAssetOpened) return true;
         if (!GEditor)
         {
             return false;
@@ -444,6 +453,8 @@ bool UGorgeousManageConfigurationAction::IsTriggerSatisfied() const
         return false;
     }
 
+    if (Trigger == EGorgeousConfigTrigger::OnFirstStart) return true;
+
     for (const FString& ConfigFile : ConfigFiles)
     {
         FString CurrentValue;
@@ -453,6 +464,12 @@ bool UGorgeousManageConfigurationAction::IsTriggerSatisfied() const
         FConfigFile PersistentConfig;
         PersistentConfig.Read(PersistentConfigFile);
         bPresent = PersistentConfig.GetString(*NormalizedSection, *Key, CurrentValue);
+        if (Operation == EGorgeousConfigOperation::Add)
+        {
+            TArray<FString> Values;
+            PersistentConfig.GetArray(*NormalizedSection, *Key, Values);
+            bPresent = Values.Contains(NormalizeConfigValue(Value));
+        }
         ReadValue = bPresent ? CurrentValue : FString();
         if (Operation == EGorgeousConfigOperation::Read)
         {
@@ -503,7 +520,12 @@ bool UGorgeousReparentBlueprintAction::PredictAction_Implementation(
 
     if (!bDrawBlueprintFromConfig)
     {
+#if WITH_EDITOR
         return Blueprint.LoadSynchronous() != nullptr;
+#else
+        // Blueprint assets are editor data; generated classes are the runtime representation.
+        return false;
+#endif
     }
 
     if (!BlueprintConfig)
@@ -538,6 +560,7 @@ bool UGorgeousReparentBlueprintAction::PredictAction_Implementation(
 bool UGorgeousReparentBlueprintAction::ExecuteAction_Implementation(
     UGeneralSystemConfiguration_PDA* SystemConfiguration)
 {
+    if (!CanExecuteInCurrentSession()) return false;
     GT_I_LOG("GT.GeneralSystemAction.ReparentBlueprint",
         TEXT("Executing Blueprint reparent action '%s' for system '%s'."),
         *GetNameSafe(this), *GetNameSafe(SystemConfiguration));
@@ -604,6 +627,7 @@ bool UGorgeousReparentBlueprintAction::ExecuteAction_Implementation(
 
 void UGorgeousManageConfigurationAction::OnSystemActivated_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration)
 {
+    if (!CanExecuteInCurrentSession()) return;
 #if WITH_EDITOR
 	if (Trigger == EGorgeousConfigTrigger::OnAssetOpened)
 	{
@@ -619,7 +643,7 @@ void UGorgeousManageConfigurationAction::OnSystemActivated_Implementation(UGener
     }
 
 #if WITH_EDITOR
-    if (bPrompt)
+    if (bPrompt && !IsRunningCommandlet() && !FApp::IsUnattended())
     {
         const FText PromptText = PromptMessage.IsEmpty()
             ? NSLOCTEXT("GorgeousCore", "AddConfigurationPrompt", "Apply the requested Gorgeous configuration?")
@@ -640,7 +664,15 @@ void UGorgeousManageConfigurationAction::OnSystemActivated_Implementation(UGener
     }
 #endif
 
-    ApplyConfiguration(SystemConfiguration);
+    if (ApplyConfiguration(SystemConfiguration) && Trigger == EGorgeousConfigTrigger::OnFirstStart)
+    {
+        const FString HistoryPath = FPaths::ProjectSavedDir() / TEXT("GorgeousThings/ConfigurationActionHistory.ini");
+        IFileManager::Get().MakeDirectory(*FPaths::GetPath(HistoryPath), true);
+        FConfigFile History;
+        History.Read(HistoryPath);
+        History.SetBool(TEXT("AppliedActions"), *GetPathName(), true);
+        History.Write(HistoryPath);
+    }
 }
 
 #if WITH_EDITOR
@@ -671,11 +703,6 @@ void UGorgeousManageConfigurationAction::UnbindAssetOpenedEvent()
 	AssetOpenedHandle.Reset();
 }
 
-void UGorgeousManageConfigurationAction::OnSystemDeactivated_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration)
-{
-	UnbindAssetOpenedEvent();
-}
-
 void UGorgeousManageConfigurationAction::HandleAssetOpened(UObject* Asset, IAssetEditorInstance* EditorInstance)
 {
 	if (!Asset || !EditorInstance)
@@ -696,78 +723,97 @@ void UGorgeousManageConfigurationAction::HandleAssetOpened(UObject* Asset, IAsse
 }
 #endif
 
-void UGorgeousManageConfigurationAction::ApplyConfiguration(UGeneralSystemConfiguration_PDA* SystemConfiguration) const
+void UGorgeousManageConfigurationAction::OnSystemDeactivated_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration)
 {
-    const TArray<FString> ConfigFiles = ResolveConfigFiles();
-    const FString NormalizedSection = NormalizeConfigSection(Section);
-    FString ConfigKey = Key;
-    FString ConfigValue = NormalizeConfigValue(Value);
-    switch (Operation)
-    {
-    case EGorgeousConfigOperation::Read:
-        return;
-    case EGorgeousConfigOperation::SetOrNewLine:
-        for (const FString& ConfigFile : ConfigFiles)
-        {
-            const FString WritableConfigFile = GetPersistentProjectConfigPath(ConfigFile);
-            FConfigFile PersistentConfig;
-            PersistentConfig.Read(WritableConfigFile);
-            PersistentConfig.SetString(*NormalizedSection, *Key, *ConfigValue);
-            const bool bWriteSucceeded = PersistentConfig.Write(WritableConfigFile);
+#if WITH_EDITOR
+	UnbindAssetOpenedEvent();
+#endif
+}
 
-            FString PersistedValue;
-            const bool bPersisted = PersistentConfig.GetString(*NormalizedSection, *Key, PersistedValue);
-            GT_I_LOG("GT.GeneralSystemAction",
-                TEXT("Permanently set configuration '%s.%s' to '%s' in '%s' (persisted=%s, read-back='%s')."),
-                *NormalizedSection,
-                *Key,
-                *ConfigValue,
-                *WritableConfigFile,
-                bWriteSucceeded && bPersisted && PersistedValue == ConfigValue ? TEXT("true") : TEXT("false"),
-                *PersistedValue);
-        }
-        PromptForEditorRestart();
-        return;
-    case EGorgeousConfigOperation::Add:
-        ConfigKey = TEXT("+") + Key;
-        break;
-    case EGorgeousConfigOperation::Remove:
-        ConfigKey = TEXT("-") + Key;
-        break;
-    case EGorgeousConfigOperation::Clear:
-        ConfigKey = TEXT("!") + Key;
-        ConfigValue.Reset();
-        break;
-    case EGorgeousConfigOperation::RemoveLine:
-        for (const FString& ConfigFile : ConfigFiles)
-        {
-            const FString WritableConfigFile = GetPersistentProjectConfigPath(ConfigFile);
-            FConfigFile PersistentConfig;
-            PersistentConfig.Read(WritableConfigFile);
-            PersistentConfig.RemoveKeyFromSection(*NormalizedSection, *Key);
-            PersistentConfig.Write(WritableConfigFile);
-        }
-        PromptForEditorRestart();
-        return;
-    default:
-        break;
-    }
-
-    for (const FString& ConfigFile : ConfigFiles)
+bool GorgeousConfiguration::ApplyTextEdit(FString& Contents, const FString& Section, const FString& Key,
+    const FString& Value, EGorgeousConfigOperation Operation)
+{
+    if (Operation == EGorgeousConfigOperation::Read || Section.IsEmpty() || Key.IsEmpty()) return false;
+    const FString Original = Contents;
+    const FString Newline = Contents.Contains(TEXT("\r\n")) ? TEXT("\r\n") : TEXT("\n");
+    TArray<FString> Lines;
+    Contents.ParseIntoArrayLines(Lines, false);
+    const FString Header = TEXT("[") + Section + TEXT("]");
+    int32 Start = INDEX_NONE;
+    for (int32 Index = 0; Index < Lines.Num(); ++Index)
+        if (Lines[Index].TrimStartAndEnd().Equals(Header, ESearchCase::IgnoreCase)) { Start = Index; break; }
+    if (Start == INDEX_NONE)
     {
-        const FString WritableConfigFile = GetPersistentProjectConfigPath(ConfigFile);
-        FConfigFile PersistentConfig;
-        PersistentConfig.Read(WritableConfigFile);
-        PersistentConfig.SetString(*NormalizedSection, *ConfigKey, *ConfigValue);
-        const bool bWriteSucceeded = PersistentConfig.Write(WritableConfigFile);
-        GT_I_LOG_FULL_EX("GT.GeneralSystemAction",
-            TEXT("Permanently applied configuration action for '%s' to %s (write=%s)."),
-            GT_DURATION, false, true, true, true, nullptr, nullptr,
-            *GetNameSafe(SystemConfiguration),
-            *WritableConfigFile,
-            bWriteSucceeded ? TEXT("success") : TEXT("failed"));
+        if (Operation == EGorgeousConfigOperation::RemoveLine) return false;
+        Lines.Add(Header);
+        Start = Lines.Num() - 1;
     }
-    PromptForEditorRestart();
+    int32 End = Start + 1;
+    while (End < Lines.Num() && !Lines[End].TrimStartAndEnd().StartsWith(TEXT("["))) ++End;
+    FString SerializedKey = Key;
+    FString SerializedValue = Value;
+    if (Operation == EGorgeousConfigOperation::Add) SerializedKey = TEXT("+") + Key;
+    if (Operation == EGorgeousConfigOperation::Remove) SerializedKey = TEXT("-") + Key;
+    if (Operation == EGorgeousConfigOperation::Clear) { SerializedKey = TEXT("!") + Key; SerializedValue = TEXT("ClearArray"); }
+    const FString NewLine = SerializedKey + TEXT("=") + SerializedValue;
+    bool bFound = false;
+    for (int32 Index = End - 1; Index > Start; --Index)
+    {
+        FString ExistingKey, ExistingValue;
+        const FString Trimmed = Lines[Index].TrimStartAndEnd();
+        if (!Trimmed.Split(TEXT("="), &ExistingKey, &ExistingValue)) continue;
+        if (!ExistingKey.TrimStartAndEnd().Equals(SerializedKey, ESearchCase::IgnoreCase)) continue;
+        if (Operation == EGorgeousConfigOperation::RemoveLine)
+        {
+            if (Value.IsEmpty() || ExistingValue == Value) { Lines.RemoveAt(Index); --End; }
+            continue;
+        }
+        if (Operation == EGorgeousConfigOperation::Add || Operation == EGorgeousConfigOperation::Remove)
+        {
+            bFound |= ExistingValue == SerializedValue;
+            continue;
+        }
+        if (!bFound) { Lines[Index] = NewLine; bFound = true; }
+        else { Lines.RemoveAt(Index); --End; }
+    }
+    if (!bFound && Operation != EGorgeousConfigOperation::RemoveLine) Lines.Insert(NewLine, End);
+    Contents = FString::Join(Lines, *Newline);
+    if (!Contents.EndsWith(Newline)) Contents += Newline;
+    return Contents != Original;
+}
+
+bool UGorgeousManageConfigurationAction::ApplyConfiguration(UGeneralSystemConfiguration_PDA* SystemConfiguration) const
+{
+    if (!CanExecuteInCurrentSession()) return false;
+    if (Operation == EGorgeousConfigOperation::Read) return true;
+    bool bAllSucceeded = true;
+    for (const FString& ConfigFile : ResolveConfigFiles())
+    {
+        const FString Filename = GetPersistentProjectConfigPath(ConfigFile);
+        FString Contents;
+        FFileHelper::LoadFileToString(Contents, *Filename);
+        if (!GorgeousConfiguration::ApplyTextEdit(Contents, NormalizeConfigSection(Section), Key, NormalizeConfigValue(Value), Operation)) continue;
+#if WITH_EDITOR
+        if (IFileManager::Get().IsReadOnly(*Filename) && !USourceControlHelpers::CheckOutFile(Filename, true))
+        {
+            GT_E_LOG("GT.GeneralSystemAction", TEXT("Cannot check out configuration file '%s'; no changes were written."), *Filename);
+            bAllSucceeded = false;
+            continue;
+        }
+#endif
+        IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);
+        const bool bSaved = FFileHelper::SaveStringToFile(Contents, *Filename);
+        bAllSucceeded &= bSaved;
+        if (!bSaved)
+        {
+            GT_E_LOG("GT.GeneralSystemAction", TEXT("Failed to save configuration file '%s'."), *Filename);
+        }
+        else
+        {
+            GT_I_LOG("GT.GeneralSystemAction", TEXT("Updated configuration in '%s'. Restart the editor when convenient to apply engine startup settings."), *Filename);
+        }
+    }
+    return bAllSucceeded;
 }
 
 namespace GorgeousPromptPrivate
@@ -936,6 +982,7 @@ bool UGorgeousTriggerPromptAction::PredictAction_Implementation(UGeneralSystemCo
 
 void UGorgeousTriggerPromptAction::OnSystemActivated_Implementation(UGeneralSystemConfiguration_PDA* SystemConfiguration)
 {
+    if (!CanExecuteInCurrentSession()) return;
 #if WITH_EDITOR
     if (!GEditor || GorgeousPromptPrivate::IsDismissed(GorgeousPromptPrivate::GetPromptKey(this, SystemConfiguration)))
     {

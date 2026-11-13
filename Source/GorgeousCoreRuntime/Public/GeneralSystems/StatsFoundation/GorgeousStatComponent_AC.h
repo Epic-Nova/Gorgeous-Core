@@ -41,14 +41,15 @@ class UGorgeousStatFoundationStorage_OV;
 //<------------------------------------------------------------->
 UCLASS(BlueprintType, meta = (BlueprintSpawnableComponent), DisplayName = "Gorgeous Stat Component",
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/GorgeousStatComponent_AC",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#stat-component",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API UGorgeousStatComponent_AC : public UActorComponent
 {
 	GENERATED_BODY()
+	friend struct FGorgeousStatsFoundationInsightTests;
 
 	// Constructs the Stat Foundation actor component.
 public:
@@ -60,6 +61,8 @@ public:
 
 	// Initializes the component after play begins.
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type Reason) override;
+    virtual void TickComponent(float DeltaTime,ELevelTick TickType,FActorComponentTickFunction* Function) override;
 
 	// Registers replicated component properties.
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -93,7 +96,7 @@ public:
 	 * @param Requester The controller requesting the update, if any.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats")
-	void SetStat(FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester = nullptr);
+	bool SetStat(FGameplayTag Tag, float Value, AGorgeousPlayerController* Requester = nullptr);
 
 	/**
 	 * Modifies a statistic value by an amount. Authority only.
@@ -103,7 +106,7 @@ public:
 	 * @param Requester The controller requesting the update, if any.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Stats")
-	void ModifyStat(FGameplayTag Tag, float Delta, AGorgeousPlayerController* Requester = nullptr);
+	bool ModifyStat(FGameplayTag Tag, float Delta, AGorgeousPlayerController* Requester = nullptr);
 
 	/**
 	 * Returns a statistic value.
@@ -160,6 +163,8 @@ protected:
 	 */
 	UFUNCTION()
 	void HandleStatChanged(FGameplayTag Tag, float NewValue);
+    UFUNCTION()
+    void HandleActorStatChanged(AActor* Actor, FGameplayTag Tag, float NewValue);
 
 	/**
 	 * Handles a signal received from the Signal Bridge.

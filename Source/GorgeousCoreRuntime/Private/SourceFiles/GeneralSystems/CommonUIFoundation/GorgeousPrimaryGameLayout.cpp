@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GeneralSystems/CommonUIFoundation/GorgeousPrimaryGameLayout.h"
+#include "GeneralSystems/CommonUIFoundation/Widgets/GorgeousActivatableWidget.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIPolicy.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationSubsystem.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIExtensions.h"
@@ -18,7 +19,7 @@
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationTags.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousUIFoundationStats.h"
 
-DECLARE_DWORD_COUNTER_STAT(TEXT("Active UI Overlays"), STAT_GUI_ActiveOverlays, STATGROUP_GorgeousUIFoundation);
+DECLARE_DWORD_ACCUMULATOR_STAT(TEXT("Active UI Overlays"), STAT_GUI_ActiveOverlays, STATGROUP_GorgeousUIFoundation);
 DECLARE_CYCLE_STAT(TEXT("Push Widget To Layer"), STAT_GUI_PushWidget, STATGROUP_GorgeousUIFoundation);
 DECLARE_CYCLE_STAT(TEXT("Register UI Layer"), STAT_GUI_RegisterLayer, STATGROUP_GorgeousUIFoundation);
 
@@ -82,23 +83,23 @@ void UGorgeousPrimaryGameLayout::NativeConstruct()
 	
 	// Listen for signal-driven layer registration
 	const FGameplayTag RegisterTag = TAG_Gorgeous_UI_Layout_RegisterLayer;
-	FSignalBridgeEventDelegate RegisterDelegate;
-	RegisterDelegate.BindDynamic(this, &UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived);
+	RegisterLayerDelegate.BindDynamic(this, &UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived);
 
 	FGorgeousSignalBridgeAccessRules_S Rules;
+	Rules.bNetworked = false;
 	AGorgeousPlayerController* Controller = nullptr;
 	if (UWorld* __World = GetWorld())
 	{
-		if (APlayerController* PC = __World->GetFirstPlayerController())
+		if (APlayerController* PC = GetOwningPlayer())
 		{
 			Controller = Cast<AGorgeousPlayerController>(PC);
 		}
 	}
-	USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), PushTag, Rules, Controller);
-	USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), PushTag, Controller, LayoutSignalDelegate);
+	USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), PushTag, Rules, nullptr);
+	USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), PushTag, nullptr, LayoutSignalDelegate);
 
-	USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), RegisterTag, Rules, Controller);
-	USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), RegisterTag, Controller, RegisterDelegate);
+	USignalBridgeBlueprintFunctionLibrary::RegisterSignal(GetWorld(), RegisterTag, Rules, nullptr);
+	USignalBridgeBlueprintFunctionLibrary::Listen(GetWorld(), RegisterTag, nullptr, RegisterLayerDelegate);
 }
 
 void UGorgeousPrimaryGameLayout::NativeDestruct()
@@ -106,15 +107,17 @@ void UGorgeousPrimaryGameLayout::NativeDestruct()
 	AGorgeousPlayerController* Controller = nullptr;
 	if (UWorld* __World = GetWorld())
 	{
-		if (APlayerController* PC = __World->GetFirstPlayerController())
+		if (APlayerController* PC = GetOwningPlayer())
 		{
 			Controller = Cast<AGorgeousPlayerController>(PC);
 		}
 	}
-	USignalBridgeBlueprintFunctionLibrary::Clear(
-		GetWorld(), TAG_Gorgeous_UI_Layout_PushWidget, Controller);
-	USignalBridgeBlueprintFunctionLibrary::Clear(
-		GetWorld(), TAG_Gorgeous_UI_Layout_RegisterLayer, Controller);
+	USignalBridgeBlueprintFunctionLibrary::Unlisten(this, TAG_Gorgeous_UI_Layout_PushWidget, nullptr, LayoutSignalDelegate);
+	USignalBridgeBlueprintFunctionLibrary::Unlisten(this, TAG_Gorgeous_UI_Layout_RegisterLayer, nullptr, RegisterLayerDelegate);
+	for (auto& Entry : TrackedOverlays) { if (Entry.IsValid()) Entry->OnDeactivated().RemoveAll(this); DecrementActiveOverlays(); }
+	TrackedOverlays.Reset();
+	for (FName Token : SuspendInputTokens) UGorgeousUIExtensions::ResumeGorgeousInput(GetOwningPlayer(), Token);
+	SuspendInputTokens.Reset();
 	Super::NativeDestruct();
 }
 
@@ -139,57 +142,38 @@ UCommonActivatableWidget* UGorgeousPrimaryGameLayout::PushWidgetToLayerStack(FGa
 	SCOPE_CYCLE_COUNTER(STAT_GUI_PushWidget);
 	if (UCommonActivatableWidgetContainerBase* Layer = GetLayerWidget(LayerName))
 	{
-		return Layer->AddWidget(ActivatableWidgetClass);
+		return Layer->AddWidget<UCommonActivatableWidget>(ActivatableWidgetClass, [this](UCommonActivatableWidget& Widget) { TrackOverlay(&Widget); });
 	}
 	GT_W_LOG("GT.UI.Layout", TEXT("GorgeousPrimaryGameLayout: Layer '%s' not registered. Did you call RegisterLayer?"), *LayerName.ToString());
 	return nullptr;
 }
 
 TSharedPtr<FStreamableHandle> UGorgeousPrimaryGameLayout::PushWidgetToLayerStackAsync(
-	FGameplayTag LayerName,
-	bool bSuspendInputUntilComplete,
+	FGameplayTag LayerName, bool bSuspendInputUntilComplete,
 	TSoftClassPtr<UCommonActivatableWidget> ActivatableWidgetClass,
-	TFunction<void(UCommonActivatableWidget&)> InitFunc)
+	TFunction<void(UCommonActivatableWidget&)> InitFunc, TFunction<void()> FailureFunc)
 {
-	static FName NAME_AsyncPush(TEXT("AsyncWidgetPush"));
-	const FName SuspendToken = bSuspendInputUntilComplete
-		? UGorgeousUIExtensions::SuspendGorgeousInput(GetOwningPlayer(), NAME_AsyncPush)
-		: NAME_None;
-
-	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-	TSharedPtr<FStreamableHandle> Handle = Streamable.RequestAsyncLoad(
-		ActivatableWidgetClass.ToSoftObjectPath(),
-		FStreamableDelegate::CreateWeakLambda(this, [this, LayerName, ActivatableWidgetClass, SuspendToken, InitFunc]()
-		{
-			if (SuspendToken != NAME_None)
-			{
-				UGorgeousUIExtensions::ResumeGorgeousInput(GetOwningPlayer(), SuspendToken);
-			}
-
-			if (UClass* LoadedClass = ActivatableWidgetClass.Get())
-			{
-				if (UCommonActivatableWidget* Widget = PushWidgetToLayerStack(LayerName, LoadedClass))
-				{
-					if (InitFunc)
-					{
-						InitFunc(*Widget);
-					}
-				}
-			}
-		}));
-
-	// Bind cancel delegate, always resume input even if the async load is aborted
-	if (Handle.IsValid())
+	if (ActivatableWidgetClass.IsNull() || !GetLayerWidget(LayerName)) { if (FailureFunc) FailureFunc(); return nullptr; }
+	const TWeakObjectPtr<APlayerController> Controller = GetOwningPlayer();
+	const TWeakObjectPtr<UGorgeousPrimaryGameLayout> WeakThis(this);
+	const FName SuspendToken = bSuspendInputUntilComplete ? UGorgeousUIExtensions::SuspendGorgeousInput(Controller.Get(), TEXT("AsyncWidgetPush")) : NAME_None;
+	auto Resume = [Controller, SuspendToken] { UGorgeousUIExtensions::ResumeGorgeousInput(Controller.Get(), SuspendToken); };
+	auto Complete = [WeakThis, LayerName, ActivatableWidgetClass, InitFunc, FailureFunc, Resume]
 	{
-		Handle->BindCancelDelegate(FStreamableDelegate::CreateWeakLambda(this, [this, SuspendToken]()
+		Resume();
+		if (auto* Layout = WeakThis.Get())
 		{
-			if (SuspendToken != NAME_None)
+			if (UClass* Class = ActivatableWidgetClass.Get()) if (auto* Layer = Layout->GetLayerWidget(LayerName))
 			{
-				UGorgeousUIExtensions::ResumeGorgeousInput(GetOwningPlayer(), SuspendToken);
+				if (Layer->AddWidget<UCommonActivatableWidget>(Class, [Layout, &InitFunc](UCommonActivatableWidget& Widget)
+				{ Layout->TrackOverlay(&Widget); if (InitFunc) InitFunc(Widget); })) return;
 			}
-		}));
-	}
-
+		}
+		if (FailureFunc) FailureFunc();
+	};
+	auto Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(ActivatableWidgetClass.ToSoftObjectPath(), FStreamableDelegate::CreateLambda(Complete));
+	if (Handle) Handle->BindCancelDelegate(FStreamableDelegate::CreateLambda([Resume, FailureFunc] { Resume(); if (FailureFunc) FailureFunc(); }));
+	else { Resume(); if (FailureFunc) FailureFunc(); }
 	return Handle;
 }
 
@@ -261,6 +245,7 @@ void UGorgeousPrimaryGameLayout::RegisterLayer(FGameplayTag LayerTag, UCommonAct
 
 	Layers.Add(LayerTag, LayerWidget);
 	// FIX: Use correct API, OnTransitioningChanged, not OnWillRefresh
+	LayerWidget->OnTransitioningChanged.RemoveAll(this);
 	LayerWidget->OnTransitioningChanged.AddUObject(this, &UGorgeousPrimaryGameLayout::OnWidgetStackTransitioning);
 	// Zero transition duration to prevent gamepad focus issues (matches Lyra)
 	LayerWidget->SetTransitionDuration(0.0);
@@ -326,8 +311,26 @@ void UGorgeousPrimaryGameLayout::OnPushWidgetSignalReceived(FGameplayTag SignalT
 {
 	const FGorgeousUIMessageRequest* Request = Payload.GetPtr<FGorgeousUIMessageRequest>();
 	if (!Request || !Request->Config) return;
+	if (auto* Subsystem = UGorgeousUIFoundationSubsystem::GetForContext(this); !Subsystem || (Request->LocalPlayerIndex == INDEX_NONE ? 0 : Request->LocalPlayerIndex) != Subsystem->GetLocalPlayerIndex()) return;
 
-	PushWidgetToLayerStackAsync(Request->Config->LayerTag, true, Request->Config->MessageWidgetClass);
+	const FGorgeousUIMessageRequest DialogRequest = *Request;
+	PushWidgetToLayerStackAsync(Request->Config->LayerTag, true, Request->Config->MessageWidgetClass,
+		[DialogRequest](UCommonActivatableWidget& Widget)
+		{
+			if (UGorgeousActivatableWidget* Dialog = Cast<UGorgeousActivatableWidget>(&Widget))
+			{
+				Dialog->MessageRequest = DialogRequest;
+				Dialog->InitializeMessage(DialogRequest);
+			}
+		}, [Context = TWeakObjectPtr<UGorgeousUIFoundationSubsystem>(UGorgeousUIFoundationSubsystem::GetForContext(this)), DialogRequest]
+		{
+			if (auto* UI = Context.Get())
+			{
+				UI->CompleteMessagePresentation(DialogRequest.RequestID);
+				FGorgeousUIMessageResult Result; Result.RequestID = DialogRequest.RequestID; Result.ResultTag = TEXT("Cancel");
+				USignalBridgeBlueprintFunctionLibrary::DispatchLocal(UI, TAG_Gorgeous_UI_System_Message_Result, FInstancedStruct::Make(Result));
+			}
+		});
 }
 
 void UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived(FGameplayTag SignalTag, const FInstancedStruct& Payload)
@@ -337,6 +340,16 @@ void UGorgeousPrimaryGameLayout::OnRegisterLayerSignalReceived(FGameplayTag Sign
 
 	if (UCommonActivatableWidgetContainerBase* Container = Cast<UCommonActivatableWidgetContainerBase>(RegisterData->LayerWidget))
 	{
-		RegisterLayer(RegisterData->LayerTag, Container);
+		if (UGorgeousUIFoundationSubsystem::GetForContext(Container) == UGorgeousUIFoundationSubsystem::GetForContext(this)) RegisterLayer(RegisterData->LayerTag, Container);
 	}
+}
+
+void UGorgeousPrimaryGameLayout::TrackOverlay(UCommonActivatableWidget* Widget)
+{
+	if (!Widget || TrackedOverlays.Contains(Widget)) return;
+	TrackedOverlays.Add(Widget);
+	IncrementActiveOverlays();
+	Widget->OnDeactivated().RemoveAll(this);
+	Widget->OnDeactivated().AddWeakLambda(this, [this, Weak = TWeakObjectPtr<UCommonActivatableWidget>(Widget)]
+	{ if (TrackedOverlays.Remove(Weak)) DecrementActiveOverlays(); });
 }

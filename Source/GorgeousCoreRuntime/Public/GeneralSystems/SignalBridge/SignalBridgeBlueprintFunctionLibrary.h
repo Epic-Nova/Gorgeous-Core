@@ -43,9 +43,9 @@ class AGorgeousPlayerController;
 //<------------------------------------------------------------->
 UCLASS(
 	meta = (
-		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Overview",
-		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/SignalBridgeBlueprintFunctionLibrary",
-		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/Examples/"
+		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/",
+		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#features",
+		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/SignalBridge/#usage-examples"
 		)
 )
 class GORGEOUSCORERUNTIME_API USignalBridgeBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
@@ -131,6 +131,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Gorgeous Core|Signal Bridge", meta = (WorldContext = "WorldContextObject", CompactNodeTitle = "Clear Listeners"))
 	static void Clear(UObject* WorldContextObject, FGameplayTag Tag, AGorgeousPlayerController* Controller);
+    UFUNCTION(BlueprintCallable, Category="Gorgeous Core|Signal Bridge", meta=(WorldContext="WorldContextObject"))
+    static void Unlisten(UObject* WorldContextObject, FGameplayTag Tag, AGorgeousPlayerController* Controller, const FSignalBridgeEventDelegate& Delegate);
+
 
 	/**
 	 * Adds a specific controller to the allowed list for a custom signal.
