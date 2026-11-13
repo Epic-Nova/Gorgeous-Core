@@ -17,6 +17,11 @@
 
 #define GT_LOGGING_ENABLED 1
 
+#if WITH_EDITOR
+/** Display an actionable editor toast using FGorgeousToastParams and return its Slate item. */
+#define GT_TOAST_FULL_EX(...) (::ShowTrackedToastNotification(__VA_ARGS__))
+#endif
+
 #define GT_I_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 #define GT_S_LOG_ENABLED (GT_LOGGING_ENABLED && 1)
 #define GT_W_LOG_ENABLED (GT_LOGGING_ENABLED && 1)

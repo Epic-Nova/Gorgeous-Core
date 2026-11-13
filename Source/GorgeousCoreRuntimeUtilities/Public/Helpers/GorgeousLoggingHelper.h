@@ -17,11 +17,16 @@
 #include "Macros/GorgeousLoggingHelperMacros.h"
 
 #include "Misc/ConfigCacheIni.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "GameplayTagContainer.h"
 #include "Modules/ModuleManager.h"
+#include "TimerManager.h"
 //<-------------------------------------------------------------------------->
 
 #if WITH_EDITOR
 #include "Framework/Notifications/NotificationManager.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
 //<-------------------------------------------------------------------------->
@@ -59,6 +64,11 @@ struct FGorgeousToastParams
 
 	// Optional hyperlink callback
 	FSimpleDelegate HyperlinkDelegate;
+
+#if WITH_EDITOR
+	TArray<FNotificationButtonInfo> Buttons;
+	bool bUseLargeFont = true;
+#endif
 };
 
 //<============================--- Variables ---============================>
@@ -79,9 +89,9 @@ static bool GbToastNotificationsFlushed = false;
  *
  * @param Params Struct containing all notification parameters.
  */
-FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
-{
 #if WITH_EDITOR
+FORCEINLINE static TSharedPtr<SNotificationItem> ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
+{
 	auto& NotificationManager = FSlateNotificationManager::Get();
 
 	FNotificationInfo Info(FText::FromString(Params.Title));
@@ -90,9 +100,13 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
 	Info.ExpireDuration = Params.ExpireDuration;
 	Info.bUseThrobber = Params.bUseThrobber;
 	Info.bUseSuccessFailIcons = Params.bUseIcons;
+	Info.bUseLargeFont = Params.bUseLargeFont;
+	Info.ButtonDetails = Params.Buttons;
 
     switch (Params.ToastIconKind)
     {
+        case INDEX_NONE:
+            break;
         case 0:
             Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
             break;
@@ -114,9 +128,20 @@ FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParam
 		Info.HyperlinkText = Params.HyperlinkText;
 	}
 
-	NotificationManager.AddNotification(Info);
-#endif
+	return NotificationManager.AddNotification(Info);
 }
+
+/** Displays an actionable toast immediately and returns its dismissible Slate item. */
+FORCEINLINE static TSharedPtr<SNotificationItem> ShowTrackedToastNotification(const FGorgeousToastParams& Params)
+{
+	if (IsRunningCommandlet() || !FSlateApplication::IsInitialized()
+		|| !FSlateNotificationManager::Get().AreNotificationsAllowed())
+	{
+		return nullptr;
+	}
+	return ShowToastNotificationImmediate(Params);
+}
+#endif
 
 /**
  * Attempts to flush all queued toast notifications if the editor is ready.
