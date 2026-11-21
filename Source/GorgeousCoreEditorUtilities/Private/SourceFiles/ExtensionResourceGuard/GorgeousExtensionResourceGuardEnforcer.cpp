@@ -442,6 +442,13 @@ void UGorgeousExtensionResourceGuardEnforcer::PerformStartupValidation()
 }
 void UGorgeousExtensionResourceGuardEnforcer::ShowProtectionBanner()
 {
+	const bool bDisabled = GetDefault<UGorgeousUsefulSettings>()->bDisableExtensionResourceProtection;
+	if (const auto Banner = ProtectionBanner.Pin())
+	{
+		if (bBannerProtectionDisabled == bDisabled) return;
+		Banner->ExpireAndFadeout();
+		ProtectionBanner.Reset();
+	}
 	if (bHasShownProtectionBanner) return;
 	FGorgeousPersistentData& PersistentData = FGorgeousPersistentData::Get();
 	if (PersistentData.HasShownResourceProtectionBanner())
@@ -449,7 +456,6 @@ void UGorgeousExtensionResourceGuardEnforcer::ShowProtectionBanner()
 		bHasShownProtectionBanner = true;
 		return;
 	}
-	const bool bDisabled = GetDefault<UGorgeousUsefulSettings>()->bDisableExtensionResourceProtection;
 	const auto Banner = GT_TOAST_FULL_EX(FGorgeousToastParams{
 		.Title = bDisabled
 			? TEXT("Gorgeous resource protection is OFF. Saving Blueprints with missing required content can permanently lose references and damage assets.")
@@ -471,6 +477,7 @@ void UGorgeousExtensionResourceGuardEnforcer::ShowProtectionBanner()
 	ProtectionBanner = Banner;
 	if (Banner.IsValid())
 	{
+		bBannerProtectionDisabled = bDisabled;
 		bHasShownProtectionBanner = true;
 		PersistentData.MarkResourceProtectionBannerShown();
 	}
@@ -483,8 +490,7 @@ void UGorgeousExtensionResourceGuardEnforcer::ToggleProtectionFromBanner(bool bW
 	if (!bWasDisabled && FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(TEXT("Disable resource protection? Saving assets while required systems or content are missing may permanently remove references and damage Blueprints. You can restore protection from this banner or Core Useful Settings."))) != EAppReturnType::Yes) return;
 	Settings->bDisableExtensionResourceProtection = !bWasDisabled;
 	Settings->SaveConfig();
-	if (const auto Banner = ProtectionBanner.Pin()) Banner->ExpireAndFadeout();
-	ProtectionBanner.Reset();
+	ShowProtectionBanner();
 	if (bWasDisabled) PerformStartupValidation();
 }
 

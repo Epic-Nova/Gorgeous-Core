@@ -19,7 +19,7 @@
 
 #if WITH_EDITOR
 /**
- * Displays a tracked editor toast and returns its Slate notification item.
+ * Displays an actionable editor toast and returns its Slate notification item.
  *
  * @param ... The FGorgeousToastParams forwarded to ShowTrackedToastNotification.
  * @return The notification item, or null when no toast is shown.

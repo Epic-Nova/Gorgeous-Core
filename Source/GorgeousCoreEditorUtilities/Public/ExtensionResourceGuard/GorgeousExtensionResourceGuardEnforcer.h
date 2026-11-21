@@ -102,6 +102,7 @@ private:
 	void ToggleProtectionFromBanner(bool bWasDisabled);
 	TWeakPtr<class SNotificationItem> ProtectionBanner;
 	bool bHasShownProtectionBanner = false;
+	bool bBannerProtectionDisabled = false;
 
 	/**
 	 * Runs once at subsystem initialization.
