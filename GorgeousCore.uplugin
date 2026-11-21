@@ -9,12 +9,16 @@
 	"CreatedByURL": "https://simsalabim.studio",
 	"DocsURL": "https://gorgeous.simsalabim.studio/docs/gorgeous-core/",
 	"MarketplaceURL": "",
-	"SupportURL": "https://support.simsalabim.studio",
+	"SupportURL": "https://epicnova.net/contact",
 	"EngineVersion": "ANY_VERSION",
 	"EnabledByDefault": true,
 	"CanContainContent": true,
 	"IsExperimentalVersion": true,
-	"Installed": true,
+	"PreBuildSteps": {
+		"Win64": [
+			"powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"$(PluginDir)\\Scripts\\Test-GorgeousGuardFolders.ps1\" -Inventory \"$(ProjectDir)\\Intermediate\\GorgeousGuardRequirements\\$(TargetName)-$(TargetPlatform)-$(TargetConfiguration).json\""
+		]
+	},
 	"Modules": [
 		{
 			"Name": "GorgeousBuildPipeline",
@@ -101,5 +105,6 @@
 			"Enabled": true
 		}
 	],
-	"IsBetaVersion": false
+	"IsBetaVersion": false,
+	"EditorCustomVirtualPath": "GorgeousThings"
 }

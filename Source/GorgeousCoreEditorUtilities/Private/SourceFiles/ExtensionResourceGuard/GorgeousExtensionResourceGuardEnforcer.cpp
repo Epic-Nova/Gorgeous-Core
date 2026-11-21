@@ -13,21 +13,21 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
-#ifdef GT_DURATION
-#undef GT_DURATION
-#endif
-#define GT_DURATION 15.0f
+#include "Helpers/GorgeousPersistentData.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "FileHelpers.h"
-#include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-#include "Framework/Application/SlateApplication.h"
 #include "Misc/MessageDialog.h"
 #include "ModuleCore/GorgeousUsefulSettings.h"
 #include "Interfaces/IPluginManager.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 //<-------------------------------------------------------------------------->
+
+// Keep guard notifications readable without leaking their lifetime into unity neighbours.
+#pragma push_macro("GT_DURATION")
+#undef GT_DURATION
+#define GT_DURATION 15.0f
 
 //=============================================================================
 // UGorgeousExtensionResourceGuardEnforcer Implementation
@@ -62,7 +62,7 @@ void UGorgeousExtensionResourceGuardEnforcer::Initialize(FSubsystemCollectionBas
 
 void UGorgeousExtensionResourceGuardEnforcer::Deinitialize()
 {
-	if (ProtectionBanner.IsValid()) ProtectionBanner->ExpireAndFadeout();
+	if (const auto Banner = ProtectionBanner.Pin()) Banner->ExpireAndFadeout();
 	ProtectionBanner.Reset();
 	if (TickerHandle.IsValid())
 	{
@@ -442,32 +442,51 @@ void UGorgeousExtensionResourceGuardEnforcer::PerformStartupValidation()
 }
 void UGorgeousExtensionResourceGuardEnforcer::ShowProtectionBanner()
 {
-	if (IsRunningCommandlet() || !FSlateApplication::IsInitialized()) return;
+	if (bHasShownProtectionBanner) return;
+	FGorgeousPersistentData& PersistentData = FGorgeousPersistentData::Get();
+	if (PersistentData.HasShownResourceProtectionBanner())
+	{
+		bHasShownProtectionBanner = true;
+		return;
+	}
 	const bool bDisabled = GetDefault<UGorgeousUsefulSettings>()->bDisableExtensionResourceProtection;
-	if (ProtectionBanner.IsValid() && bBannerProtectionDisabled == bDisabled) return;
-	if (ProtectionBanner.IsValid()) ProtectionBanner->ExpireAndFadeout();
-	bBannerProtectionDisabled = bDisabled;
-	FNotificationInfo Info(FText::FromString(bDisabled
-		? TEXT("Gorgeous resource protection is OFF. Saving Blueprints with missing required content can permanently lose references and damage assets.")
-		: TEXT("Gorgeous resource protection is ON. Missing required content can damage Blueprint references when saved. The guard requests shutdown after ten minutes only if saving succeeds.")));
-	Info.bFireAndForget = false;
-	Info.bUseLargeFont = false;
-	Info.ExpireDuration = 0.0f;
-	Info.HyperlinkText = FText::FromString(TEXT("Why resource protection matters"));
-	Info.Hyperlink = FSimpleDelegate::CreateLambda([]() { GetMutableDefault<UGorgeousUsefulSettings>()->OpenExtensionResourceProtectionDocumentation(); });
-	Info.ButtonDetails.Add(FNotificationButtonInfo(
-		FText::FromString(bDisabled ? TEXT("Restore Protection") : TEXT("Disable Forced Shutdown")),
-		FText::FromString(TEXT("Change the project protection setting. Disabling requires acknowledgement of the risk to asset references.")),
-		FSimpleDelegate::CreateWeakLambda(this, [this, bDisabled]()
+	const auto Banner = GT_TOAST_FULL_EX(FGorgeousToastParams{
+		.Title = bDisabled
+			? TEXT("Gorgeous resource protection is OFF. Saving Blueprints with missing required content can permanently lose references and damage assets.")
+			: TEXT("Gorgeous resource protection is ON. Missing required content can damage Blueprint references when saved. The guard requests shutdown after ten minutes only if saving succeeds."),
+		.ToastIconKind = INDEX_NONE,
+		.ExpireDuration = 10.0f,
+		.HyperlinkText = FText::FromString(TEXT("Why resource protection matters")),
+		.HyperlinkDelegate = FSimpleDelegate::CreateLambda([]()
 		{
-			if (!bDisabled && FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(TEXT("Disable resource protection? Saving assets while required systems or content are missing may permanently remove references and damage Blueprints. You can restore protection from this banner or Core Useful Settings."))) != EAppReturnType::Yes) return;
-			UGorgeousUsefulSettings* Settings = GetMutableDefault<UGorgeousUsefulSettings>();
-			Settings->bDisableExtensionResourceProtection = !bDisabled;
-			Settings->SaveConfig();
-			if (ProtectionBanner.IsValid()) ProtectionBanner->ExpireAndFadeout();
-			ProtectionBanner.Reset();
-			ShowProtectionBanner();
-			if (bDisabled) PerformStartupValidation();
-		}), SNotificationItem::CS_None));
-	ProtectionBanner = FSlateNotificationManager::Get().AddNotification(Info);
+			GetMutableDefault<UGorgeousUsefulSettings>()->OpenExtensionResourceProtectionDocumentation();
+		}),
+		.Buttons = { FNotificationButtonInfo(
+			FText::FromString(bDisabled ? TEXT("Restore Protection") : TEXT("Disable Forced Shutdown")),
+			FText::FromString(TEXT("Change the project protection setting. Disabling requires acknowledgement of the risk to asset references.")),
+			FSimpleDelegate::CreateUObject(this, &UGorgeousExtensionResourceGuardEnforcer::ToggleProtectionFromBanner, bDisabled),
+			SNotificationItem::CS_None) },
+		.bUseLargeFont = false
+	});
+	ProtectionBanner = Banner;
+	if (Banner.IsValid())
+	{
+		bHasShownProtectionBanner = true;
+		PersistentData.MarkResourceProtectionBannerShown();
+	}
 }
+
+void UGorgeousExtensionResourceGuardEnforcer::ToggleProtectionFromBanner(bool bWasDisabled)
+{
+	UGorgeousUsefulSettings* Settings = GetMutableDefault<UGorgeousUsefulSettings>();
+	if (Settings->bDisableExtensionResourceProtection != bWasDisabled) return;
+	if (!bWasDisabled && FMessageDialog::Open(EAppMsgType::YesNo, FText::FromString(TEXT("Disable resource protection? Saving assets while required systems or content are missing may permanently remove references and damage Blueprints. You can restore protection from this banner or Core Useful Settings."))) != EAppReturnType::Yes) return;
+	Settings->bDisableExtensionResourceProtection = !bWasDisabled;
+	Settings->SaveConfig();
+	if (const auto Banner = ProtectionBanner.Pin()) Banner->ExpireAndFadeout();
+	ProtectionBanner.Reset();
+	if (bWasDisabled) PerformStartupValidation();
+}
+
+#undef GT_DURATION
+#pragma pop_macro("GT_DURATION")

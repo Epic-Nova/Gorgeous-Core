@@ -10,6 +10,7 @@
 <==========================================================================*/
 #include "GorgeousCoreRuntimeModule.h"
 #include "GorgeousGuardRequirements.h"
+#include "GeneralSystems/GorgeousCompiledSystemGuards.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "InsightMatrix/GorgeousInsightTestMatrix.h"
@@ -29,9 +30,19 @@
 #include "Misc/Paths.h"
 #include "GorgeousCoreUtilitiesMinimalShared.h"
 
+bool GorgeousCompiledSystemGuards::IsAvailable(FName Guard)
+{
+#define GORGEOUS_CHECK_GUARD(Name, Available) \
+	if (Guard == FName(TEXT(#Name))) return Available;
+	GORGEOUS_FOR_EACH_COMPILED_GUARD(GORGEOUS_CHECK_GUARD)
+#undef GORGEOUS_CHECK_GUARD
+	return false;
+}
+
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
+#include "Helpers/Macros/GorgeousGameplayTagHelperMacros.h"
 #include "GeneralSystems/GorgeousCheatCommandAliases.h"
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "ObjectVariables/GorgeousObjectVariableCmdletHandler.h"
@@ -47,6 +58,7 @@
 
 void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 {
+	GT_REGISTER_TAG_SOURCE("GorgeousCore");
 	
 #if WITH_EDITOR
 	// Shutdown the Gorgeous Startup Hook Module, because it has already done its job
@@ -64,28 +76,6 @@ void FGorgeousCoreRuntimeModule::GorgeousStartupModule()
 		UGeneralSystemConfiguration_PDA::ActivateAllSystemConfigurations();
 	});
 
-	//@TODO: Use the Gorgeous Helper functions and do this in every gorgeous plugin.
-	/*const TSharedPtr<IPlugin> ThisPlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-	
-	// During module loading, the plugin may not yet be fully registered in the Plugin Manager.
-	// If FindPlugin fails, we calculate the path relative to this module's location.
-	FString PluginBaseDir;
-	if (ThisPlugin.IsValid())
-	{
-		PluginBaseDir = ThisPlugin->GetBaseDir();
-	}
-	else
-	{
-		// Fallback: Calculate plugin directory from module DLL location
-		// The module DLL is in <PluginDir>/Binaries/<Platform>/, so go up 3 levels
-		const FString ModulePath = FModuleManager::Get().GetModuleFilename(TEXT("GorgeousCoreRuntime"));
-		PluginBaseDir = FPaths::GetPath(FPaths::GetPath(FPaths::GetPath(ModulePath)));
-		GT_W_LOG("GT.Core.Lifecycle", TEXT("Could not find GorgeousCore plugin via PluginManager, using calculated path: %s"), *PluginBaseDir);
-	}
-
-	UGameplayTagsManager::Get().AddTagIniSearchPath(PluginBaseDir / TEXT("Config") / TEXT("Tags"));*/
-	
-	GT_REGISTER_TAG_SOURCE("GorgeousCore")
 
 	UGorgeousObjectVariableCmdletHandler::RegisterConsoleCommands();
 	FGorgeousCheatCommandAliases::RegisterConsoleCommands();

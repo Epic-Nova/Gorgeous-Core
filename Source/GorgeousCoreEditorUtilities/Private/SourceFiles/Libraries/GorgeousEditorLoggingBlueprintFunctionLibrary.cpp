@@ -71,7 +71,7 @@ static void ExecuteHyperlinkAction(const FGorgeousLogHyperlink& Hyperlink)
 	{
 		GT_W_LOG("GT.Logging.Hyperlink", TEXT("No valid function '%s' found on handler for action: %s"), *Binding->FunctionName.ToString(), *Hyperlink.ActionName.ToString());
 		GT_E_LOG_FULL_EX("GT.Logging.Hyperlink", TEXT("Failed to execute action '%s': Function '%s' not found on handler class '%s'"),
-			3.f, true, true, true, true, nullptr, nullptr, *Hyperlink.ActionName.ToString(), *Binding->FunctionName.ToString(), *Binding->Handler->GetName());
+			GT_DURATION, true, true, true, true, nullptr, nullptr, *Hyperlink.ActionName.ToString(), *Binding->FunctionName.ToString(), *Binding->Handler->GetName());
 		return;
 	}
 	
@@ -150,7 +150,7 @@ void UGorgeousEditorLoggingBlueprintFunctionLibrary::LogMessageWithAssetHyperlin
 	Hyperlink.LinkText = LinkText.IsEmpty() ? TEXT("Open Asset") : LinkText;
 	Hyperlink.TargetAsset = AssetPath;
 
-	GT_LOG_MESSAGE_FULL_EX(Importance, Message, LoggingKey, 5.0f, true, true, true, false, WorldContextObject, &Hyperlink);
+	GorgeousLogging::LogMessage_Internal(FText::FromString(Message), Importance, LoggingKey, 5.0f, true, true, true, false, WorldContextObject, &Hyperlink);
 }
 
 void UGorgeousEditorLoggingBlueprintFunctionLibrary::RegisterLogHyperlinkAction(const TSubclassOf<UObject> HandlerClass, const FName ActionName, const FName FunctionName)
@@ -200,5 +200,5 @@ void UGorgeousEditorLoggingBlueprintFunctionLibrary::LogMessageWithActionHyperli
 	Hyperlink.bSingleUse = bSingleUse;
 	Hyperlink.ConditionName = ConditionName;
 
-	GT_LOG_MESSAGE_FULL_EX(Importance, Message, LoggingKey, 5.0f, true, true, true, false, WorldContextObject, &Hyperlink);
+	GorgeousLogging::LogMessage_Internal(FText::FromString(Message), Importance, LoggingKey, 5.0f, true, true, true, false, WorldContextObject, &Hyperlink);
 }

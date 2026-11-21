@@ -33,8 +33,9 @@ class GORGEOUSCORERUNTIME_API UAsyncAction_RequestVDGConsent : public UBlueprint
 {
     GENERATED_BODY()
 public:
-    UFUNCTION(BlueprintCallable,Category="Gorgeous Core|Visual Data Gathering",meta=(BlueprintInternalUseOnly="true",WorldContext="WorldContextObject"))
-    static UAsyncAction_RequestVDGConsent* RequestVDGConsent(UObject* WorldContextObject);
+    /** Leave WidgetClass unset to use the built-in consent dialog. Custom widgets submit Confirm or Cancel. */
+    UFUNCTION(BlueprintCallable,Category="Gorgeous Core|Visual Data Gathering",meta=(BlueprintInternalUseOnly="true",WorldContext="WorldContextObject",AdvancedDisplay="WidgetClass"))
+    static UAsyncAction_RequestVDGConsent* RequestVDGConsent(UObject* WorldContextObject, TSoftClassPtr<UGorgeousActivatableWidget> WidgetClass = nullptr);
     virtual void Activate() override;
     UPROPERTY(BlueprintAssignable) FGorgeousVDGConsentDecision OnAccepted;
     UPROPERTY(BlueprintAssignable) FGorgeousVDGConsentDecision OnDeclined;
@@ -43,6 +44,7 @@ private:
     UFUNCTION() void Declined(FName Result);
     void Finish(bool bAccepted);
     UPROPERTY(Transient) TObjectPtr<UObject> Context;
+    UPROPERTY(Transient) TSoftClassPtr<UGorgeousActivatableWidget> DialogWidgetClass;
     UPROPERTY(Transient) TObjectPtr<UGorgeousUIMessageConfig_DA> DialogConfig;
     UPROPERTY(Transient) TObjectPtr<UAsyncAction_PushGorgeousMessage> DialogAction;
     bool bFinished=false;

@@ -11,8 +11,8 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
-//<--------------------------=== Engine Includes ===------------------------->
-#include "Engine/DeveloperSettings.h"
+//<--------------------------=== Module Includes ===------------------------->
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousNudgeDeveloperSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -22,7 +22,7 @@
 <-----------------------------=== Quick Info ===---------------------------->
 | Display Name: Gorgeous Nudges
 | Functional Name: UGorgeousNudgeDeveloperSettings
-| Parent Class: UDeveloperSettings
+| Parent Class: UGorgeousCoreDeveloperSettings
 | Class Suffix: -
 | Author: Nils Bergemann
 <--------------------------------------------------------------------------->
@@ -30,16 +30,16 @@
 | Stores the project-user preferences that control automatic Gorgeous nudge
 | checks and tutorial recommendations.
 <--------------------------------------------------------------------------->
-<===========================================================================>
+<==========================================================================>
 */
-UCLASS(Config = EditorPerProjectUserSettings, DefaultConfig,
-	meta = (
+UCLASS(Config = EditorPerProjectUserSettings,
+	meta = (GorgeousSettingsPage = "General",
 		DisplayName = "Nudges",
 		DocumentationOverview = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/ProjectSettings/#nudges",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Editor/Overview/#updates-and-news"
 		))
-class GORGEOUSCOREEDITOR_API UGorgeousNudgeDeveloperSettings : public UDeveloperSettings
+class GORGEOUSCOREEDITOR_API UGorgeousNudgeDeveloperSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -47,8 +47,8 @@ class GORGEOUSCOREEDITOR_API UGorgeousNudgeDeveloperSettings : public UDeveloper
 	#pragma region Overrides
 public:
 
-	// Returns the settings category displayed by the editor.
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
+	// Shows these project-user preferences in Project Settings.
+	virtual FName GetContainerName() const override { return TEXT("Project"); }
 
 	// Returns the settings section displayed by the editor.
 	virtual FText GetSectionText() const override;
@@ -58,7 +58,6 @@ public:
 
 	//<============================--- C++ Only ---=============================>
 	#pragma region C++ Only
-public:
 
 	/**
 	 * Returns the project-user nudge settings.
@@ -72,10 +71,9 @@ public:
 
 	//<====================--- UAT/UBT Exposed Variables ---====================>
 	#pragma region UAT/UBT Exposed Variables
-public:
 
 	// Enables periodic checks and deferred update, news, and tutorial presentation.
-	UPROPERTY(EditAnywhere, Config, Category = "Nudges")
+	UPROPERTY(Config)
 	bool bEnableAutomaticNudges = true;
 
 	// Defines the interval between automatic nudge checks.
@@ -83,8 +81,36 @@ public:
 	float CheckIntervalSeconds = 3600.0f;
 
 	// Enables tutorial recommendations for newly installed plugins.
-	UPROPERTY(EditAnywhere, Config, Category = "Nudges")
+	UPROPERTY(Config)
 	bool bShowTutorialForNewPlugins = true;
+
+	// Includes update announcements for enabled Gorgeous plugins in the carousel.
+	UPROPERTY(Config)
+	bool bShowPluginUpdates = true;
+
+	// Includes update announcements for installed general systems in the carousel.
+	UPROPERTY(Config)
+	bool bShowGeneralSystemUpdates = true;
+
+	// Includes general ecosystem news in the carousel.
+	UPROPERTY(Config)
+	bool bShowEcosystemNews = true;
+
+	// Announces newly published tutorials in a toast with a separate article window.
+	UPROPERTY(Config)
+	bool bShowNewTutorialsWhenAvailable = true;
+
+	// Announces downloadable general systems and offers to select them in the Library.
+	UPROPERTY(Config)
+	bool bNotifyNewSystems = true;
+
+	// Shows common tips only for Gorgeous plugins enabled in this project.
+	UPROPERTY(Config)
+	bool bShowCommonPluginTips = true;
+
+	// Lets sampled asset-editor visits send a coarse asset category to request a matching tip.
+	UPROPERTY(Config)
+	bool bContextAwareTips = false;
 	//<------------------------------------------------------------------------->
 	#pragma endregion UAT/UBT Exposed Variables
 };

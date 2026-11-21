@@ -12,15 +12,15 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
+#include "LibraryWizard/GorgeousLibraryTypes.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
 #include "AssetRegistry/AssetData.h"
 #include "Widgets/Views/SListView.h"
 #include "Widgets/Views/STileView.h"
 #include "Widgets/Views/STableRow.h"
 #include "Filters/SFilterBar.h"
-#include "LibraryWizard/GorgeousLibraryTypes.h"
-//<--------------------------=== Engine Includes ===------------------------->
-#include "CoreMinimal.h"
 //<-------------------------------------------------------------------------->
 
 class IGorgeousLibraryParticipant;
@@ -55,6 +55,22 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
+
+	/**
+	 * Opens the registered Library tab and selects the matching catalog system when present.
+	 *
+	 * @param SystemId The stable system ID used by the catalog.
+	 * @return True when the matching system was selected.
+	 */
+	static bool OpenAndFocusSystem(const FString& SystemId);
+
+	/**
+	 * Selects and scrolls to the matching system without triggering installation.
+	 *
+	 * @param SystemId The stable catalog system ID to locate.
+	 * @return True when a matching system descriptor was selected.
+	 */
+	bool FocusSystem(const FString& SystemId);
 
 private:
 

@@ -13,7 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousUIFoundationSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -37,13 +37,13 @@ class UGorgeousInputBinding_DA;
 <==========================================================================>
 */
 UCLASS(config = Game, defaultconfig,
-	meta = (
+	meta = (GorgeousSettingsPage = "Systems", GorgeousSettingsGuard = "CommonUIFoundation",
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/ProjectSettings/#core-ui-foundation",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/CommonUIFoundation/Overview/#quick-start"
 		)
 )
-class GORGEOUSCORERUNTIME_API UGorgeousUIFoundationSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousUIFoundationSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -78,13 +78,12 @@ public:
 	public:
 
 	// Returns the project settings category used by this settings object.
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
 
 	// Returns the project settings section identifier.
 	virtual FName GetSectionName() const override { return TEXT("Core|UI Foundation"); }
 
 	// Returns the display name shown for this settings section.
-	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousCoreUIFoundationSettings", "SectionName", "Core ↪ UI Foundation"); }
+	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousCoreUIFoundationSettings", "SectionName", "Core ↪ Common UI Foundation"); }
 
 	// Returns the descriptive text shown for this settings section.
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousCoreUIFoundationSettings", "SectionDescription", "Global settings for the Gorgeous UI Foundation, including default layout, theme, and input bindings."); }

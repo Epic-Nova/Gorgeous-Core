@@ -16,7 +16,7 @@
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "ReplicationGraph.h"
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousAutoReplicationSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -42,12 +42,13 @@ class UReplicationGraph;
 */
 UCLASS(Config = Game, DefaultConfig,
 	meta = (
+		GorgeousSettingsPage = "AutoReplication",
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/ProjectSettings/#core-auto-replication",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/"
 		)
 )
-class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousAutoReplicationSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -85,7 +86,6 @@ public:
 	static const UGorgeousAutoReplicationSettings* Get();
 
 #if WITH_EDITOR
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
 	virtual FName GetSectionName() const override { return TEXT("Core|Auto Replication"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionName", "Core ↪ Auto Replication"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousAutoReplication", "SectionDescription", "Configure Iris and Replication Graph backends for auto-replicated objects."); }

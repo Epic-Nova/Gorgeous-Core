@@ -25,6 +25,9 @@
 #include "GorgeousUIFoundationStructures.generated.h"
 //<-------------------------------------------------------------------------->
 
+class UTexture2D;
+class UUserWidget;
+
 /**
  * Contains UI update values routed through the Signal Bridge.
  *

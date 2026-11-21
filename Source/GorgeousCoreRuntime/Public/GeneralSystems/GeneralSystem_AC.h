@@ -10,10 +10,14 @@
 <==========================================================================*/
 #pragma once
 #include "Components/ActorComponent.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GeneralSystem_AC.generated.h"
+
+class UGeneralSystemConfiguration_PDA;
 //<-------------------------------------------------------------------------->
 
 /*
@@ -40,6 +44,15 @@ UCLASS(BlueprintType, Blueprintable,
 class GORGEOUSCORERUNTIME_API UGeneralSystem_AC : public UActorComponent
 {
     GENERATED_BODY()
+public:
+    /** The system asset that defines the project settings schema for this component. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System|Project Settings")
+    TSoftObjectPtr<UGeneralSystemConfiguration_PDA> ProjectSettingsConfiguration;
+
+    /** Resolves project overrides over the asset defaults. Use Get Instanced Struct Value to read the typed struct. */
+    UFUNCTION(BlueprintCallable, Category = "General Core System|Project Settings")
+    FInstancedStruct GetSystemProjectSettings() const;
+
 protected:
     virtual void OnRegister() override;
 };

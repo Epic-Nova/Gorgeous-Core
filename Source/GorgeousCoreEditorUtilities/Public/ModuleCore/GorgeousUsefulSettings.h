@@ -12,7 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 #include "GorgeousUsefulSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
@@ -25,8 +25,8 @@ enum class ECookProgressDisplayMode : int32;
  *
  * @note Special Thanks to Ari Arnbjörnsson for the inspirational work, check out https://ari.games to see more gorgeous work from him
  */
-UCLASS(Config = Editor, DefaultConfig, DisplayName = "Core ↪ Useful Settings")
-class GORGEOUSCOREEDITORUTILITIES_API UGorgeousUsefulSettings : public UDeveloperSettings
+UCLASS(Config = Editor, DefaultConfig, DisplayName = "Core ↪ Useful Settings", meta = (GorgeousSettingsPage = "General", GorgeousSplitEditorDiagnostics))
+class GORGEOUSCOREEDITORUTILITIES_API UGorgeousUsefulSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -56,7 +56,6 @@ protected:
 #if WITH_EDITOR
 
 	// Returns the name of the category in the Project Settings where these settings should appear. This is used to group these settings under a common category in the editor UI.
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
 
 	// Returns the display name of the section in the Project Settings where these settings should appear. This is used as the section header in the editor UI.
 	virtual FText GetSectionText() const override;

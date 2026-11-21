@@ -1,22 +1,16 @@
 #include "LibraryWizard/GorgeousPersistentDataConfig_DA.h"
-#include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
+#include "UObject/UnrealType.h"
 
 #if WITH_EDITOR
 void UGorgeousPersistentDataConfig_DA::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+	const FName MemberName = PropertyChangedEvent.GetMemberPropertyName();
+	if (MemberName == GET_MEMBER_NAME_CHECKED(UGorgeousPersistentDataConfig_DA, ValidationInterval))
 	{
-		// Map our edited properties back to the actual JSON representation
-		Helper->SetSystemValidationInterval(ValidationInterval);
-		Helper->SetSystemValidationCount(ValidationCount);
-		Helper->SetHasRunInitialValidation(bHasRunInitialValidation);
-		Helper->SetPluginUpdateCache(PluginUpdateCache);
-		Helper->SetForceDevMode(bForceDevMode);
-
-		// Instantly write the modifications to GorgeousPersistentData.json
-		Helper->SavePersistentData();
+		FGorgeousPersistentData::Get().SetSystemValidationInterval(ValidationInterval);
 	}
 }
 #endif

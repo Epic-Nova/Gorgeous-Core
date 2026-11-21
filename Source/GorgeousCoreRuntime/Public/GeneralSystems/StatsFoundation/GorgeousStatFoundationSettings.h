@@ -15,7 +15,7 @@
 #include "GorgeousStatFoundationStructures.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousStatFoundationSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -35,14 +35,14 @@
 <==========================================================================>
 */
 UCLASS(Config = GorgeousStats, DefaultConfig,
-	meta = (
+	meta = (GorgeousSettingsPage = "Systems", GorgeousSettingsSystem = "StatsFoundation",
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#settings",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/GeneralSystems/StatsFoundation/#usage-examples"
 		)
 )
 
-class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousStatFoundationSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -94,11 +94,10 @@ public:
 	public:
 
 	// Returns the project settings category containing these settings.
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
 	// Returns the project settings section identifier.
 	virtual FName GetSectionName() const override { return TEXT("Core|Stats"); }
 	// Returns the display text for the project settings section.
-	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousStatSettings", "SectionName", "Core ↪ Stats"); }
+	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousStatSettings", "SectionName", "Core ↪ Stats Foundation"); }
 	// Returns the description shown for the project settings section.
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousStatSettings", "SectionDescription", "Configure global stat registry, signal routing, and default values."); }
 #endif

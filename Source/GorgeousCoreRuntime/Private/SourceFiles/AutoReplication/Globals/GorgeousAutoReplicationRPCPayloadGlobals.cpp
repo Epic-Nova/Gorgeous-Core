@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "AutoReplication/Globals/GorgeousAutoReplicationRPCPayloadGlobals.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 #include "ObjectVariables/GorgeousObjectVariable.h"
 #include "Serialization/MemoryWriter.h"
@@ -70,19 +71,15 @@ namespace GorgeousRPCPayloadLibrary_Private
 			UObject* RawObj = AsObject->GetObjectPropertyValue(ValuePtr);
 			if (!RawObj)
 			{
-				UE_LOG(LogScript, Warning,
-					TEXT("GorgeousRPC: FObjectProperty '%s' holds a null reference."
-					     " A null UObject cannot be serialized as an RPC argument."),
-					*Property->GetName());
+				GT_W_LOG(TEXT("GT.AutoReplication.RPC.Payload.NullObjectReference"), TEXT("GorgeousRPC: FObjectProperty '%s' holds a null reference."
+					     " A null UObject cannot be serialized as an RPC argument."), *Property->GetName());
 				return false;
 			}
 			UGorgeousObjectVariable* AsOV = Cast<UGorgeousObjectVariable>(RawObj);
 			if (!AsOV)
 			{
-				UE_LOG(LogScript, Warning,
-					TEXT("GorgeousRPC: FObjectProperty '%s' holds a non-UGorgeousObjectVariable UObject ('%s')."
-					     " Only UGorgeousObjectVariable subclasses are supported as RPC argument object references."),
-					*Property->GetName(), *RawObj->GetClass()->GetName());
+				GT_W_LOG(TEXT("GT.AutoReplication.RPC.Payload.UnsupportedObjectType"), TEXT("GorgeousRPC: FObjectProperty '%s' holds a non-UGorgeousObjectVariable UObject ('%s')."
+					     " Only UGorgeousObjectVariable subclasses are supported as RPC argument object references."), *Property->GetName(), *RawObj->GetClass()->GetName());
 				return false;
 			}
 			OutStructTypeName = FName(*AsOV->GetClass()->GetPathName());

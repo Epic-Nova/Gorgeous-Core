@@ -88,6 +88,9 @@ public:
 	 */
 	virtual TArray<FGorgeousLibraryCategoryDescriptor> GetLibraryCategories() const = 0;
 
+	// Refreshes catalog-backed assets before the Library queries this participant.
+	virtual void RefreshLibraryAssets() {}
+
 	/**
 	 * Appends transient or native entries to a category after the Asset Registry
 	 * result has been gathered. This is intended for C++ template CDOs: they are

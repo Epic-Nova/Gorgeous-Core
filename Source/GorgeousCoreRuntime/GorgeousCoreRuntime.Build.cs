@@ -42,15 +42,13 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
             "Niagara"
         });
 
-        PublicDependencyModuleNames.Add("DataRegistry");
+        PublicDependencyModuleNames.AddRange(new[] { "DataRegistry", "DeveloperSettings" });
 
         // Include the VaultLoader source files
         PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "..", "ThirdParty", "GorgeousVault", "Loader"));
         
         PublicDefinitions.Add("GORGEOUSCORE_WITH_PLUS=0");
 
-        // Automatically inject system macros dynamically via Reflection
-        InjectForeignPluginMacros();
 
         if (Target.Type == TargetType.Editor)
         {
@@ -89,26 +87,6 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
 
         PublicDefinitions.Add("GORGEOUSCORE_WITH_COG=0");
 
-        DumpMacroDebug();
-    }
-
-    private static string GetModuleDir([System.Runtime.CompilerServices.CallerFilePath] string filePath = "")
-    {
-        return Path.GetDirectoryName(filePath);
-    }
-
-    [GorgeousMacroProvider]
-    public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros(ReadOnlyTargetRules Target)
-    {
-        var moduleDir = GetModuleDir();
-        var pluginsDir = Target.ProjectFile != null
-            ? Path.Combine(Path.GetDirectoryName(Target.ProjectFile.FullName), "Plugins")
-            : Path.Combine(UnrealBuildBase.Unreal.EngineDirectory.FullName, "Plugins");
-        
-        var macros = new System.Collections.Generic.List<string>();
-        macros.AddRange(InjectPluginMacros(pluginsDir, Target.ProjectFile?.FullName));
-        macros.AddRange(InjectGeneralSystemMacros("Core", moduleDir, true));
-        
-        return macros;
+        WriteDefinitionDebugReport();
     }
 }

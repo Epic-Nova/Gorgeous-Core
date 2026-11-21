@@ -17,6 +17,7 @@
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
 #include "QualityOfLife/GorgeousQualityOfLifeNodeTarget_I.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "Engine/GameInstance.h"
 #include "GorgeousGameInstance.generated.h"
 //<-------------------------------------------------------------------------->
 

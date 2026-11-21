@@ -1,5 +1,6 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "Commandlets/GorgeousAuditFixupCommandlet.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Commandlets/GorgeousVDGConsentAssetPatch.h"
 #include "Commandlets/GorgeousGuardRequirementsExporter.h"
 
@@ -46,11 +47,10 @@
 #include "QualityOfLife/GorgeousWorldSettings.h"
 #include "GeneralSystems/CommonUIFoundation/GorgeousHUD.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAuditFixup, Log, All);
 
 namespace
 {
-const TCHAR* VDGSurveyRowPackage = TEXT("/GorgeousCore/Systems/VisualDataGeathering/UserInterfaces/Defaults/BP_VDG_SurveyRow_CUW");
+const TCHAR* VDGSurveyRowPackage = TEXT("/GorgeousCore/Systems/VisualDataGathering/UserInterfaces/Defaults/BP_VDG_SurveyRow_CUW");
 
 // Mirror the engine's parent-first redirect lookup through its public Blueprint
 // API. UStruct::FindPropertyNameFromGuid is protected on UE5.7.
@@ -101,7 +101,7 @@ bool RecoverLegacyVDGCompatibility(UObject* Root, const TArray<uint8>& Bytes, bo
     FLinkerLoad* Linker = Root->GetLinker();
     if (!Linker || Linker->LinkerRoot != Root->GetOutermost())
     {
-        UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Cannot inspect original VDG compatibility: package linker unavailable."));
+        GT_E_LOG(TEXT("GT.Audit.Fixup.VDG.PackageLinkerMissing"), TEXT("Cannot inspect original VDG compatibility: package linker unavailable."));
         return false;
     }
     // Current resaves have FString tags. Independent reload still emits the
@@ -186,8 +186,7 @@ bool RecoverLegacyVDGCompatibility(UObject* Root, const TArray<uint8>& Bytes, bo
                 Item->SetBoolField(TEXT("RequestedApply"), bApply);
                 Item->SetBoolField(TEXT("Applied"), false);
                 Evidence.Add(MakeShared<FJsonValueObject>(Item));
-                UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Recovered original VDG Name-array export=%d object=%s field=%s count=%d values=[%s] apply=%s"),
-                    ExportIndex, *Target->GetPathName(), *StoredName.ToString(), Count, *FString::Join(Recovered, TEXT(", ")), bApply ? TEXT("true") : TEXT("false"));
+                GT_D_LOG(TEXT("GT.Audit.Fixup.VDG.LegacyArrayRecovered"), TEXT("Recovered original VDG Name-array export=%d object=%s field=%s count=%d values=[%s] apply=%s"), ExportIndex, *Target->GetPathName(), *StoredName.ToString(), Count, *FString::Join(Recovered, TEXT(", ")), bApply ? TEXT("true") : TEXT("false"));
                 PendingRepairs.Emplace(Target, MoveTemp(Recovered));
                 ++LegacyArrays;
             }
@@ -200,7 +199,7 @@ bool RecoverLegacyVDGCompatibility(UObject* Root, const TArray<uint8>& Bytes, bo
     if (LegacyArrays != 2) return false;
     if (!bApply)
     {
-        UE_LOG(LogGorgeousAuditFixup, Warning, TEXT("Two legacy VDG compatibility filters need explicit -Apply; original values recovered without saving."));
+        GT_W_LOG(TEXT("GT.Audit.Fixup.VDG.ApplyRequired"), TEXT("Two legacy VDG compatibility filters need explicit -Apply; original values recovered without saving."));
         return false;
     }
     // Decode and validate both exports completely before mutating either one.
@@ -274,7 +273,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 	const TSet<FName> GraphDumpTargets = {
 		TEXT("BP_TeamManager_AC"), TEXT("BP_TeamInteractor_AC"), TEXT("BP_TeamPlayerModifier_A"),
 		TEXT("BP_PlaylistObject"), TEXT("BP_PlaylistHandling_AC"),
-		TEXT("BP_VisualDataGeatheringInteractor_AC"), TEXT("BP_Reconnect_BFL"), TEXT("BP_InteractionCharacterHandler_AC"), TEXT("BP_InteractionBaseHandler_AC"), TEXT("BP_TeamCard_CUW"),
+		TEXT("BP_VisualDataGatheringInteractor_AC"), TEXT("BP_Reconnect_BFL"), TEXT("BP_InteractionCharacterHandler_AC"), TEXT("BP_InteractionBaseHandler_AC"), TEXT("BP_TeamCard_CUW"),
         TEXT("BP_VDG_SurveyCard_CUW"), TEXT("BP_VDG_Survey_Default_Schema_CUW"),
         TEXT("BP_VDG_NamedSlot"), TEXT("BP_HorizontallyAlligned_VDGP")
 	};
@@ -288,7 +287,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 		{ TEXT("DA_General"), { FName(TEXT("DataValidation")) } },
 		{ TEXT("DA_Playlist"), { FName(TEXT("DataRegistry")), FName(TEXT("GameFeatures")) } },
 		{ TEXT("DA_Team"), { FName(TEXT("CommonUI")) } },
-		{ TEXT("DA_VisualDataGeathering"), { FName(TEXT("CommonUI")) } },
+		{ TEXT("DA_VisualDataGathering"), { FName(TEXT("CommonUI")) } },
 		{ TEXT("DA_CommonUIFoundation"), { FName(TEXT("CommonUI")) } }
 	};
 
@@ -303,7 +302,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 		for (FName Plugin : *Expected)
 		{
 			if (Guard->RequiredPlugins.Contains(Plugin)) continue;
-			UE_LOG(LogGorgeousAuditFixup, Warning, TEXT("Missing serialized guard requirement: %s -> %s"), *Guard->GetPathName(), *Plugin.ToString());
+			GT_W_LOG(TEXT("GT.Audit.Fixup.Guard.RequirementMissing"), TEXT("Missing serialized guard requirement: %s -> %s"), *Guard->GetPathName(), *Plugin.ToString());
 			if (bApply)
 			{
 				Guard->Modify();
@@ -323,12 +322,12 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 	const UGorgeousUIFoundationSettings* Settings = GetDefault<UGorgeousUIFoundationSettings>();
 	if (!Settings->DefaultLayoutClass.LoadSynchronous())
 	{
-		UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Default layout class does not load: %s"), *Settings->DefaultLayoutClass.ToString());
+		GT_E_LOG(TEXT("GT.Audit.Fixup.UI.LayoutClassMissing"), TEXT("Default layout class does not load: %s"), *Settings->DefaultLayoutClass.ToString());
 		++Failures;
 	}
 	if (!Settings->DefaultTheme.LoadSynchronous())
 	{
-		UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Default theme does not load: %s"), *Settings->DefaultTheme.ToString());
+		GT_E_LOG(TEXT("GT.Audit.Fixup.UI.ThemeMissing"), TEXT("Default theme does not load: %s"), *Settings->DefaultTheme.ToString());
 		++Failures;
 	}
 
@@ -337,7 +336,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 	for (const FAssetData& Asset : CoreAssets)
 	{
         if (bDumpGraphs && (GraphDumpTargets.Contains(Asset.AssetName) ||
-            Asset.AssetName == TEXT("BP_Playlist_GGFD") || Asset.AssetName == TEXT("VisualDataGeatheringParameter_S") ||
+            Asset.AssetName == TEXT("BP_Playlist_GGFD") || Asset.AssetName == TEXT("VisualDataGatheringParameter_S") ||
             Asset.AssetName == TEXT("BP_Difficulty_GPDA") || Asset.AssetName == TEXT("DT_DefaultPlaylists")))
         {
             TSharedRef<FJsonObject> Reference = MakeShared<FJsonObject>();
@@ -356,14 +355,14 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 		FFileHelper::LoadFileToArray(SerializedBytes, *AssetFilename);
 		const bool bHasLegacySerializedReferences =
 			ContainsSerializedToken(SerializedBytes, "AuthorativeComponent") ||
-			ContainsSerializedToken(SerializedBytes, "/GorgeousCore/Systems/VisualDataGeathering/Data/VisualDataGeatheringSlotPanel_E") ||
-			ContainsSerializedToken(SerializedBytes, "/GorgeousCore/Systems/VisualDataGeathering/Data/VisualDataGeatheringSlotResolutionRule_E") ||
+			ContainsSerializedToken(SerializedBytes, "/GorgeousCore/Systems/VisualDataGathering/Data/VisualDataGatheringSlotPanel_E") ||
+			ContainsSerializedToken(SerializedBytes, "/GorgeousCore/Systems/VisualDataGathering/Data/VisualDataGatheringSlotResolutionRule_E") ||
 			(Asset.AssetName == FName(TEXT("BP_DefaultPrimaryGameLayout_CUW")) && ContainsSerializedToken(SerializedBytes, "/GorgeousInventory/"));
 		bool bChangedExplicitly = false;
 		UObject* Object = Asset.GetAsset();
 		if (!Object)
 		{
-			UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Asset failed to load: %s"), *Asset.GetSoftObjectPath().ToString());
+			GT_E_LOG(TEXT("GT.Audit.Fixup.Asset.LoadFailed"), TEXT("Asset failed to load: %s"), *Asset.GetSoftObjectPath().ToString());
 			++Failures;
 			continue;
 		}
@@ -371,7 +370,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
         if (Asset.PackageName == VDGSurveyRowPackage &&
             !RecoverLegacyVDGCompatibility(Object, SerializedBytes, bApply, bChangedExplicitly, VDGRecoveryEvidence))
         {
-            UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Original VDG compatibility filters could not be safely validated/repaired; package will not be saved."));
+            GT_E_LOG(TEXT("GT.Audit.Fixup.VDG.ValidationFailed"), TEXT("Original VDG compatibility filters could not be safely validated/repaired; package will not be saved."));
             ++Failures;
             continue;
         }
@@ -414,7 +413,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 				{
 					Configuration->MarkPackageDirty();
 					bChangedExplicitly = true;
-					UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Updated GSC requirement mirrors and explicit settings contributions: %s"), *Configuration->GetPathName());
+					GT_D_LOG(TEXT("GT.Audit.Fixup.GeneralSystem.RequirementsUpdated"), TEXT("Updated GSC requirement mirrors and explicit settings contributions: %s"), *Configuration->GetPathName());
 				}
 			}
 		}
@@ -547,7 +546,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 								Pin->DefaultValue.Reset();
 								FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 								bChangedExplicitly = true;
-								UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Removed optional Inventory class pin from Core default layout: %s"), *Pin->PinName.ToString());
+								GT_D_LOG(TEXT("GT.Audit.Fixup.UI.OptionalInventoryPinRemoved"), TEXT("Removed optional Inventory class pin from Core default layout: %s"), *Pin->PinName.ToString());
 							}
 						}
 					}
@@ -558,7 +557,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 			++CompiledBlueprints;
 			if (Results.NumErrors > 0)
 			{
-				UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Blueprint compilation failed: %s (%d errors)"), *Blueprint->GetPathName(), Results.NumErrors);
+				GT_E_LOG(TEXT("GT.Audit.Fixup.Blueprint.CompileFailed"), TEXT("Blueprint compilation failed: %s (%d errors)"), *Blueprint->GetPathName(), Results.NumErrors);
 				++Failures;
 				continue;
 			}
@@ -588,7 +587,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 		const FString ModePackageName = TEXT("/GorgeousCore/Examples/BP_GorgeousCoreSmokeGameMode");
 		if (FPackageName::DoesPackageExist(MapPackageName))
 		{
-			UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Smoke map already exists and was preserved: %s"), *MapPackageName);
+			GT_D_LOG(TEXT("GT.Audit.Fixup.SmokeMap.Preserved"), TEXT("Smoke map already exists and was preserved: %s"), *MapPackageName);
 		}
 		else
 		{
@@ -604,7 +603,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 					FKismetEditorUtilities::CompileBlueprint(ModeBlueprint);
 					if (!ModeBlueprint->GeneratedClass)
 					{
-						UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Smoke game mode compilation failed."));
+						GT_E_LOG(TEXT("GT.Audit.Fixup.SmokeMap.GameModeCompileFailed"), TEXT("Smoke game mode compilation failed."));
 						return 1;
 					}
 					AGameModeBase* Mode = ModeBlueprint->GeneratedClass->GetDefaultObject<AGameModeBase>();
@@ -625,7 +624,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 			UWorld* World = Cast<UWorld>(Factory->FactoryCreateNew(UWorld::StaticClass(), MapPackage, TEXT("GorgeousCoreSmoke"), RF_Public | RF_Standalone, nullptr, GWarn));
 			if (!World || !ModeBlueprint || !ModeBlueprint->GeneratedClass)
 			{
-				UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Failed to create smoke map/game mode."));
+				GT_E_LOG(TEXT("GT.Audit.Fixup.SmokeMap.CreationFailed"), TEXT("Failed to create smoke map/game mode."));
 				++Failures;
 			}
 			else
@@ -636,7 +635,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 				AGorgeousWorldSettings* SmokeWorldSettings = World->SpawnActor<AGorgeousWorldSettings>(Spawn);
 				if (!SmokeWorldSettings)
 				{
-					UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Failed to spawn smoke-map WorldSettings."));
+					GT_E_LOG(TEXT("GT.Audit.Fixup.SmokeMap.WorldSettingsMissing"), TEXT("Failed to spawn smoke-map WorldSettings."));
 					return 1;
 				}
 				World->PersistentLevel->SetWorldSettings(SmokeWorldSettings);
@@ -647,7 +646,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 				World->MarkPackageDirty();
 				FAssetRegistryModule::AssetCreated(World);
 				PackagesToSave.Add(MapPackage);
-				UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Created QoL framework smoke map (no project GameInstance setting changes): %s"), *MapPackageName);
+				GT_D_LOG(TEXT("GT.Audit.Fixup.SmokeMap.Created"), TEXT("Created QoL framework smoke map (no project GameInstance setting changes): %s"), *MapPackageName);
 			}
 		}
 	}
@@ -655,7 +654,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 	{
 		for (UPackage* Package : PackagesToSave)
 		{
-			UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Saving repaired asset package: %s"), *Package->GetName());
+			GT_D_LOG(TEXT("GT.Audit.Fixup.Package.Saving"), TEXT("Saving repaired asset package: %s"), *Package->GetName());
 			const FString Filename = FPackageName::LongPackageNameToFilename(Package->GetName(), Package->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension());
 			IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);
 			FSavePackageArgs SaveArgs;
@@ -663,7 +662,7 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 			SaveArgs.SaveFlags = SAVE_NoError;
 			if (!UPackage::SavePackage(Package, nullptr, *Filename, SaveArgs))
 			{
-				UE_LOG(LogGorgeousAuditFixup, Error, TEXT("Failed to save repaired package: %s"), *Package->GetName());
+				GT_E_LOG(TEXT("GT.Audit.Fixup.Package.SaveFailed"), TEXT("Failed to save repaired package: %s"), *Package->GetName());
 				++Failures;
 			}
 		}
@@ -685,9 +684,8 @@ int32 UGorgeousAuditFixupCommandlet::Main(const FString& Params)
 		const FString Filename = FPaths::ProjectSavedDir() / TEXT("GorgeousThings/AuditGraphs.json");
 		IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename), true);
 		if (!FFileHelper::SaveStringToFile(Json, *Filename)) ++Failures;
-		UE_LOG(LogGorgeousAuditFixup, Display, TEXT("Read-only Blueprint graph dump: %s (%d assets)"), *Filename, GraphDumpAssets.Num());
+		GT_D_LOG(TEXT("GT.Audit.Fixup.Blueprint.GraphDumpWritten"), TEXT("Read-only Blueprint graph dump: %s (%d assets)"), *Filename, GraphDumpAssets.Num());
 	}
-	UE_LOG(LogGorgeousAuditFixup, Display, TEXT("AUDIT_RESULT Mode=%s GuardRepairs=%d BlueprintsCompiled=%d PackagesSaved=%d Failures=%d"),
-		bApply ? TEXT("Apply") : bCreateTestMap ? TEXT("CreateTestMap") : TEXT("ReadOnly"), RepairedGuards, CompiledBlueprints, (bApply || bCreateTestMap) ? PackagesToSave.Num() : 0, Failures);
+	GT_D_LOG(TEXT("GT.Audit.Fixup.Result"), TEXT("AUDIT_RESULT Mode=%s GuardRepairs=%d BlueprintsCompiled=%d PackagesSaved=%d Failures=%d"), bApply ? TEXT("Apply") : bCreateTestMap ? TEXT("CreateTestMap") : TEXT("ReadOnly"), RepairedGuards, CompiledBlueprints, (bApply || bCreateTestMap) ? PackagesToSave.Num() : 0, Failures);
 	return Failures == 0 ? 0 : 1;
 }

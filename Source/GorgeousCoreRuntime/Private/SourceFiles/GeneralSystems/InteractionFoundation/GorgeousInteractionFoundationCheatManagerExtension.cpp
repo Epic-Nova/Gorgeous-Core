@@ -54,11 +54,11 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_InspectInteracti
 	APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction focus inspection failed: no player controller is available."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus inspection failed: no player controller is available."));
 		return;
 	}
 
-	GT_I_LOG(TEXT("Cheat"), TEXT("Interaction focus: Controller=%s, Pawn=%s, TrackedActors=%d, Successful=%d, Rejected=%d, PermissionDenied=%d"),
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus: Controller=%s, Pawn=%s, TrackedActors=%d, Successful=%d, Rejected=%d, PermissionDenied=%d"),
 		*PlayerController->GetName(),
 		PlayerController->GetPawn() ? *PlayerController->GetPawn()->GetName() : TEXT("None"),
 		UGorgeousInteractionFoundation::GetActiveTrackedInteractionActors(),
@@ -72,7 +72,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_ClearInteraction
 	APlayerController* PlayerController = GetPlayerController();
 	if (!IsValid(PlayerController))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction focus clear failed: no player controller is available."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus clear failed: no player controller is available."));
 		return;
 	}
 
@@ -80,7 +80,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_ClearInteraction
 	bool bWasRefreshRequest = false;
 	bool bWasUnfocus = false;
 	UGorgeousInteractionFoundation::TryFocus(nullptr, PlayerController, true, FocusData, bWasRefreshRequest, bWasUnfocus);
-	GT_I_LOG(TEXT("Cheat"), TEXT("Interaction focus clear requested. Unfocus sent: %s"), bWasUnfocus ? TEXT("true") : TEXT("false"));
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus clear requested. Unfocus sent: %s"), bWasUnfocus ? TEXT("true") : TEXT("false"));
 }
 
 void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteractionFocus(FString InteractionTag, float TraceDistance)
@@ -88,7 +88,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	FGameplayTag ParsedTag;
 	if (!TryParseInteractionTag(InteractionTag, ParsedTag))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction focus trace failed: invalid interaction tag %s."), *InteractionTag);
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus trace failed: invalid interaction tag %s."), *InteractionTag);
 		return;
 	}
 
@@ -96,7 +96,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	FGorgeousInteractionSphereTraceParameters TraceParameters;
 	if (!BuildViewTraceParameters(PlayerController, TraceDistance, TraceParameters))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction focus trace failed: no player controller or invalid trace distance."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus trace failed: no player controller or invalid trace distance."));
 		return;
 	}
 
@@ -105,7 +105,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	bool bWasRefreshRequest = false;
 	bool bWasUnfocus = false;
 	const bool bSucceeded = UGorgeousInteractionFoundation::TrySphereTraceFocus(PlayerController, TraceParameters, ParsedTag, true, FocusData, bWasRefreshRequest, bWasUnfocus, HitResult);
-	GT_I_LOG(TEXT("Cheat"), TEXT("Interaction focus trace %s. Hit=%s, Refresh=%s, Unfocus=%s"),
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("Interaction focus trace %s. Hit=%s, Refresh=%s, Unfocus=%s"),
 		bSucceeded ? TEXT("succeeded") : TEXT("failed"),
 		HitResult.GetActor() ? *HitResult.GetActor()->GetName() : TEXT("None"),
 		bWasRefreshRequest ? TEXT("true") : TEXT("false"),
@@ -117,7 +117,7 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	FGameplayTag ParsedTag;
 	if (!TryParseInteractionTag(InteractionTag, ParsedTag))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction trace failed: invalid interaction tag %s."), *InteractionTag);
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction trace failed: invalid interaction tag %s."), *InteractionTag);
 		return;
 	}
 
@@ -125,14 +125,14 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	FGorgeousInteractionSphereTraceParameters TraceParameters;
 	if (!BuildViewTraceParameters(PlayerController, TraceDistance, TraceParameters))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction trace failed: no player controller or invalid trace distance."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction trace failed: no player controller or invalid trace distance."));
 		return;
 	}
 
 	UWorld* World = PlayerController->GetWorld();
 	if (!IsValid(World))
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Interaction trace failed: the player controller has no world."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Interaction trace failed: the player controller has no world."));
 		return;
 	}
 
@@ -145,5 +145,5 @@ void UGorgeousInteractionFoundationCheatManagerExtension::Cheat_TraceInteraction
 	FHitResult HitResult;
 	const bool bHit = World->SweepSingleByChannel(HitResult, TraceParameters.Start, TraceParameters.End, FQuat::Identity, TraceParameters.TraceChannel, FCollisionShape::MakeSphere(TraceParameters.Radius), QueryParameters);
 	const bool bSucceeded = bHit && UGorgeousInteractionFoundation::TrySphereTraceInteract(PlayerController, HitResult, ParsedTag);
-	GT_I_LOG(TEXT("Cheat"), TEXT("Interaction trace %s. Hit=%s"), bSucceeded ? TEXT("succeeded") : TEXT("failed"), HitResult.GetActor() ? *HitResult.GetActor()->GetName() : TEXT("None"));
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("Interaction trace %s. Hit=%s"), bSucceeded ? TEXT("succeeded") : TEXT("failed"), HitResult.GetActor() ? *HitResult.GetActor()->GetName() : TEXT("None"));
 }

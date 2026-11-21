@@ -17,6 +17,7 @@
 #include "Misc/App.h"
 #include "../../GorgeousCoreRuntimeUtilities/Public/Helpers/GorgeousVersionComparison.h"
 #include "Runtime/Launch/Resources/Version.h"
+#include "../../Shared/GorgeousPersistentDataFile.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogGorgeousStartupHook, Log, All);
 
@@ -103,30 +104,22 @@ public:
 
 		// --- 2. Load GorgeousPersistentData.json ---
 		// ProjectSavedDir() is reliably populated at PostConfigInit.
-		const FString CacheFilePath = FPaths::ConvertRelativePathToFull(
-			FPaths::ProjectSavedDir() / TEXT("GorgeousThings") / TEXT("GorgeousPersistentData.json")
-		);
+        // This Core/Json-only header adds no runtime-utilities module dependency.
+        const FString CacheFilePath = FPaths::ConvertRelativePathToFull(GorgeousPersistentDataFile::DefaultPath());
 		UE_LOG(LogGorgeousStartupHook, Log, TEXT("Cache path: %s"), *CacheFilePath);
 
-		FString FileContents;
-		TSharedPtr<FJsonObject> PersistentDataObject;
-
-		if (FPaths::FileExists(CacheFilePath) && FFileHelper::LoadFileToString(FileContents, *CacheFilePath))
-		{
-			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FileContents);
-			FJsonSerializer::Deserialize(Reader, PersistentDataObject);
-		}
-		else
-		{
-			UE_LOG(LogGorgeousStartupHook, Log, TEXT("No cache file found, skipping mismatch check."));
-			return;
-		}
-
-		if (!PersistentDataObject.IsValid())
-		{
-			UE_LOG(LogGorgeousStartupHook, Warning, TEXT("Failed to parse GorgeousPersistentData.json, skipping."));
-			return;
-		}
+        TSharedPtr<FJsonObject> PersistentDataObject;
+        const auto ReadResult = GorgeousPersistentDataFile::ReadObject(CacheFilePath, PersistentDataObject);
+        if (ReadResult == GorgeousPersistentDataFile::EReadResult::Missing || ReadResult == GorgeousPersistentDataFile::EReadResult::ReadFailed)
+        {
+            UE_LOG(LogGorgeousStartupHook, Log, TEXT("No cache file found, skipping mismatch check."));
+            return;
+        }
+        if (ReadResult != GorgeousPersistentDataFile::EReadResult::Loaded)
+        {
+            UE_LOG(LogGorgeousStartupHook, Warning, TEXT("Failed to parse GorgeousPersistentData.json, skipping."));
+            return;
+        }
 
 		// --- 3. Parse PluginUpdateCache entries ---
 		TMap<FString, FString> MinimumCoreRequirements;

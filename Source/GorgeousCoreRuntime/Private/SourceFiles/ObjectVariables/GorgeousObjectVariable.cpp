@@ -4136,7 +4136,7 @@ bool FGorgeousVDGConsentRegression::RunTest(const FString&)
         GEngine->DestroyWorldContext(World);
         World->DestroyWorld(false);
     };
-    UClass* ManagerClass=StaticLoadClass(UGeneralSystem_AC::StaticClass(),nullptr,TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringManager_AC.BP_VisualDataGeatheringManager_AC_C"));
+    UClass* ManagerClass=StaticLoadClass(UGeneralSystem_AC::StaticClass(),nullptr,TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringManager_AC.BP_VisualDataGatheringManager_AC_C"));
     if (!TestNotNull(TEXT("Actual bundled VDG Manager class loads"),ManagerClass)) return false;
     auto* Host=World->SpawnActor<AActor>();
     auto* PC=World->SpawnActor<AGorgeousPlayerController>();

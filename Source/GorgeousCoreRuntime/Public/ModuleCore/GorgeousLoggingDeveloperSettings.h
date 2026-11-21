@@ -14,7 +14,7 @@
 //<--------------------------=== Module Includes ===------------------------->
 #include "GorgeousCoreRuntimeUtilitiesEnums.h"
 //<--------------------------=== Engine Includes ===------------------------->
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousLoggingDeveloperSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -43,15 +43,16 @@ UCLASS(Config = Game, DefaultConfig, DisplayName = "Core ↪ Logging",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/"
 		)
 )
-class GORGEOUSCORERUNTIME_API UGorgeousLoggingDeveloperSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousLoggingDeveloperSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
 	UGorgeousLoggingDeveloperSettings();
+	virtual void PostInitProperties() override;
 
 #if WITH_EDITOR
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& Event) override;
 	virtual FName GetSectionName() const override { return TEXT("Core|Logging"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousLogging", "SectionName", "Core ↪ Logging"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousLogging", "SectionDescription", "Configure logging outputs, message log routing, and in-game log widgets."); }
@@ -84,4 +85,13 @@ public:
 	// Optional widget implementing GorgeousLogWidgetReceiver. Empty uses the native panel.
 	UPROPERTY(EditAnywhere, Config, Category = "In-Game", meta = (EditCondition = "bShowInGame", EditConditionHides, MustImplement = "/Script/GorgeousCoreRuntime.GorgeousLogWidgetReceiver"))
 	TSoftClassPtr<class UUserWidget> InGameLogWidgetClass;
+
+	/** Custom Insight chart types mapped to widgets implementing the Insight chart interface. */
+	UPROPERTY(EditAnywhere, Config, Category = "Display", meta = (DisplayName = "Insight Chart Registry"))
+	TMap<FName, TSoftClassPtr<UUserWidget>> RegisteredUMGCharts;
+
+private:
+	/** Prevents an intentionally cleared registry from reloading the legacy INI value. */
+	UPROPERTY(Config)
+	bool bUseLegacyInsightChartRegistry = true;
 };

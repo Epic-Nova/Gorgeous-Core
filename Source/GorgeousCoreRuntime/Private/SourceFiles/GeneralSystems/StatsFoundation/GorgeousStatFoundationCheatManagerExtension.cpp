@@ -14,12 +14,12 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_SetStat(FString StatTag
 	if (Tag.IsValid())
 	{
         if (GetPlayerController() && UGorgeousStatFoundation::SetStatValue(this,GetPlayerController()->GetPawn().Get(),Tag,Value))
-            GT_S_LOG(TEXT("Cheat"),TEXT("Set stat %s to %f"),*StatTag,Value);
-        else GT_W_LOG(TEXT("Cheat"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
+            GT_S_LOG(TEXT("GT.Cheats"),TEXT("Set stat %s to %f"),*StatTag,Value);
+        else GT_W_LOG(TEXT("GT.Cheats"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
 	}
 	else
 	{
-		GT_E_LOG(TEXT("Cheat"), TEXT("Invalid stat tag %s"), *StatTag);
+		GT_E_LOG(TEXT("GT.Cheats"), TEXT("Invalid stat tag %s"), *StatTag);
 	}
 }
 
@@ -29,12 +29,12 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_ModifyStat(FString Stat
 	if (Tag.IsValid())
 	{
         if (GetPlayerController() && UGorgeousStatFoundation::ModifyStatValue(this,GetPlayerController()->GetPawn().Get(),Tag,Delta))
-            GT_S_LOG(TEXT("Cheat"),TEXT("Modified stat %s by %f"),*StatTag,Delta);
-        else GT_W_LOG(TEXT("Cheat"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
+            GT_S_LOG(TEXT("GT.Cheats"),TEXT("Modified stat %s by %f"),*StatTag,Delta);
+        else GT_W_LOG(TEXT("GT.Cheats"),TEXT("Stat write refused or target unavailable: %s"),*StatTag);
 	}
 	else
 	{
-		GT_E_LOG(TEXT("Cheat"), TEXT("Invalid stat tag %s"), *StatTag);
+		GT_E_LOG(TEXT("GT.Cheats"), TEXT("Invalid stat tag %s"), *StatTag);
 	}
 }
 
@@ -43,24 +43,24 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_ListStats()
 	UGorgeousStatFoundationStorage_OV* Storage = UGorgeousStatFoundation::GetGorgeousStatStorage(this);
 	if (!Storage)
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("Stat Storage not found."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("Stat Storage not found."));
 		return;
 	}
 
 	AActor* Pawn = (AActor*)GetPlayerController()->GetPawn();
 	if (!Pawn)
 	{
-		GT_W_LOG(TEXT("Cheat"), TEXT("No pawn found for player."));
+		GT_W_LOG(TEXT("GT.Cheats"), TEXT("No pawn found for player."));
 		return;
 	}
 
-	GT_I_LOG(TEXT("Cheat"), TEXT("--- Gorgeous Stats for %s ---"), *Pawn->GetName());
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("--- Gorgeous Stats for %s ---"), *Pawn->GetName());
 	
 	const UGorgeousStatFoundationSettings* Settings = GetDefault<UGorgeousStatFoundationSettings>();
 	for (const auto& Pair : Settings->StatRegistry)
 	{
 		float Value = Storage->GetStatValue(Pawn, Pair.Key);
-		GT_I_LOG(TEXT("Cheat"), TEXT("  [%s]: %f"), *Pair.Key.ToString(), Value);
+		GT_I_LOG(TEXT("GT.Cheats"), TEXT("  [%s]: %f"), *Pair.Key.ToString(), Value);
 	}
 }
 
@@ -69,17 +69,17 @@ void UGorgeousStatFoundationCheatManagerExtension::Cheat_AddAllowedController(FS
 	FGameplayTag Tag = FGameplayTag::RequestGameplayTag(*StatTag, false);
 	if (!Tag.IsValid())
 	{
-		GT_E_LOG(TEXT("Cheat"), TEXT("Invalid stat tag %s"), *StatTag);
+		GT_E_LOG(TEXT("GT.Cheats"), TEXT("Invalid stat tag %s"), *StatTag);
 		return;
 	}
 
 	UClass* ControllerClass = FindObject<UClass>(nullptr, *ControllerClassName);
 	if (!ControllerClass || !ControllerClass->IsChildOf(AGorgeousPlayerController::StaticClass()))
 	{
-		GT_E_LOG(TEXT("Cheat"), TEXT("Invalid controller class %s. Must be a GorgeousPlayerController."), *ControllerClassName);
+		GT_E_LOG(TEXT("GT.Cheats"), TEXT("Invalid controller class %s. Must be a GorgeousPlayerController."), *ControllerClassName);
 		return;
 	}
 
 	UGorgeousStatFoundation::AddAllowedController(this, (AActor*)GetPlayerController()->GetPawn(), Tag, Cast<AGorgeousPlayerController>(GetPlayerController()));
-	GT_S_LOG(TEXT("Cheat"), TEXT("Added local controller to whitelist for %s"), *StatTag);
+	GT_S_LOG(TEXT("GT.Cheats"), TEXT("Added local controller to whitelist for %s"), *StatTag);
 }

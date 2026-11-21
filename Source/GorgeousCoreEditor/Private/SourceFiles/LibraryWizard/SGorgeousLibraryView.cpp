@@ -1,16 +1,29 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
-|             Gorgeous Core - Library Wizard View Widget Implementation      |
+|               Gorgeous Core - Core functionality provider                 |
 | ------------------------------------------------------------------------- |
 |         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
 |              administrated by Epic Nova. All rights reserved.             |
-<=========================================================================*/
-
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #include "LibraryWizard/SGorgeousLibraryView.h"
-#include "LibraryWizard/GorgeousNetworkConsent.h"
 
- //<=====--- Includes ---=====>
- //<----- Engine Includes ----->
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "LibraryWizard/GorgeousApiEndpoints.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
+#include "LibraryWizard/IGorgeousLibraryParticipant.h"
+#include "LibraryWizard/GorgeousUpdateManager.h"
+#include "LibraryWizard/GorgeousInstallableSystem_DA.h"
+#include "LibraryWizard/SGorgeousSetupWizard.h"
+#include "LibraryWizard/GorgeousSystemTemplate_DA.h"
+#include "LibraryWizard/GorgeousAssetFilters.h"
+#include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
+#include "IGorgeousThingsModuleInterface.h"
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Editor.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/STextBlock.h"
@@ -32,15 +45,9 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/SlateStyleRegistry.h"
 #include "Widgets/Layout/SWrapBox.h"
-//<----- Module Includes ----->
-#include "LibraryWizard/IGorgeousLibraryParticipant.h"
-#include "LibraryWizard/GorgeousUpdateManager.h"
-#include "LibraryWizard/SGorgeousSetupWizard.h"
-#include "LibraryWizard/GorgeousSystemTemplate_DA.h"
-#include "LibraryWizard/GorgeousAssetFilters.h"
-#include "Helpers/GorgeousPluginHelper.h"
-#include "IGorgeousThingsModuleInterface.h"
-//<-------------------------->
+#include "Framework/Docking/TabManager.h"
+#include "Widgets/Docking/SDockTab.h"
+//<-------------------------------------------------------------------------->
 
 //=============================================================================
 // SGorgeousLibraryView Helper Widgets
@@ -591,11 +598,7 @@ TSharedRef<ITableRow> SGorgeousLibraryView::OnGenerateParticipantRow(
 	TSharedPtr<IGorgeousLibraryParticipant> Participant,
 	const TSharedRef<STableViewBase>& OwnerTable)
 {
-	bool bHasUpdate = false;
-	if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
-	{
-		bHasUpdate = Helper->HasPluginUpdateAvailable(Participant->GetParticipantName());
-	}
+	const bool bHasUpdate = FGorgeousPersistentData::Get().HasPluginUpdateAvailable(Participant->GetParticipantName());
 
     const FSlateBrush* ParticipantIcon = nullptr;
     if (!Participant->GetParticipantIcon().IsNone())
@@ -641,40 +644,34 @@ TSharedPtr<SWidget> SGorgeousLibraryView::OnParticipantContextMenuOpening()
 
 	if (SelectedParticipant.IsValid())
 	{
-		if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+		if (FGorgeousPersistentData::Get().HasPluginUpdateAvailable(SelectedParticipant->GetParticipantName()))
 		{
-			if (Helper->HasPluginUpdateAvailable(SelectedParticipant->GetParticipantName()))
-			{
-				FName ParticipantName = SelectedParticipant->GetParticipantName();
+			FName ParticipantName = SelectedParticipant->GetParticipantName();
 
-				MenuBuilder.AddMenuEntry(
-					NSLOCTEXT("GorgeousCore", "UpdatePlugin", "Update Plugin"),
-					NSLOCTEXT("GorgeousCore", "UpdatePluginTooltip", "Automatically download and compile the newest version of this plugin via the Gorgeous Installer."),
-					FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Download"),
-					FUIAction(FExecuteAction::CreateLambda([ParticipantName]()
+			MenuBuilder.AddMenuEntry(
+				NSLOCTEXT("GorgeousCore", "UpdatePlugin", "Update Plugin"),
+				NSLOCTEXT("GorgeousCore", "UpdatePluginTooltip", "Automatically download and compile the newest version of this plugin via the Gorgeous Installer."),
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Download"),
+				FUIAction(FExecuteAction::CreateLambda([ParticipantName]()
+				{
+					FString DownloadToken = FGorgeousPersistentData::Get().GetPluginUpdateDownloadToken(ParticipantName);
+					if (UGorgeousUpdateManager* UpdateManager = GEditor->GetEditorSubsystem<UGorgeousUpdateManager>())
 					{
-						if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
-						{
-							FString DownloadToken = Helper->GetPluginUpdateDownloadToken(ParticipantName);
-							if (UGorgeousUpdateManager* UpdateManager = GEditor->GetEditorSubsystem<UGorgeousUpdateManager>())
-							{
-								UpdateManager->DownloadPluginUpdate(ParticipantName.ToString(), DownloadToken);
-							}
-						}
-					}))
-				);
+						UpdateManager->DownloadPluginUpdate(ParticipantName.ToString(), DownloadToken);
+					}
+				}))
+			);
 
-				FString ChangelogUrl = Helper->GetPluginUpdateChangelogUrl(SelectedParticipant->GetParticipantName());
-				MenuBuilder.AddMenuEntry(
-					NSLOCTEXT("GorgeousCore", "ViewUpdateHistory", "View Update History"),
-					NSLOCTEXT("GorgeousCore", "ViewUpdateHistoryTooltip", "Open the web browser to view the changelog for this plugin."),
-					FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Info"),
-					FUIAction(FExecuteAction::CreateLambda([ChangelogUrl]()
-					{
-						if (GorgeousNetworkConsent::IsSafeURL(ChangelogUrl)) FPlatformProcess::LaunchURL(*ChangelogUrl, nullptr, nullptr);
-					}))
-				);
-			}
+			FString ChangelogUrl = FGorgeousPersistentData::Get().GetPluginUpdateChangelogUrl(SelectedParticipant->GetParticipantName());
+			MenuBuilder.AddMenuEntry(
+				NSLOCTEXT("GorgeousCore", "ViewUpdateHistory", "View Update History"),
+				NSLOCTEXT("GorgeousCore", "ViewUpdateHistoryTooltip", "Open the web browser to view the changelog for this plugin."),
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Info"),
+				FUIAction(FExecuteAction::CreateLambda([ChangelogUrl]()
+				{
+					if (GorgeousApiEndpoints::IsAllowedURL(ChangelogUrl)) FPlatformProcess::LaunchURL(*ChangelogUrl, nullptr, nullptr);
+				}))
+			);
 		}
 	}
 
@@ -941,6 +938,7 @@ void SGorgeousLibraryView::RefreshAssetsForParticipant(TSharedPtr<IGorgeousLibra
 		return;
 	}
 
+	Participant->RefreshLibraryAssets();
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 	IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
 
@@ -962,4 +960,45 @@ void SGorgeousLibraryView::RefreshAssetsForParticipant(TSharedPtr<IGorgeousLibra
 		// Apply initial filters
 		OnSearchTextChanged(FText::GetEmpty(), Category.CategoryId);
 	}
+}
+
+
+bool SGorgeousLibraryView::OpenAndFocusSystem(const FString& SystemId)
+{
+	if (!FSlateApplication::IsInitialized() || SystemId.IsEmpty()) return false;
+	const TSharedPtr<SDockTab> Tab = FGlobalTabmanager::Get()->TryInvokeTab(FName(TEXT("GorgeousLibrary")));
+	if (!Tab.IsValid()) return false;
+	return StaticCastSharedRef<SGorgeousLibraryView>(Tab->GetContent())->FocusSystem(SystemId);
+}
+
+bool SGorgeousLibraryView::FocusSystem(const FString& SystemId)
+{
+	for (const TSharedPtr<IGorgeousLibraryParticipant>& Participant : AllParticipants)
+	{
+		if (!Participant.IsValid() || Participant->GetParticipantName() != FName(TEXT("GorgeousCore"))) continue;
+		OnParticipantSelected(Participant);
+		if (ParticipantListView.IsValid()) ParticipantListView->SetSelection(Participant);
+		for (const auto& Category : CategoryAssets)
+		{
+			for (const TSharedPtr<FAssetData>& Asset : Category.Value)
+			{
+				const UGorgeousInstallableSystem_DA* System = Asset.IsValid() ? Cast<UGorgeousInstallableSystem_DA>(Asset->GetAsset()) : nullptr;
+				if (!System || !System->SystemId.Equals(SystemId, ESearchCase::IgnoreCase)) continue;
+				if (const auto* View = CategoryTileViews.Find(Category.Key); View && View->IsValid())
+				{
+					(*View)->SetSelection(Asset);
+					(*View)->RequestScrollIntoView(Asset);
+				}
+				if (const auto* View = CategoryListViews.Find(Category.Key); View && View->IsValid())
+				{
+					(*View)->SetSelection(Asset);
+					(*View)->RequestScrollIntoView(Asset);
+				}
+				return true;
+			}
+		}
+		// The Library remains open even if an unavailable or removed catalog ID cannot be selected.
+		return false;
+	}
+	return false;
 }

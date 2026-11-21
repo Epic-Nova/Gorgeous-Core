@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #include "GorgeousRecompilationHelper.h"
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousExtensionHelperMacros.h"
 #include "Misc/MessageDialog.h"
@@ -22,12 +23,14 @@ bool UGorgeousRecompilationHelper::IsRecompilationRequired()
 bool UGorgeousRecompilationHelper::CheckRecompilationRequirement()
 {
 	const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
-	const TArray<FString> RecordedSystems = PluginHelper->GetRecordedInstalledSystems();
+	if (!PluginHelper) return false;
+	FGorgeousPersistentData& Data = FGorgeousPersistentData::Get();
+	const TArray<FString> RecordedSystems = Data.GetRecordedInstalledSystems(PluginHelper->GetInstalledPluginSystemEntries());
 	const TArray<FString> ActiveSystems = GetActiveGorgeousSystems();
 
 	if (RecordedSystems.IsEmpty())
 	{
-		const_cast<UGorgeousPluginHelper*>(PluginHelper)->RecordInstalledSystems(ActiveSystems);
+		Data.RecordInstalledSystems(ActiveSystems);
 		bIsRecompilationRequired = false;
 		return false;
 	}
@@ -63,7 +66,7 @@ bool UGorgeousRecompilationHelper::CheckRecompilationRequirement()
 			if (GIsEditor && !IsRunningCommandlet())
 			{
 				GT_E_LOG_FULL_EX(
-					TEXT("Recompilation Required"),
+					TEXT("GT.Build.RecompilationRequired"),
 					TEXT("The installed Gorgeous plugins or systems have changed.\nPlease visit the Gorgeous Library to recompile the project."),
 					GT_DURATION,
 					true,
@@ -77,7 +80,7 @@ bool UGorgeousRecompilationHelper::CheckRecompilationRequirement()
 		}
 
 		// Record the new state to the persistent data file
-		const_cast<UGorgeousPluginHelper*>(PluginHelper)->RecordInstalledSystems(ActiveSystems);
+		Data.RecordInstalledSystems(ActiveSystems);
 	}
 
 	return bRecompilationNeeded;
@@ -160,22 +163,14 @@ TArray<FString> UGorgeousRecompilationHelper::GetActiveGorgeousSystems()
 		Systems.Add(TEXT("Team"));
 	#endif
 	
-	#ifdef GORGEOUS_SYSTEM_INSTALLED_VISUALDATAGEATHERING
+	#ifdef GORGEOUS_SYSTEM_INSTALLED_VISUALDATAGATHERING
 		Systems.Add(TEXT("VisualDataGathering"));
 	#endif
 	
-	// Plugins
-	#ifdef GORGEOUS_WITH_EVENTS
-		Systems.Add(TEXT("Plugin:Events"));
-	#endif
-
-	#ifdef GORGEOUS_WITH_INVENTORY
-		Systems.Add(TEXT("Plugin:Inventory"));
-	#endif
-
-	#ifdef GORGEOUS_WITH_ENTERTAINING
-		Systems.Add(TEXT("Plugin:Entertaining"));
-	#endif
+	// Installed plugin identity comes from discovery, not a partial hardcoded macro list
+	// or module-registration order. Existing compiled general-system entries stay intact.
+	if (const UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+		Systems.Append(Helper->GetInstalledPluginSystemEntries());
 
 	return Systems;
 }

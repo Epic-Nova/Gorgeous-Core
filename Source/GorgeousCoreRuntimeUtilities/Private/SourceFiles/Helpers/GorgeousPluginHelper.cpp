@@ -9,13 +9,11 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "Helpers/GorgeousPluginHelper.h"
-#include "Misc/Paths.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "Misc/FileHelper.h"
-#include "HAL/FileManager.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
-#include "Misc/SecureHash.h"
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
@@ -454,7 +452,7 @@ void UGorgeousPluginHelper::RecordModuleLoadFailure(const IGorgeousThingsModuleI
 	const EGorgeousModuleFunctionality ModuleType = ModuleInterface->GetModuleFunctionality();
 	
 	// Abort binary checksum generation since a module failed to load
-	bAbortBinaryChecksumSave = true;
+	FGorgeousPersistentData::bAbortBinaryChecksumSave = true;
 
 	// Track the failure
 	FailedModulesPerPlugin.FindOrAdd(PluginName)++;
@@ -550,6 +548,31 @@ void UGorgeousPluginHelper::TryShowFinalNotification(const FName& PluginName)
 	);
 }
 
+TSet<FName> UGorgeousPluginHelper::GetKnownGorgeousPlugins(bool bEnabledOnly) const
+{
+	TSet<FName> Plugins;
+	for (const TSharedRef<IPlugin>& Plugin : IPluginManager::Get().GetDiscoveredPlugins())
+	{
+		const FName Name(*Plugin->GetName());
+		if ((!bEnabledOnly || Plugin->IsEnabled()) && IsGorgeousPlugin(Name)) Plugins.Add(Name);
+	}
+	return Plugins;
+}
+
+TArray<FString> UGorgeousPluginHelper::GetInstalledPluginSystemEntries() const
+{
+	TArray<FString> Entries;
+	for (const FName& Name : GetKnownGorgeousPlugins(false))
+	{
+		FString Suffix = Name.ToString();
+		if (!Suffix.RemoveFromStart(TEXT("Gorgeous-"), ESearchCase::IgnoreCase))
+			Suffix.RemoveFromStart(TEXT("Gorgeous"), ESearchCase::IgnoreCase);
+		Entries.AddUnique(TEXT("Plugin:") + Suffix);
+	}
+	Entries.Sort();
+	return Entries;
+}
+
 bool UGorgeousPluginHelper::IsPluginInstalled(const FName& PluginName) const
 {
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
@@ -590,6 +613,19 @@ bool UGorgeousPluginHelper::IsGorgeousPlugin(const FName& PluginName) const
 		{
 			return true;
 		}
+		bool bForeignImplementation = false;
+#if WITH_EDITOR
+		const TSharedPtr<FJsonObject>& DescriptorJson = Plugin->GetDescriptor().CachedJson;
+#else
+		// CachedJson is editor-only in supported engine versions. Packaged plugin
+		// descriptors remain readable through the platform file layer.
+		TSharedPtr<FJsonObject> DescriptorJson;
+		FString DescriptorContents;
+		if (FFileHelper::LoadFileToString(DescriptorContents, *Plugin->GetDescriptorFileName()))
+			FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(DescriptorContents), DescriptorJson);
+#endif
+		if (DescriptorJson.IsValid() && DescriptorJson->TryGetBoolField(TEXT("bIsGorgeousImplementation"), bForeignImplementation))
+			return bForeignImplementation;
 	}
 	
 	return false;
@@ -736,374 +772,6 @@ TArray<IGorgeousThingsModuleInterface*> UGorgeousPluginHelper::GetAllRegisteredM
 	return Result;
 }
 
-bool UGorgeousPluginHelper::HasPersistentDataFile() const
-{
-	return FPaths::FileExists(GetGorgeousPersistentDataFilePath());
-}
-
-TArray<FGorgeousOfflineSystemCacheEntry> UGorgeousPluginHelper::GetOfflineSystemCache() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-
-	TArray<FGorgeousOfflineSystemCacheEntry> CacheEntries;
-	if (PersistentDataObject.IsValid())
-	{
-		const TArray<TSharedPtr<FJsonValue>>* CacheArray;
-		if (PersistentDataObject->TryGetArrayField(TEXT("OfflineSystemCache"), CacheArray))
-		{
-			for (const TSharedPtr<FJsonValue>& Value : *CacheArray)
-			{
-				const TSharedPtr<FJsonObject> Obj = Value->AsObject();
-				if (Obj.IsValid())
-				{
-					FGorgeousOfflineSystemCacheEntry Entry;
-					Entry.SystemId = Obj->GetStringField(TEXT("SystemId"));
-					Entry.TargetPluginName = Obj->HasField(TEXT("TargetPluginName")) ? Obj->GetStringField(TEXT("TargetPluginName")) : TEXT("GorgeousCore");
-					Entry.DisplayName = Obj->GetStringField(TEXT("DisplayName"));
-					Entry.Description = Obj->GetStringField(TEXT("Description"));
-					Entry.Version = Obj->GetStringField(TEXT("Version"));
-					Entry.DownloadUrl = Obj->GetStringField(TEXT("DownloadUrl"));
-                    Obj->TryGetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
-                    Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
-                    Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
-					Entry.bIsCoreSystem = Obj->GetBoolField(TEXT("bIsCoreSystem"));
-
-					const TArray<TSharedPtr<FJsonValue>>* SourcePathsArray;
-					if (Obj->TryGetArrayField(TEXT("SourcePaths"), SourcePathsArray))
-					{
-						for (const auto& PathVal : *SourcePathsArray)
-							Entry.SourcePaths.Add(PathVal->AsString());
-					}
-
-					const TArray<TSharedPtr<FJsonValue>>* ContentPathsArray;
-					if (Obj->TryGetArrayField(TEXT("ContentPaths"), ContentPathsArray))
-					{
-						for (const auto& PathVal : *ContentPathsArray)
-							Entry.ContentPaths.Add(PathVal->AsString());
-					}
-
-					CacheEntries.Add(Entry);
-				}
-			}
-		}
-	}
-	return CacheEntries;
-}
-
-TArray<FGorgeousPluginUpdateCacheEntry> UGorgeousPluginHelper::GetPluginUpdateCache() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-
-	TArray<FGorgeousPluginUpdateCacheEntry> CacheEntries;
-	if (PersistentDataObject.IsValid())
-	{
-		const TArray<TSharedPtr<FJsonValue>>* CacheArray;
-		if (PersistentDataObject->TryGetArrayField(TEXT("PluginUpdateCache"), CacheArray))
-		{
-			for (const TSharedPtr<FJsonValue>& Value : *CacheArray)
-			{
-				const TSharedPtr<FJsonObject> Obj = Value->AsObject();
-				if (Obj.IsValid())
-				{
-					FGorgeousPluginUpdateCacheEntry Entry;
-					Entry.PluginName = Obj->GetStringField(TEXT("PluginName"));
-					Entry.AvailableVersion = Obj->GetStringField(TEXT("AvailableVersion"));
-					Entry.MinimumCoreVersion = Obj->GetStringField(TEXT("MinimumCoreVersion"));
-					Entry.ChangelogUrl = Obj->GetStringField(TEXT("ChangelogUrl"));
-					Entry.DownloadToken = Obj->GetStringField(TEXT("DownloadToken"));
-                    Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
-                    Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
-					CacheEntries.Add(Entry);
-				}
-			}
-		}
-	}
-	return CacheEntries;
-}
-
-void UGorgeousPluginHelper::SetOfflineSystemCache(const TArray<FGorgeousOfflineSystemCacheEntry>& NewCache)
-{
-	LoadPersistentData();
-
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	for (const FGorgeousOfflineSystemCacheEntry& Entry : NewCache)
-	{
-		TSharedPtr<FJsonObject> JsonObj = MakeShared<FJsonObject>();
-		JsonObj->SetStringField(TEXT("SystemId"), Entry.SystemId);
-		JsonObj->SetStringField(TEXT("TargetPluginName"), Entry.TargetPluginName);
-		JsonObj->SetStringField(TEXT("DisplayName"), Entry.DisplayName);
-		JsonObj->SetStringField(TEXT("Description"), Entry.Description);
-		JsonObj->SetStringField(TEXT("Version"), Entry.Version);
-		JsonObj->SetStringField(TEXT("DownloadUrl"), Entry.DownloadUrl);
-        JsonObj->SetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
-        JsonObj->SetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
-        JsonObj->SetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
-		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
-		JsonObj->SetBoolField(TEXT("bIsCoreSystem"), Entry.bIsCoreSystem);
-
-		TArray<TSharedPtr<FJsonValue>> SourcePathsArr;
-		for (const FString& Path : Entry.SourcePaths) { SourcePathsArr.Add(MakeShared<FJsonValueString>(Path)); }
-		JsonObj->SetArrayField(TEXT("SourcePaths"), SourcePathsArr);
-
-		TArray<TSharedPtr<FJsonValue>> ContentPathsArr;
-		for (const FString& Path : Entry.ContentPaths) { ContentPathsArr.Add(MakeShared<FJsonValueString>(Path)); }
-		JsonObj->SetArrayField(TEXT("ContentPaths"), ContentPathsArr);
-
-		JsonArray.Add(MakeShared<FJsonValueObject>(JsonObj));
-	}
-
-	PersistentDataObject->SetArrayField(TEXT("OfflineSystemCache"), JsonArray);
-	SavePersistentData();
-}
-
-void UGorgeousPluginHelper::SetPluginUpdateCache(const TArray<FGorgeousPluginUpdateCacheEntry>& NewCache)
-{
-	LoadPersistentData();
-
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	for (const FGorgeousPluginUpdateCacheEntry& Entry : NewCache)
-	{
-		TSharedPtr<FJsonObject> JsonObj = MakeShared<FJsonObject>();
-		JsonObj->SetStringField(TEXT("PluginName"), Entry.PluginName);
-		JsonObj->SetStringField(TEXT("AvailableVersion"), Entry.AvailableVersion);
-		JsonObj->SetStringField(TEXT("MinimumCoreVersion"), Entry.MinimumCoreVersion);
-		JsonObj->SetStringField(TEXT("ChangelogUrl"), Entry.ChangelogUrl);
-		JsonObj->SetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
-        JsonObj->SetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
-        JsonObj->SetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
-		JsonArray.Add(MakeShared<FJsonValueObject>(JsonObj));
-	}
-
-	PersistentDataObject->SetArrayField(TEXT("PluginUpdateCache"), JsonArray);
-	SavePersistentData();
-}
-
-bool UGorgeousPluginHelper::HasPluginUpdateAvailable(const FName& PluginName) const
-{
-	TArray<FGorgeousPluginUpdateCacheEntry> Updates = GetPluginUpdateCache();
-	for (const FGorgeousPluginUpdateCacheEntry& Update : Updates)
-	{
-		if (Update.PluginName == PluginName.ToString())
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-FString UGorgeousPluginHelper::GetPluginUpdateChangelogUrl(const FName& PluginName) const
-{
-	TArray<FGorgeousPluginUpdateCacheEntry> Updates = GetPluginUpdateCache();
-	for (const FGorgeousPluginUpdateCacheEntry& Update : Updates)
-	{
-		if (Update.PluginName == PluginName.ToString())
-		{
-			return Update.ChangelogUrl;
-		}
-	}
-	return FString();
-}
-
-FString UGorgeousPluginHelper::GetPluginUpdateChecksumSha256(const FName& PluginName) const
-{
-    for (const auto& Entry : GetPluginUpdateCache())
-        if (Entry.PluginName == PluginName.ToString()) return Entry.ChecksumSha256;
-    return FString();
-}
-
-FString UGorgeousPluginHelper::GetPluginUpdateDownloadToken(const FName& PluginName) const
-{
-	TArray<FGorgeousPluginUpdateCacheEntry> Updates = GetPluginUpdateCache();
-	for (const FGorgeousPluginUpdateCacheEntry& Update : Updates)
-	{
-		if (Update.PluginName == PluginName.ToString())
-		{
-			return Update.DownloadToken;
-		}
-	}
-	return FString();
-}
-
-bool UGorgeousPluginHelper::HasRunInitialValidation() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-	
-	if (PersistentDataObject.IsValid())
-	{
-		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-		if (SystemValidation.IsValid() && SystemValidation->HasField(TEXT("HasRunInitialValidation")))
-		{
-			return SystemValidation->GetBoolField(TEXT("HasRunInitialValidation"));
-		}
-	}
-	
-	return false;
-}
-
-void UGorgeousPluginHelper::SetHasRunInitialValidation(bool bHasRun)
-{
-	LoadPersistentData();
-	
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-	
-	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-	if (!SystemValidation.IsValid())
-	{
-		SystemValidation = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-	}
-	
-	SystemValidation->SetBoolField(TEXT("HasRunInitialValidation"), bHasRun);
-	
-	SavePersistentData();
-}
-
-int32 UGorgeousPluginHelper::GetSystemValidationCount() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-	
-	if (PersistentDataObject.IsValid())
-	{
-		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-		if (SystemValidation.IsValid())
-		{
-			return SystemValidation->GetIntegerField(TEXT("ValidationCount"));
-		}
-	}
-	
-	return 0;
-}
-
-void UGorgeousPluginHelper::IncrementSystemValidationCount()
-{
-	LoadPersistentData();
-	
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-	
-	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-	if (!SystemValidation.IsValid())
-	{
-		SystemValidation = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-	}
-	
-	const int32 CurrentCount = SystemValidation->GetIntegerField(TEXT("ValidationCount"));
-	SystemValidation->SetNumberField(TEXT("ValidationCount"), CurrentCount + 1);
-	
-	SavePersistentData();
-}
-
-void UGorgeousPluginHelper::SetSystemValidationCount(int32 NewCount)
-{
-	LoadPersistentData();
-	
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-	
-	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-	if (!SystemValidation.IsValid())
-	{
-		SystemValidation = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-	}
-	
-	SystemValidation->SetNumberField(TEXT("ValidationCount"), NewCount);
-	
-	SavePersistentData();
-}
-
-int32 UGorgeousPluginHelper::GetSystemValidationInterval() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-	
-	if (PersistentDataObject.IsValid())
-	{
-		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-		if (SystemValidation.IsValid() && SystemValidation->HasField(TEXT("ValidationInterval")))
-		{
-			return SystemValidation->GetIntegerField(TEXT("ValidationInterval"));
-		}
-	}
-	
-	return 10; // Default
-}
-
-void UGorgeousPluginHelper::SetSystemValidationInterval(int32 NewInterval)
-{
-	LoadPersistentData();
-	
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-	
-	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-	if (!SystemValidation.IsValid())
-	{
-		SystemValidation = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-	}
-	
-	SystemValidation->SetNumberField(TEXT("ValidationInterval"), NewInterval);
-	
-	SavePersistentData();
-}
-
-bool UGorgeousPluginHelper::GetForceDevMode() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-	
-	if (PersistentDataObject.IsValid())
-	{
-		const TSharedPtr<FJsonObject> DevSettings = PersistentDataObject->GetObjectField(TEXT("DeveloperSettings"));
-		if (DevSettings.IsValid() && DevSettings->HasField(TEXT("ForceDevMode")))
-		{
-			return DevSettings->GetBoolField(TEXT("ForceDevMode"));
-		}
-	}
-	
-	return false; // Default
-}
-
-void UGorgeousPluginHelper::SetForceDevMode(bool bForce)
-{
-	LoadPersistentData();
-	
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-	
-	TSharedPtr<FJsonObject> DevSettings = PersistentDataObject->GetObjectField(TEXT("DeveloperSettings"));
-	if (!DevSettings.IsValid())
-	{
-		DevSettings = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("DeveloperSettings"), DevSettings);
-	}
-	
-	DevSettings->SetBoolField(TEXT("ForceDevMode"), bForce);
-	
-	SavePersistentData();
-}
-
 bool UGorgeousPluginHelper::HasCircularDeferredDependency(const FName& PluginA, const FName& PluginB) const
 {
 	// Check if both plugins have deferred modules
@@ -1211,243 +879,6 @@ FString UGorgeousPluginHelper::GetCircularDependencyPairKey(const FName& PluginA
 	return FString::Printf(TEXT("%s|%s"), *NameB, *NameA);
 }
 
-FString UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath()
-{
-	return FPaths::ProjectSavedDir() / TEXT("GorgeousThings") / TEXT("GorgeousPersistentData.json");
-}
-
-void UGorgeousPluginHelper::LoadPersistentData()
-{
-	if (bLoadedPersistentData)
-	{
-		return;
-	}
-	
-	bLoadedPersistentData = true;
-	
-	const FString FilePath = GetGorgeousPersistentDataFilePath();
-	
-	if (!FPaths::FileExists(FilePath))
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-		
-		// Default SystemValidation values
-		TSharedPtr<FJsonObject> SystemValidation = MakeShared<FJsonObject>();
-		SystemValidation->SetNumberField(TEXT("ValidationCount"), 0);
-		SystemValidation->SetNumberField(TEXT("ValidationInterval"), 10);
-		SystemValidation->SetBoolField(TEXT("HasRunInitialValidation"), false);
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-		
-		// Default empty circular dependencies
-		PersistentDataObject->SetArrayField(TEXT("CircularDependencyNotifications"), TArray<TSharedPtr<FJsonValue>>());
-		
-		SavePersistentData();
-		return;
-	}
-
-	FString FileContents;
-	if (FFileHelper::LoadFileToString(FileContents, *FilePath))
-	{
-		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FileContents);
-		if (FJsonSerializer::Deserialize(Reader, PersistentDataObject) && PersistentDataObject.IsValid())
-		{
-			// Load circular dependencies from JSON
-			const TArray<TSharedPtr<FJsonValue>>* PairsArray;
-			if (PersistentDataObject->TryGetArrayField(TEXT("CircularDependencyNotifications"), PairsArray))
-			{
-				for (const TSharedPtr<FJsonValue>& Value : *PairsArray)
-				{
-					NotifiedCircularDependencyPairs.Add(Value->AsString());
-				}
-			}
-			
-			GT_I_LOG("GT.Core.PluginHelper", TEXT("Loaded persistent Gorgeous data from disk (%d circular dependency records)"), NotifiedCircularDependencyPairs.Num());
-		}
-	}
-}
-
-bool UGorgeousPluginHelper::bAbortBinaryChecksumSave = false;
-
-void UGorgeousPluginHelper::GenerateAndSaveBinaryChecksum()
-{
-	if (bAbortBinaryChecksumSave)
-	{
-		GT_W_LOG("GT.Core.PluginHelper", TEXT("Binary checksum generation aborted due to previous validation errors."));
-		return;
-	}
-
-	TSharedPtr<IPlugin> CorePlugin = IPluginManager::Get().FindPlugin(TEXT("GorgeousCore"));
-	if (!CorePlugin.IsValid())
-	{
-		return;
-	}
-
-	const FString BinariesDir = FPaths::Combine(
-		CorePlugin->GetBaseDir(),
-		TEXT("Binaries"),
-		FPlatformProcess::GetBinariesSubdirectory()
-	);
-
-	if (!FPaths::DirectoryExists(BinariesDir))
-	{
-		return;
-	}
-
-	TArray<FString> FoundFiles;
-	// Only hash the actual compiled module binaries (.so / .dll).
-	// Deliberately exclude: gorgeous-installer, .desktop, .sym, .debug,
-	// .modules and any other auxiliary files so the checksum is stable
-	// across installer updates, debug info changes, etc.
-#if PLATFORM_WINDOWS
-	IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dll"), true, false);
-#elif PLATFORM_MAC
-    IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.dylib"), true, false);
-#else
-	IFileManager::Get().FindFilesRecursive(FoundFiles, *BinariesDir, TEXT("*.so"), true, false);
-#endif
-	
-	// Sort to ensure deterministic hashing order
-	FoundFiles.Sort();
-
-	FString CombinedHashes;
-	for (const FString& FilePath : FoundFiles)
-	{
-		FMD5Hash FileHash = FMD5Hash::HashFile(*FilePath);
-		CombinedHashes += LexToString(FileHash);
-	}
-
-	FMD5 FinalMD5;
-	FinalMD5.Update((const uint8*)TCHAR_TO_UTF8(*CombinedHashes), CombinedHashes.Len());
-	FMD5Hash FinalHash;
-	FinalHash.Set(FinalMD5);
-	FString ChecksumString = LexToString(FinalHash);
-
-	GT_I_LOG("GT.Core.PluginHelper", TEXT("Computed GorgeousCore binary checksum: %s"), *ChecksumString);
-
-	UGorgeousPluginHelper* Inst = UGorgeousPluginHelper::GetSingleton();
-	if (!Inst) return;
-
-	Inst->LoadPersistentData();
-
-	if (!Inst->PersistentDataObject.IsValid())
-	{
-		Inst->PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	const TSharedPtr<FJsonObject>* ChecksumsObjPtr = nullptr;
-	TSharedPtr<FJsonObject> ChecksumsObj;
-	
-	if (Inst->PersistentDataObject->TryGetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObjPtr) && ChecksumsObjPtr && ChecksumsObjPtr->IsValid())
-	{
-		ChecksumsObj = *ChecksumsObjPtr;
-	}
-	else
-	{
-		ChecksumsObj = MakeShared<FJsonObject>();
-		Inst->PersistentDataObject->SetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObj);
-	}
-
-	ChecksumsObj->SetStringField(TEXT("GorgeousCore"), ChecksumString);
-
-	Inst->SavePersistentData();
-	GT_I_LOG("GT.Core.PluginHelper", TEXT("Saved verified binary checksum to persistent data to bypass installer on next boot."));
-}
-
-void UGorgeousPluginHelper::InvalidatePersistedChecksum()
-{
-	LoadPersistentData();
-
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	const TSharedPtr<FJsonObject>* ChecksumsObjPtr = nullptr;
-	TSharedPtr<FJsonObject> ChecksumsObj;
-	
-	if (PersistentDataObject->TryGetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObjPtr) && ChecksumsObjPtr && ChecksumsObjPtr->IsValid())
-	{
-		ChecksumsObj = *ChecksumsObjPtr;
-	}
-	else
-	{
-		ChecksumsObj = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("VerifiedBinaryChecksums"), ChecksumsObj);
-	}
-
-	ChecksumsObj->SetStringField(TEXT("GorgeousCore"), TEXT(""));
-
-	const TArray<TSharedPtr<FJsonValue>>* CacheArrayPtr = nullptr;
-	if (PersistentDataObject->TryGetArrayField(TEXT("PluginUpdateCache"), CacheArrayPtr) && CacheArrayPtr)
-	{
-		PersistentDataObject->SetArrayField(TEXT("PluginUpdateCache"), TArray<TSharedPtr<FJsonValue>>());
-	}
-
-	SavePersistentData();
-	GT_I_LOG("GT.Core.PluginHelper", TEXT("Invalidated persisted binary checksum and plugin update cache."));
-}
-
-void UGorgeousPluginHelper::SavePersistentData()
-{
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	// Other subsystems share this file. Preserve fields written by a subsystem
-	// after this helper loaded its in-memory snapshot.
-	const FString FilePath = GetGorgeousPersistentDataFilePath();
-	FString ExistingContents;
-	TSharedPtr<FJsonObject> ExistingData;
-	if (FFileHelper::LoadFileToString(ExistingContents, *FilePath))
-	{
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ExistingContents);
-		if (FJsonSerializer::Deserialize(Reader, ExistingData) && ExistingData.IsValid())
-		{
-			for (const TPair<FString, TSharedPtr<FJsonValue>>& Pair : ExistingData->Values)
-			{
-				const bool bFieldOwnedBySharedSubsystem =
-					Pair.Key == TEXT("KnownNudgePlugins") ||
-					Pair.Key == TEXT("KnownNudgeGeneralSystems") ||
-					Pair.Key == TEXT("AcknowledgedNudges") ||
-					Pair.Key == TEXT("DismissedSystemActionPrompts") ||
-					Pair.Key == TEXT("NudgeFeedCache") ||
-					Pair.Key == TEXT("NudgeFeedCacheSchemaVersion") ||
-					Pair.Key == TEXT("NudgeFeedCacheUpdatedAt");
-				if (!PersistentDataObject->HasField(Pair.Key) || bFieldOwnedBySharedSubsystem)
-				{
-					PersistentDataObject->SetField(Pair.Key, Pair.Value);
-				}
-			}
-		}
-	}
-	
-	// Ensure circular dependencies are synced
-	TArray<TSharedPtr<FJsonValue>> PairsArray;
-	for (const FString& PairKey : NotifiedCircularDependencyPairs)
-	{
-		PairsArray.Add(MakeShared<FJsonValueString>(PairKey));
-	}
-	PersistentDataObject->SetArrayField(TEXT("CircularDependencyNotifications"), PairsArray);
-
-	const FString Directory = FPaths::GetPath(FilePath);
-	IFileManager::Get().MakeDirectory(*Directory, true);
-	
-	FString OutputString;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
-	if (FJsonSerializer::Serialize(PersistentDataObject.ToSharedRef(), Writer))
-	{
-		if (FFileHelper::SaveStringToFile(OutputString, *FilePath))
-		{
-			GT_I_LOG("GT.Core.PluginHelper", TEXT("Saved persistent Gorgeous data to disk"));
-		}
-		else
-		{
-			GT_W_LOG("GT.Core.PluginHelper", TEXT("Failed to save persistent Gorgeous data to: %s"), *FilePath);
-		}
-	}
-}
-
 void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& PluginA, const FName& PluginB)
 {
 	const FString PairKey = GetCircularDependencyPairKey(PluginA, PluginB);
@@ -1462,17 +893,9 @@ void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& Plugin
 			*PluginB.ToString());
 	}
 	
-	// Load previously notified pairs from disk (lazy load)
-	LoadPersistentData();
-	
-	// Only show toast notification if this pair hasn't been notified before
-	if (!NotifiedCircularDependencyPairs.Contains(PairKey))
-	{
-		NotifiedCircularDependencyPairs.Add(PairKey);
-		
-		// Save to disk so we don't show again
-		SavePersistentData();
-		
+    // The persistence service owns cross-session notification state.
+    if (FGorgeousPersistentData::Get().MarkCircularDependencyNotified(PairKey))
+    {
 		// Show toast notification
 		GorgeousLogging::ShowToastNotification(
 			FString::Printf(TEXT("Circular Dependency Detected")),
@@ -1486,55 +909,4 @@ void UGorgeousPluginHelper::HandleCircularDependencyDetected(const FName& Plugin
 			false // Warning, not error
 		);
 	}
-}
-
-TArray<FString> UGorgeousPluginHelper::GetRecordedInstalledSystems() const
-{
-	const_cast<UGorgeousPluginHelper*>(this)->LoadPersistentData();
-
-	TArray<FString> Systems;
-	if (PersistentDataObject.IsValid())
-	{
-		const TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-		if (SystemValidation.IsValid())
-		{
-			if (SystemValidation->HasField(TEXT("InstalledSystems")))
-			{
-				TArray<TSharedPtr<FJsonValue>> InstalledSystemsArray = SystemValidation->GetArrayField(TEXT("InstalledSystems"));
-				for (const auto& Value : InstalledSystemsArray)
-				{
-					Systems.Add(Value->AsString());
-				}
-			}
-		}
-	}
-
-	return Systems;
-}
-
-void UGorgeousPluginHelper::RecordInstalledSystems(const TArray<FString>& Systems)
-{
-	LoadPersistentData();
-
-	if (!PersistentDataObject.IsValid())
-	{
-		PersistentDataObject = MakeShared<FJsonObject>();
-	}
-
-	TSharedPtr<FJsonObject> SystemValidation = PersistentDataObject->GetObjectField(TEXT("SystemValidation"));
-	if (!SystemValidation.IsValid())
-	{
-		SystemValidation = MakeShared<FJsonObject>();
-		PersistentDataObject->SetObjectField(TEXT("SystemValidation"), SystemValidation);
-	}
-
-	TArray<TSharedPtr<FJsonValue>> InstalledSystemsArray;
-	for (const FString& System : Systems)
-	{
-		InstalledSystemsArray.Add(MakeShared<FJsonValueString>(System));
-	}
-
-	SystemValidation->SetArrayField(TEXT("InstalledSystems"), InstalledSystemsArray);
-
-	SavePersistentData();
 }

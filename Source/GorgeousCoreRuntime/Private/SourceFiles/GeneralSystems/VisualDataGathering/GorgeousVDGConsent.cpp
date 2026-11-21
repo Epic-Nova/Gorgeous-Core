@@ -49,9 +49,11 @@ void UGorgeousVDGConsentDialog::NativeOnActivated()
 void UGorgeousVDGConsentDialog::Accept() { SubmitMessageResult(TEXT("Confirm")); }
 void UGorgeousVDGConsentDialog::Decline() { SubmitMessageResult(TEXT("Cancel")); }
 
-UAsyncAction_RequestVDGConsent* UAsyncAction_RequestVDGConsent::RequestVDGConsent(UObject* WorldContextObject)
+UAsyncAction_RequestVDGConsent* UAsyncAction_RequestVDGConsent::RequestVDGConsent(
+    UObject* WorldContextObject, TSoftClassPtr<UGorgeousActivatableWidget> WidgetClass)
 {
     auto* Action=NewObject<UAsyncAction_RequestVDGConsent>(); Action->Context=WorldContextObject;
+    Action->DialogWidgetClass = MoveTemp(WidgetClass);
     if (WorldContextObject) Action->RegisterWithGameInstance(WorldContextObject);
     return Action;
 }
@@ -61,7 +63,9 @@ void UAsyncAction_RequestVDGConsent::Activate()
     if (!PC || !PC->IsLocalController()) { Finish(false); return; }
     if (PC->HasVisualDataGatheringConsentDecision()) { Finish(PC->HasVisualDataGatheringConsent()); return; }
     DialogConfig=NewObject<UGorgeousUIMessageConfig_DA>(this);
-    DialogConfig->MessageWidgetClass=UGorgeousVDGConsentDialog::StaticClass();
+    DialogConfig->MessageWidgetClass = DialogWidgetClass.IsNull()
+        ? TSoftClassPtr<UCommonActivatableWidget>(UGorgeousVDGConsentDialog::StaticClass())
+        : TSoftClassPtr<UCommonActivatableWidget>(DialogWidgetClass.ToSoftObjectPath());
     DialogConfig->LayerTag=TAG_Gorgeous_UI_Layer_Message.GetTag();
     DialogConfig->Buttons.Add(TEXT("Confirm"),NSLOCTEXT("GorgeousVDG","Allow","Allow for this session"));
     DialogConfig->Buttons.Add(TEXT("Cancel"),NSLOCTEXT("GorgeousVDG","Decline","Do not allow"));
@@ -108,7 +112,7 @@ bool FGorgeousVDGConsent::CanSendCollectionRequest(const UObject* Context)
 bool FGorgeousVDGConsent::IsBundledHandler(const UObject* Object,FName Handler)
 {
     if (Handler==TEXT("WriteVDG Property") || Handler==TEXT("SyncVDG Property"))
-        return HasBundledAncestor(Object,TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringManager_AC.BP_VisualDataGeatheringManager_AC_C"));
+        return HasBundledAncestor(Object,TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringManager_AC.BP_VisualDataGatheringManager_AC_C"));
     return Handler==TEXT("NetGetMaxVDGPropertyMembers") && HasBundledAncestor(Object,TEXT("/GorgeousCore/Systems/Playlist/Classes/ActorComponents/BP_PlaylistHandling_AC.BP_PlaylistHandling_AC_C"));
 }
 void FGorgeousVDGConsent::RegisterBundledHandlers(UObject* Object)

@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Styling/SlateStyleRegistry.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/Paths.h"
 #include "StyleRegistration/GorgeousStyleRegistrationHelpers.h"
@@ -40,7 +42,7 @@ do { \
             StyleScopeCalls; \
             FSlateStyleRegistry::RegisterSlateStyle(*GGorgeousStyle); \
         } \
-        else UE_LOG(LogTemp, Warning, TEXT("Cannot register Gorgeous style '%s': plugin '%s' was not found."), *FName(StyleName).ToString(), *FString(PluginName)); \
+        else GT_W_LOG(TEXT("GT.Editor.StyleRegistration.PluginNotFound"), TEXT("Cannot register Gorgeous style '%s': plugin '%s' was not found."), *FName(StyleName).ToString(), *FString(PluginName)); \
     } \
 } while (false);
 

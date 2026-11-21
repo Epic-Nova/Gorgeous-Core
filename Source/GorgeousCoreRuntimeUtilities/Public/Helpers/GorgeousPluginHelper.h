@@ -55,40 +55,6 @@ enum class EGorgeousPluginLoadState : uint8
 <--------------------------------------------------------------------------->
 <===========================================================================>
 */
-USTRUCT(BlueprintType)
-struct FGorgeousOfflineSystemCacheEntry
-{
-    GENERATED_BODY()
-
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SystemId;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString TargetPluginName;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DisplayName;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString Description;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString Version;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadUrl;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadToken;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChecksumSha256;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SignatureEd25519;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> SourcePaths;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") TArray<FString> ContentPaths;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") bool bIsCoreSystem = false;
-};
-
-USTRUCT(BlueprintType)
-struct FGorgeousPluginUpdateCacheEntry
-{
-    GENERATED_BODY()
-
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString PluginName;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString AvailableVersion;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString MinimumCoreVersion;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChangelogUrl;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString DownloadToken;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString ChecksumSha256;
-    UPROPERTY(VisibleAnywhere, Category = "Cache") FString SignatureEd25519;
-};
-
 UCLASS()
 class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 {
@@ -127,11 +93,16 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	bool IsModuleRegistered(const IGorgeousThingsModuleInterface* ModuleInterface) const;
 
 	/**
-	 * Gets the list of known gorgeous plugins.
+	 * Discovers installed Gorgeous plugins through the plugin manager, independently of
+	 * module registration order. By default returns enabled plugins; pass false to include
+	 * installed disabled plugins. This does not imply that their modules loaded successfully.
 	 *
 	 * @return Array of known gorgeous plugin names.
 	 */
-	TSet<FName> GetKnownGorgeousPlugins() const { return KnownGorgeousPlugins; }
+	TSet<FName> GetKnownGorgeousPlugins(bool bEnabledOnly = true) const;
+
+	/** Canonical Plugin:<suffix> entries for all discovered installed Gorgeous plugins. */
+	TArray<FString> GetInstalledPluginSystemEntries() const;
 
 	/**
 	 * Checks if a gorgeous things module interface satisfies the minimum requirements.
@@ -163,18 +134,6 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @param Reason The reason for the failure.
 	 */
 	void RecordModuleLoadFailure(const IGorgeousThingsModuleInterface* ModuleInterface, const FString& Reason);
-
-	/**
-	 * Flags whether to abort saving the binary checksum 10 seconds after boot.
-	 * Any validation error from the plugin helper sets this flag.
-	 */
-	static bool bAbortBinaryChecksumSave;
-
-	/**
-	 * Automatically triggered 10 seconds after engine boot to generate and save the checksum
-	 * of the current GorgeousCore binaries, bypassing the installer on next boot.
-	 */
-	static void GenerateAndSaveBinaryChecksum();
 
 	/**
 	 * Checks if a plugin is installed (exists in the plugin manager).
@@ -220,126 +179,6 @@ class GORGEOUSCORERUNTIMEUTILITIES_API UGorgeousPluginHelper : public UObject
 	 * @return Flat array of all registered module interface pointers.
 	 */
 	TArray<IGorgeousThingsModuleInterface*> GetAllRegisteredModules() const;
-
-	/**
-	 * Gets the current system validation count from persistent data.
-	 */
-	int32 GetSystemValidationCount() const;
-
-	/**
-	 * Increments the system validation count and saves persistent data.
-	 */
-	void IncrementSystemValidationCount();
-
-	/**
-	 * Sets the current system validation count.
-	 */
-	void SetSystemValidationCount(int32 NewCount);
-
-	/**
-	 * Gets the interval (in startups) at which system validation should run.
-	 */
-	int32 GetSystemValidationInterval() const;
-
-	/**
-	 * Sets the interval at which system validation should run.
-	 */
-	void SetSystemValidationInterval(int32 NewInterval);
-
-	/**
-	 * Gets the list of systems that were recorded as installed in the previous session.
-	 */
-	TArray<FString> GetRecordedInstalledSystems() const;
-
-	/**
-	 * Records the current list of installed systems to persistent data.
-	 */
-	void RecordInstalledSystems(const TArray<FString>& Systems);
-
-	/**
-	 * Checks if the persistent data file exists on disk.
-	 */
-	bool HasPersistentDataFile() const;
-
-	/**
-	 * Retrieves the offline cache of installable systems from persistent data.
-	 * Returns an array of parsed structs.
-	 */
-	TArray<FGorgeousOfflineSystemCacheEntry> GetOfflineSystemCache() const;
-
-	/**
-	 * Sets the offline cache of installable systems and saves it to disk.
-	 */
-	void SetOfflineSystemCache(const TArray<FGorgeousOfflineSystemCacheEntry>& NewCache);
-
-	/**
-	 * Retrieves the offline cache of plugin updates from persistent data.
-	 * Returns an array of parsed structs.
-	 */
-	TArray<FGorgeousPluginUpdateCacheEntry> GetPluginUpdateCache() const;
-
-	/**
-	 * Sets the plugin update cache and saves it to disk.
-	 */
-	void SetPluginUpdateCache(const TArray<FGorgeousPluginUpdateCacheEntry>& NewCache);
-
-	/**
-	 * Checks if a specific plugin has an update available in the cache.
-	 */
-	bool HasPluginUpdateAvailable(const FName& PluginName) const;
-
-	/**
-	 * Gets the changelog URL for a specific plugin if an update is available.
-	 */
-	FString GetPluginUpdateChangelogUrl(const FName& PluginName) const;
-
-	/**
-	 * Gets the download token for a specific plugin if an update is available.
-	 */
-	FString GetPluginUpdateDownloadToken(const FName& PluginName) const;
-    FString GetPluginUpdateChecksumSha256(const FName& PluginName) const;
-
-	/**
-	 * Checks if the initial system validation sweep has successfully completed.
-	 */
-	bool HasRunInitialValidation() const;
-
-	/**
-	 * Sets whether the initial system validation sweep has completed.
-	 */
-	void SetHasRunInitialValidation(bool bHasRun);
-
-	/**
-	 * Gets whether HTTP dev mode is forced.
-	 */
-	bool GetForceDevMode() const;
-
-	/**
-	 * Sets whether HTTP dev mode is forced.
-	 */
-	void SetForceDevMode(bool bForce);
-
-	/**
-	 * Invalidates the persisted binary checksum for GorgeousCore.
-	 * Clears VerifiedBinaryChecksums.GorgeousCore and PluginUpdateCache
-	 * so the startup hook treats binaries as dirty on next boot.
-	 */
-	void InvalidatePersistedChecksum();
-
-	/**
-	 * Gets the file path for storing persistent Gorgeous metadata.
-	 */
-	static FString GetGorgeousPersistentDataFilePath();
-
-	/**
-	 * Loads the persistent data from disk.
-	 */
-	void LoadPersistentData();
-
-	/**
-	 * Saves the persistent data to disk.
-	 */
-	void SavePersistentData();
 
 private:
 
@@ -430,9 +269,6 @@ private:
 	// Cache of system validation counts per plugin.
 	TMap<FName, int32> PluginValidationCounts;
 
-	// Cached plugin update information from persistent data
-	TArray<FGorgeousPluginUpdateCacheEntry> CachedPluginUpdates;
-
 	// Cache validation failure reasons
 	TMap<FName, FString> ValidationFailureReasons;
 
@@ -451,13 +287,5 @@ private:
 	// Track circular dependency pairs that have been logged this session (to avoid duplicate logs)
 	TSet<FString> LoggedCircularDependencyPairs;
 
-	// Track circular dependency pairs that have shown toast notifications (loaded from/saved to disk)
-	TSet<FString> NotifiedCircularDependencyPairs;
-
-	// Flag to track if we've loaded the persistent data from disk
-	bool bLoadedPersistentData = false;
-
-	// Cached persistent data object
-	TSharedPtr<class FJsonObject> PersistentDataObject;
 	//<------------------------------------------------------------------------->
 };

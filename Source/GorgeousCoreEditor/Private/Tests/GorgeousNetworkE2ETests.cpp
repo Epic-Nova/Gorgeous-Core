@@ -119,13 +119,13 @@ void AGorgeousNetworkAuditGameMode::PostLogin(APlayerController* Player)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousVDGConsentGraphRegression,"GorgeousCore.LimitationAudit.VDGConsentGraph",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FGorgeousVDGConsentGraphRegression::RunTest(const FString&)
 {
-    auto* Blueprint=LoadObject<UBlueprint>(nullptr,TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringInteractor_AC"));
+    auto* Blueprint=LoadObject<UBlueprint>(nullptr,TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringInteractor_AC"));
     if (!TestNotNull(TEXT("Actual interactor Blueprint loads"),Blueprint)) return false;
     TArray<UEdGraph*> Graphs; Blueprint->GetAllGraphs(Graphs);
     UK2Node_CustomEvent* Entry=nullptr; UK2Node_AsyncAction* Gate=nullptr; int32 Gates=0;
     for (UEdGraph* Graph:Graphs) for (UEdGraphNode* Node:Graph->Nodes)
     {
-        if (auto* Event=Cast<UK2Node_CustomEvent>(Node)) if (Event->CustomFunctionName==TEXT("GeatherBySchemaClient")) Entry=Event;
+        if (auto* Event=Cast<UK2Node_CustomEvent>(Node)) if (Event->CustomFunctionName==TEXT("GatherBySchemaClient")) Entry=Event;
         if (auto* Action=Cast<UK2Node_AsyncAction>(Node))
             if (Action->GetFactoryFunction()==UAsyncAction_RequestVDGConsent::StaticClass()->FindFunctionByName(TEXT("RequestVDGConsent"))) { Gate=Action; ++Gates; }
     }
@@ -326,7 +326,7 @@ public:
                 if (S.bVDGConsentTest)
                 {
                     auto* GS=Server->GetGameState<AGorgeousGameState>();
-                    UClass* Class=StaticLoadClass(UActorComponent::StaticClass(),nullptr,TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringManager_AC.BP_VisualDataGeatheringManager_AC_C"));
+                    UClass* Class=StaticLoadClass(UActorComponent::StaticClass(),nullptr,TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringManager_AC.BP_VisualDataGatheringManager_AC_C"));
                     if (!Class || !GS) { S.Test->AddError(TEXT("Actual VDG manager class/server GameState unavailable")); Cleanup(); return false; }
                     auto* Manager=NewObject<UActorComponent>(GS,Class);
                     GS->AddInstanceComponent(Manager); Manager->RegisterComponent(); S.VDGManager=Manager;

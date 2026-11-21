@@ -29,5 +29,8 @@ enum EGorgeousLoggingImportance
 	Logging_Warning = 2 UMETA(DisplayName = "Warning", ToolTip = "Warning message."),
 	Logging_Error = 3 UMETA(DisplayName = "Error", ToolTip = "Error message."),
 	Logging_Fatal = 4 UMETA(DisplayName = "Fatal", ToolTip = "Fatal error message."),
-	Logging_MAX = 5 UMETA(Hidden)
+	Logging_Verbose = 5 UMETA(DisplayName = "Verbose", ToolTip = "Verbose diagnostic message."),
+	Logging_VeryVerbose = 6 UMETA(DisplayName = "Very Verbose", ToolTip = "Detailed diagnostic trace."),
+	Logging_Display = 7 UMETA(DisplayName = "Display", ToolTip = "Visible informational message without success semantics."),
+	Logging_MAX = 8 UMETA(Hidden)
 };

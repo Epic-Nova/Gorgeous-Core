@@ -15,7 +15,7 @@
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
-#include "Engine/DeveloperSettings.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousObjectVariableRootSettings.generated.h"
 //<-------------------------------------------------------------------------->
@@ -84,12 +84,13 @@ public:
 */
 UCLASS(Config = Game, DefaultConfig,
 	meta = (
+		GorgeousSettingsPage = "General",
 		DocumentationOverview  = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/",
 		DocumentationAPI = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Reference/ProjectSettings/#core-object-variable-roots",
 		DocumentationExamples = "https://gorgeous.simsalabim.studio/docs/gorgeous-core/Runtime/ModuleCore/Overview/"
 		)
 )
-class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRootSettings : public UDeveloperSettings
+class GORGEOUSCORERUNTIME_API UGorgeousObjectVariableRootSettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
@@ -113,7 +114,6 @@ public:
 	TArray<FName> GetRegisteredRootNames() const;
 
 #if WITH_EDITOR
-	virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
 	virtual FName GetSectionName() const override { return TEXT("Core|Object Variable Roots"); }
 	virtual FText GetSectionText() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionName", "Core ↪ Object Variable Roots"); }
 	virtual FText GetSectionDescription() const override { return NSLOCTEXT("GorgeousRootSettings", "SectionDescription", "Define available Object Variable roots and their default networking behavior."); }

@@ -12,50 +12,95 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "UObject/Object.h"
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GorgeousLibrarySettings.generated.h"
 //<-------------------------------------------------------------------------->
 
-/**
- * Settings for the Gorgeous Library and Core Systems.
- */
-UCLASS(config=EditorPerProjectUserSettings)
-class GORGEOUSCOREEDITOR_API UGorgeousLibrarySettings : public UObject
+/*
+<=============================--- Class Info ---============================>
+<-----------------------------=== Quick Info ===---------------------------->
+| Display Name: Library and Privacy
+| Functional Name: UGorgeousLibrarySettings
+| Parent Class: UGorgeousCoreDeveloperSettings
+| Class Suffix: -
+| Author: Nils Bergemann
+<--------------------------------------------------------------------------->
+<--------------------------=== Class Description ===------------------------>
+| Stores project-user API permission and endpoint settings alongside the
+| library update and validation controls.
+<--------------------------------------------------------------------------->
+<==========================================================================>
+*/
+UCLASS(Config = EditorPerProjectUserSettings, meta = (GorgeousSettingsPage = "General", DisplayName = "Library and Privacy"))
+class GORGEOUSCOREEDITOR_API UGorgeousLibrarySettings : public UGorgeousCoreDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
+	// Initializes the displayed validation interval and count.
 	UGorgeousLibrarySettings();
 
-    /** All Gorgeous API access. Disabled until explicitly enabled by this user. */
-    UPROPERTY(Config, EditAnywhere, Category="Network and Privacy")
-    bool bAllowGorgeousNetwork = false;
+#if WITH_EDITOR
+	//<============================--- Overrides ---============================>
+	#pragma region Overrides
 
-    UPROPERTY(Config)
-    bool bNetworkConsentDecided = false;
+	// Persists edits to the validation interval and development mode.
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
-	/** Interval (in editor startups) at which the system validation will be automatically executed. */
-	UPROPERTY(EditAnywhere, Category = "Validation", meta = (ClampMin = "1"))
-	int32 ValidationInterval;
-
-	/** Number of times the system validation has been executed. */
-	UPROPERTY(VisibleAnywhere, Category = "Validation")
-	int32 ValidationCount;
+	// Restores validation state and development mode from Gorgeous persistent data.
+	virtual void PostInitProperties() override;
+	//<------------------------------------------------------------------------->
+	#pragma endregion Overrides
+#endif
 
 
-	/** Manually triggers the Gorgeous Installer to recompile the project. The editor will prompt to save and then close gracefully. */
+	//<=======================--- Blueprint Functions ---=======================>
+	#pragma region Blueprint Functions
+
+	// Opens online-services permission and notification preferences with their saved values.
+	UFUNCTION(CallInEditor, Category = "Network and Privacy", meta = (DisplayName = "Configure Online Services"))
+	void ConfigureOnlineServices();
+
+	// Starts the installer recompilation workflow after prompting to save the editor.
 	UFUNCTION(CallInEditor, Category = "Recompilation")
 	void TriggerRecompilation();
 
-	/** Manually triggers a check against the API for new Gorgeous plugin updates. */
+	// Checks the API for plugin updates, requesting consent if no choice is saved.
 	UFUNCTION(CallInEditor, Category = "Updates")
 	void CheckForUpdates();
+	//<------------------------------------------------------------------------->
+	#pragma endregion Blueprint Functions
 
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	virtual void PostInitProperties() override;
-#endif
+
+	//<====================--- UAT/UBT Exposed Variables ---====================>
+	#pragma region UAT/UBT Exposed Variables
+
+	// Stores the API permission controlled by the online-services dialog.
+	UPROPERTY(Config)
+	bool bAllowGorgeousNetwork = false;
+
+	// Records a saved permission choice, including dismissing the initial dialog.
+	UPROPERTY(Config)
+	bool bNetworkConsentDecided = false;
+
+	// Uses HTTP for calls to the configured API origin during development.
+	UPROPERTY(EditAnywhere, Category = "API Connection", meta = (DisplayName = "Force Dev Mode"))
+	bool bForceDevMode = false;
+
+	// Sets the API hostname and optional port. Force Dev Mode selects the protocol.
+	UPROPERTY(EditAnywhere, Config, Category = "API Connection", meta = (DisplayName = "API Origin"))
+	FString ApiOrigin;
+
+	// Controls how many editor starts pass between automatic system validation runs.
+	UPROPERTY(EditAnywhere, Category = "Validation", meta = (ClampMin = "1"))
+	int32 ValidationInterval;
+
+	// Displays how many times system validation has run.
+	UPROPERTY(VisibleAnywhere, Category = "Validation")
+	int32 ValidationCount;
+	//<------------------------------------------------------------------------->
+	#pragma endregion UAT/UBT Exposed Variables
 };

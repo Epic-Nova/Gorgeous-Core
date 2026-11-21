@@ -14,18 +14,28 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using EpicGames.Core;
 
 #nullable enable
 
-// A custom attribute that plugins use to tag their macro generator methods
-[AttributeUsage(AttributeTargets.Method)]
-public class GorgeousMacroProviderAttribute : Attribute { }
-
 public class GorgeousBuildPipeline : ModuleRules
 {
+	/// <summary>
+	/// Applies target-resolved production feature flags and private plugin availability
+	/// before dependency inference. Utilities and early/loading modules never receive the
+	/// optional plugin-availability flags; production feature contracts remain configuration-safe.
+	/// </summary>
+	public static void ConfigureModuleDefinitions(ModuleRules Module, ReadOnlyTargetRules Target)
+	{
+		GorgeousBuildDiagnostics.PrepareModule(Module.ModuleDirectory, Target.Configuration);
+		var definitions = GorgeousModuleDefinitions.ForModule(Module.Name, GorgeousPluginAvailability.ForTarget(Target));
+		foreach (string definition in definitions.PublicDefinitions)
+			if (!Module.PublicDefinitions.Contains(definition)) Module.PublicDefinitions.Add(definition);
+		foreach (string definition in definitions.PrivateDefinitions)
+			if (!Module.PrivateDefinitions.Contains(definition)) Module.PrivateDefinitions.Add(definition);
+	}
+
 	public GorgeousBuildPipeline(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PrivateDependencyModuleNames.AddRange(new string[] { "Core" });
@@ -35,6 +45,278 @@ public class GorgeousBuildPipeline : ModuleRules
 		// This module acts purely as a carrier for the Build Rules.
 		// It has no code to compile.
 		bUsePrecompiled = false;
+	}
+}
+
+/// <summary>Keeps diagnostic reports out of Shipping/Test while retaining build-critical caches.</summary>
+public static class GorgeousBuildDiagnostics
+{
+    public static bool IsEnabled(UnrealTargetConfiguration Configuration) =>
+        Configuration != UnrealTargetConfiguration.Shipping && Configuration != UnrealTargetConfiguration.Test;
+
+    /// <summary>Removes only known stale diagnostic reports from this module's generated directory.</summary>
+    public static void PrepareModule(string ModuleDirectory, UnrealTargetConfiguration Configuration)
+    {
+        if (IsEnabled(Configuration) || string.IsNullOrWhiteSpace(ModuleDirectory)) return;
+        string directory = Path.GetFullPath(Path.Combine(ModuleDirectory, "Intermediate"));
+        foreach (string filename in new[] { "GorgeousMacroDebug.json", "GorgeousIncludeDebug.json", "GorgeousInferredDependencies.json" })
+        {
+            string path = Path.Combine(directory, filename);
+            try { if (File.Exists(path)) File.Delete(path); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+    }
+}
+
+/// <summary>Separates exported production contracts from private plugin availability in eligible modules.</summary>
+public static class GorgeousModuleDefinitions
+{
+	public sealed class DefinitionSet
+	{
+		public IReadOnlyList<string> PublicDefinitions = Array.Empty<string>();
+		public IReadOnlyList<string> PrivateDefinitions = Array.Empty<string>();
+	}
+
+	public static DefinitionSet ForModule(string ModuleName, GorgeousPluginAvailability.TargetPlugins Inventory) =>
+		new DefinitionSet {
+			PublicDefinitions = Inventory.ProductionDefinitions,
+			PrivateDefinitions = GorgeousPluginAvailability.CanInject(ModuleName, Inventory)
+				? Inventory.AvailabilityDefinitions : Array.Empty<string>()
+		};
+
+	/// <summary>
+	/// Discovers actual C++/content system folders from enabled or explicitly built plugins. Inventory
+	/// adapter packs retain their existing public compile contracts in every configuration.
+	/// No loaded rule assembly reflection or secondary plugin-discovery path is involved.
+	/// </summary>
+	public static List<string> DiscoverProductionDefinitions(IEnumerable<PluginInfo> EnabledGorgeousPlugins)
+	{
+		var definitions = new HashSet<string>(StringComparer.Ordinal);
+		void AddSystems(string DirectoryPath)
+		{
+			if (!Directory.Exists(DirectoryPath)) return;
+			foreach (string directory in Directory.GetDirectories(DirectoryPath))
+				definitions.Add("GORGEOUS_SYSTEM_INSTALLED_" + Path.GetFileName(directory).ToUpperInvariant() + "=1");
+		}
+		foreach (PluginInfo plugin in EnabledGorgeousPlugins)
+		{
+			string source = Path.Combine(plugin.Directory.FullName, "Source");
+			if (Directory.Exists(source))
+				foreach (string module in Directory.GetDirectories(source).Where(path => Path.GetFileName(path).EndsWith("Runtime", StringComparison.Ordinal)))
+					AddSystems(Path.Combine(module, "Public", "GeneralSystems"));
+			AddSystems(Path.Combine(plugin.Directory.FullName, "Content", "Systems"));
+			if (!plugin.Name.Equals("GorgeousInventory", StringComparison.OrdinalIgnoreCase)) continue;
+			foreach (string adapter in GorgeousRuleFiles.Enumerate(source, "*AdapterPack_*.cpp", false))
+			{
+				string name = Path.GetFileNameWithoutExtension(adapter).Split('_').Last().ToUpperInvariant();
+				definitions.Add("GORGEOUS_ADAPTER_INSTALLED_" + name + "=1");
+			}
+		}
+		return definitions.OrderBy(value => value, StringComparer.Ordinal).ToList();
+	}
+}
+
+/// <summary>Traverses only authored rule/source trees, stopping at module boundaries by default.</summary>
+internal static class GorgeousRuleFiles
+{
+	public static IEnumerable<string> Enumerate(string Root, string Pattern, bool StopAtMatchingDirectory = true)
+	{
+		if (!Directory.Exists(Root)) yield break;
+		var ignored = new HashSet<string>(new[] { "Intermediate", "Binaries", "Saved", "Content", "Resources", "node_modules", ".git", ".diversion", ".codex", ".kilo" }, StringComparer.OrdinalIgnoreCase);
+		var pending = new Stack<string>(); pending.Push(Root);
+		while (pending.Count > 0)
+		{
+			string directory = pending.Pop();
+			string[] files, children;
+			try { files = Directory.GetFiles(directory, Pattern, SearchOption.TopDirectoryOnly); children = Directory.GetDirectories(directory); }
+			catch (IOException) { continue; }
+			catch (UnauthorizedAccessException) { continue; }
+			foreach (string file in files) yield return file;
+			if (StopAtMatchingDirectory && files.Length > 0) continue;
+			foreach (string child in children)
+				if (!ignored.Contains(Path.GetFileName(child)) && (File.GetAttributes(child) & FileAttributes.ReparsePoint) == 0) pending.Push(child);
+		}
+	}
+}
+
+/// <summary>One Unreal-discovered plugin inventory per rules target, shared by guards and availability.</summary>
+public static class GorgeousPluginAvailability
+{
+	public sealed class TargetPlugins
+	{
+		public Dictionary<string, PluginInfo> Plugins = new(StringComparer.OrdinalIgnoreCase);
+		public HashSet<string> Enabled = new(StringComparer.OrdinalIgnoreCase);
+		public HashSet<string> EarlyModules = new(StringComparer.OrdinalIgnoreCase);
+		public List<string> AvailabilityDefinitions = new();
+		public List<string> ProductionDefinitions = new();
+	}
+	private static readonly Dictionary<string, TargetPlugins> Cache = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>Availability is a compile-time contract in every configuration.</summary>
+	public static bool CanInject(string ModuleName, TargetPlugins Inventory) =>
+		ModuleName.StartsWith("Gorgeous", StringComparison.Ordinal) &&
+		!ModuleName.StartsWith("GorgeousLoadingscreen", StringComparison.Ordinal) &&
+		!Inventory.EarlyModules.Contains(ModuleName) &&
+		(ModuleName.EndsWith("Runtime", StringComparison.Ordinal) || ModuleName.EndsWith("Editor", StringComparison.Ordinal));
+
+	public static string? DefinitionFor(string Name, string DescriptorPath)
+	{
+		string suffix = Name.StartsWith("Gorgeous-", StringComparison.OrdinalIgnoreCase) ? Name.Substring(9) :
+			Name.StartsWith("Gorgeous", StringComparison.OrdinalIgnoreCase) ? Name.Substring(8) : "";
+		if (suffix.Length > 0) return "GORGEOUS_WITH_" + Regex.Replace(suffix.ToUpperInvariant(), "[^A-Z0-9_]", "_") + "=1";
+		if (JsonObject.TryRead(new FileReference(DescriptorPath), out var descriptor) &&
+			descriptor.TryGetBoolField("bIsGorgeousImplementation", out bool implementation) && implementation)
+			return "GORGEOUS_FOREIGN_IMPLEMENTATION_" + Regex.Replace(Name.ToUpperInvariant(), "[^A-Z0-9_]", "_") + "=1";
+		return null;
+	}
+
+	public static TargetPlugins ForTarget(ReadOnlyTargetRules Target)
+	{
+		string engineRoot = Path.GetFullPath(Target.RelativeEnginePath);
+		// This target policy was added after UE 5.4; reflection keeps the rules source compatible.
+		bool allowEngineDefaults = Target.GetType().GetProperty("bAllowEnginePluginsEnabledByDefault")?.GetValue(Target) as bool? ?? true;
+		string key = string.Join("|", engineRoot, Target.ProjectFile?.FullName ?? "", Target.Name, Target.Platform,
+			Target.Configuration, Target.Type, allowEngineDefaults, Target.bCompileAgainstEngine, Target.bCompileWithPluginSupport, Target.bIncludePluginsForTargetPlatforms,
+			string.Join(",", Target.EnablePlugins.OrderBy(n => n)), string.Join(",", Target.DisablePlugins.OrderBy(n => n)), string.Join(",", Target.OptionalPlugins.OrderBy(n => n)),
+			string.Join(",", Target.BuildPlugins.OrderBy(n => n)));
+		lock (Cache)
+		{
+			if (Cache.TryGetValue(key, out var cached)) return cached;
+			ProjectDescriptor? project = Target.ProjectFile == null ? null : ProjectDescriptor.FromFile(Target.ProjectFile);
+			var additional = new List<DirectoryReference>();
+			if (Target.ProjectFile != null && JsonObject.TryRead(Target.ProjectFile, out var json) && json.TryGetStringArrayField("AdditionalPluginDirectories", out var directories))
+				additional.AddRange(directories.Select(path => new DirectoryReference(Path.GetFullPath(Path.Combine(Target.ProjectFile.Directory.FullName, path)))));
+			var result = new TargetPlugins();
+			// UBT stops discovery at a plugin descriptor instead of traversing plugin Source,
+			// Binaries, Intermediate, Saved, repositories or bundled third-party dependency trees.
+			result.Plugins = Plugins.ToFilteredDictionary(Plugins.ReadAvailablePlugins(new DirectoryReference(engineRoot), Target.ProjectFile?.Directory, additional))
+				.ToDictionary(pair => pair.Key, pair => pair.Value.ChoiceVersion ?? pair.Value.KnownVersions.Last(), StringComparer.OrdinalIgnoreCase);
+			result.Enabled = ResolveEnabledPlugins(result.Plugins, project, Target.Platform, Target.Configuration, Target.Type,
+				allowEngineDefaults, Target.EnablePlugins, Target.DisablePlugins, Target.OptionalPlugins,
+				Target.bCompileAgainstEngine || Target.bCompileWithPluginSupport, Target.bIncludePluginsForTargetPlatforms);
+			// A BuildPlugins-only plugin is compiled without becoming enabled. Its own
+			// production contracts must compile, but it receives no availability flag.
+			var gorgeousPlugins = result.Plugins.Values.Where(plugin => result.Enabled.Contains(plugin.Name) || Target.BuildPlugins.Contains(plugin.Name, StringComparer.OrdinalIgnoreCase))
+				.Select(plugin => new { Plugin = plugin, Definition = DefinitionFor(plugin.Name, plugin.File.FullName) })
+				.Where(item => item.Definition != null).ToList();
+			foreach (var item in gorgeousPlugins)
+				foreach (var module in item.Plugin.Descriptor.Modules ?? new List<ModuleDescriptor>())
+					if (module.LoadingPhase is ModuleLoadingPhase.EarliestPossible or ModuleLoadingPhase.PostConfigInit
+						or ModuleLoadingPhase.PostSplashScreen or ModuleLoadingPhase.PreEarlyLoadingScreen or ModuleLoadingPhase.PreLoadingScreen)
+						result.EarlyModules.Add(module.Name);
+			result.AvailabilityDefinitions = gorgeousPlugins.Where(item => result.Enabled.Contains(item.Plugin.Name)).Select(item => item.Definition!).ToList();
+			result.ProductionDefinitions = GorgeousModuleDefinitions.DiscoverProductionDefinitions(gorgeousPlugins.Select(item => item.Plugin));
+			Cache.Add(key, result);
+			return result;
+		}
+	}
+	/// <summary>Matches UBT's target > project > default precedence, followed by dependency closure.</summary>
+	public static HashSet<string> ResolveEnabledPlugins(Dictionary<string, PluginInfo> PluginsByName, ProjectDescriptor? Project,
+		UnrealTargetPlatform Platform, UnrealTargetConfiguration Configuration, TargetType Type, bool AllowEngineDefaults,
+		IEnumerable<string> Enable, IEnumerable<string> Disable, IEnumerable<string> Optional, bool CompileWithPlugins = true, bool IncludePluginsForTargetPlatforms = false)
+	{
+		var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var blocked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var enabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		void Apply(PluginReferenceDescriptor reference)
+		{
+			if (!referenced.Add(reference.Name)) return;
+			if (reference.bEnabled && reference.IsEnabledForPlatform(Platform) && reference.IsEnabledForTargetConfiguration(Configuration) && reference.IsEnabledForTarget(Type) &&
+				PluginsByName.TryGetValue(reference.Name, out var plugin) && (IncludePluginsForTargetPlatforms || (reference.IsSupportedTargetPlatform(Platform) && plugin.Descriptor.SupportsTargetPlatform(Platform)))) enabled.Add(reference.Name);
+			else blocked.Add(reference.Name);
+		}
+		foreach (string name in Enable) Apply(new PluginReferenceDescriptor(name, null, true));
+		foreach (string name in Disable) Apply(new PluginReferenceDescriptor(name, null, false));
+		foreach (string name in Optional) Apply(new PluginReferenceDescriptor(name, null, true));
+		foreach (var reference in Project?.Plugins ?? Array.Empty<PluginReferenceDescriptor>()) Apply(reference);
+		if (CompileWithPlugins)
+			foreach (var plugin in PluginsByName.Values)
+				if (!referenced.Contains(plugin.Name) && plugin.IsEnabledByDefault(AllowEngineDefaults && !(Project?.DisableEnginePluginsByDefault ?? false)))
+					Apply(new PluginReferenceDescriptor(plugin.Name, null, true));
+		bool changed;
+		do
+		{
+			changed = false;
+			foreach (string name in enabled.ToArray())
+				if (PluginsByName.TryGetValue(name, out var plugin))
+					foreach (var reference in plugin.Descriptor.Plugins ?? new List<PluginReferenceDescriptor>())
+						if (reference.bEnabled && reference.IsEnabledForPlatform(Platform) && reference.IsEnabledForTargetConfiguration(Configuration) && reference.IsEnabledForTarget(Type) &&
+							!blocked.Contains(reference.Name) && PluginsByName.TryGetValue(reference.Name, out var dependency) && (IncludePluginsForTargetPlatforms || (reference.IsSupportedTargetPlatform(Platform) && dependency.Descriptor.SupportsTargetPlatform(Platform))))
+							changed |= enabled.Add(reference.Name);
+		} while (changed);
+		return enabled;
+	}
+
+}
+
+/// <summary>A target's bounded inferred-dependency graph; includes never trigger filesystem walks.</summary>
+internal sealed class GorgeousInferredDependencyGraph
+{
+	private readonly Dictionary<string, string> CachePaths;
+	private readonly Dictionary<string, (long Ticks, long Length)> Stamps = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, List<string>> Edges = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, bool> Answers = new(StringComparer.OrdinalIgnoreCase);
+	private readonly object Gate = new();
+	public int CacheReadCount { get; private set; }
+
+	public GorgeousInferredDependencyGraph(Dictionary<string, string> Paths) { CachePaths = Paths; }
+
+	// Refresh once per module scan, and only reread files changed by another module/build.
+	public void Refresh()
+	{
+		lock (Gate)
+			foreach (var pair in CachePaths)
+			{
+				try
+				{
+					var info = new FileInfo(pair.Value);
+					var stamp = info.Exists ? (info.LastWriteTimeUtc.Ticks, info.Length) : (-1L, -1L);
+					if (Stamps.TryGetValue(pair.Key, out var previous) && previous == stamp) continue;
+					Stamps[pair.Key] = stamp;
+					var dependencies = new List<string>();
+					if (info.Exists)
+					{
+						++CacheReadCount;
+						if (JsonObject.TryRead(new FileReference(pair.Value), out var cache))
+						{
+							if (cache.TryGetStringArrayField("PublicDependencies", out var publicNames)) dependencies.AddRange(publicNames);
+							if (cache.TryGetStringArrayField("PrivateDependencies", out var privateNames)) dependencies.AddRange(privateNames);
+						}
+					}
+					Replace(pair.Key, dependencies);
+				}
+				catch (IOException) { Stamps.Remove(pair.Key); Replace(pair.Key, Array.Empty<string>()); }
+				catch (UnauthorizedAccessException) { Stamps.Remove(pair.Key); Replace(pair.Key, Array.Empty<string>()); }
+			}
+	}
+
+	public void Replace(string Module, IEnumerable<string> Dependencies)
+	{
+		lock (Gate)
+		{
+			Edges[Module] = Dependencies.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+			Answers.Clear();
+		}
+	}
+
+	public bool WouldCreateCycle(string Module, string Candidate)
+	{
+		lock (Gate)
+		{
+			string key = Module + "\0" + Candidate;
+			if (Answers.TryGetValue(key, out bool answer)) return answer;
+			var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var pending = new Stack<string>(); pending.Push(Candidate);
+			while (pending.Count > 0)
+			{
+				string current = pending.Pop();
+				if (!visited.Add(current)) continue;
+				if (current.Equals(Module, StringComparison.OrdinalIgnoreCase)) return Answers[key] = true;
+				if (Edges.TryGetValue(current, out var dependencies)) foreach (string dependency in dependencies) pending.Push(dependency);
+			}
+			return Answers[key] = false;
+		}
 	}
 }
 
@@ -86,32 +368,17 @@ public static class GorgeousGuardBuildRequirements
     private static string Symbol(string id) => Regex.Replace(id.ToUpperInvariant(), "[^A-Z0-9_]", "_");
     private static string Message(string value) => value.Replace("\\", "/").Replace("\"", "'").Replace("\r", " ").Replace("\n", " ");
 
-    public static void Register(ModuleRules module, ReadOnlyTargetRules target, string coreRoot, string engineRoot)
+    public static void Register(ModuleRules module, ReadOnlyTargetRules target, string coreRoot)
     {
-        ProjectDescriptor? project = target.ProjectFile == null ? null : ProjectDescriptor.FromFile(target.ProjectFile);
-        var additional = new List<DirectoryReference>();
-        if (project != null && target.ProjectFile != null && JsonObject.TryRead(target.ProjectFile, out var projectJson) && projectJson.TryGetStringArrayField("AdditionalPluginDirectories", out var directories))
-            additional.AddRange(directories.Select(path => new DirectoryReference(Path.GetFullPath(Path.Combine(target.ProjectFile.Directory.FullName, path)))));
-        var plugins = Plugins.ToFilteredDictionary(Plugins.ReadAvailablePlugins(new DirectoryReference(engineRoot), target.ProjectFile?.Directory, additional))
-            .ToDictionary(pair => pair.Key, pair => pair.Value.ChoiceVersion ?? pair.Value.KnownVersions.Last(), StringComparer.OrdinalIgnoreCase);
-        var enabled = new HashSet<string>(plugins.Values.Where(p => Plugins.IsPluginEnabledForTarget(p, project!, target.Platform, target.Configuration, target.Type)).Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
-        bool ExplicitlyOff(string name) => target.DisablePlugins.Contains(name, StringComparer.OrdinalIgnoreCase) ||
-            (project?.Plugins ?? Array.Empty<PluginReferenceDescriptor>()).Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && !p.bEnabled);
-        foreach (string name in target.EnablePlugins) if (!ExplicitlyOff(name)) enabled.Add(name);
-        foreach (string name in target.DisablePlugins) enabled.Remove(name);
-        bool changed;
-        do
-        {
-            changed = false;
-            foreach (string name in enabled.ToArray())
-                if (plugins.TryGetValue(name, out var plugin))
-                    foreach (var reference in plugin.Descriptor.Plugins ?? new List<PluginReferenceDescriptor>())
-                        if (reference.bEnabled && reference.IsEnabledForPlatform(target.Platform) && reference.IsEnabledForTargetConfiguration(target.Configuration) && reference.IsEnabledForTarget(target.Type) && !ExplicitlyOff(reference.Name) && plugins.ContainsKey(reference.Name))
-                            changed |= enabled.Add(reference.Name);
-        } while (changed);
+        var pluginInventory = GorgeousPluginAvailability.ForTarget(target);
+        var plugins = pluginInventory.Plugins;
+        var enabled = pluginInventory.Enabled;
 
         var guards = new List<Guard>();
         var dependencies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        // Windows pre-build steps also run when UBT reuses a cached makefile.
+        bool bValidateFoldersBeforeBuild = OperatingSystem.IsWindows() && target.ProjectFile != null;
+        var guardManifests = new List<string>();
         foreach (var plugin in plugins.Values.OrderBy(p => p.Name, StringComparer.Ordinal))
         {
             if (!enabled.Contains(plugin.Name)) continue;
@@ -123,6 +390,7 @@ public static class GorgeousGuardBuildRequirements
                 continue;
             }
             dependencies.Add(manifest);
+            guardManifests.Add(manifest);
             if (!JsonObject.TryRead(new FileReference(manifest), out var document) || document.GetIntegerField("SchemaVersion") != 1 || document.GetStringField("HashAlgorithm") != "SHA1" || !document.GetStringField("PluginName").Equals(plugin.Name, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Invalid/version-mismatched Gorgeous guard manifest: " + manifest);
             var sources = document.GetObjectArrayField("Sources");
@@ -139,7 +407,7 @@ public static class GorgeousGuardBuildRequirements
             foreach (string folder in document.GetStringArrayField("GuardFolders"))
             {
                 string path = Under(plugin.Directory.FullName, folder);
-                dependencies.Add(path);
+                if (!bValidateFoldersBeforeBuild) dependencies.Add(path);
                 if (Directory.Exists(path)) foreach (string asset in Directory.GetFiles(path, "*.uasset", SearchOption.AllDirectories))
                     onDisk.Add(Path.GetRelativePath(plugin.Directory.FullName, asset).Replace('\\', '/'));
             }
@@ -150,6 +418,16 @@ public static class GorgeousGuardBuildRequirements
                     throw new InvalidOperationException("Guard manifest lacks source/class/identifier provenance: " + manifest);
                 guards.Add(new Guard { Data = data, Container = plugin.Name });
             }
+        }
+        if (bValidateFoldersBeforeBuild)
+        {
+            string inventory = Path.Combine(target.ProjectFile!.Directory.FullName, "Intermediate", "GorgeousGuardRequirements",
+                $"{target.Name}-{target.Platform}-{target.Configuration}.json");
+            string contents = System.Text.Json.JsonSerializer.Serialize(guardManifests);
+            Directory.CreateDirectory(Path.GetDirectoryName(inventory)!);
+            if (!File.Exists(inventory) || File.ReadAllText(inventory) != contents)
+                File.WriteAllText(inventory, contents);
+            dependencies.Add(inventory);
         }
         foreach (var file in dependencies) module.ExternalDependencies.Add(file);
         bool Active(Guard guard)
@@ -187,6 +465,9 @@ public static class GorgeousGuardBuildRequirements
             if (active && mandatory.Count > 0) lines.Add("#error \"Gorgeous guard " + Message(guard.Id) + " requires " + Message(string.Join(", ", mandatory)) + "\"");
             if (active && optional.Count > 0) lines.Add("#pragma message(\"Optional Gorgeous guard dependency unavailable: " + Message(guard.Id + ": " + string.Join(", ", optional)) + "\")");
         }
+        var guardEntries = guards.OrderBy(g => g.Id, StringComparer.Ordinal)
+            .Select(g => $"Visit({Symbol(g.Id)}, GORGEOUS_GUARD_{Symbol(g.Id)}_ACTIVE && GORGEOUS_GUARD_{Symbol(g.Id)}_REQUIREMENTS_MET)");
+        lines.Add("#define GORGEOUS_FOR_EACH_COMPILED_GUARD(Visit) " + string.Join(" ", guardEntries));
         string header = string.Join("\n", lines) + "\n";
         // UBT owns the generated include directory. No global forced includes or public PCH flags.
         module.GenerateHeaderFuncs.Add(("GorgeousGuardRequirements", (logger, directory) =>
@@ -243,7 +524,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		AddPrivateDependency(BasePrivateDependencies);
 		if (Name == "GorgeousCoreRuntime")
 		{
-			GorgeousGuardBuildRequirements.Register(this, Target, Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..")), EngineDirectory);
+			GorgeousGuardBuildRequirements.Register(this, Target, Path.GetFullPath(Path.Combine(ModuleDirectory, "..", "..")));
 		}
 
 		var platformAsString = Target.Platform.ToString().ToUpper();
@@ -252,12 +533,9 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var moduleTypeAsString = Settings.TargetModuleType.ToString().ToUpper();
 		PublicDefinitions.Add("IS_GORGEOUS_" + moduleTypeAsString + "_MODULE=1");
 
-		var moduleName = Name.ToUpper();
-		PublicDefinitions.Add("GORGEOUS_WITH_" + moduleName + "_MODULE=1"); //@TODO: Do we really need this?
-
 		ApplyAutoDependencies(Settings);
-		// Make foreign macro providers available before parsing conditional includes.
-		InjectForeignPluginMacros();
+		// Resolve all conditional compile contracts before parsing module includes.
+		GorgeousBuildPipeline.ConfigureModuleDefinitions(this, Target);
 		if (IsInferredDependencyScanEnabled(Settings))
 		{
 			ApplyInferredDependencies(Settings);
@@ -352,7 +630,8 @@ public abstract class GorgeousModuleRules : ModuleRules
 			PrivateIncludePaths.AddRange(validDirs);
 		}
 
-		// Save for debugging
+		// Include paths remain active in every configuration; diagnostic output does not.
+		if (!GorgeousBuildDiagnostics.IsEnabled(Target.Configuration)) return;
 		var debugFile = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousIncludeDebug.json");
 		var debugDir = Path.GetDirectoryName(debugFile);
 		// Directory creation is handled by TryWriteAllLines.
@@ -454,172 +733,17 @@ public abstract class GorgeousModuleRules : ModuleRules
 		AddPrivateDependency(privateModules.Where(m => !exclusions.Contains(m)));
 	}
 
-	// --------------------------------------------------------------------------------
-	// MACRO INJECTION SYSTEM
-	// --------------------------------------------------------------------------------
-
-	protected void TryAddDefinition(string Def)
+	/// <summary>Writes the actual public and private definitions used by this module.</summary>
+	protected void WriteDefinitionDebugReport()
 	{
-		if (!PublicDefinitions.Contains(Def))
-		{
-			PublicDefinitions.Add(Def);
-		}
-	}
-
-	/// <summary>
-	/// Uses Reflection to find all methods tagged with [GorgeousMacroProvider] across all 
-	/// loaded Build.cs files and injects their returned macros globally into this module.
-	/// </summary>
-	protected void InjectForeignPluginMacros()
-	{
-		try
-		{
-			var assembly = this.GetType().Assembly;
-			foreach (var type in assembly.GetTypes())
-			{
-				var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-				foreach (var method in methods)
-				{
-					if (method.GetCustomAttribute<GorgeousMacroProviderAttribute>() != null)
-					{
-						// Method must return IEnumerable<string>
-						var parameters = method.GetParameters();
-						var result = parameters.Length switch
-						{
-							0 => method.Invoke(null, null) as IEnumerable<string>,
-							1 when parameters[0].ParameterType == typeof(ReadOnlyTargetRules)
-								=> method.Invoke(null, new object[] { Target }) as IEnumerable<string>,
-							_ => null
-						};
-						if (result != null)
-						{
-							foreach (var macro in result)
-							{
-								TryAddDefinition(macro);
-							}
-						}
-					}
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"[GorgeousBuildPipeline] Failed to inject foreign plugin macros: {ex.Message}");
-		}
-	}
-
-	/// <summary>
-	/// Writes all currently defined PublicDefinitions to a JSON debug file.
-	/// Call this at the very end of your module's constructor.
-	/// </summary>
-	protected void DumpMacroDebug()
-	{
-		try
-		{
-			var debugPath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousMacroDebug.json");
-			var dir = Path.GetDirectoryName(debugPath);
-			// Best-effort directory creation is performed by TryWriteAllLines.
-
-			var lines = new List<string> { "{", $"  \"Module\": \"{Name}\",", "  \"PublicDefinitions\": [" };
-			var macroList = PublicDefinitions.ToList();
-			for (int i = 0; i < macroList.Count; i++)
-			{
-				var comma = i < macroList.Count - 1 ? "," : "";
-				lines.Add($"    \"{macroList[i]}\"{comma}");
-			}
-			lines.Add("  ]");
-			lines.Add("}");
-
-			TryWriteAllLines(debugPath, lines);
-		}
-		catch (Exception) { /* Fail silently */ }
-	}
-
-	/// <summary>
-	/// Generic helper for modules to scan a directory and format the results into macros.
-	/// e.g. InjectCustomMacros(..., "*AdapterPack_*.cpp", name => $"GORGEOUS_INVENTORY_ADAPTER_{name}")
-	/// </summary>
-	public static IEnumerable<string> InjectCustomMacros(string SearchDir, string SearchPattern, Func<string, string> FormatDelegate)
-	{
-		var results = new List<string>();
-		if (!Directory.Exists(SearchDir)) return results;
-
-		try
-		{
-			var files = Directory.GetFiles(SearchDir, SearchPattern, SearchOption.AllDirectories);
-			foreach (var file in files)
-			{
-				var name = Path.GetFileNameWithoutExtension(file);
-				// If the pattern is *AdapterPack_*.cpp, extract the part after the last underscore
-				if (name.Contains("_"))
-				{
-					name = name.Split('_').Last();
-				}
-				name = name.ToUpper();
-				results.Add(FormatDelegate(name));
-			}
-		}
-		catch (Exception) { /* Fail silently */ }
-
-		return results;
-	}
-
-	/// <summary>
-	/// Generic helper to find all plugins and inject macros.
-	/// </summary>
-	public static IEnumerable<string> InjectPluginMacros(string PluginsDirectory, string? ProjectDescriptorPath = null)
-	{
-		var results = new List<string>();
-		if (!Directory.Exists(PluginsDirectory)) return results;
-
-		try
-		{
-			var upluginFiles = Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories);
-			foreach (var uplugin in upluginFiles)
-			{
-				var descriptorPluginName = Path.GetFileNameWithoutExtension(uplugin);
-				if (!IsPluginDescriptorActive(descriptorPluginName, uplugin, PluginsDirectory, ProjectDescriptorPath))
-				{
-					continue;
-				}
-
-				var pluginName = descriptorPluginName.ToUpper();
-				
-				bool isNative = false;
-				if (pluginName.StartsWith("GORGEOUS-")) 
-				{
-					pluginName = pluginName.Substring(9);
-					isNative = true;
-				}
-				else if (pluginName.StartsWith("GORGEOUS")) 
-				{
-					pluginName = pluginName.Substring(8);
-					isNative = true;
-				}
-				
-				if (isNative)
-				{
-					results.Add($"GORGEOUS_WITH_{pluginName}=1");
-				}
-				else
-				{
-					try
-					{
-						var content = File.ReadAllText(uplugin);
-						// Allow foreign plugins to declare they are a Gorgeous implementation
-						if (content.Contains("\"bIsGorgeousImplementation\": true", StringComparison.OrdinalIgnoreCase) ||
-						    content.Contains("\"bIsGorgeousImplementation\":true", StringComparison.OrdinalIgnoreCase))
-						{
-							results.Add($"GORGEOUS_FOREIGN_IMPLEMENTATION_{pluginName}=1");
-						}
-					}
-					catch (Exception) { }
-				}
-			}
-		}
-		catch (Exception) { /* Fail silently */ }
-
-		return results;
+		if (!GorgeousBuildDiagnostics.IsEnabled(Target.Configuration)) return;
+		string path = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousMacroDebug.json");
+		string contents = System.Text.Json.JsonSerializer.Serialize(new {
+			Module = Name,
+			PublicDefinitions = PublicDefinitions,
+			PrivateDefinitions = PrivateDefinitions
+		}, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+		TryWriteAllLines(path, new[] { contents });
 	}
 
 	/// <summary>
@@ -645,84 +769,6 @@ public abstract class GorgeousModuleRules : ModuleRules
 			AddPublicDependency(new[] { "StructUtilsEngine" });
 		}
 	}
-
-	/// <summary>
-	/// Returns whether a plugin is enabled by the project descriptor, by an enabled descriptor
-	/// reference, or by its own EnabledByDefault setting. This intentionally distinguishes an
-	/// installed plugin from one that UBT may load for the active target.
-	/// </summary>
-	private static bool IsPluginDescriptorActive(
-		string PluginName,
-		string PluginDescriptorPath,
-		string PluginsDirectory,
-		string? ProjectDescriptorPath)
-	{
-        // Explicit project references win, including false. Parse JSON objects rather
-        // than allowing a regex to match the next plugin's Enabled field.
-        bool? ReadReference(string path)
-        {
-            try
-            {
-                if (JsonObject.TryRead(new FileReference(path), out var doc) && doc.TryGetObjectArrayField("Plugins", out var refs))
-                    foreach (var reference in refs)
-                        if (reference.TryGetStringField("Name", out var name) &&
-                            string.Equals(name, PluginName, StringComparison.OrdinalIgnoreCase) &&
-                            reference.TryGetBoolField("Enabled", out var enabled))
-                            return enabled;
-            }
-            catch (Exception) { }
-            return null;
-        }
-        if (!string.IsNullOrWhiteSpace(ProjectDescriptorPath) && File.Exists(ProjectDescriptorPath))
-        {
-            var enabled = ReadReference(ProjectDescriptorPath);
-            if (enabled.HasValue) return enabled.Value;
-        }
-        foreach (var path in Directory.GetFiles(PluginsDirectory, "*.uplugin", SearchOption.AllDirectories))
-            if (ReadReference(path) == true) return true;
-        try
-        {
-            return JsonObject.TryRead(new FileReference(PluginDescriptorPath), out var doc) && doc.TryGetBoolField("EnabledByDefault", out var enabled) && enabled;
-        }
-        catch (Exception) { return false; }
-    }
-
-	/// <summary>
-	/// The current standard format for General System macros.
-	/// </summary>
-	public static IEnumerable<string> InjectGeneralSystemMacros(string SystemName, string ModuleDir, bool bWithBlueprintSystems = false)
-	{
-		var results = new List<string>();
-		SystemName = SystemName.ToUpper();
-
-		var publicGeneralPath = Path.Combine(ModuleDir, "Public", "GeneralSystems");
-		if (Directory.Exists(publicGeneralPath))
-		{
-			var dirs = Directory.GetDirectories(publicGeneralPath);
-			foreach (var dir in dirs)
-			{
-				var subSystem = Path.GetFileName(dir).ToUpper();
-				results.Add($"GORGEOUS_SYSTEM_INSTALLED_{subSystem}=1");
-			}
-		}
-
-		if (bWithBlueprintSystems)
-		{
-			var contentSystemsPath = Path.Combine(ModuleDir, "..", "..", "Content", "Systems");
-			if (Directory.Exists(contentSystemsPath))
-			{
-				var dirs = Directory.GetDirectories(contentSystemsPath);
-				foreach (var dir in dirs)
-				{
-					var subSystem = Path.GetFileName(dir).ToUpper();
-					results.Add($"GORGEOUS_SYSTEM_INSTALLED_{subSystem}=1");
-				}
-			}
-		}
-
-		return results;
-	}
-
 
 	// --------------------------------------------------------------------------------
 	// Deep Dependency Resolution
@@ -902,10 +948,16 @@ public abstract class GorgeousModuleRules : ModuleRules
 		var headerMapCachePath = Path.Combine(projectDir, "Intermediate", "GorgeousHeaderMapCache.json");
 		var headerMap = GetOrGenerateHeaderMap(headerMapCachePath);
 
+		CycleGraph = GetInferredDependencyGraph();
+		CycleGraph.Refresh();
 		var diagnostics = new List<string>();
 		var publicDeps = ScanForModules(publicPath, exclusions, headerMap, PreprocessorDefinitions, diagnostics).ToList();
 		var privateDeps = ScanForModules(privatePath, exclusions, headerMap, PreprocessorDefinitions, diagnostics).ToList();
 		WriteInferenceReport(publicDeps, privateDeps, diagnostics);
+
+		// Later module scans immediately see the newly generated graph, even before the
+		// on-disk cache is reread. Refresh invalidates memoized answers after cache updates.
+		CycleGraph.Replace(Name, publicDeps.Concat(privateDeps));
 
 		return new DependencyCache
 		{
@@ -989,40 +1041,46 @@ public abstract class GorgeousModuleRules : ModuleRules
 			&& !string.Equals(ModuleName, "UnrealEd", StringComparison.OrdinalIgnoreCase);
 	}
 
-	private bool WouldCreateInferredCycle(string CandidateModule)
-	{
-		var projectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : Directory.GetCurrentDirectory();
-		var graph = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-		foreach (var cachePath in Directory.GetFiles(projectDir, "GorgeousDepsCache.json", SearchOption.AllDirectories))
-		{
-			try
-			{
-				var moduleDir = Directory.GetParent(Directory.GetParent(cachePath)!.FullName)!.Name;
-				var dependencies = Regex.Matches(File.ReadAllText(cachePath), "\"(?:Public|Private)Dependencies\"\\s*:\\s*\\[(?<items>.*?)\\]", RegexOptions.Singleline)
-					.Cast<Match>().SelectMany(match => Regex.Matches(match.Groups["items"].Value, "\"([^\"]+)\"").Cast<Match>().Select(item => item.Groups[1].Value)).ToList();
-				graph[moduleDir] = dependencies;
-			}
-			catch (Exception) { }
-		}
+	private static readonly Dictionary<GorgeousPluginAvailability.TargetPlugins, GorgeousInferredDependencyGraph> InferredGraphsThisRun = new();
+	private GorgeousInferredDependencyGraph? CycleGraph;
 
-		var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var pending = new Stack<string>();
-		pending.Push(CandidateModule);
-		while (pending.Count > 0)
-		{
-			var current = pending.Pop();
-			if (!visited.Add(current)) continue;
-			if (string.Equals(current, Name, StringComparison.OrdinalIgnoreCase)) return true;
-			if (graph.TryGetValue(current, out var dependencies))
-			{
-				foreach (var dependency in dependencies) pending.Push(dependency);
-			}
-		}
-		return false;
+	private string[] HeaderSearchRoots()
+	{
+		var engine = Path.GetFullPath(Target.RelativeEnginePath);
+		var project = Target.ProjectFile?.Directory.FullName ?? Path.Combine(engine, "..", "Project");
+		return new[] { Path.Combine(engine,"Source","Runtime"), Path.Combine(engine,"Source","Editor"), Path.Combine(engine,"Source","Developer"), Path.Combine(project,"Source") }
+			.Concat(GorgeousPluginAvailability.ForTarget(Target).Plugins.Values.Select(plugin => Path.Combine(plugin.Directory.FullName,"Source")))
+			.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 	}
+
+	private GorgeousInferredDependencyGraph GetInferredDependencyGraph()
+	{
+		var inventory = GorgeousPluginAvailability.ForTarget(Target);
+		lock (InferredGraphsThisRun)
+		{
+			if (InferredGraphsThisRun.TryGetValue(inventory, out var graph)) return graph;
+			var caches = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+			// Exact module-owned paths only: engine, project and AdditionalPluginDirectories
+			// use the same filtered plugin inventory as inference. Saved/worktrees/packages
+			// are never searched for arbitrary old cache files.
+			foreach (string root in HeaderSearchRoots())
+				foreach (string rules in GorgeousRuleFiles.Enumerate(root, "*.Build.cs"))
+				{
+					string name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(rules));
+					caches[name] = Path.Combine(Path.GetDirectoryName(rules)!, "Intermediate", "GorgeousDepsCache.json");
+				}
+			graph = new GorgeousInferredDependencyGraph(caches);
+			InferredGraphsThisRun.Add(inventory, graph);
+			return graph;
+		}
+	}
+
+	private bool WouldCreateInferredCycle(string CandidateModule) =>
+		(CycleGraph ??= GetInferredDependencyGraph()).WouldCreateCycle(Name, CandidateModule);
 
 	private void WriteInferenceReport(IEnumerable<string> PublicDependencies, IEnumerable<string> PrivateDependencies, IEnumerable<string> Diagnostics)
 	{
+		if (!GorgeousBuildDiagnostics.IsEnabled(Target.Configuration)) return;
 		var reportPath = Path.Combine(ModuleDirectory, "Intermediate", "GorgeousInferredDependencies.json");
 		// Best-effort directory creation is performed by TryWriteAllLines.
 		var lines = new List<string> { "{", $"  \"Module\": \"{Name}\",", "  \"PublicDependencies\": [" };
@@ -1287,7 +1345,7 @@ public abstract class GorgeousModuleRules : ModuleRules
             foreach(var root in roots.Where(Directory.Exists))
             {
                 entries.Add(root+"|"+Directory.GetLastWriteTimeUtc(root).Ticks);
-                foreach(var rules in Directory.EnumerateFiles(root,"*.Build.cs",SearchOption.AllDirectories))
+                foreach(var rules in GorgeousRuleFiles.Enumerate(root,"*.Build.cs"))
                 {
                     entries.Add(rules);
                     var module=Path.GetDirectoryName(rules)!;
@@ -1317,9 +1375,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 	{
         var regenerate=ShouldForceDependencyRescan();
         if(!regenerate && HeaderMapsThisRun.TryGetValue(CachePath,out var existing)) return existing;
-        var engineRoot=Path.GetFullPath(Target.RelativeEnginePath);
-        var projectRoot=Target.ProjectFile?.Directory.FullName ?? Path.Combine(engineRoot,"..","Project");
-        var roots=new[]{Path.Combine(engineRoot,"Source","Runtime"),Path.Combine(engineRoot,"Source","Editor"),Path.Combine(engineRoot,"Source","Developer"),Path.Combine(engineRoot,"Plugins"),Path.Combine(projectRoot,"Plugins"),Path.Combine(projectRoot,"Source")};
+        var roots = HeaderSearchRoots();
         var signature=BuildHeaderSearchSignature(roots);
         var signatureFile=CachePath+".signature";
 		if (!regenerate && File.Exists(CachePath) && HeaderSignatureMatches(signatureFile,signature))
@@ -1339,16 +1395,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 		}
 
 		var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		var engineDir = Path.GetFullPath(Target.RelativeEnginePath);
-		var projectDir = Target.ProjectFile != null ? Target.ProjectFile.Directory.FullName : Path.Combine(engineDir, "..", "Project");
-
-		// We will scan Engine/Source/Runtime, Engine/Plugins, and the Project plugins
-		ScanDirectoryForHeaders(Path.Combine(engineDir, "Source", "Runtime"), map);
-		ScanDirectoryForHeaders(Path.Combine(engineDir, "Source", "Editor"), map);
-		ScanDirectoryForHeaders(Path.Combine(engineDir, "Source", "Developer"), map);
-		ScanDirectoryForHeaders(Path.Combine(engineDir, "Plugins"), map);
-		ScanDirectoryForHeaders(Path.Combine(projectDir, "Plugins"), map);
-		ScanDirectoryForHeaders(Path.Combine(projectDir, "Source"), map);
+		foreach (string root in roots) ScanDirectoryForHeaders(root, map);
 
 		var cacheDirName = Path.GetDirectoryName(CachePath);
 		// Best-effort directory creation is performed by TryWriteAllLines.
@@ -1389,7 +1436,7 @@ public abstract class GorgeousModuleRules : ModuleRules
 			// Discover module roots in one pass. The previous implementation enumerated
 			// every directory and then probed each one for a Build.cs file, which makes
 			// an explicit refresh especially expensive for engine and plugin trees.
-			foreach (var buildCsFile in Directory.EnumerateFiles(RootDir, "*.Build.cs", SearchOption.AllDirectories))
+			foreach (var buildCsFile in GorgeousRuleFiles.Enumerate(RootDir, "*.Build.cs"))
 			{
 				var moduleDirectory = Path.GetDirectoryName(buildCsFile);
 				if (string.IsNullOrEmpty(moduleDirectory)) continue;

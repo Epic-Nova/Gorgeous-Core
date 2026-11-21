@@ -17,6 +17,7 @@
 #include "GeneralSystems/GeneralSystemConfiguration_PDA.h"
 #include "Libraries/GorgeousEditorLoggingBlueprintFunctionLibrary.h"
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
 #include "ModuleCore/GorgeousSystemDeveloperSettings.h"
 //<--------------------------=== Engine Includes ===------------------------->
@@ -393,19 +394,19 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
 	if (!PluginHelper) return;
 
-	const bool bIsFirstTime = !PluginHelper->HasRunInitialValidation();
-	const int32 CurrentCount = PluginHelper->GetSystemValidationCount();
-	const int32 Interval = PluginHelper->GetSystemValidationInterval();
+	const bool bIsFirstTime = !FGorgeousPersistentData::Get().HasRunInitialValidation();
+	const int32 CurrentCount = FGorgeousPersistentData::Get().GetSystemValidationCount();
+	const int32 Interval = FGorgeousPersistentData::Get().GetSystemValidationInterval();
 
 	if (!bIsFirstTime && CurrentCount < Interval - 1)
 	{
-		PluginHelper->IncrementSystemValidationCount();
+		FGorgeousPersistentData::Get().IncrementSystemValidationCount();
 		GT_I_LOG("GT.GeneralSystemValidator", TEXT("Skipping system validation (attempt %d/%d)"), CurrentCount + 1, Interval);
 		return;
 	}
 
 	// Reset count as we are performing validation now
-	PluginHelper->SetSystemValidationCount(0);
+	FGorgeousPersistentData::Get().SetSystemValidationCount(0);
 
 	TArray<FString> ScannedDirs = GetGorgeousPluginDirectories();
 	if (ScannedDirs.Num() == 0)
@@ -432,7 +433,7 @@ void UGorgeousGeneralSystemValidator::ScanAndRecreateMissingPDAs()
 	// Mark that we have run the initial validation
 	if (bIsFirstTime)
 	{
-		PluginHelper->SetHasRunInitialValidation(true);
+		FGorgeousPersistentData::Get().SetHasRunInitialValidation(true);
 	}
 
 	// Call custom validation hooks on all registered modules (Game Thread)

@@ -8,6 +8,10 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Editor.h"
 #include "IDetailsView.h"
+#include "ISettingsCategory.h"
+#include "ISettingsContainer.h"
+#include "ISettingsModule.h"
+#include "ISettingsSection.h"
 #include "PropertyEditorModule.h"
 #include "Layout/ArrangedChildren.h"
 #include "Framework/Application/SlateApplication.h"
@@ -61,7 +65,7 @@ bool FGorgeousGuardClosureResourceLifecycleTest::RunTest(const FString&)
     Enforcer->TestRequestExit=[&]() { ++Exits; };
     ON_SCOPE_EXIT {
         Settings->bDisableExtensionResourceProtection=PreviousDisabled;
-        if (Enforcer->ProtectionBanner.IsValid()) Enforcer->ProtectionBanner->ExpireAndFadeout();
+        if (const auto Banner = Enforcer->ProtectionBanner.Pin()) Banner->ExpireAndFadeout();
     };
     const FName Missing(TEXT("ClosureMissingMandatoryResource"));
     Guard->RequiredPlugins.Add(Missing,true);
@@ -174,30 +178,70 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousProtectionSettingsClosureTest,
 
 bool FGorgeousProtectionSettingsClosureTest::RunTest(const FString&)
 {
-    auto& PropertyEditor=FModuleManager::LoadModuleChecked<FPropertyEditorModule>(TEXT("PropertyEditor"));
-    FDetailsViewArgs Args; Args.bUpdatesFromSelection=false; Args.bAllowSearch=false; Args.bHideSelectionTip=true;
-    TSharedPtr<IDetailsView> View=PropertyEditor.CreateDetailView(Args);
-    View->SetObject(GetMutableDefault<UGorgeousUsefulSettings>(),true);
-    ON_SCOPE_EXIT { View->SetObject(nullptr,true); View.Reset(); };
-    const FGeometry Geometry=FGeometry::MakeRoot(FVector2D(1400,4000),FSlateLayoutTransform());
-    TFunction<void(const TSharedRef<SWidget>&,const FGeometry&)> Tick;
-    Tick=[&Tick](const TSharedRef<SWidget>& Widget,const FGeometry& Area) {
-        Widget->Tick(Area,FPlatformTime::Seconds(),1.f/60.f);
-        FArrangedChildren Children(EVisibility::Visible); Widget->ArrangeChildren(Area,Children);
-        for (int32 Index=0;Index<Children.Num();++Index) Tick(Children[Index].Widget,Children[Index].Geometry);
+    auto* Settings = FModuleManager::GetModulePtr<ISettingsModule>(TEXT("Settings"));
+    const auto Project = Settings ? Settings->GetContainer(TEXT("Project")) : nullptr;
+    const auto Category = Project ? Project->GetCategory(TEXT("Gorgeous Things")) : nullptr;
+    if (!TestTrue(TEXT("Gorgeous Things Project Settings are registered"), Category.IsValid())) return false;
+
+    const auto* UsefulSettings = GetDefault<UGorgeousUsefulSettings>();
+    TFunction<TSharedPtr<IDetailsView>(const TSharedRef<SWidget>&)> FindUsefulSettings;
+    FindUsefulSettings = [&](const TSharedRef<SWidget>& Widget) -> TSharedPtr<IDetailsView>
+    {
+        if (Widget->GetTypeAsString() == TEXT("SDetailsView"))
+        {
+            const auto Details = StaticCastSharedRef<IDetailsView>(Widget);
+            for (const TWeakObjectPtr<UObject>& Object : Details->GetSelectedObjects())
+            {
+                if (Object.Get() == UsefulSettings) return Details;
+            }
+        }
+        FChildren* Children = Widget->GetChildren();
+        for (int32 Index = 0; Children && Index < Children->Num(); ++Index)
+        {
+            if (const auto Details = FindUsefulSettings(Children->GetChildAt(Index))) return Details;
+        }
+        return nullptr;
     };
-    for (int32 Frame=0;Frame<4;++Frame) { View->SetRootExpansionStates(true,true); View->SlatePrepass(1.f); Tick(View.ToSharedRef(),Geometry); }
-    int32 Warnings=0,DocumentationLinks=0;
-    TFunction<void(const TSharedRef<SWidget>&)> Inspect;
-    Inspect=[&](const TSharedRef<SWidget>& Widget) {
-        if (Widget->GetTag()==TEXT("Gorgeous.Protection.Warning")) ++Warnings;
-        if (Widget->GetTag()==TEXT("Gorgeous.Protection.Documentation")) ++DocumentationLinks;
-        FChildren* Children=Widget->GetChildren();
-        for (int32 Index=0;Children && Index<Children->Num();++Index) Inspect(Children->GetChildAt(Index));
+
+    TFunction<void(const TSharedRef<SWidget>&, const FGeometry&)> Tick;
+    Tick = [&](const TSharedRef<SWidget>& Widget, const FGeometry& Area)
+    {
+        Widget->Tick(Area, FPlatformTime::Seconds(), 1.f / 60.f);
+        FArrangedChildren Children(EVisibility::Visible);
+        Widget->ArrangeChildren(Area, Children);
+        for (int32 Index = 0; Index < Children.Num(); ++Index) Tick(Children[Index].Widget, Children[Index].Geometry);
     };
-    Inspect(View.ToSharedRef());
-    TestEqual(TEXT("Actual settings details contain one visible risk banner"),Warnings,1);
-    TestEqual(TEXT("Actual settings details contain one documentation hyperlink"),DocumentationLinks,1);
+
+    const auto CheckPage = [&](FName PageName, int32 ExpectedCount)
+    {
+        const auto Section = Category->GetSection(PageName);
+        const auto Page = Section ? Section->GetCustomWidget().Pin() : nullptr;
+        if (!TestTrue(PageName.ToString() + TEXT(" has its registered settings widget"), Page.IsValid())) return;
+        const auto View = FindUsefulSettings(Page.ToSharedRef());
+        if (!TestTrue(PageName.ToString() + TEXT(" contains the real Useful Settings details view"), View.IsValid())) return;
+
+        const FGeometry Geometry = FGeometry::MakeRoot(FVector2D(1400, 4000), FSlateLayoutTransform());
+        for (int32 Frame = 0; Frame < 4; ++Frame)
+        {
+            View->SetRootExpansionStates(true, true);
+            View->SlatePrepass(1.f);
+            Tick(View.ToSharedRef(), Geometry);
+        }
+        int32 Warnings = 0, DocumentationLinks = 0;
+        TFunction<void(const TSharedRef<SWidget>&)> Inspect;
+        Inspect = [&](const TSharedRef<SWidget>& Widget)
+        {
+            if (Widget->GetTag() == TEXT("Gorgeous.Protection.Warning")) ++Warnings;
+            if (Widget->GetTag() == TEXT("Gorgeous.Protection.Documentation")) ++DocumentationLinks;
+            FChildren* Children = Widget->GetChildren();
+            for (int32 Index = 0; Children && Index < Children->Num(); ++Index) Inspect(Children->GetChildAt(Index));
+        };
+        Inspect(View.ToSharedRef());
+        TestEqual(PageName.ToString() + TEXT(" protection warning count"), Warnings, ExpectedCount);
+        TestEqual(PageName.ToString() + TEXT(" protection documentation link count"), DocumentationLinks, ExpectedCount);
+    };
+    CheckPage(TEXT("CoreDebugging"), 1);
+    CheckPage(TEXT("CoreLibrary"), 0);
     return true;
 }
 #endif

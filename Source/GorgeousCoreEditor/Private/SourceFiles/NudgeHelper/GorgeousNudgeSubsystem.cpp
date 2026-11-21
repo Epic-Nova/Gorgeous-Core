@@ -9,38 +9,112 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "NudgeHelper/GorgeousNudgeSubsystem.h"
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
+#include "Helpers/GorgeousLoggingHelper.h"
+#include "LibraryWizard/SGorgeousLibraryView.h"
 #include "LibraryWizard/GorgeousUpdateManager.h"
 #include "NudgeHelper/GorgeousNudgeDeveloperSettings.h"
 #include "NudgeHelper/SGorgeousNudgeCarousel.h"
+#include "LibraryWizard/GorgeousApiEndpoints.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "SWebBrowser.h"
+#include "Algo/RandomShuffle.h"
+#include "Animation/AnimSequenceBase.h"
 #include "Containers/Ticker.h"
+#include "Engine/Blueprint.h"
+#include "Engine/SkeletalMesh.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/Texture.h"
 #include "Editor.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Framework/Docking/TabManager.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
+#include "HAL/PlatformProcess.h"
 #include "HttpModule.h"
-#include "LibraryWizard/GorgeousNetworkConsent.h"
 #include "Interfaces/IPluginManager.h"
 #include "Interfaces/IHttpResponse.h"
+#include "Materials/MaterialInterface.h"
 #include "Dom/JsonObject.h"
-#include "Misc/FileHelper.h"
+#include "Misc/AutomationTest.h"
 #include "Misc/MessageDialog.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
+#include "Misc/App.h"
+#include "HAL/PlatformMisc.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
+#include "Sound/SoundBase.h"
+#include "Subsystems/AssetEditorSubsystem.h"
+#include "Widgets/Docking/SDockTab.h"
 #include "Widgets/SWindow.h"
+//<-------------------------------------------------------------------------->
 
 //=============================================================================
 // Helpers
 //=============================================================================
 namespace
 {
-	const TCHAR* AcknowledgedNudgesField = TEXT("AcknowledgedNudges");
-	const TCHAR* NudgeFeedCacheField = TEXT("NudgeFeedCache");
-	const TCHAR* NudgeFeedCacheSchemaVersionField = TEXT("NudgeFeedCacheSchemaVersion");
-	const TCHAR* NudgeFeedCacheUpdatedAtField = TEXT("NudgeFeedCacheUpdatedAt");
-	const TCHAR* NudgeFeedEndpoint = TEXT("https://api.gorgeous.simsalabim.studio/news");
 	const FVector2D DefaultCarouselSize(1100.0f, 760.0f);
+	constexpr float ContextTipChance = 0.25f;
+	constexpr float ContextTipRequestInterval = 120.0f;
+
+	/**
+	 * Finds an asset in a foreground toolkit tab in the active editor window.
+	 *
+	 * @return The most recently activated asset in that window, if any.
+	 */
+	UObject* FindActiveTipAsset()
+	{
+		auto* AssetEditors = GEditor ? GEditor->GetEditorSubsystem<UAssetEditorSubsystem>() : nullptr;
+		if (!AssetEditors) return nullptr;
+
+		auto& Slate = FSlateApplication::Get();
+		const auto ActiveWindow = Slate.GetActiveTopLevelRegularWindow();
+		if (!ActiveWindow) return nullptr;
+
+		UObject* ActiveAsset = nullptr;
+		double LastActivation = -1.0;
+		for (UObject* Asset : AssetEditors->GetAllEditedAssets())
+		{
+			if (!IsValid(Asset)) continue;
+			IAssetEditorInstance* Editor = AssetEditors->FindEditorForAsset(Asset, false);
+			if (!Editor) continue;
+			const auto TabManager = Editor->GetAssociatedTabManager();
+			const auto Tab = TabManager ? TabManager->GetOwnerTab() : nullptr;
+			if (!Tab || !Tab->IsForeground() || Slate.FindWidgetWindow(Tab.ToSharedRef()) != ActiveWindow) continue;
+
+			const double Activation = Editor->GetLastActivationTime();
+			if (Activation <= LastActivation) continue;
+			LastActivation = Activation;
+			ActiveAsset = Asset;
+		}
+		return ActiveAsset;
+	}
+
+	/**
+	 * Maps an asset to a fixed request category without using asset or project identifiers.
+	 *
+	 * @param Asset The local asset whose editor is active.
+	 * @return The allowlisted category, or null for an unsupported asset.
+	 */
+	const TCHAR* GetContextAssetType(const UObject& Asset)
+	{
+		if (Asset.IsA<UBlueprint>()) return TEXT("blueprint");
+		if (Asset.IsA<UMaterialInterface>()) return TEXT("material");
+		if (Asset.IsA<UTexture>()) return TEXT("texture");
+		if (Asset.IsA<UStaticMesh>()) return TEXT("static_mesh");
+		if (Asset.IsA<USkeletalMesh>()) return TEXT("skeletal_mesh");
+		if (Asset.IsA<UAnimSequenceBase>()) return TEXT("animation");
+		if (Asset.IsA<USoundBase>()) return TEXT("audio");
+		return nullptr;
+	}
 
 	FString GetJsonString(const TSharedPtr<FJsonObject>& Object, const TCHAR* FieldName)
 	{
@@ -155,67 +229,22 @@ namespace
 			OutScope = EGorgeousNudgeScope::NewPluginTutorial;
 			return true;
 		}
-		return false;
-	}
-
-	bool ParseNudgeFeed(const TSharedPtr<FJsonObject>& FeedRoot, TArray<FGorgeousNudgeEntry>& OutEntries)
-	{
-		if (!FeedRoot.IsValid()) return false;
-		double SchemaVersion = 0.0;
-		if (!FeedRoot->TryGetNumberField(TEXT("schemaVersion"), SchemaVersion) || SchemaVersion < 1.0) return false;
-
-		const TArray<TSharedPtr<FJsonValue>>* JsonEntries = nullptr;
-		if (!FeedRoot->TryGetArrayField(TEXT("entries"), JsonEntries) || !JsonEntries) return false;
-		for (const TSharedPtr<FJsonValue>& JsonValue : *JsonEntries)
+		if (Type.Equals(TEXT("tutorial_available"), ESearchCase::IgnoreCase))
 		{
-			const TSharedPtr<FJsonObject> JsonEntry = JsonValue.IsValid() ? JsonValue->AsObject() : nullptr;
-			if (!JsonEntry.IsValid()) continue;
-
-			FGorgeousNudgeEntry Entry;
-			Entry.Id = GetJsonString(JsonEntry, TEXT("id"));
-			if (Entry.Id.IsEmpty() || !ParseNudgeScope(GetJsonString(JsonEntry, TEXT("type")), Entry.Scope)) continue;
-			Entry.TargetId = GetJsonString(JsonEntry, TEXT("targetId"));
-			Entry.Version = GetJsonString(JsonEntry, TEXT("version"));
-			Entry.Title = FText::FromString(GetJsonString(JsonEntry, TEXT("title")));
-			Entry.Description = FText::FromString(GetJsonString(JsonEntry, TEXT("description")));
-
-			const TSharedPtr<FJsonObject>* ActionObject = nullptr;
-			if (JsonEntry->TryGetObjectField(TEXT("action"), ActionObject) && ActionObject && ActionObject->IsValid())
-			{
-				Entry.ActionLabel = GetJsonString(*ActionObject, TEXT("label"));
-				Entry.ActionUrl = GetJsonString(*ActionObject, TEXT("url"));
-				Entry.bUsePluginDownloader = GetJsonString(*ActionObject, TEXT("kind")).Equals(TEXT("download_plugin"), ESearchCase::IgnoreCase);
-				Entry.PluginDownloadToken = GetJsonString(*ActionObject, TEXT("downloadToken"));
-			}
-
-			const TSharedPtr<FJsonObject>* ContentObject = nullptr;
-			if (JsonEntry->TryGetObjectField(TEXT("content"), ContentObject) && ContentObject && ContentObject->IsValid())
-			{
-				const FString ContentType = GetJsonString(*ContentObject, TEXT("type"));
-				if (ContentType.Equals(TEXT("markdown"), ESearchCase::IgnoreCase) || ContentType.Equals(TEXT("markdown_url"), ESearchCase::IgnoreCase) || ContentType.Equals(TEXT("markdownUrl"), ESearchCase::IgnoreCase))
-				{
-					Entry.MarkdownContent = GetJsonString(*ContentObject, TEXT("markdown"));
-					Entry.MarkdownUrl = GetJsonString(*ContentObject, TEXT("markdownUrl"));
-					if (!Entry.MarkdownContent.IsEmpty()) Entry.HtmlPage = BuildMarkdownHtml(Entry.MarkdownContent);
-				}
-				else if (ContentType.Equals(TEXT("url"), ESearchCase::IgnoreCase) && Entry.ActionUrl.IsEmpty())
-				{
-					Entry.ActionUrl = GetJsonString(*ContentObject, TEXT("url"));
-				}
-			}
-
-			const TSharedPtr<FJsonObject>* WindowObject = nullptr;
-			if (JsonEntry->TryGetObjectField(TEXT("window"), WindowObject) && WindowObject && WindowObject->IsValid())
-			{
-				double Width = 0.0;
-				double Height = 0.0;
-				(*WindowObject)->TryGetNumberField(TEXT("width"), Width);
-				(*WindowObject)->TryGetNumberField(TEXT("height"), Height);
-				Entry.PreferredWindowSize = FVector2D(Width, Height);
-			}
-			OutEntries.Add(MoveTemp(Entry));
+			OutScope = EGorgeousNudgeScope::TutorialAvailable;
+			return true;
 		}
-		return true;
+		if (Type.Equals(TEXT("new_general_system"), ESearchCase::IgnoreCase))
+		{
+			OutScope = EGorgeousNudgeScope::NewGeneralSystem;
+			return true;
+		}
+		if (Type.Equals(TEXT("common_plugin_tip"), ESearchCase::IgnoreCase))
+		{
+			OutScope = EGorgeousNudgeScope::CommonPluginTip;
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -223,18 +252,110 @@ namespace
 // UGorgeousNudgeSubsystem Implementation
 //=============================================================================
 
+bool UGorgeousNudgeSubsystem::ParseNudgeFeed(const TSharedPtr<FJsonObject>& FeedRoot, TArray<FGorgeousNudgeEntry>& OutEntries)
+{
+	if (!FeedRoot.IsValid()) return false;
+	double SchemaVersion = 0.0;
+	if (!FeedRoot->TryGetNumberField(TEXT("schemaVersion"), SchemaVersion) || SchemaVersion != 1.0) return false;
+
+	const TArray<TSharedPtr<FJsonValue>>* JsonEntries = nullptr;
+	if (!FeedRoot->TryGetArrayField(TEXT("entries"), JsonEntries) || !JsonEntries) return false;
+	for (const TSharedPtr<FJsonValue>& JsonValue : *JsonEntries)
+	{
+		const TSharedPtr<FJsonObject> JsonEntry = JsonValue.IsValid() && JsonValue->Type == EJson::Object ? JsonValue->AsObject() : nullptr;
+		if (!JsonEntry.IsValid()) continue;
+
+		FGorgeousNudgeEntry Entry;
+		Entry.Id = GetJsonString(JsonEntry, TEXT("id"));
+		if (Entry.Id.IsEmpty() || !ParseNudgeScope(GetJsonString(JsonEntry, TEXT("type")), Entry.Scope)) continue;
+		Entry.TargetId = GetJsonString(JsonEntry, TEXT("targetId"));
+		Entry.Version = GetJsonString(JsonEntry, TEXT("version"));
+		Entry.Title = FText::FromString(GetJsonString(JsonEntry, TEXT("title")));
+		Entry.Description = FText::FromString(GetJsonString(JsonEntry, TEXT("description")));
+
+		const TSharedPtr<FJsonObject>* ActionObject = nullptr;
+		if (JsonEntry->TryGetObjectField(TEXT("action"), ActionObject) && ActionObject && ActionObject->IsValid())
+		{
+			Entry.ActionLabel = GetJsonString(*ActionObject, TEXT("label"));
+			Entry.ActionUrl = GetJsonString(*ActionObject, TEXT("url"));
+			Entry.bUsePluginDownloader = GetJsonString(*ActionObject, TEXT("kind")).Equals(TEXT("download_plugin"), ESearchCase::IgnoreCase);
+			Entry.PluginDownloadToken = GetJsonString(*ActionObject, TEXT("downloadToken"));
+		}
+
+		const TSharedPtr<FJsonObject>* ContentObject = nullptr;
+		if (JsonEntry->TryGetObjectField(TEXT("content"), ContentObject) && ContentObject && ContentObject->IsValid())
+		{
+			const FString ContentType = GetJsonString(*ContentObject, TEXT("type"));
+			if (ContentType.Equals(TEXT("markdown"), ESearchCase::IgnoreCase) || ContentType.Equals(TEXT("markdown_url"), ESearchCase::IgnoreCase) || ContentType.Equals(TEXT("markdownUrl"), ESearchCase::IgnoreCase))
+			{
+				Entry.MarkdownContent = GetJsonString(*ContentObject, TEXT("markdown"));
+				Entry.MarkdownUrl = GetJsonString(*ContentObject, TEXT("markdownUrl"));
+				if (!Entry.MarkdownContent.IsEmpty()) Entry.HtmlPage = BuildMarkdownHtml(Entry.MarkdownContent);
+			}
+			else if (ContentType.Equals(TEXT("url"), ESearchCase::IgnoreCase))
+			{
+				Entry.ContentUrl = GetJsonString(*ContentObject, TEXT("url"));
+			}
+		}
+
+		const TSharedPtr<FJsonObject>* WindowObject = nullptr;
+		if (JsonEntry->TryGetObjectField(TEXT("window"), WindowObject) && WindowObject && WindowObject->IsValid())
+		{
+			double Width = 0.0;
+			double Height = 0.0;
+			(*WindowObject)->TryGetNumberField(TEXT("width"), Width);
+			(*WindowObject)->TryGetNumberField(TEXT("height"), Height);
+			Entry.PreferredWindowSize = FVector2D(Width, Height);
+		}
+		OutEntries.Add(MoveTemp(Entry));
+	}
+	return true;
+}
+
+
 void UGorgeousNudgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	bStopping = false;
 	LoadAcknowledgements();
 	DetectNewGorgeousPlugins();
 	LoadCachedNudgeFeed();
-	CheckForNudgesNow();
+	if (const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get(); Settings && Settings->bEnableAutomaticNudges)
+	{
+		CheckForNudgesNow();
+	}
 	TickerHandle = FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UGorgeousNudgeSubsystem::Tick), 1.0f);
 }
 
 void UGorgeousNudgeSubsystem::Deinitialize()
 {
+	bStopping = true;
+	if (FeedRequest.IsValid())
+	{
+		FeedRequest->OnProcessRequestComplete().Unbind();
+		FeedRequest->CancelRequest();
+		FeedRequest.Reset();
+	}
+	if (ContextTipRequest.IsValid())
+	{
+		ContextTipRequest->OnProcessRequestComplete().Unbind();
+		ContextTipRequest->CancelRequest();
+		ContextTipRequest.Reset();
+	}
+	ContextAsset.Reset();
+	PendingContextTip.Reset();
+	for (auto& Pair : MarkdownRequests)
+	{
+		Pair.Value->OnProcessRequestComplete().Unbind();
+		Pair.Value->CancelRequest();
+	}
+	MarkdownRequests.Empty();
+	const TArray<TSharedPtr<SWindow>> ClosingTutorials = MoveTemp(TutorialWindows);
+	for (const TSharedPtr<SWindow>& Window : ClosingTutorials)
+	{
+		if (Window.IsValid()) Window->RequestDestroyWindow();
+	}
+	PendingNotifications.Empty();
 	if (TickerHandle.IsValid())
 	{
 		FTSTicker::GetCoreTicker().RemoveTicker(TickerHandle);
@@ -250,22 +371,33 @@ void UGorgeousNudgeSubsystem::Deinitialize()
 bool UGorgeousNudgeSubsystem::Tick(float DeltaTime)
 {
 	SecondsSinceInitialization += DeltaTime;
+	SecondsSinceLastNotification += DeltaTime;
+	if (VisibleNudges.ContainsByPredicate([this](const FGorgeousNudgeEntry& Entry) { return !IsApplicable(Entry); }))
+	{
+		if (CarouselWindow.IsValid()) CarouselWindow->RequestDestroyWindow();
+		VisibleNudges.RemoveAll([this](const FGorgeousNudgeEntry& Entry) { return !IsApplicable(Entry); });
+	}
 	if (!bGeneralSystemsDetectionCompleted && SecondsSinceInitialization >= 3.0f)
 	{
 		DetectNewGorgeousGeneralSystems();
 		bGeneralSystemsDetectionCompleted = true;
 	}
 
-	if (bAutomaticCarouselQueued && SecondsSinceInitialization >= 10.0f && FSlateApplication::IsInitialized() && FSlateApplication::Get().GetActiveTopLevelWindow().IsValid())
+	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	if (Settings && Settings->bEnableAutomaticNudges && IsNetworkAllowed() && bAutomaticCarouselQueued && SecondsSinceInitialization >= 10.0f && FSlateApplication::IsInitialized() && FSlateApplication::Get().GetActiveTopLevelWindow().IsValid())
 	{
 		bAutomaticCarouselQueued = false;
 		ShowNudgeCarousel();
 	}
 
-	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	ConsiderContextTip();
 	if (!Settings || !Settings->bEnableAutomaticNudges)
 	{
 		return true;
+	}
+	if (SecondsSinceInitialization >= 10.0f && SecondsSinceLastNotification >= 12.0f && DeliverNextNotification())
+	{
+		SecondsSinceLastNotification = 0.0f;
 	}
 	SecondsSinceLastCheck += DeltaTime;
 	if (SecondsSinceLastCheck >= Settings->CheckIntervalSeconds)
@@ -283,15 +415,30 @@ void UGorgeousNudgeSubsystem::CheckForNudgesNow()
 
 void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 {
-    if (!GorgeousNetworkConsent::IsAllowed()) return;
+	if (bStopping || !IsNetworkAllowed() || FeedRequest.IsValid()) return;
+	FString Endpoint = GorgeousApiEndpoints::GetV1Endpoint(TEXT("/news"));
+#if WITH_DEV_AUTOMATION_TESTS
+	if (!TestFeedEndpoint.IsEmpty()) Endpoint = TestFeedEndpoint;
+#endif
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	Request->SetURL(NudgeFeedEndpoint);
+	FeedRequest = Request;
+	Request->SetURL(Endpoint);
+	Request->SetTimeout(20.0f);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Accept"), TEXT("application/json"));
-	Request->OnProcessRequestComplete().BindLambda([WeakSubsystem = TWeakObjectPtr<UGorgeousNudgeSubsystem>(this)](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful)
+	Request->OnProcessRequestComplete().BindLambda([WeakSubsystem = TWeakObjectPtr<UGorgeousNudgeSubsystem>(this)](FHttpRequestPtr HttpRequest, FHttpResponsePtr Response, bool bWasSuccessful)
 	{
 		UGorgeousNudgeSubsystem* Subsystem = WeakSubsystem.Get();
-		if (!GorgeousNetworkConsent::IsAllowed() || !Subsystem || !bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode())) return;
+		if (Subsystem) Subsystem->FeedRequest.Reset();
+		if (!Subsystem || !Subsystem->IsNetworkAllowed() || Subsystem->bStopping || !bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode())) return;
+
+#if WITH_DEV_AUTOMATION_TESTS
+		const bool bUsesTestEndpoint = Subsystem->TestFeedEndpoint == HttpRequest->GetURL()
+			&& Subsystem->IsLoopbackTestEndpoint(Response->GetEffectiveURL());
+		if (!bUsesTestEndpoint && !GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())) return;
+#else
+		if (!GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())) return;
+#endif
 
 		TSharedPtr<FJsonObject> FeedRoot;
 		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
@@ -304,6 +451,7 @@ void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 		TArray<FGorgeousNudgeEntry> ReadyEntries;
 		for (FGorgeousNudgeEntry& Entry : ParsedEntries)
 		{
+			if (!Subsystem->IsApplicable(Entry) || Subsystem->WasAcknowledged(Entry.Id) || (UsesToast(Entry) && !Subsystem->IsNotificationEnabled(Entry))) continue;
 			if (Entry.MarkdownContent.IsEmpty() && !Entry.MarkdownUrl.IsEmpty())
 			{
 				Subsystem->FetchMarkdownNudge(MoveTemp(Entry));
@@ -315,22 +463,107 @@ void UGorgeousNudgeSubsystem::FetchNudgeFeed()
 		}
 		Subsystem->RegisterNudges(ReadyEntries);
 	});
-	Request->ProcessRequest();
+	if (!Request->ProcessRequest()) FeedRequest.Reset();
+}
+
+bool UGorgeousNudgeSubsystem::CanUseContextTips() const
+{
+	const auto* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	return !bStopping && Settings && Settings->bContextAwareTips && Settings->bEnableAutomaticNudges
+		&& !IsRunningCommandlet() && !FApp::IsUnattended() && !GIsRunningUnattendedScript && !GIsAutomationTesting
+		&& GEditor && !GEditor->PlayWorld && FSlateApplication::IsInitialized()
+		&& FSlateApplication::Get().IsActive() && IsNetworkAllowed();
+}
+
+void UGorgeousNudgeSubsystem::ConsiderContextTip()
+{
+	const bool bCanUseTips = CanUseContextTips();
+	if (!bCanUseTips)
+	{
+		ContextAsset.Reset();
+		bSampledContextAsset = false;
+		PendingContextTip.Reset();
+		if (ContextTipRequest)
+		{
+			auto Request = MoveTemp(ContextTipRequest);
+			Request->OnProcessRequestComplete().Unbind();
+			Request->CancelRequest();
+		}
+		return;
+	}
+
+	UObject* Asset = FindActiveTipAsset();
+	if (ContextAsset.Get() != Asset)
+	{
+		ContextAsset = Asset;
+		bSampledContextAsset = false;
+		PendingContextTip.Reset();
+	}
+	if (!Asset || bSampledContextAsset || ContextTipRequest || SecondsSinceInitialization < 10.0f
+		|| SecondsSinceInitialization < NextContextTipRequest) return;
+
+	bSampledContextAsset = true;
+	const TCHAR* AssetType = GetContextAssetType(*Asset);
+	if (!AssetType || FMath::FRand() >= ContextTipChance) return;
+
+	NextContextTipRequest = SecondsSinceInitialization + ContextTipRequestInterval;
+	FetchContextTip(Asset, AssetType);
+}
+
+void UGorgeousNudgeSubsystem::FetchContextTip(UObject* Asset, const FString& AssetType)
+{
+	const TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+	ContextTipRequest = Request;
+	Request->SetURL(GorgeousApiEndpoints::GetV1Endpoint(TEXT("/news")));
+	Request->SetVerb(TEXT("GET"));
+	Request->SetTimeout(15.0f);
+	Request->SetHeader(TEXT("Accept"), TEXT("application/json"));
+	Request->SetHeader(TEXT("X-Gorgeous-Asset-Type"), AssetType);
+	Request->OnProcessRequestComplete().BindWeakLambda(this,
+		[this, SampledAsset = TWeakObjectPtr<UObject>(Asset), AssetType](FHttpRequestPtr Completed, FHttpResponsePtr Response, bool bSucceeded)
+		{
+			if (ContextTipRequest != Completed) return;
+			ContextTipRequest.Reset();
+			if (!CanUseContextTips() || !SampledAsset.IsValid() || ContextAsset != SampledAsset
+				|| SampledAsset.Get() != FindActiveTipAsset() || !bSucceeded || !Response.IsValid()
+				|| !EHttpResponseCodes::IsOk(Response->GetResponseCode())
+				|| !GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())) return;
+
+			TSharedPtr<FJsonObject> Feed;
+			const auto Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+			if (!FJsonSerializer::Deserialize(Reader, Feed) || !Feed.IsValid()
+				|| GetJsonString(Feed, TEXT("assetType")) != AssetType) return;
+
+			TArray<FGorgeousNudgeEntry> Tips;
+			if (!ParseNudgeFeed(Feed, Tips)) return;
+			Tips.RemoveAll([this](const FGorgeousNudgeEntry& Entry)
+			{
+				return Entry.Scope != EGorgeousNudgeScope::CommonPluginTip || WasAcknowledged(Entry.Id) || !IsApplicable(Entry);
+			});
+			if (!Tips.IsEmpty()) PendingContextTip = MoveTemp(Tips[FMath::RandHelper(Tips.Num())]);
+		});
+	if (!Request->ProcessRequest()) ContextTipRequest.Reset();
 }
 
 void UGorgeousNudgeSubsystem::FetchMarkdownNudge(FGorgeousNudgeEntry Entry)
 {
-    if (!GorgeousNetworkConsent::IsAllowed()) return;
+	if (bStopping || !IsNetworkAllowed() || !IsApplicable(Entry) || WasAcknowledged(Entry.Id)
+		|| (UsesToast(Entry) && !IsNotificationEnabled(Entry)) || MarkdownRequests.Contains(Entry.Id)
+		|| !GorgeousApiEndpoints::IsAllowedURL(Entry.MarkdownUrl)) return;
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
-	if (!GorgeousNetworkConsent::IsSafeURL(Entry.MarkdownUrl)) return;
+	const FString EntryId = Entry.Id;
+	MarkdownRequests.Add(EntryId, Request);
+	Request->SetTimeout(20.0f);
 	Request->SetURL(Entry.MarkdownUrl);
 	Request->SetVerb(TEXT("GET"));
 	Request->SetHeader(TEXT("Accept"), TEXT("text/markdown, text/plain"));
 	Request->OnProcessRequestComplete().BindLambda([WeakSubsystem = TWeakObjectPtr<UGorgeousNudgeSubsystem>(this), Entry = MoveTemp(Entry)](FHttpRequestPtr, FHttpResponsePtr Response, bool bWasSuccessful) mutable
 	{
 		UGorgeousNudgeSubsystem* Subsystem = WeakSubsystem.Get();
-		if (!Subsystem || !GorgeousNetworkConsent::IsAllowed()) return;
-		if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+		if (Subsystem) Subsystem->MarkdownRequests.Remove(Entry.Id);
+		if (!Subsystem || Subsystem->bStopping || !Subsystem->IsNetworkAllowed()) return;
+		if (bWasSuccessful && Response.IsValid() && GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())
+			&& EHttpResponseCodes::IsOk(Response->GetResponseCode()))
 		{
 			Entry.MarkdownContent = Response->GetContentAsString();
 			Entry.HtmlPage = BuildMarkdownHtml(Entry.MarkdownContent);
@@ -343,17 +576,15 @@ void UGorgeousNudgeSubsystem::FetchMarkdownNudge(FGorgeousNudgeEntry Entry)
 		ResolvedEntries.Add(MoveTemp(Entry));
 		Subsystem->RegisterNudges(ResolvedEntries);
 	});
-	Request->ProcessRequest();
+	if (!Request->ProcessRequest()) MarkdownRequests.Remove(EntryId);
 }
 
 void UGorgeousNudgeSubsystem::HandlePluginUpdateCheckCompleted(bool bUpdatesAvailable)
 {
 	if (!bUpdatesAvailable) return;
-	UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
-	if (!PluginHelper) return;
 
 	TArray<FGorgeousNudgeEntry> Updates;
-	for (const FGorgeousPluginUpdateCacheEntry& Update : PluginHelper->GetPluginUpdateCache())
+	for (const FGorgeousPluginUpdateCacheEntry& Update : GetPersistentData().GetPluginUpdateCache())
 	{
 		FGorgeousNudgeEntry Entry;
 		Entry.Id = FString::Printf(TEXT("plugin-update:%s:%s"), *Update.PluginName, *Update.AvailableVersion);
@@ -365,7 +596,7 @@ void UGorgeousNudgeSubsystem::HandlePluginUpdateCheckCompleted(bool bUpdatesAvai
 		Entry.ActionLabel = TEXT("Download update");
 		Entry.ActionUrl = Update.ChangelogUrl;
 		Entry.bUsePluginDownloader = true;
-		Entry.PluginDownloadToken = PluginHelper->GetPluginUpdateDownloadToken(FName(*Update.PluginName));
+		Entry.PluginDownloadToken = GetPersistentData().GetPluginUpdateDownloadToken(FName(*Update.PluginName));
 		Updates.Add(MoveTemp(Entry));
 	}
 	RegisterNudges(Updates);
@@ -373,10 +604,17 @@ void UGorgeousNudgeSubsystem::HandlePluginUpdateCheckCompleted(bool bUpdatesAvai
 
 void UGorgeousNudgeSubsystem::RegisterNudges(const TArray<FGorgeousNudgeEntry>& Entries)
 {
+	if (bStopping) return;
 	for (const FGorgeousNudgeEntry& Entry : Entries)
 	{
 		VisibleNudges.RemoveAll([&Entry](const FGorgeousNudgeEntry& Existing) { return Existing.Id == Entry.Id; });
-		if (!Entry.Id.IsEmpty() && IsApplicable(Entry) && !WasAcknowledged(Entry.Id))
+		PendingNotifications.RemoveAll([&Entry](const FGorgeousNudgeEntry& Existing) { return Existing.Id == Entry.Id; });
+		if (Entry.Id.IsEmpty() || !IsApplicable(Entry) || WasAcknowledged(Entry.Id)) continue;
+		if (UsesToast(Entry))
+		{
+			PendingNotifications.Add(Entry);
+		}
+		else
 		{
 			VisibleNudges.Add(Entry);
 		}
@@ -387,7 +625,7 @@ void UGorgeousNudgeSubsystem::RegisterNudges(const TArray<FGorgeousNudgeEntry>& 
 void UGorgeousNudgeSubsystem::QueueAutomaticCarousel()
 {
 	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
-	if (Settings != nullptr && Settings->bEnableAutomaticNudges && !VisibleNudges.IsEmpty())
+	if (IsNetworkAllowed() && Settings != nullptr && Settings->bEnableAutomaticNudges && !VisibleNudges.IsEmpty())
 	{
 		bAutomaticCarouselQueued = true;
 	}
@@ -395,37 +633,236 @@ void UGorgeousNudgeSubsystem::QueueAutomaticCarousel()
 
 bool UGorgeousNudgeSubsystem::IsApplicable(const FGorgeousNudgeEntry& Entry) const
 {
-	if (Entry.Scope == EGorgeousNudgeScope::EcosystemNews)
+	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	if (!Settings) return false;
+	if (Entry.Scope == EGorgeousNudgeScope::PluginUpdate && !Settings->bShowPluginUpdates) return false;
+	if (Entry.Scope == EGorgeousNudgeScope::GeneralSystemUpdate && !Settings->bShowGeneralSystemUpdates) return false;
+	if (Entry.Scope == EGorgeousNudgeScope::EcosystemNews) return Settings->bShowEcosystemNews;
+	const UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton();
+	const TArray<FString> InstalledSystems = GetPersistentData().GetRecordedInstalledSystems(Helper ? Helper->GetInstalledPluginSystemEntries() : TArray<FString>());
+	const bool bSystemInstalled = InstalledSystems.ContainsByPredicate([&Entry](const FString& Id)
 	{
+		return Id.Equals(Entry.TargetId, ESearchCase::IgnoreCase);
+	});
+	if (Entry.Scope == EGorgeousNudgeScope::GeneralSystemUpdate) return bSystemInstalled;
+	if (Entry.Scope == EGorgeousNudgeScope::NewGeneralSystem) return !Entry.TargetId.IsEmpty() && !bSystemInstalled;
+	if (Entry.Scope == EGorgeousNudgeScope::TutorialAvailable && Entry.TargetId.IsEmpty()) return true;
+	if (Entry.TargetId.IsEmpty()) return false;
+	if (Entry.Scope == EGorgeousNudgeScope::NewPluginTutorial && !UGorgeousNudgeDeveloperSettings::Get()->bShowTutorialForNewPlugins) return false;
+	const TSet<FName> KnownPlugins = Helper ? Helper->GetKnownGorgeousPlugins() : TSet<FName>();
+	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(Entry.TargetId);
+	const bool bPluginInstalled = Plugin.IsValid() && Plugin->IsEnabled()
+		&& (KnownPlugins.Contains(FName(*Entry.TargetId)) || Entry.TargetId.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase));
+	return bPluginInstalled || (Entry.Scope == EGorgeousNudgeScope::TutorialAvailable && bSystemInstalled);
+}
+
+bool UGorgeousNudgeSubsystem::UsesToast(const FGorgeousNudgeEntry& Entry)
+{
+	return Entry.Scope == EGorgeousNudgeScope::TutorialAvailable || Entry.Scope == EGorgeousNudgeScope::NewGeneralSystem
+		|| Entry.Scope == EGorgeousNudgeScope::CommonPluginTip;
+}
+
+bool UGorgeousNudgeSubsystem::IsNotificationEnabled(const FGorgeousNudgeEntry& Entry) const
+{
+	const UGorgeousNudgeDeveloperSettings* Settings = UGorgeousNudgeDeveloperSettings::Get();
+	if (!Settings || !Settings->bEnableAutomaticNudges || !IsNetworkAllowed()) return false;
+	switch (Entry.Scope)
+	{
+	case EGorgeousNudgeScope::TutorialAvailable: return Settings->bShowNewTutorialsWhenAvailable;
+	case EGorgeousNudgeScope::NewGeneralSystem: return Settings->bNotifyNewSystems;
+	case EGorgeousNudgeScope::CommonPluginTip: return Settings->bShowCommonPluginTips;
+	default: return false;
+	}
+}
+
+bool UGorgeousNudgeSubsystem::DeliverNextNotification()
+{
+	if (bStopping || !IsNetworkAllowed()) return false;
+#if WITH_DEV_AUTOMATION_TESTS
+	const bool bTestPresentation = HasIsolatedTestContext() && static_cast<bool>(TestNotificationPresenter);
+#else
+	const bool bTestPresentation = false;
+#endif
+	if (!bTestPresentation && (IsRunningCommandlet() || FApp::IsUnattended() || GIsAutomationTesting || !FSlateApplication::IsInitialized())) return false;
+	if (PendingContextTip.IsSet())
+	{
+		FGorgeousNudgeEntry Tip = MoveTemp(PendingContextTip.GetValue());
+		PendingContextTip.Reset();
+		if (CanUseContextTips() && ContextAsset.IsValid() && ContextAsset.Get() == FindActiveTipAsset()
+			&& !WasAcknowledged(Tip.Id) && IsApplicable(Tip) && PresentNotification(Tip, true)) return true;
+	}
+
+	Algo::RandomShuffle(PendingNotifications);
+	for (int32 Index = 0; Index < PendingNotifications.Num(); ++Index)
+	{
+		const FGorgeousNudgeEntry Entry = PendingNotifications[Index];
+		if (WasAcknowledged(Entry.Id) || !IsApplicable(Entry) || !IsNotificationEnabled(Entry)) continue;
+		if (Entry.Scope == EGorgeousNudgeScope::NewGeneralSystem)
+		{
+			// News and catalog requests can finish in either order. Keep the nudge queued
+			// until its downloadable target can actually be selected in the Library.
+			const bool bHasCatalogTarget = GetPersistentData().GetOfflineSystemCache().ContainsByPredicate(
+				[&Entry](const FGorgeousOfflineSystemCacheEntry& System)
+				{
+					return !System.bIsCoreSystem && !System.DownloadUrl.IsEmpty()
+						&& System.SystemId.Equals(Entry.TargetId, ESearchCase::IgnoreCase);
+				});
+			if (!bHasCatalogTarget) continue;
+		}
+		if (!PresentNotification(Entry, false)) return false;
+		PendingNotifications.RemoveAt(Index);
 		return true;
 	}
-	if (Entry.Scope == EGorgeousNudgeScope::GeneralSystemUpdate)
-	{
-		if (const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton())
-		{
-			return PluginHelper->GetRecordedInstalledSystems().ContainsByPredicate([&Entry](const FString& SystemId)
-			{
-				return SystemId.Equals(Entry.TargetId, ESearchCase::IgnoreCase);
-			});
-		}
-		return false;
-	}
-	if (Entry.TargetId.IsEmpty())
-	{
-		return false;
-	}
-	if (Entry.Scope == EGorgeousNudgeScope::NewPluginTutorial && !UGorgeousNudgeDeveloperSettings::Get()->bShowTutorialForNewPlugins)
-	{
-		return false;
-	}
-	const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
-	const TSet<FName> KnownGorgeousPlugins = PluginHelper ? PluginHelper->GetKnownGorgeousPlugins() : TSet<FName>();
-	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(Entry.TargetId);
-	return Plugin.IsValid() && (KnownGorgeousPlugins.Contains(FName(*Entry.TargetId)) || Entry.TargetId.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase));
+	return false;
 }
+
+bool UGorgeousNudgeSubsystem::PresentNotification(const FGorgeousNudgeEntry& Entry, bool bContextualTip)
+{
+	FGorgeousToastParams Params;
+	Params.Title = Entry.Title.ToString();
+	Params.Message = Entry.Description.ToString();
+	Params.ToastIconKind = 0;
+	Params.ExpireDuration = 12.0f;
+	const FText Action = GetNotificationActionLabel(Entry);
+	if (!Action.IsEmpty())
+	{
+		Params.Buttons.Add(FNotificationButtonInfo(Action, Action,
+			FSimpleDelegate::CreateUObject(this, &UGorgeousNudgeSubsystem::ExecuteToastAction, Entry, bContextualTip)));
+	}
+	bool bPresented = false;
+#if WITH_DEV_AUTOMATION_TESTS
+	if (HasIsolatedTestContext() && TestNotificationPresenter) bPresented = TestNotificationPresenter(Entry, Action);
+	else
+#endif
+	bPresented = ShowTrackedToastNotification(Params).IsValid();
+	if (!bPresented) return false;
+	AcknowledgedNudgeIds.Add(Entry.Id);
+	SaveAcknowledgements();
+	return true;
+}
+
+FText UGorgeousNudgeSubsystem::GetNotificationActionLabel(const FGorgeousNudgeEntry& Entry)
+{
+	if (Entry.Scope == EGorgeousNudgeScope::TutorialAvailable) return NSLOCTEXT("GorgeousNudges", "ShowTutorialWindow", "Show in new Window");
+	if (Entry.Scope == EGorgeousNudgeScope::NewGeneralSystem) return NSLOCTEXT("GorgeousNudges", "ShowSystemLibrary", "Show in Library");
+	if (Entry.Scope == EGorgeousNudgeScope::CommonPluginTip && GorgeousApiEndpoints::IsAllowedURL(Entry.ActionUrl))
+	{
+		return NSLOCTEXT("GorgeousNudges", "TipLearnMore", "Learn More");
+	}
+	return FText::GetEmpty();
+}
+
+FString UGorgeousNudgeSubsystem::GetDocumentUrl(const FGorgeousNudgeEntry& Entry)
+{
+	const FString& Url = Entry.ContentUrl.IsEmpty() ? Entry.ActionUrl : Entry.ContentUrl;
+	return GorgeousApiEndpoints::IsAllowedURL(Url) ? Url : FString();
+}
+
+FVector2D UGorgeousNudgeSubsystem::ResolveWindowSize(const FGorgeousNudgeEntry& Entry)
+{
+	FVector2D Size = DefaultCarouselSize;
+	if (FMath::IsFinite(Entry.PreferredWindowSize.X) && Entry.PreferredWindowSize.X > 0.0) Size.X = Entry.PreferredWindowSize.X;
+	if (FMath::IsFinite(Entry.PreferredWindowSize.Y) && Entry.PreferredWindowSize.Y > 0.0) Size.Y = Entry.PreferredWindowSize.Y;
+	Size.X = FMath::Clamp(Size.X, 720.0, 1600.0);
+	Size.Y = FMath::Clamp(Size.Y, 520.0, 1100.0);
+	return Size;
+}
+
+bool UGorgeousNudgeSubsystem::IsNetworkAllowed() const
+{
+	// Explicit offline always wins, including isolated tests.
+	if (FPlatformMisc::GetEnvironmentVariable(TEXT("GORGEOUS_OFFLINE")) == TEXT("1")
+		|| FParse::Param(FCommandLine::Get(), TEXT("GorgeousOffline"))) return false;
+#if WITH_DEV_AUTOMATION_TESTS
+	if (HasIsolatedTestContext() && TestNetworkConsent.IsSet()) return TestNetworkConsent.GetValue();
+#endif
+	return GorgeousNetworkConsent::IsAllowed();
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+bool UGorgeousNudgeSubsystem::HasIsolatedTestContext() const
+{
+	return (IsRunningCommandlet() || (GIsAutomationTesting && FApp::IsUnattended())) && TestPersistentData
+		&& !FPaths::IsSamePath(TestPersistentData->GetFilePath(), FGorgeousPersistentData::GetDefaultFilePath())
+		&& IsLoopbackTestEndpoint(TestFeedEndpoint);
+}
+#endif
+
+void UGorgeousNudgeSubsystem::ExecuteToastAction(FGorgeousNudgeEntry Entry, bool bContextualTip)
+{
+	if (bStopping || !IsNetworkAllowed() || !IsApplicable(Entry)) return;
+	if (bContextualTip ? !CanUseContextTips() : !IsNotificationEnabled(Entry)) return;
+#if WITH_DEV_AUTOMATION_TESTS
+	if (HasIsolatedTestContext() && TestActionDispatcher)
+	{
+		TestActionDispatcher(Entry);
+		return;
+	}
+#endif
+	if (IsRunningCommandlet() || FApp::IsUnattended() || GIsAutomationTesting) return;
+	if (Entry.Scope == EGorgeousNudgeScope::NewGeneralSystem)
+	{
+		SGorgeousLibraryView::OpenAndFocusSystem(Entry.TargetId);
+		return;
+	}
+	if (Entry.Scope == EGorgeousNudgeScope::CommonPluginTip)
+	{
+		if (GorgeousApiEndpoints::IsAllowedURL(Entry.ActionUrl)) FPlatformProcess::LaunchURL(*Entry.ActionUrl, nullptr, nullptr);
+		return;
+	}
+	if (Entry.Scope != EGorgeousNudgeScope::TutorialAvailable || !FSlateApplication::IsInitialized()) return;
+	const FString Html = Entry.HtmlPage.IsEmpty() ? BuildMarkdownHtml(Entry.Title.ToString() + TEXT("\n\n") + Entry.Description.ToString()) : Entry.HtmlPage;
+	const FString DocumentUrl = GetDocumentUrl(Entry);
+	const bool bLoadDocumentUrl = Entry.HtmlPage.IsEmpty() && Entry.MarkdownContent.IsEmpty() && !DocumentUrl.IsEmpty();
+	TSharedRef<SWebBrowser> Browser = SNew(SWebBrowser)
+		.InitialURL(bLoadDocumentUrl ? DocumentUrl : TEXT("about:blank"))
+		.ShowControls(false).ShowAddressBar(false)
+		.ContentsToLoad(bLoadDocumentUrl ? TOptional<FString>() : TOptional<FString>(Html));
+	TSharedRef<SWindow> Window = SNew(SWindow).Title(Entry.Title).ClientSize(ResolveWindowSize(Entry))
+		.SupportsMinimize(false).SupportsMaximize(true)[Browser];
+	Window->SetOnWindowClosed(FOnWindowClosed::CreateWeakLambda(this, [this](const TSharedRef<SWindow>& Closed)
+	{
+		TutorialWindows.Remove(Closed);
+	}));
+	TutorialWindows.Add(Window);
+	FSlateApplication::Get().AddWindow(Window);
+}
+
+FGorgeousPersistentData& UGorgeousNudgeSubsystem::GetPersistentData() const
+{
+#if WITH_DEV_AUTOMATION_TESTS
+	if (TestPersistentData) return *TestPersistentData;
+#endif
+	return FGorgeousPersistentData::Get();
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+bool UGorgeousNudgeSubsystem::IsLoopbackTestEndpoint(const FString& Endpoint)
+{
+	FString AuthorityAndPath = Endpoint;
+	if (!AuthorityAndPath.RemoveFromStart(TEXT("http://127.0.0.1:")) && !AuthorityAndPath.RemoveFromStart(TEXT("http://localhost:"))) return false;
+	if (Endpoint.Contains(TEXT("\r")) || Endpoint.Contains(TEXT("\n")) || Endpoint.Contains(TEXT("\\"))) return false;
+	int32 Separator = INDEX_NONE;
+	if (!AuthorityAndPath.FindChar(TCHAR('/'), Separator) || Separator < 1 || Separator > 5) return false;
+	const FString Port = AuthorityAndPath.Left(Separator);
+	for (const TCHAR Character : Port)
+	{
+		if (Character < TCHAR('0') || Character > TCHAR('9')) return false;
+	}
+	const int32 PortNumber = FCString::Atoi(*Port);
+	return PortNumber > 0 && PortNumber <= 65535;
+}
+
+void UGorgeousNudgeSubsystem::SetFeedEndpointForTests(const FString& Endpoint)
+{
+	if (IsLoopbackTestEndpoint(Endpoint)) TestFeedEndpoint = Endpoint;
+}
+#endif
 
 void UGorgeousNudgeSubsystem::ShowNudgeCarousel()
 {
+	if (bStopping || IsRunningCommandlet() || FApp::IsUnattended() || GIsAutomationTesting || !IsNetworkAllowed() || !FSlateApplication::IsInitialized()) return;
+	VisibleNudges.RemoveAll([this](const FGorgeousNudgeEntry& Entry) { return !IsApplicable(Entry); });
 	if (VisibleNudges.IsEmpty())
 	{
 		FMessageDialog::Open(
@@ -443,6 +880,7 @@ void UGorgeousNudgeSubsystem::ShowNudgeCarousel()
 		CarouselWindow->BringToFront();
 		return;
 	}
+	Algo::RandomShuffle(VisibleNudges);
 	CarouselWindow = SNew(SWindow)
 		.Title(NSLOCTEXT("GorgeousNudges", "WindowTitle", "Gorgeous Updates & News"))
 		.ClientSize(DefaultCarouselSize)
@@ -478,21 +916,14 @@ void UGorgeousNudgeSubsystem::ResizeCarouselForEntry(const FGorgeousNudgeEntry& 
 {
 	if (!CarouselWindow.IsValid()) return;
 
-	FVector2D RequestedSize = DefaultCarouselSize;
-	if (!Entry.MarkdownContent.IsEmpty())
-	{
-		if (Entry.PreferredWindowSize.X > 0.0f) RequestedSize.X = Entry.PreferredWindowSize.X;
-		if (Entry.PreferredWindowSize.Y > 0.0f) RequestedSize.Y = Entry.PreferredWindowSize.Y;
-	}
-	RequestedSize.X = FMath::Clamp(RequestedSize.X, 720.0f, 1600.0f);
-	RequestedSize.Y = FMath::Clamp(RequestedSize.Y, 520.0f, 1100.0f);
-	CarouselWindow->Resize(RequestedSize);
+	CarouselWindow->Resize(ResolveWindowSize(Entry));
 }
 
 void UGorgeousNudgeSubsystem::AcknowledgeNudge(const FString& NudgeId)
 {
 	AcknowledgedNudgeIds.Add(NudgeId);
 	VisibleNudges.RemoveAll([&NudgeId](const FGorgeousNudgeEntry& Entry) { return Entry.Id == NudgeId; });
+	PendingNotifications.RemoveAll([&NudgeId](const FGorgeousNudgeEntry& Entry) { return Entry.Id == NudgeId; });
 	SaveAcknowledgements();
 }
 
@@ -503,39 +934,20 @@ bool UGorgeousNudgeSubsystem::WasAcknowledged(const FString& NudgeId) const
 
 void UGorgeousNudgeSubsystem::LoadAcknowledgements()
 {
-	FString Contents;
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	if (!FFileHelper::LoadFileToString(Contents, *Path)) return;
-	TSharedPtr<FJsonObject> Root;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-	if (FJsonSerializer::Deserialize(Reader, Root) && Root.IsValid())
+	for (const FString& Id : GetPersistentData().GetAcknowledgedNudges())
 	{
-		const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
-		if (Root->TryGetArrayField(AcknowledgedNudgesField, Values) && Values)
-		{
-			for (const TSharedPtr<FJsonValue>& Value : *Values) AcknowledgedNudgeIds.Add(Value->AsString());
-		}
+		AcknowledgedNudgeIds.Add(Id);
 	}
 }
 
 void UGorgeousNudgeSubsystem::LoadCachedNudgeFeed()
 {
-	FString Contents;
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	if (!FFileHelper::LoadFileToString(Contents, *Path)) return;
+	FString FeedJson;
+	if (!GetPersistentData().TryGetNudgeFeedCache(FeedJson)) return;
 
-	TSharedPtr<FJsonObject> PersistentData;
-	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-	if (!FJsonSerializer::Deserialize(Reader, PersistentData) || !PersistentData.IsValid()) return;
-
-	const TArray<TSharedPtr<FJsonValue>>* CachedEntries = nullptr;
-	if (!PersistentData->TryGetArrayField(NudgeFeedCacheField, CachedEntries) || !CachedEntries) return;
-
-	TSharedPtr<FJsonObject> FeedRoot = MakeShared<FJsonObject>();
-	double SchemaVersion = 1.0;
-	PersistentData->TryGetNumberField(NudgeFeedCacheSchemaVersionField, SchemaVersion);
-	FeedRoot->SetNumberField(TEXT("schemaVersion"), SchemaVersion);
-	FeedRoot->SetArrayField(TEXT("entries"), *CachedEntries);
+	TSharedPtr<FJsonObject> FeedRoot;
+	const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FeedJson);
+	if (!FJsonSerializer::Deserialize(Reader, FeedRoot) || !FeedRoot.IsValid()) return;
 
 	TArray<FGorgeousNudgeEntry> ParsedEntries;
 	if (!ParseNudgeFeed(FeedRoot, ParsedEntries)) return;
@@ -543,6 +955,7 @@ void UGorgeousNudgeSubsystem::LoadCachedNudgeFeed()
 	TArray<FGorgeousNudgeEntry> ReadyEntries;
 	for (FGorgeousNudgeEntry& Entry : ParsedEntries)
 	{
+		if (!IsApplicable(Entry) || WasAcknowledged(Entry.Id) || (UsesToast(Entry) && !IsNotificationEnabled(Entry))) continue;
 		if (Entry.MarkdownContent.IsEmpty() && !Entry.MarkdownUrl.IsEmpty())
 		{
 			FetchMarkdownNudge(MoveTemp(Entry));
@@ -561,60 +974,30 @@ void UGorgeousNudgeSubsystem::SaveNudgeFeedCache(const TSharedPtr<FJsonObject>& 
 	const TArray<TSharedPtr<FJsonValue>>* Entries = nullptr;
 	if (!FeedRoot->TryGetArrayField(TEXT("entries"), Entries) || !Entries) return;
 
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	FString Contents;
-	TSharedPtr<FJsonObject> PersistentData = MakeShared<FJsonObject>();
-	if (FFileHelper::LoadFileToString(Contents, *Path))
+	// The service receives the feed protocol, never its private persistent document.
+	FString FeedJson;
+	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&FeedJson);
+	if (FJsonSerializer::Serialize(FeedRoot.ToSharedRef(), Writer))
 	{
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-		FJsonSerializer::Deserialize(Reader, PersistentData);
-		if (!PersistentData.IsValid()) PersistentData = MakeShared<FJsonObject>();
+		GetPersistentData().SetNudgeFeedCache(FeedJson);
 	}
-
-	double SchemaVersion = 1.0;
-	FeedRoot->TryGetNumberField(TEXT("schemaVersion"), SchemaVersion);
-	PersistentData->SetNumberField(NudgeFeedCacheSchemaVersionField, SchemaVersion);
-	PersistentData->SetStringField(NudgeFeedCacheUpdatedAtField, FDateTime::UtcNow().ToIso8601());
-	PersistentData->SetArrayField(NudgeFeedCacheField, *Entries);
-
-	FString Output;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
-	FJsonSerializer::Serialize(PersistentData.ToSharedRef(), Writer);
-	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
-	FFileHelper::SaveStringToFile(Output, *Path);
 }
 
 void UGorgeousNudgeSubsystem::DetectNewGorgeousPlugins()
 {
 	const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton();
 	const TSet<FName> KnownGorgeousPlugins = PluginHelper ? PluginHelper->GetKnownGorgeousPlugins() : TSet<FName>();
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	FString Contents;
-	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
-	const bool bHasPersistentData = FFileHelper::LoadFileToString(Contents, *Path);
-	if (bHasPersistentData)
-	{
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-		FJsonSerializer::Deserialize(Reader, Root);
-		if (!Root.IsValid()) Root = MakeShared<FJsonObject>();
-	}
-
 	TSet<FString> PreviouslyKnown;
-	const TArray<TSharedPtr<FJsonValue>>* SavedPlugins = nullptr;
-	const bool bHasSnapshot = Root->TryGetArrayField(TEXT("KnownNudgePlugins"), SavedPlugins) && SavedPlugins;
-	if (bHasSnapshot)
-	{
-		for (const TSharedPtr<FJsonValue>& Value : *SavedPlugins) PreviouslyKnown.Add(Value->AsString());
-	}
+	const bool bHasSnapshot = GetPersistentData().TryGetKnownNudgePlugins(PreviouslyKnown);
 
-	TArray<TSharedPtr<FJsonValue>> CurrentPlugins;
+	TSet<FString> CurrentPlugins;
 	TArray<FGorgeousNudgeEntry> Tutorials;
 	for (const FName& PluginName : KnownGorgeousPlugins)
 	{
 		const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(PluginName.ToString());
 		if (!Plugin.IsValid()) continue;
 		const FString PluginDisplayName = PluginName.ToString();
-		CurrentPlugins.Add(MakeShared<FJsonValueString>(PluginDisplayName));
+		CurrentPlugins.Add(PluginDisplayName);
 		if (bHasSnapshot && !PreviouslyKnown.Contains(PluginDisplayName))
 		{
 			FGorgeousNudgeEntry Entry;
@@ -628,41 +1011,19 @@ void UGorgeousNudgeSubsystem::DetectNewGorgeousPlugins()
 			Tutorials.Add(MoveTemp(Entry));
 		}
 	}
-	Root->SetArrayField(TEXT("KnownNudgePlugins"), CurrentPlugins);
-	FString Output;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
-	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
-	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
-	FFileHelper::SaveStringToFile(Output, *Path);
+	GetPersistentData().SetKnownNudgePlugins(CurrentPlugins);
 	if (!Tutorials.IsEmpty()) RegisterNudges(Tutorials);
 }
 
 void UGorgeousNudgeSubsystem::DetectNewGorgeousGeneralSystems()
 {
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	FString Contents;
-	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
-	if (FFileHelper::LoadFileToString(Contents, *Path))
-	{
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-		FJsonSerializer::Deserialize(Reader, Root);
-		if (!Root.IsValid()) Root = MakeShared<FJsonObject>();
-	}
-
 	TSet<FString> PreviouslyKnown;
-	const TArray<TSharedPtr<FJsonValue>>* SavedSystems = nullptr;
-	const bool bHasSnapshot = Root->TryGetArrayField(TEXT("KnownNudgeGeneralSystems"), SavedSystems) && SavedSystems;
-	if (bHasSnapshot)
-	{
-		for (const TSharedPtr<FJsonValue>& Value : *SavedSystems) PreviouslyKnown.Add(Value->AsString());
-	}
-
-	TArray<TSharedPtr<FJsonValue>> CurrentSystems;
+	const bool bHasSnapshot = GetPersistentData().TryGetKnownNudgeGeneralSystems(PreviouslyKnown);
 	TArray<FGorgeousNudgeEntry> Nudges;
 	TSet<FString> CurrentSystemIds;
 	if (const UGorgeousPluginHelper* PluginHelper = UGorgeousPluginHelper::GetSingleton())
 	{
-		for (const FString& SystemId : PluginHelper->GetRecordedInstalledSystems())
+		for (const FString& SystemId : GetPersistentData().GetRecordedInstalledSystems(PluginHelper->GetInstalledPluginSystemEntries()))
 		{
 			if (!SystemId.StartsWith(TEXT("Plugin:"), ESearchCase::IgnoreCase))
 			{
@@ -673,7 +1034,6 @@ void UGorgeousNudgeSubsystem::DetectNewGorgeousGeneralSystems()
 
 	for (const FString& SystemId : CurrentSystemIds)
 	{
-		CurrentSystems.Add(MakeShared<FJsonValueString>(SystemId));
 		if (bHasSnapshot && !PreviouslyKnown.Contains(SystemId))
 		{
 			FGorgeousNudgeEntry Entry;
@@ -687,32 +1047,27 @@ void UGorgeousNudgeSubsystem::DetectNewGorgeousGeneralSystems()
 			Nudges.Add(MoveTemp(Entry));
 		}
 	}
-	Root->SetArrayField(TEXT("KnownNudgeGeneralSystems"), CurrentSystems);
-	FString Output;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
-	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
-	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
-	FFileHelper::SaveStringToFile(Output, *Path);
+	GetPersistentData().SetKnownNudgeGeneralSystems(CurrentSystemIds);
 	if (!Nudges.IsEmpty()) RegisterNudges(Nudges);
 }
 
 void UGorgeousNudgeSubsystem::SaveAcknowledgements() const
 {
-	const FString Path = UGorgeousPluginHelper::GetGorgeousPersistentDataFilePath();
-	FString Contents;
-	TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
-	if (FFileHelper::LoadFileToString(Contents, *Path))
-	{
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-		FJsonSerializer::Deserialize(Reader, Root);
-		if (!Root.IsValid()) Root = MakeShared<FJsonObject>();
-	}
-	TArray<TSharedPtr<FJsonValue>> Values;
-	for (const FString& Id : AcknowledgedNudgeIds) Values.Add(MakeShared<FJsonValueString>(Id));
-	Root->SetArrayField(AcknowledgedNudgesField, Values);
-	FString Output;
-	const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
-	FJsonSerializer::Serialize(Root.ToSharedRef(), Writer);
-	IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
-	FFileHelper::SaveStringToFile(Output, *Path);
+	GetPersistentData().SetAcknowledgedNudges(AcknowledgedNudgeIds);
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FGorgeousContextAssetCategoryTest,
+	"GorgeousCore.Editor.OnlineServices.ContextAssetCategory",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FGorgeousContextAssetCategoryTest::RunTest(const FString&)
+{
+	TestEqual(TEXT("A Blueprint reports only its fixed category"),
+		FString(GetContextAssetType(*GetDefault<UBlueprint>())), FString(TEXT("blueprint")));
+	TestEqual(TEXT("A static mesh reports only its fixed category"),
+		FString(GetContextAssetType(*GetDefault<UStaticMesh>())), FString(TEXT("static_mesh")));
+	TestNull(TEXT("Unsupported object types supply no context"), GetContextAssetType(*GetDefault<UObject>()));
+	return true;
+}
+#endif

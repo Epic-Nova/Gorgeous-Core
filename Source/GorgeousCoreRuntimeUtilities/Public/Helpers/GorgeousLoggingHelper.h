@@ -15,13 +15,16 @@
 #include "GorgeousCoreRuntimeUtilitiesGlobals.h"
 #include "GorgeousCoreRuntimeUtilitiesLogging.h"
 #include "Macros/GorgeousLoggingHelperMacros.h"
-
+//<--------------------------=== Engine Includes ===------------------------->
 #include "Misc/ConfigCacheIni.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+#include "GameplayTagContainer.h"
 #include "Modules/ModuleManager.h"
-//<-------------------------------------------------------------------------->
-
+#include "TimerManager.h"
+#include "HAL/CriticalSection.h"
+#include "Misc/ScopeLock.h"
 #if WITH_EDITOR
-#include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #endif
 //<-------------------------------------------------------------------------->
@@ -59,93 +62,40 @@ struct FGorgeousToastParams
 
 	// Optional hyperlink callback
 	FSimpleDelegate HyperlinkDelegate;
+
+#if WITH_EDITOR
+	TArray<FNotificationButtonInfo> Buttons;
+	bool bUseLargeFont = true;
+#endif
 };
 
-//<============================--- Variables ---============================>
-
-// Queue for notifications that need to be shown when editor is ready
-static TArray<FGorgeousToastParams> QueuedToastNotifications;
-
-// Flag indicating if queued notifications have been flushed
-static bool GbToastNotificationsFlushed = false;
-//<------------------------------------------------------------------------->
-
-
 //<============================--- C++ Only ---=============================>
+#pragma region C++ Only
 
 /**
  * Immediately displays a toast notification without queuing.
  * Internal use - prefer ShowToastNotification which handles queuing.
  *
  * @param Params Struct containing all notification parameters.
+ * @return The Slate notification item created for the toast.
  */
-FORCEINLINE static void ShowToastNotificationImmediate(const FGorgeousToastParams& Params)
-{
 #if WITH_EDITOR
-	auto& NotificationManager = FSlateNotificationManager::Get();
+GORGEOUSCORERUNTIMEUTILITIES_API TSharedPtr<SNotificationItem> ShowToastNotificationImmediate(const FGorgeousToastParams& Params);
 
-	FNotificationInfo Info(FText::FromString(Params.Title));
-	Info.SubText = FText::FromString(Params.Message);
-	Info.bFireAndForget = Params.bFireAndForget;
-	Info.ExpireDuration = Params.ExpireDuration;
-	Info.bUseThrobber = Params.bUseThrobber;
-	Info.bUseSuccessFailIcons = Params.bUseIcons;
-
-    switch (Params.ToastIconKind)
-    {
-        case 0:
-            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.InfoWithColor"));
-            break;
-        case 1:
-            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.WarningWithColor"));
-            break;
-        case 2:
-            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.SuccessWithColor"));
-            break;
-        case 3:
-        default:
-            Info.Image = FCoreStyle::Get().GetBrush(TEXT("Icons.ErrorWithColor"));
-            break;
-    }
-
-	if (!Params.HyperlinkText.IsEmpty() && Params.HyperlinkDelegate.IsBound())
-	{
-		Info.Hyperlink = Params.HyperlinkDelegate;
-		Info.HyperlinkText = Params.HyperlinkText;
-	}
-
-	NotificationManager.AddNotification(Info);
+/**
+ * Displays an actionable toast when Slate is ready and notifications are allowed.
+ *
+ * @param Params The notification text, lifetime, appearance and actions.
+ * @return The dismissible item, or null while notifications are unavailable.
+ */
+GORGEOUSCORERUNTIMEUTILITIES_API TSharedPtr<SNotificationItem> ShowTrackedToastNotification(const FGorgeousToastParams& Params);
 #endif
-}
 
 /**
  * Attempts to flush all queued toast notifications if the editor is ready.
  * Called automatically when notifications are queued.
  */
-FORCEINLINE static void TryFlushQueuedToastNotifications()
-{
-#if WITH_EDITOR
-	if (!FSlateNotificationManager::Get().AreNotificationsAllowed())
-	{
-		// Schedule retry
-		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float DeltaTime)
-		{
-			TryFlushQueuedToastNotifications();
-			return false;
-		}), 0.5f);
-		return;
-	}
-
-	GbToastNotificationsFlushed = true;
-
-	for (const FGorgeousToastParams& Params : QueuedToastNotifications)
-	{
-		ShowToastNotificationImmediate(Params);
-	}
-
-	QueuedToastNotifications.Empty();
-#endif
-}
+GORGEOUSCORERUNTIMEUTILITIES_API void TryFlushQueuedToastNotifications();
 
 /**
  * Shows a toast notification with full customization.
@@ -153,20 +103,7 @@ FORCEINLINE static void TryFlushQueuedToastNotifications()
  *
  * @param Params Struct containing all notification parameters.
  */
-FORCEINLINE static void ShowToastNotification(const FGorgeousToastParams& Params)
-{
-#if WITH_EDITOR
-	// Queue if editor not ready yet
-	if (!GbToastNotificationsFlushed)
-	{
-		QueuedToastNotifications.Add(Params);
-		TryFlushQueuedToastNotifications();
-		return;
-	}
-
-	ShowToastNotificationImmediate(Params);
-#endif
-}
+GORGEOUSCORERUNTIMEUTILITIES_API void ShowToastNotification(const FGorgeousToastParams& Params);
 
 /**
  * Shows a toast notification with minimal parameters.
@@ -176,14 +113,9 @@ FORCEINLINE static void ShowToastNotification(const FGorgeousToastParams& Params
  * @param Message The message to display.
  * @param ToastIconKind Icon style: 0 = information, 1 = warning, 2 = success, 3 = error.
  */
-FORCEINLINE static void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3)
-{
-	FGorgeousToastParams Params;
-	Params.Title = Title;
-	Params.Message = Message;
-    Params.ToastIconKind = ToastIconKind;
-	ShowToastNotification(Params);
-}
+GORGEOUSCORERUNTIMEUTILITIES_API void ShowToastNotification(const FString& Title, const FString& Message, const int32 ToastIconKind = 3);
+//<------------------------------------------------------------------------->
+#pragma endregion C++ Only
 
 namespace GorgeousLogging
 {
@@ -225,6 +157,9 @@ namespace GorgeousLogging
     // The set of logging keys that are currently suppressed.
     GORGEOUSCORERUNTIMEUTILITIES_API TSet<FName>& GetSuppressedLoggingKeys();
 
+    // Serializes suppression access across worker-thread diagnostics and editor commands.
+    GORGEOUSCORERUNTIMEUTILITIES_API FCriticalSection& GetLoggingSuppressionLock();
+
     /**
      * Checks if the GameplayTags module is available for use.
      *
@@ -243,6 +178,7 @@ namespace GorgeousLogging
      */
     FORCEINLINE static bool ShouldSuppressKey(const FName& LoggingKey)
     {
+        FScopeLock Lock(&GetLoggingSuppressionLock());
         return LoggingKey != NAME_None && GetSuppressedLoggingKeys().Contains(LoggingKey);
     }
 
@@ -259,21 +195,19 @@ namespace GorgeousLogging
             return;
         }
 
-        if (GetSuppressedLoggingKeys().Contains(LoggingKey) == bShouldSuppress)
         {
-            return;
+            FScopeLock Lock(&GetLoggingSuppressionLock());
+            if (GetSuppressedLoggingKeys().Contains(LoggingKey) == bShouldSuppress)
+            {
+                return;
+            }
+            if (bShouldSuppress) GetSuppressedLoggingKeys().Add(LoggingKey);
+            else GetSuppressedLoggingKeys().Remove(LoggingKey);
         }
 
-        if (bShouldSuppress)
-        {
-            GetSuppressedLoggingKeys().Add(LoggingKey);
-            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been suppressed."), *LoggingKey.ToString());
-        }
-        else
-        {
-            GetSuppressedLoggingKeys().Remove(LoggingKey);
-            UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been unsuppressed."), *LoggingKey.ToString());
-        }
+        // This low-level sink must not recurse through the logging macros.
+        UE_LOG(LogGorgeousThings, Log, TEXT("Logging for key '%s' has been %s."), *LoggingKey.ToString(),
+            bShouldSuppress ? TEXT("suppressed") : TEXT("unsuppressed"));
     }
 
     /**
@@ -290,6 +224,7 @@ namespace GorgeousLogging
     // Clears all logging suppressions, allowing all messages to be logged again.
     FORCEINLINE static void ClearAllLoggingSuppressions()
     {
+        FScopeLock Lock(&GetLoggingSuppressionLock());
         GetSuppressedLoggingKeys().Reset();
     }
 
@@ -306,6 +241,23 @@ namespace GorgeousLogging
         bool bMirrorToOutputLog = true;
         bool bShowOnScreen = true;
     };
+
+    // Serialized enum values remain stable; filtering uses semantic severity instead of ordinal values.
+    FORCEINLINE int32 GetImportanceRank(const EGorgeousLoggingImportance Importance)
+    {
+        switch (Importance)
+        {
+            case Logging_VeryVerbose: return -2;
+            case Logging_Verbose: return -1;
+            case Logging_Information: return 0;
+            case Logging_Display:
+            case Logging_Success: return 1;
+            case Logging_Warning: return 2;
+            case Logging_Error: return 3;
+            case Logging_Fatal: return 4;
+            default: return -3;
+        }
+    }
 
     /**
      * Retrieves a snapshot of the current logging settings from the configuration.
@@ -367,6 +319,18 @@ namespace GorgeousLogging
             {
                 Snapshot.MinMessageLogVerbosity = Logging_Fatal;
             }
+            else if (VerbosityString == TEXT("Logging_Verbose"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Verbose;
+            }
+            else if (VerbosityString == TEXT("Logging_VeryVerbose"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_VeryVerbose;
+            }
+            else if (VerbosityString == TEXT("Logging_Display"))
+            {
+                Snapshot.MinMessageLogVerbosity = Logging_Display;
+            }
         }
 
         return Snapshot;
@@ -409,13 +373,18 @@ namespace GorgeousLogging
      * @param bShowAsToast Whether to show this log as a toast notification.
 	 * @param WorldContextObject The world context object.
 	 * @param Hyperlink Optional hyperlink data for the log message.
+     * @param SourceFile Optional editor C++ macro callsite; omitted by source-less APIs and packaged macro calls.
+     * @param SourceLine One-based source line, or zero when no origin was supplied.
+     * @param SourceFunction Optional emitting C++ function for the metadata tooltip.
 	 */
 	FORCEINLINE static void LogMessage_Internal(UPARAM(ref) const FText& Message,
                                                 const EGorgeousLoggingImportance Importancy, const FString& LoggingKey,
                                                 const float Duration = 5.0f, const bool bPrintToScreen = true,
                                                 const bool bPrintToLog = true, const bool bOverrideLoggingIfPresent = true,
                                                 const bool bShowAsToast = false, const UObject* WorldContextObject = nullptr,
-                                                const FGorgeousLogHyperlink* Hyperlink = nullptr)
+                                                const FGorgeousLogHyperlink* Hyperlink = nullptr,
+                                                const ANSICHAR* SourceFile = nullptr, const int32 SourceLine = 0,
+                                                const ANSICHAR* SourceFunction = nullptr)
 	{
         // Fatal is a control-flow contract, even when output is disabled or the key is suppressed.
         if (Importancy == Logging_Fatal)
@@ -430,13 +399,14 @@ namespace GorgeousLogging
         }
 
         const auto [bEnableGorgeousMessageLog, MessageLogListingName, MinMessageLogVerbosity, bMirrorToOutputLog, bShowOnScreen] = GetLoggingSettingsSnapshot();
-        const bool bAllowedBySettings = static_cast<int32>(Importancy) >= static_cast<int32>(MinMessageLogVerbosity);
+        const bool bAllowedBySettings = GetImportanceRank(Importancy) >= GetImportanceRank(MinMessageLogVerbosity);
         const bool bShouldSendToMessageLog = WITH_EDITOR && bEnableGorgeousMessageLog && bAllowedBySettings;
         // Message Log and Output Log are independent destinations; packaged builds have no Message Log.
         const bool bShouldPrintToLog = bPrintToLog && bMirrorToOutputLog;
         const bool bShouldPrintToScreen = bPrintToScreen && bShowOnScreen;
 
-        const bool bShouldUseGameplayTags = !LoggingKey.IsEmpty() && CanUseGameplayTags();
+        // GameplayTag/world bookkeeping is game-thread state. Worker logs still reach the textual sinks.
+        const bool bShouldUseGameplayTags = IsInGameThread() && !LoggingKey.IsEmpty() && CanUseGameplayTags();
         FGameplayTag GameplayLoggingKey = bShouldUseGameplayTags
             ? FGameplayTag::RequestGameplayTag(*LoggingKey, false)
             : FGameplayTag();
@@ -491,10 +461,25 @@ namespace GorgeousLogging
                 }
                 break;
 
+            case Logging_Display:
             case Logging_Success:
                 if (bShouldPrintToLog)
                 {
                     UE_LOG(LogGorgeousThings, Display, TEXT("%s"), *FinalMessage);
+                }
+                break;
+
+            case Logging_Verbose:
+                if (bShouldPrintToLog)
+                {
+                    UE_LOG(LogGorgeousThings, Verbose, TEXT("%s"), *FinalMessage);
+                }
+                break;
+
+            case Logging_VeryVerbose:
+                if (bShouldPrintToLog)
+                {
+                    UE_LOG(LogGorgeousThings, VeryVerbose, TEXT("%s"), *FinalMessage);
                 }
                 break;
 
@@ -531,6 +516,9 @@ namespace GorgeousLogging
             switch (Importancy)
             {
                 case Logging_Information:
+                case Logging_Display:
+                case Logging_Verbose:
+                case Logging_VeryVerbose:
                     TextColor = FColor::Blue;
                     break;
 
@@ -584,7 +572,16 @@ namespace GorgeousLogging
             Entry.Duration = Duration;
             Entry.bPrintToScreen = bShouldPrintToScreen;
             Entry.bPrintToLog = bShouldPrintToLog;
+            Entry.bPrintToMessageLog = bShouldSendToMessageLog;
             Entry.WorldContextObject = WorldContextObject;
+#if WITH_EDITOR
+            if (SourceFile && SourceLine > 0)
+            {
+                Entry.SourceFile = UTF8_TO_TCHAR(SourceFile);
+                Entry.SourceLine = SourceLine;
+                Entry.SourceFunction = SourceFunction ? UTF8_TO_TCHAR(SourceFunction) : TEXT("");
+            }
+#endif
             if (Hyperlink && Hyperlink->IsValid())
             {
                 Entry.Hyperlink = *Hyperlink;

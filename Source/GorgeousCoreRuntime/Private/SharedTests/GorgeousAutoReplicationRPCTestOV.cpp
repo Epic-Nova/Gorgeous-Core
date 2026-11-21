@@ -10,10 +10,10 @@
 <==========================================================================*/
 
 #include "SharedTests/GorgeousAutoReplicationRPCTestOV.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 #include "ObjectVariables/NativeObjectVariableDefinitions.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutomationTestOV, Log, All);
 
 void UGorgeousAutomationTestOV::Automation_HandleRPC_WithReturnOV(
 	UInteger_SOV* ReturnValue,
@@ -31,7 +31,5 @@ void UGorgeousAutomationTestOV::Automation_HandleRPC_WithReturnOV(
 		ReturnValue->Value = TestInputInt * RPC_TRANSFORM_MULTIPLY + RPC_TRANSFORM_ADD;
 	}
 
-	UE_LOG(LogGorgeousAutomationTestOV, Log,
-		TEXT("[AutomationRPC] OV handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"),
-		*GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.ObjectVariableReturnHandled"), TEXT("[AutomationRPC] OV handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"), *GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
 }

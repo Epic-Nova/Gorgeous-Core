@@ -28,7 +28,10 @@ enum class EGorgeousNudgeScope : uint8
 	PluginUpdate UMETA(DisplayName = "Plugin Update", ToolTip = "Targets an installed Gorgeous plugin."),
 	GeneralSystemUpdate UMETA(DisplayName = "General System Update", ToolTip = "Targets an installed Gorgeous general system."),
 	EcosystemNews UMETA(DisplayName = "Ecosystem News", ToolTip = "Targets every Gorgeous ecosystem installation."),
-	NewPluginTutorial UMETA(DisplayName = "New Plugin Tutorial", ToolTip = "Targets an installed plugin with a tutorial recommendation.")
+	NewPluginTutorial UMETA(DisplayName = "New Plugin Tutorial", ToolTip = "Targets an installed plugin with a tutorial recommendation."),
+	TutorialAvailable UMETA(DisplayName = "Tutorial Available", ToolTip = "Announces a newly published tutorial in a toast, independently of the carousel."),
+	NewGeneralSystem UMETA(DisplayName = "New General System", ToolTip = "Announces a downloadable general system that is not installed."),
+	CommonPluginTip UMETA(DisplayName = "Common Plugin Tip", ToolTip = "Shows a tip only for its enabled Gorgeous plugin.")
 };
 
 /**
@@ -80,6 +83,10 @@ struct GORGEOUSCOREEDITOR_API FGorgeousNudgeEntry
 	// Identifies a Markdown document that will be downloaded before the nudge is shown.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nudge")
 	FString MarkdownUrl;
+
+	// Supplies the primary article URL independently of the optional action destination.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nudge")
+	FString ContentUrl;
 
 	// Requests a carousel size for this Markdown entry. A zero component uses the default size.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Nudge")

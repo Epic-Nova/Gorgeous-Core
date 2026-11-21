@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreEditorModule.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
 
 //<=============================--- Includes ---=============================>
@@ -32,12 +33,12 @@
 #include "FunctionalStructures/GorgeousFunctionalStructure.h"
 #include "FeedbackEffects/GorgeousFeedbackEffect.h"
 #include "DetailCustomizations/GorgeousFeedbackEffectCustomization.h"
-#include "DetailCustomizations/GorgeousProtectionSettingsCustomization.h"
 #include "UObject/UObjectIterator.h"
 #include "ToolMenus.h"
 #include "ISettingsModule.h"
-#include "LibraryWizard/GorgeousLibrarySettings.h"
+#include "ModuleCore/GorgeousCoreSettingsPages.h"
 #include "LibraryWizard/GorgeousCoreLibraryParticipant.h"
+#include "LibraryWizard/GorgeousNetworkConsent.h"
 #include "LibraryWizard/GorgeousRecompilationHelper.h"
 #include "LibraryWizard/SGorgeousLibraryView.h"
 #include "Widgets/Docking/SDockTab.h"
@@ -338,7 +339,7 @@ void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
 	{
 		if (GBValidationRan)
 		{
-			GT_I_LOG("GorgeousCoreEditor",
+			GT_I_LOG("GT.Editor",
 				TEXT("Startup validation already ran, skipping duplicate."));
 			return;
 		}
@@ -353,7 +354,7 @@ void RunGorgeousCoreStartupValidation(IAssetRegistry& AssetRegistry);
 		// Trigger the centralized system validation pass
 		UGorgeousGeneralSystemValidator::RequestSystemValidationScan();
 		
-		GT_I_LOG("GorgeousCoreEditor",
+		GT_I_LOG("GT.Editor",
 			TEXT("Gorgeous validators are now active and will validate assets on load/save."));
 	}
 }
@@ -385,7 +386,7 @@ void FGorgeousCoreEditorModule::ValidateGorgeousModule(FDataValidationContext& I
 				{
 					UGorgeousGeneralSystemValidator::QueueAssetsForAsyncValidation(FoundAssets);
 					
-					GT_I_LOG("GorgeousCoreEditor",
+					GT_I_LOG("GT.Editor",
 						TEXT("DataRegistry validation queued for %s. %d assets added."),
 						*Dir, FoundAssets.Num());
 				}
@@ -424,12 +425,6 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 	PropertyEditorModule.RegisterCustomClassLayout(
 		UGorgeousFeedbackEffect::StaticClass()->GetFName(),
 		FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousFeedbackEffectCustomization::MakeInstance));
-	if (!IsRunningCommandlet())
-	{
-		PropertyEditorModule.RegisterCustomClassLayout(
-			UGorgeousUsefulSettings::StaticClass()->GetFName(),
-			FOnGetDetailCustomizationInstance::CreateStatic(&FGorgeousProtectionSettingsCustomization::MakeInstance));
-	}
 
 	for (TObjectIterator<UScriptStruct> It; It; ++It)
 	{
@@ -618,12 +613,12 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 		FAppStyle::Get().GetBrush(TEXT("ClassThumbnail.DataAsset")),
 		CoreMenu, Menu_GeneralSystems, Menu_CommonUI));
 
-	if (ISettingsModule* Settings = FModuleManager::LoadModulePtr<ISettingsModule>(TEXT("Settings")))
+	if (!IsRunningCommandlet())
 	{
-		Settings->RegisterSettings(TEXT("Project"), TEXT("Gorgeous Things"), TEXT("CoreLibrary"),
-			NSLOCTEXT("GorgeousLibrary", "SettingsTitle", "Core Library and Privacy"),
-			NSLOCTEXT("GorgeousLibrary", "SettingsDescription", "Gorgeous Library, update consent and validation settings."),
-			GetMutableDefault<UGorgeousLibrarySettings>());
+		if (ISettingsModule* Settings = FModuleManager::LoadModulePtr<ISettingsModule>(TEXT("Settings")))
+		{
+			GorgeousCoreSettingsPages::Register(*Settings);
+		}
 	}
 
 	CoreLibraryParticipant = MakeUnique<FGorgeousCoreLibraryParticipant>();
@@ -641,6 +636,7 @@ void FGorgeousCoreEditorModule::GorgeousStartupModule()
 
 void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 {
+	GorgeousNetworkConsent::CancelStartupPrompt();
 	FGorgeousGlobalDetailCustomization::UnregisterPropertyCustomizations();
 	FGorgeousGlobalDetailCustomization::ClearExtensions();
 	if (GPostEngineInitHandle.IsValid())
@@ -667,8 +663,8 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
 		SettingsModule->UnregisterSettings("Project", "Gorgeous", "Core");
-		SettingsModule->UnregisterSettings(TEXT("Project"), TEXT("Gorgeous Things"), TEXT("CoreLibrary"));
 	}
+	GorgeousCoreSettingsPages::Unregister(FModuleManager::GetModulePtr<ISettingsModule>("Settings"));
 
 	if (FModuleManager::Get().IsModuleLoaded("PropertyEditor"))
 	{
@@ -678,8 +674,6 @@ void FGorgeousCoreEditorModule::GorgeousShutdownModule()
 		GFunctionalStructureCustomizationNames.Empty();
 		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousDataSchemaMapping_DA::StaticClass()->GetFName());
 		PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousFeedbackEffect::StaticClass()->GetFName());
-		if (!IsRunningCommandlet())
-			PropertyEditorModule.UnregisterCustomClassLayout(UGorgeousUsefulSettings::StaticClass()->GetFName());
 		PropertyEditorModule.NotifyCustomizationModuleChanged();
 	}
 

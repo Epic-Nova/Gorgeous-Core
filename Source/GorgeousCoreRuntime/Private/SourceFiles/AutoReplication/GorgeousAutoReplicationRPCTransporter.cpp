@@ -10,6 +10,7 @@
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationRPCTransporter.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "AutoReplication/Tracking/GorgeousAutoReplicationStatsCollector.h"
 
 #include "AutoReplication/GorgeousAutoReplicationMixin.h"
@@ -24,7 +25,6 @@
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationTransporter, Log, All);
 
 namespace GorgeousAutoReplicationTransporter_Private
 {
@@ -106,7 +106,7 @@ bool UGorgeousAutoReplicationRPCTransporter::RouteRPC(const FGorgeousQueuedRPC& 
 		break;
 	}
 
-	UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication RPC transporter received unsupported type."));
+	GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.TypeUnsupported"), TEXT("AutoReplication RPC transporter received unsupported type."));
 	return false;
 }
 
@@ -114,16 +114,12 @@ bool UGorgeousAutoReplicationRPCTransporter::RoutePropertyPayload(const FGorgeou
 {
 	if (!OwningMixin)
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s has no owning mixin while routing property payload for entry %s."),
-			*GetName(), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.OwningMixinMissing"), TEXT("AutoReplication transporter %s has no owning mixin while routing property payload for entry %s."), *GetName(), *Envelope.EntryKey.ToString());
 		return false;
 	}
 
 	AActor* OwnerActor = GetOwner();
-	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Transporter %s on actor %s routing entry %s (RouteType=%d, IsOwnerLocallyAuthoritative=%d, OwnerRole=%d)."),
-		*GetName(), OwnerActor ? *OwnerActor->GetName() : TEXT("null"), *Envelope.EntryKey.ToString(),
-		static_cast<int32>(RouteType), IsOwnerLocallyAuthoritative() ? 1 : 0,
-		OwnerActor ? static_cast<int32>(OwnerActor->GetLocalRole()) : -1);
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.PropertyRouteSelected"), TEXT("RoutePropertyPayload: Transporter %s on actor %s routing entry %s (RouteType=%d, IsOwnerLocallyAuthoritative=%d, OwnerRole=%d)."), *GetName(), OwnerActor ? *OwnerActor->GetName() : TEXT("null"), *Envelope.EntryKey.ToString(), static_cast<int32>(RouteType), IsOwnerLocallyAuthoritative() ? 1 : 0, OwnerActor ? static_cast<int32>(OwnerActor->GetLocalRole()) : -1);
 
 	const bool bReliable = GorgeousAutoReplicationTransporter_Private::IsReliableRoute(RouteType);
 
@@ -134,17 +130,17 @@ bool UGorgeousAutoReplicationRPCTransporter::RoutePropertyPayload(const FGorgeou
 	{
 		if (IsOwnerLocallyAuthoritative())
 		{
-			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Owner is authoritative, delivering locally."));
+			GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.PropertyDeliveredLocally"), TEXT("RoutePropertyPayload: Owner is authoritative, delivering locally."));
 			DeliverPropertyPayload(Envelope);
 		}
 		else if (bReliable)
 		{
-			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadReliable RPC."));
+			GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerReliableForwarded"), TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadReliable RPC."));
 			ServerReceivePropertyPayloadReliable(Envelope, RouteType);
 		}
 		else
 		{
-			UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadUnreliable RPC."));
+			GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerUnreliableForwarded"), TEXT("RoutePropertyPayload: Calling ServerReceivePropertyPayloadUnreliable RPC."));
 			ServerReceivePropertyPayloadUnreliable(Envelope, RouteType);
 		}
 		return true;
@@ -190,7 +186,7 @@ bool UGorgeousAutoReplicationRPCTransporter::RoutePropertyPayload(const FGorgeou
 		break;
 	}
 
-	UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s received unsupported property payload route."), *GetName());
+	GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.PropertyRouteUnsupported"), TEXT("AutoReplication transporter %s received unsupported property payload route."), *GetName());
 	return false;
 }
 
@@ -220,7 +216,7 @@ bool UGorgeousAutoReplicationRPCTransporter::RouteClientBoundRPC(const FGorgeous
 
 	if (!IsOwnerLocallyAuthoritative())
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication RPC transporter cannot route client-bound RPC because the owner has no authority."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientRPCAuthorityRequired"), TEXT("AutoReplication RPC transporter cannot route client-bound RPC because the owner has no authority."));
 		return false;
 	}
 
@@ -243,7 +239,7 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 	AActor* OwnerActor = GetOwner();
 	if (!OwnerActor)
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication RPC transporter cannot locate owning actor while routing client RPC."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientRPCOwnerMissing"), TEXT("AutoReplication RPC transporter cannot locate owning actor while routing client RPC."));
 		return false;
 	}
 
@@ -276,7 +272,7 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardRPCToClient(const FGorgeousQ
 
 	if (!TargetController)
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication RPC %s could not resolve a client target on %s."), *QueuedRPC.Key.ToString(), *OwnerActor->GetName());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientRPCTargetMissing"), TEXT("AutoReplication RPC %s could not resolve a client target on %s."), *QueuedRPC.Key.ToString(), *OwnerActor->GetName());
 		return false;
 	}
 
@@ -321,16 +317,14 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToClient(cons
 {
 	if (!IsOwnerLocallyAuthoritative())
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s cannot forward property payload %s to client because the owner lacks authority."),
-			*GetName(), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientPropertyAuthorityRequired"), TEXT("AutoReplication transporter %s cannot forward property payload %s to client because the owner lacks authority."), *GetName(), *Envelope.EntryKey.ToString());
 		return false;
 	}
 
 	AActor* OwnerActor = GetOwner();
 	if (!OwnerActor)
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s has no owning actor while routing property payload %s."),
-			*GetName(), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientPropertyOwnerMissing"), TEXT("AutoReplication transporter %s has no owning actor while routing property payload %s."), *GetName(), *Envelope.EntryKey.ToString());
 		return false;
 	}
 
@@ -342,15 +336,13 @@ bool UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToClient(cons
 
 	if (!TargetController)
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s cannot resolve client target while routing property payload %s."),
-			*GetName(), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientPropertyTargetMissing"), TEXT("AutoReplication transporter %s cannot resolve client target while routing property payload %s."), *GetName(), *Envelope.EntryKey.ToString());
 		return false;
 	}
 
 	if (OwningMixin && !OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, TargetController))
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Verbose, TEXT("Blocked AutoReplication property payload %s because controller %s lacks channel access."),
-			*Envelope.EntryKey.ToString(), *TargetController->GetName());
+		GT_V_LOG(TEXT("GT.AutoReplication.RPC.Transport.ClientPropertyAccessDenied"), TEXT("Blocked AutoReplication property payload %s because controller %s lacks channel access."), *Envelope.EntryKey.ToString(), *TargetController->GetName());
 		return false;
 	}
 
@@ -389,8 +381,7 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 {
 	if (!IsOwnerLocallyAuthoritative())
 	{
-		UE_LOG(LogGorgeousAutoReplicationTransporter, Warning, TEXT("AutoReplication transporter %s cannot multicast property payload %s because the owner lacks authority."),
-			*GetName(), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.MulticastAuthorityRequired"), TEXT("AutoReplication transporter %s cannot multicast property payload %s because the owner lacks authority."), *GetName(), *Envelope.EntryKey.ToString());
 		return;
 	}
 
@@ -406,9 +397,7 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 					const FName ChannelName = TargetVariable->GetEffectiveNetworkChannel();
 					if (!RootNetworkStack->HasChannelSubscribers(ChannelName))
 					{
-						UE_LOG(LogGorgeousAutoReplicationTransporter, VeryVerbose,
-							TEXT("Skipping AutoReplication property payload %s multicast because channel %s has no subscribers."),
-							*Envelope.EntryKey.ToString(), *ChannelName.ToString());
+						GT_VV_LOG(TEXT("GT.AutoReplication.RPC.Transport.MulticastNoSubscribers"), TEXT("Skipping AutoReplication property payload %s multicast because channel %s has no subscribers."), *Envelope.EntryKey.ToString(), *ChannelName.ToString());
 						return;
 					}
 				}
@@ -427,9 +416,7 @@ void UGorgeousAutoReplicationRPCTransporter::ForwardPropertyPayloadToMulticast(c
 
 					if (!OwningMixin->CanControllerReceivePropertyPayload(Envelope.EntryKey, PC))
 					{
-						UE_LOG(LogGorgeousAutoReplicationTransporter, Verbose,
-							TEXT("Blocked AutoReplication multicast payload %s for controller %s due to access policy."),
-							*Envelope.EntryKey.ToString(), *PC->GetName());
+						GT_V_LOG(TEXT("GT.AutoReplication.RPC.Transport.MulticastAccessDenied"), TEXT("Blocked AutoReplication multicast payload %s for controller %s due to access policy."), *Envelope.EntryKey.ToString(), *PC->GetName());
 						continue;
 					}
 
@@ -607,7 +594,7 @@ void UGorgeousAutoReplicationRPCTransporter::MulticastReceiveRPCUnreliable_Imple
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
     if (RouteType != EGorgeousAutoReplicationRPCType::EReliableServer && RouteType != EGorgeousAutoReplicationRPCType::EUnreliableServer) return;
-	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received reliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerReliableReceived"), TEXT("Server received reliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
 	// For server-bound route types the payload is delivered locally without passing through
 	// ForwardPropertyPayloadToClient / ForwardPropertyPayloadToMulticast, which are the two other
@@ -627,9 +614,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliabl
 
 		if (OwningMixin && !OwningMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 		{
-			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
-				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),
-				*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+			GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerReliableAccessDenied"), TEXT("Blocked server-bound property payload %s from controller %s due to access policy."), *Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
 			return;
 		}
 	}
@@ -640,7 +625,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadReliabl
 void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnreliable_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope, EGorgeousAutoReplicationRPCType RouteType)
 {
     if (RouteType != EGorgeousAutoReplicationRPCType::EReliableServer && RouteType != EGorgeousAutoReplicationRPCType::EUnreliableServer) return;
-	UE_LOG(LogGorgeousAutoReplicationTransporter, Log, TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerUnreliableReceived"), TEXT("Server received unreliable property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
 	// Same sender validation as the reliable variant, see comment above.
 	if (RouteType == EGorgeousAutoReplicationRPCType::EReliableServer
@@ -657,9 +642,7 @@ void UGorgeousAutoReplicationRPCTransporter::ServerReceivePropertyPayloadUnrelia
 
 		if (OwningMixin && !OwningMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 		{
-			UE_LOG(LogGorgeousAutoReplicationTransporter, Warning,
-				TEXT("Blocked server-bound property payload %s from controller %s due to access policy."),
-				*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+			GT_W_LOG(TEXT("GT.AutoReplication.RPC.Transport.ServerUnreliableAccessDenied"), TEXT("Blocked server-bound property payload %s from controller %s due to access policy."), *Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
 			return;
 		}
 	}

@@ -23,7 +23,6 @@
 #include "Containers/Ticker.h"
 #include "Algo/Sort.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationCoordinator, Log, All);
 
 namespace {
     TMap<TWeakObjectPtr<UWorld>, TUniquePtr<FGorgeousAutoReplicationCoordinator>> WorldCoordinators;
@@ -495,7 +494,7 @@ void FGorgeousAutoReplicationCoordinator::InitializeIris(UWorld* World)
 
 	bIrisInitialized = true;
 #else
-	UE_LOG(LogTemp, Verbose, TEXT("AutoReplication Iris support is disabled because Iris is not part of this build."));
+	GT_V_LOG(TEXT("GT.AutoReplication.Iris.BuildUnavailable"), TEXT("AutoReplication Iris support is disabled because Iris is not part of this build."));
 #endif
 }
 

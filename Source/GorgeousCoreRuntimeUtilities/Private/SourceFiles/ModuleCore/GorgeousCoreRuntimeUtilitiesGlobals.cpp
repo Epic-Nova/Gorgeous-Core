@@ -9,6 +9,7 @@
 |          that is not affiliated with Epic Games in any capacity.          |
 <==========================================================================*/
 #include "GorgeousCoreRuntimeUtilitiesGlobals.h"
+#include "HAL/CriticalSection.h"
 
 // // Global instance of the Gorgeous log entry delegate.
 static FGorgeousLogEntryDelegate GGorgeousLogEntryDelegate;
@@ -20,6 +21,12 @@ FGorgeousLogEntryDelegate& GetGorgeousLogEntryDelegate()
 
 namespace GorgeousLogging
 {
+    GORGEOUSCORERUNTIMEUTILITIES_API FCriticalSection& GetLoggingSuppressionLock()
+    {
+        static FCriticalSection Lock;
+        return Lock;
+    }
+
 	GORGEOUSCORERUNTIMEUTILITIES_API TSet<FName>& GetSuppressedLoggingKeys()
 	{
 		static TSet<FName> Keys;

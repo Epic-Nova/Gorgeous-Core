@@ -48,11 +48,11 @@ AActor* UGorgeousPermissionCheatManagerExtension::GetLocalPlayerActor() const
 void UGorgeousPermissionCheatManagerExtension::Cheat_ListPermissionProviders()
 {
 	const TArray<UGorgeousPermissionProvider*> Providers = UGorgeousPermissionProvider::GetRegisteredProviders();
-	GT_I_LOG(TEXT("Cheat"), TEXT("--- Gorgeous Permission Providers (%d) ---"), Providers.Num());
+	GT_I_LOG(TEXT("GT.Cheats"), TEXT("--- Gorgeous Permission Providers (%d) ---"), Providers.Num());
 
 	for (const UGorgeousPermissionProvider* Provider : Providers)
 	{
-		GT_I_LOG(TEXT("Cheat"), TEXT("  [%s] Default=%s Override=%s%s"),
+		GT_I_LOG(TEXT("GT.Cheats"), TEXT("  [%s] Default=%s Override=%s%s"),
 			*Provider->PermissionName,
 			Provider->bDefaultAllowed ? TEXT("Allow") : TEXT("Deny"),
 			Provider->bCheatOverrideActive ? TEXT("Active:") : TEXT("Inactive"),
@@ -63,61 +63,61 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_ListPermissionProviders()
 void UGorgeousPermissionCheatManagerExtension::Cheat_SetPermissionOverride(FString PermissionName, bool bAllow)
 {
     if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
-    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+    { GT_W_LOG(TEXT("GT.Cheats"),TEXT("This global permission edit requires the authoritative server console.")); return; }
 
 	if (UGorgeousPermissionProvider* Provider = UGorgeousPermissionProvider::FindProvider(PermissionName))
 	{
 		Provider->SetCheatOverride(true, bAllow);
-		GT_S_LOG(TEXT("Cheat"), TEXT("Forced permission %s to %s."), *PermissionName, bAllow ? TEXT("allow") : TEXT("deny"));
+		GT_S_LOG(TEXT("GT.Cheats"), TEXT("Forced permission %s to %s."), *PermissionName, bAllow ? TEXT("allow") : TEXT("deny"));
 		return;
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission provider %s was not found."), *PermissionName);
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission provider %s was not found."), *PermissionName);
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_ClearPermissionOverride(FString PermissionName)
 {
     if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
-    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+    { GT_W_LOG(TEXT("GT.Cheats"),TEXT("This global permission edit requires the authoritative server console.")); return; }
 
 	if (UGorgeousPermissionProvider* Provider = UGorgeousPermissionProvider::FindProvider(PermissionName))
 	{
 		Provider->SetCheatOverride(false, false);
-		GT_S_LOG(TEXT("Cheat"), TEXT("Cleared the permission override for %s."), *PermissionName);
+		GT_S_LOG(TEXT("GT.Cheats"), TEXT("Cleared the permission override for %s."), *PermissionName);
 		return;
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission provider %s was not found."), *PermissionName);
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission provider %s was not found."), *PermissionName);
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_CreatePermissionRole(FString RoleName)
 {
     if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
-    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+    { GT_W_LOG(TEXT("GT.Cheats"),TEXT("This global permission edit requires the authoritative server console.")); return; }
 
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->CreateOrUpdateRole(FName(*RoleName), TMap<FString, bool>());
-		GT_S_LOG(TEXT("Cheat"), TEXT("Created or retained permission role %s."), *RoleName);
+		GT_S_LOG(TEXT("GT.Cheats"), TEXT("Created or retained permission role %s."), *RoleName);
 		return;
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem was not found."));
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_DeletePermissionRole(FString RoleName)
 {
     if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
-    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+    { GT_W_LOG(TEXT("GT.Cheats"),TEXT("This global permission edit requires the authoritative server console.")); return; }
 
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->DeleteRole(FName(*RoleName));
-		GT_S_LOG(TEXT("Cheat"), TEXT("Deleted permission role %s."), *RoleName);
+		GT_S_LOG(TEXT("GT.Cheats"), TEXT("Deleted permission role %s."), *RoleName);
 		return;
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem was not found."));
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_GrantLocalPermissionRole(FString RoleName)
@@ -126,7 +126,7 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_GrantLocalPermissionRole(FS
         if (!PC->HasAuthority())
         {
             PC->Server_RequestGorgeousPermissionMutation(PC->PlayerState,EGorgeousPermissionMutation::GrantRole,RoleName,true);
-            GT_I_LOG(TEXT("Cheat"),TEXT("Requested permission role change; server policy decides authorization."));
+            GT_I_LOG(TEXT("GT.Cheats"),TEXT("Requested permission role change; server policy decides authorization."));
             return;
         }
 
@@ -135,12 +135,12 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_GrantLocalPermissionRole(FS
 		if (AActor* PlayerActor = GetLocalPlayerActor())
 		{
 			Subsystem->GrantRole(PlayerActor, FName(*RoleName));
-			GT_S_LOG(TEXT("Cheat"), TEXT("Granted role %s to %s."), *RoleName, *PlayerActor->GetName());
+			GT_S_LOG(TEXT("GT.Cheats"), TEXT("Granted role %s to %s."), *RoleName, *PlayerActor->GetName());
 			return;
 		}
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem or local player pawn was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem or local player pawn was not found."));
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_RevokeLocalPermissionRole(FString RoleName)
@@ -149,7 +149,7 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_RevokeLocalPermissionRole(F
         if (!PC->HasAuthority())
         {
             PC->Server_RequestGorgeousPermissionMutation(PC->PlayerState,EGorgeousPermissionMutation::RevokeRole,RoleName,true);
-            GT_I_LOG(TEXT("Cheat"),TEXT("Requested permission role change; server policy decides authorization."));
+            GT_I_LOG(TEXT("GT.Cheats"),TEXT("Requested permission role change; server policy decides authorization."));
             return;
         }
 
@@ -158,27 +158,27 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_RevokeLocalPermissionRole(F
 		if (AActor* PlayerActor = GetLocalPlayerActor())
 		{
 			Subsystem->RevokeRole(PlayerActor, FName(*RoleName));
-			GT_S_LOG(TEXT("Cheat"), TEXT("Revoked role %s from %s."), *RoleName, *PlayerActor->GetName());
+			GT_S_LOG(TEXT("GT.Cheats"), TEXT("Revoked role %s from %s."), *RoleName, *PlayerActor->GetName());
 			return;
 		}
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem or local player pawn was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem or local player pawn was not found."));
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_SetRolePermission(FString RoleName, FString PermissionName, bool bAllow)
 {
     if (!GetPlayerController() || !GetPlayerController()->HasAuthority())
-    { GT_W_LOG(TEXT("Cheat"),TEXT("This global permission edit requires the authoritative server console.")); return; }
+    { GT_W_LOG(TEXT("GT.Cheats"),TEXT("This global permission edit requires the authoritative server console.")); return; }
 
 	if (UGorgeousPermissionManagerSubsystem* Subsystem = GetPermissionSubsystem())
 	{
 		Subsystem->GrantPermissionToRole(FName(*RoleName), PermissionName, bAllow);
-		GT_S_LOG(TEXT("Cheat"), TEXT("Set %s on role %s to %s."), *PermissionName, *RoleName, bAllow ? TEXT("allow") : TEXT("deny"));
+		GT_S_LOG(TEXT("GT.Cheats"), TEXT("Set %s on role %s to %s."), *PermissionName, *RoleName, bAllow ? TEXT("allow") : TEXT("deny"));
 		return;
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem was not found."));
 }
 
 void UGorgeousPermissionCheatManagerExtension::Cheat_EvaluateLocalPermission(FString PermissionName)
@@ -189,10 +189,10 @@ void UGorgeousPermissionCheatManagerExtension::Cheat_EvaluateLocalPermission(FSt
 		{
 			bool bHandled = false;
 			const bool bAllowed = Subsystem->EvaluatePlayerPermission(PlayerActor, PermissionName, bHandled);
-			GT_I_LOG(TEXT("Cheat"), TEXT("Permission %s for %s: %s (%s)."), *PermissionName, *PlayerActor->GetName(), bAllowed ? TEXT("allow") : TEXT("deny"), bHandled ? TEXT("explicit rule") : TEXT("no explicit rule"));
+			GT_I_LOG(TEXT("GT.Cheats"), TEXT("Permission %s for %s: %s (%s)."), *PermissionName, *PlayerActor->GetName(), bAllowed ? TEXT("allow") : TEXT("deny"), bHandled ? TEXT("explicit rule") : TEXT("no explicit rule"));
 			return;
 		}
 	}
 
-	GT_W_LOG(TEXT("Cheat"), TEXT("Permission subsystem or local player pawn was not found."));
+	GT_W_LOG(TEXT("GT.Cheats"), TEXT("Permission subsystem or local player pawn was not found."));
 }

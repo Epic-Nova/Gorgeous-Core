@@ -1,4 +1,5 @@
 #include "UObject/NoExportTypes.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Misc/OutputDeviceNull.h"
 #include "UObject/StrongObjectPtr.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
@@ -33,7 +34,6 @@
 #include "UObject/UnrealType.h"
 #include "AutoReplication/Tracking/GorgeousRPCDebugTracker.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousAutoReplicationRelay, Log, All);
 
 // Server-side map: RequestGuid → originating client PC (populated in ServerRelayRPC*_Implementation).
 // Entries remain valid as long as the PC weak ptr is live; stale entries are lazily removed.
@@ -303,7 +303,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToServer(con
 {
 	if (!GetOwner())
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayPropertyPayloadToServer: No owner actor."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToServer.OwnerMissing"), TEXT("RelayPropertyPayloadToServer: No owner actor."));
 		return false;
 	}
 
@@ -312,7 +312,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToServer(con
 		// We're on the server, deliver directly
 		if (InTargetMixin)
 		{
-			UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayPropertyPayloadToServer: Delivering locally on server for entry %s."), *Envelope.EntryKey.ToString());
+			GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToServer.DeliveredLocally"), TEXT("RelayPropertyPayloadToServer: Delivering locally on server for entry %s."), *Envelope.EntryKey.ToString());
 			InTargetMixin->HandleTransportedPropertyPayload(Envelope);
 			return true;
 		}
@@ -320,7 +320,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToServer(con
 	}
 
 	// We're on the client, relay via RPC
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayPropertyPayloadToServer: Client relaying property payload for entry %s to server."), *Envelope.EntryKey.ToString());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToServer.Forwarded"), TEXT("RelayPropertyPayloadToServer: Client relaying property payload for entry %s to server."), *Envelope.EntryKey.ToString());
 	ServerRelayPropertyPayload(Envelope);
 	return true;
 }
@@ -329,13 +329,13 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToClient(con
 {
 	if (!GetOwner())
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayPropertyPayloadToClient: No owner actor."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToClient.OwnerMissing"), TEXT("RelayPropertyPayloadToClient: No owner actor."));
 		return false;
 	}
 
 	if (!GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayPropertyPayloadToClient: Cannot relay to client from non-authority."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToClient.AuthorityRequired"), TEXT("RelayPropertyPayloadToClient: Cannot relay to client from non-authority."));
 		return false;
 	}
 
@@ -354,7 +354,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayPropertyPayloadToClient(con
         }
     }
 
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayPropertyPayloadToClient: Server relaying property payload for entry %s to owning client."), *Envelope.EntryKey.ToString());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.PropertyToClient.Forwarded"), TEXT("RelayPropertyPayloadToClient: Server relaying property payload for entry %s to owning client."), *Envelope.EntryKey.ToString());
 	ClientRelayPropertyPayload(Envelope);
 	return true;
 }
@@ -386,10 +386,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayAutoReplicationResult
 		{
 			Result.TargetVariable = ReconstructedRoot;
             Result.TargetVariableIdentifier=ReconstructedRoot->UniqueIdentifier;
-			UE_LOG(LogGorgeousAutoReplicationRelay, Verbose,
-				TEXT("ServerRelayAutoReplicationResult: Reconstructed OV tree (%d nodes) for request %s."),
-				SerializedResult.OVTree.Num(),
-				*SerializedResult.RequestGuid.ToString());
+			GT_V_LOG(TEXT("GT.AutoReplication.RPC.Result.TreeReconstructed"), TEXT("ServerRelayAutoReplicationResult: Reconstructed OV tree (%d nodes) for request %s."), SerializedResult.OVTree.Num(), *SerializedResult.RequestGuid.ToString());
 		}
         else return;
 	}
@@ -410,12 +407,12 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayAutoReplicationResult
 
 void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope)
 {
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayPropertyPayload: Server received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerPropertyReceived"), TEXT("ServerRelayPropertyPayload: Server received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
     FGorgeousAutoReplicationMixin* DestinationMixin = Envelope.OwnerActor && Envelope.OwnerActor->GetWorld() == GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(Envelope.OwnerActor) : nullptr;
 	if (!DestinationMixin)
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerPropertyTargetMissing"), TEXT("ServerRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
 		return;
 	}
 
@@ -423,9 +420,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
 	APlayerController* SenderController = Cast<APlayerController>(GetOwner());
 	if (!DestinationMixin->CanControllerWritePropertyPayload(Envelope, SenderController))
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning,
-			TEXT("ServerRelayPropertyPayload: Blocked property payload for entry %s from controller %s due to access policy."),
-			*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerPropertyAccessDenied"), TEXT("ServerRelayPropertyPayload: Blocked property payload for entry %s from controller %s due to access policy."), *Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
 
 		// Send back the server's authoritative value as a correction so the client's local
 		// instance converges back to the server state instead of silently diverging.
@@ -452,9 +447,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayPropertyPayload_Imple
                 CorrectionEnvelope.StreamConfig = TargetVar->GetAutoReplicationConfig();
 				CorrectionEnvelope.Payload = CorrectionPayload;
 				ClientRelayPropertyPayload(CorrectionEnvelope);
-				UE_LOG(LogGorgeousAutoReplicationRelay, Log,
-					TEXT("ServerRelayPropertyPayload: Sent authoritative correction for entry %s back to controller %s."),
-					*Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
+				GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.AuthoritativeCorrectionSent"), TEXT("ServerRelayPropertyPayload: Sent authoritative correction for entry %s back to controller %s."), *Envelope.EntryKey.ToString(), SenderController ? *SenderController->GetName() : TEXT("<null>"));
 			}
 		}
 		return;
@@ -467,7 +460,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayRPCToServer(const FGorgeous
 {
 	if (!GetOwner())
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("RelayRPCToServer: No owner actor."));
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ToServer.OwnerMissing"), TEXT("RelayRPCToServer: No owner actor."));
 		return false;
 	}
 
@@ -476,7 +469,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayRPCToServer(const FGorgeous
 		// We're on the server, deliver directly via mixin
 		if (InTargetMixin)
 		{
-			UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayRPCToServer: Delivering RPC %s locally on server."), *QueuedRPC.Key.ToString());
+			GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ToServer.DeliveredLocally"), TEXT("RelayRPCToServer: Delivering RPC %s locally on server."), *QueuedRPC.Key.ToString());
 			InTargetMixin->HandleTransportedRPC(QueuedRPC);
 			return true;
 		}
@@ -484,7 +477,7 @@ bool UGorgeousAutoReplicationRPCRelayComponent::RelayRPCToServer(const FGorgeous
 	}
 
 	// We're on the client, relay via RPC
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("RelayRPCToServer: Client relaying RPC %s to server (reliable=%d)."), *QueuedRPC.Key.ToString(), bReliable ? 1 : 0);
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ToServer.Forwarded"), TEXT("RelayRPCToServer: Client relaying RPC %s to server (reliable=%d)."), *QueuedRPC.Key.ToString(), bReliable ? 1 : 0);
 	if (bReliable)
 	{
 		ServerRelayRPCReliable(QueuedRPC);
@@ -502,7 +495,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
     AActor* TargetActor=QueuedRPC.TargetOwnerActor;
     FGorgeousAutoReplicationMixin* DestinationMixin=TargetActor && TargetActor->GetWorld()==GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(TargetActor) : TargetMixin;
     if (!DestinationMixin || !DestinationMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCReliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerReliableReceived"), TEXT("ServerRelayRPCReliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
 
 	// Register the originating PC so results can be relayed back to the initiating client.
 	if (QueuedRPC.RequestGuid.IsValid())
@@ -516,7 +509,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
     if ((FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Key) || FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Payload.HandlerName)) && ResolveClientInitiatedRPCOrigin(QueuedRPC.RequestGuid)!=Sender) return;
 	if (!DestinationMixin)
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCReliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerReliableTargetMissing"), TEXT("ServerRelayRPCReliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
 		return;
 	}
 
@@ -541,11 +534,11 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCReliable_Implement
 		// taken by server-originated multicasts and is both correct and efficient.
 		FGuid MulticastGuid = QueuedRPC.RequestGuid;
 		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
-		UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCReliable: Forwarded reliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
+		GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ReliableMulticastForwarded"), TEXT("ServerRelayRPCReliable: Forwarded reliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
 		break;
 	}
 	default:
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCReliable: Unexpected RPC type %d for RPC %s."), static_cast<int32>(QueuedRPC.Type), *QueuedRPC.Key.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerReliableTypeUnsupported"), TEXT("ServerRelayRPCReliable: Unexpected RPC type %d for RPC %s."), static_cast<int32>(QueuedRPC.Type), *QueuedRPC.Key.ToString());
 		break;
 	}
 }
@@ -556,7 +549,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
     AActor* TargetActor=QueuedRPC.TargetOwnerActor;
     FGorgeousAutoReplicationMixin* DestinationMixin=TargetActor && TargetActor->GetWorld()==GetWorld() ? FGorgeousAutoReplicationMixin::ResolveForActor(TargetActor) : TargetMixin;
     if (!DestinationMixin || !DestinationMixin->CanControllerInvokeRPC(QueuedRPC,Sender)) return;
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCUnreliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerUnreliableReceived"), TEXT("ServerRelayRPCUnreliable: Server received RPC %s (Type=%d)."), *QueuedRPC.Key.ToString(), static_cast<int32>(QueuedRPC.Type));
 
 	// Register the originating PC so results can be relayed back to the initiating client.
 	if (QueuedRPC.RequestGuid.IsValid())
@@ -570,7 +563,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
     if ((FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Key) || FGorgeousVDGConsent::IsCollectionRequest(QueuedRPC.Payload.HandlerName)) && ResolveClientInitiatedRPCOrigin(QueuedRPC.RequestGuid)!=Sender) return;
 	if (!DestinationMixin)
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCUnreliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerUnreliableTargetMissing"), TEXT("ServerRelayRPCUnreliable: No target mixin set for RPC %s."), *QueuedRPC.Key.ToString());
 		return;
 	}
 
@@ -591,11 +584,11 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayRPCUnreliable_Impleme
 		// rather than the per-GPS PlayerArray loop.
 		FGuid MulticastGuid = QueuedRPC.RequestGuid;
 		DestinationMixin->RequestRPC(QueuedRPC.Key, QueuedRPC.Type, QueuedRPC.Payload, QueuedRPC.TargetKind, &MulticastGuid);
-		UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ServerRelayRPCUnreliable: Forwarded unreliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
+		GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.UnreliableMulticastForwarded"), TEXT("ServerRelayRPCUnreliable: Forwarded unreliable multicast RPC %s via target mixin."), *QueuedRPC.Key.ToString());
 		break;
 	}
 	default:
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ServerRelayRPCUnreliable: Unexpected RPC type %d for RPC %s."), static_cast<int32>(QueuedRPC.Type), *QueuedRPC.Key.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ServerUnreliableTypeUnsupported"), TEXT("ServerRelayRPCUnreliable: Unexpected RPC type %d for RPC %s."), static_cast<int32>(QueuedRPC.Type), *QueuedRPC.Key.ToString());
 		break;
 	}
 }
@@ -612,13 +605,13 @@ void UGorgeousAutoReplicationRPCRelayComponent::ServerRelayResponderReadyState_I
 
 void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayPropertyPayload_Implementation(const FGorgeousAutoReplicationPropertyEnvelope& Envelope)
 {
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log, TEXT("ClientRelayPropertyPayload: Client received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
+	GT_I_LOG(TEXT("GT.AutoReplication.RPC.Relay.ClientPropertyReceived"), TEXT("ClientRelayPropertyPayload: Client received property payload for entry %s with %d properties."), *Envelope.EntryKey.ToString(), Envelope.Payload.Properties.Num());
 
     // Multiple PIE worlds share a process. A malformed or unresolved level
     // reference must never apply a received client snapshot to another world.
     if (Envelope.OwnerActor && Envelope.OwnerActor->GetWorld()!=GetWorld())
     {
-        UE_LOG(LogGorgeousAutoReplicationRelay,Warning,TEXT("Rejected property payload %s: destination actor belongs to another world."),*Envelope.EntryKey.ToString());
+        GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ClientPropertyWorldMismatch"), TEXT("Rejected property payload %s: destination actor belongs to another world."), *Envelope.EntryKey.ToString());
         return;
     }
     FGorgeousAutoReplicationMixin* DestinationMixin = Envelope.OwnerActor ? FGorgeousAutoReplicationMixin::ResolveForActor(Envelope.OwnerActor) : nullptr;
@@ -628,7 +621,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::ClientRelayPropertyPayload_Imple
 	}
 	else
 	{
-		UE_LOG(LogGorgeousAutoReplicationRelay, Warning, TEXT("ClientRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
+		GT_W_LOG(TEXT("GT.AutoReplication.RPC.Relay.ClientPropertyTargetMissing"), TEXT("ClientRelayPropertyPayload: No target mixin set for entry %s."), *Envelope.EntryKey.ToString());
 	}
 }
 
@@ -715,9 +708,7 @@ void UGorgeousAutoReplicationRPCRelayComponent::Automation_HandleRPC_WithReturnO
 	{
 		ReturnValue->Value = TestInputInt * RPC_TRANSFORM_MULTIPLY + RPC_TRANSFORM_ADD;
 	}
-	UE_LOG(LogGorgeousAutoReplicationRelay, Log,
-		TEXT("[AutomationRPC] RelayComponent handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"),
-		*GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.RelayReturnHandled"), TEXT("[AutomationRPC] RelayComponent handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"), *GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
 }
 
 void UGorgeousAutoReplicationRPCRelayComponent::ServerRelaySignalBridge_Implementation(uint8 Operation, FGameplayTag Tag, AActor* TargetActor, const FInstancedStruct& Payload)

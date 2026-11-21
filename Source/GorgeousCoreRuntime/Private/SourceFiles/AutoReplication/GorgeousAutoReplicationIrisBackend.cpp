@@ -10,6 +10,7 @@
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousAutoReplicationIrisBackend.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 #if GORGEOUSCORE_WITH_IRIS
 
@@ -198,9 +199,7 @@ void FGorgeousAutoReplicationIrisBackend::DispatchStream(FTrackedStream& Stream,
 			{
 				if (!RootNetworkStack->HasChannelSubscribers(Stream.RootNetworkChannel))
 				{
-					UE_LOG(LogGorgeousAutoReplicationIrisBackend, VeryVerbose,
-						TEXT("AutoReplication Iris stream [%s] skipped dispatch because channel %s has no subscribers."),
-						*Variable->GetName(), *Stream.RootNetworkChannel.ToString());
+					GT_VV_LOG(TEXT("GT.AutoReplication.Iris.Dispatch.NoSubscribers"), TEXT("AutoReplication Iris stream [%s] skipped dispatch because channel %s has no subscribers."), *Variable->GetName(), *Stream.RootNetworkChannel.ToString());
 					return;
 				}
 			}
@@ -218,8 +217,7 @@ void FGorgeousAutoReplicationIrisBackend::LogStreamUpdate(const FTrackedStream& 
 {
 	UGorgeousObjectVariable* Variable = Stream.Variable.Get();
 	const FString VariableName = Variable ? Variable->GetName() : TEXT("<invalid>");
-	UE_LOG(LogGorgeousAutoReplicationIrisBackend, Verbose, TEXT("AutoReplication Iris stream [%s] %s (Guid: %s, UpdateFrequency: %.2f Hz)."),
-		*VariableName, Reason, *Stream.StreamGuid.ToString(), Stream.Config.UpdateFrequency);
+	GT_V_LOG(TEXT("GT.AutoReplication.Iris.StreamUpdated"), TEXT("AutoReplication Iris stream [%s] %s (Guid: %s, UpdateFrequency: %.2f Hz)."), *VariableName, Reason, *Stream.StreamGuid.ToString(), Stream.Config.UpdateFrequency);
 }
 
 void FGorgeousAutoReplicationIrisBackend::LogStreamThrottle(const FTrackedStream& Stream, const double TimeRemaining, const TCHAR* Reason) const
@@ -233,14 +231,7 @@ void FGorgeousAutoReplicationIrisBackend::LogStreamThrottle(const FTrackedStream
 	const FString VariableName = Variable ? Variable->GetName() : TEXT("<invalid>");
 	const double TargetHz = Stream.Config.UpdateFrequency;
 	const double MinHz = Stream.Config.MinUpdateFrequency;
-	UE_LOG(LogGorgeousAutoReplicationIrisBackend, Verbose,
-		TEXT("AutoReplication Iris stream [%s] throttled (%s, priority=%d, target=%.2f Hz, min=%.2f Hz, remaining=%.3fs)."),
-		*VariableName,
-		Reason ? Reason : TEXT("unspecified"),
-		Stream.Config.Priority,
-		TargetHz,
-		MinHz,
-		TimeRemaining);
+	GT_V_LOG(TEXT("GT.AutoReplication.Iris.Throttled"), TEXT("AutoReplication Iris stream [%s] throttled (%s, priority=%d, target=%.2f Hz, min=%.2f Hz, remaining=%.3fs)."), *VariableName, Reason ? Reason : TEXT("unspecified"), Stream.Config.Priority, TargetHz, MinHz, TimeRemaining);
 }
 
 void FGorgeousAutoReplicationIrisBackend::FTrackedStream::RefreshRatesFromConfig()

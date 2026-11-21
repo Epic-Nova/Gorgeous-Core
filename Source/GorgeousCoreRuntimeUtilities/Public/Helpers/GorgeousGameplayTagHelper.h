@@ -11,18 +11,26 @@
 #pragma once
 
 //<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
+#include "Helpers/GorgeousPathHelper.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "GameplayTagsManager.h"
 #include "GameplayTagsSettings.h"
+#include "HAL/FileManager.h"
+#include "Misc/ConfigCacheIni.h"
+#include "Misc/Paths.h"
 //<-------------------------------------------------------------------------->
 
+#if WITH_EDITOR
 /**
- * Adds a gameplay tag to a specific permanent configuration file.
+ * Adds a gameplay tag to a specific permanent configuration file in the editor.
  *
  * @param TagName        The full tag name (e.g., "Gorgeous.Inventory.Action.Add").
  * @param SourceName     The name of the tag source / ini file (e.g., "GorgeousInventoryTags").
  *                       If empty or "Default", it goes into DefaultGameplayTags.ini.
+ *                       A registered source accepts its basename with or without .ini
+ *                       and retains its actual file path, including nested tag folders.
  * @param TagComment     Optional comment to describe the tag's purpose.
  * @return True if the tag was added successfully or already exists.
  */
@@ -61,13 +69,24 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 		return true;
 	}
 
-	// 2. Handle Plugin-Specific Source (e.g. GorgeousInventory/Config/Tags/GorgeousInventoryTags.ini)
-	// We use the universal RelativePathToGorgeousPath to resolve the plugin-relative structure.
-	const FString TagFolderRelative = SourceName / TEXT("Config/Tags");
-	const FString IniPathRelative = TagFolderRelative / (SourceName + TEXT(".ini"));
-
-	const FString IniPath = RelativePathToGorgeousPath(IniPathRelative);
-	const FString TagFolder = RelativePathToGorgeousPath(TagFolderRelative);
+	// 2. A registered source owns its physical file, regardless of subdirectory.
+	UGameplayTagsManager& Manager = UGameplayTagsManager::Get();
+	FString SourceFilename = FPaths::GetCleanFilename(SourceName);
+	if (!SourceFilename.EndsWith(TEXT(".ini"))) SourceFilename += TEXT(".ini");
+	const FGameplayTagSource* RegisteredSource = Manager.FindTagSource(FName(*SourceFilename));
+	FString IniPath = RegisteredSource ? RegisteredSource->GetConfigFileName() : FString();
+	FString TagFolder;
+	if (!IniPath.IsEmpty())
+	{
+		TagFolder = FPaths::GetPath(IniPath);
+	}
+	else
+	{
+		// Preserve the existing generic plugin-name fallback for unregistered sources.
+		const FString TagFolderRelative = SourceName / TEXT("Config/Tags");
+		IniPath = RelativePathToGorgeousPath(TagFolderRelative / (SourceName + TEXT(".ini")));
+		TagFolder = RelativePathToGorgeousPath(TagFolderRelative);
+	}
 
 	// Ensure the 'Config/Tags' directory exists, otherwise GConfig might fail to create the file.
 	if (!IFileManager::Get().DirectoryExists(*TagFolder))
@@ -84,6 +103,9 @@ static FORCEINLINE bool AddTagToGorgeousConfig(const FString& TagName, const FSt
 	const FString Key = TEXT("GameplayTagList");
 	const FString Entry = FString::Printf(TEXT("(Tag=\"%s\",DevComment=\"%s\")"), *TagName, *TagComment);
 
+	// Newer engines discard loose tag configs from GConfig after registration.
+	// Reload the owned file before appending so its existing rows remain intact.
+	GConfig->LoadFile(IniPath);
 	TArray<FString> ExistingEntries;
 	GConfig->GetArray(*Section, *Key, ExistingEntries, IniPath);
 
@@ -119,3 +141,4 @@ static FORCEINLINE void AddTagsToGorgeousConfig(const TArray<FString>& TagNames,
 		AddTagToGorgeousConfig(Name, SourceName, CommentPrefix);
 	}
 }
+#endif // WITH_EDITOR

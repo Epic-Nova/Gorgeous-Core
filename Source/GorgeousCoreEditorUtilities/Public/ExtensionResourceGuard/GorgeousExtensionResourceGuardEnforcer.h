@@ -99,8 +99,9 @@ private:
 	 */
 	bool OnTick(float DeltaTime);
 	void ShowProtectionBanner();
-	TSharedPtr<class SNotificationItem> ProtectionBanner;
-	bool bBannerProtectionDisabled = false;
+	void ToggleProtectionFromBanner(bool bWasDisabled);
+	TWeakPtr<class SNotificationItem> ProtectionBanner;
+	bool bHasShownProtectionBanner = false;
 
 	/**
 	 * Runs once at subsystem initialization.

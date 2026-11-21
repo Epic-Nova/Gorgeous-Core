@@ -10,6 +10,8 @@
 <==========================================================================*/
 #pragma once
 
+#include "HAL/FileManager.h"
+
 /**
  * Checks if a given directory exists inside the gorgeous folder structure.
  * 

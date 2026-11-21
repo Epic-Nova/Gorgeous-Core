@@ -19,7 +19,6 @@
 #include "Engine/Engine.h"
 #include "Engine/GameInstance.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousRootObjectVariable, Log, All);
 
 //=============================================================================
 // UGorgeousRootObjectVariable Implementation
@@ -177,7 +176,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetRootObjectVariable(
 	{
 		if (!GorgeousRootObjectVariable_Private::bAllowRootCreation)
 		{
-			UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("Root creation blocked during teardown for '%s'; returning existing root only."), *ResolvedName.ToString());
+			GT_VV_LOG(TEXT("GT.ObjectVariables.Root.CreationBlockedDuringTeardown"), TEXT("Root creation blocked during teardown for '%s'; returning existing root only."), *ResolvedName.ToString());
 		}
 		return TryGetExistingRoot(ResolvedName);
 	}
@@ -304,7 +303,7 @@ FGorgeousRootRegistryOwnerHandle UGorgeousRootObjectVariable::ClaimRootRegistryO
 	FGorgeousRootRegistryOwnerHandle Result;
 	if (!GorgeousRootObjectVariable_Private::SupportsSharedOwnership(ResolvedRootName))
 	{
-		UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("Root '%s' does not support shared ownership; skipping ClaimRootRegistryOwnership."), *ResolvedRootName.ToString());
+		GT_VV_LOG(TEXT("GT.ObjectVariables.Root.SharedOwnershipUnsupported"), TEXT("Root '%s' does not support shared ownership; skipping ClaimRootRegistryOwnership."), *ResolvedRootName.ToString());
 		return Result;
 	}
 	GorgeousRootObjectVariable_Private::FRootRegistryOwnerState& State = GorgeousRootObjectVariable_Private::RootOwnerStates.FindOrAdd(ResolvedRootName);
@@ -488,14 +487,7 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 			{
 				if (AsRoot->IsRooted())
 				{
-					UE_LOG(
-						LogGorgeousRootObjectVariable,
-						VeryVerbose,
-						TEXT("RemoveVariableFromRegistry: RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"),
-						*GetNameSafe(AsRoot),
-						*It->Key.ToString(),
-						*GetNameSafe(AsRoot->GetOuter()),
-						*GorgeousRootObjectVariable_Private::BuildOuterChain(AsRoot));
+					GT_VV_LOG(TEXT("GT.ObjectVariables.Registry.RootUnrooted"), TEXT("RemoveVariableFromRegistry: RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"), *GetNameSafe(AsRoot), *It->Key.ToString(), *GetNameSafe(AsRoot->GetOuter()), *GorgeousRootObjectVariable_Private::BuildOuterChain(AsRoot));
 					AsRoot->RemoveFromRoot();
 				}
 				It.RemoveCurrent();
@@ -522,13 +514,7 @@ void UGorgeousRootObjectVariable::RemoveVariableFromRegistry(UGorgeousObjectVari
 				{
 					if (VariableToRemove->IsRooted())
 					{
-						UE_LOG(
-							LogGorgeousRootObjectVariable,
-							VeryVerbose,
-							TEXT("RemoveVariableFromRegistry: RemoveFromRoot variable '%s' (Outer='%s', Chain=%s)"),
-							*GetNameSafe(VariableToRemove),
-							*GetNameSafe(VariableToRemove->GetOuter()),
-							*GorgeousRootObjectVariable_Private::BuildOuterChain(VariableToRemove));
+						GT_VV_LOG(TEXT("GT.ObjectVariables.Registry.VariableUnrooted"), TEXT("RemoveVariableFromRegistry: RemoveFromRoot variable '%s' (Outer='%s', Chain=%s)"), *GetNameSafe(VariableToRemove), *GetNameSafe(VariableToRemove->GetOuter()), *GorgeousRootObjectVariable_Private::BuildOuterChain(VariableToRemove));
 						VariableToRemove->RemoveFromRoot();
 					}
 					It.RemoveCurrent();
@@ -792,14 +778,7 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 					Root->SetFallbackOwner(nullptr);
 					if (Root->IsRooted())
 					{
-						UE_LOG(
-							LogGorgeousRootObjectVariable,
-							VeryVerbose,
-							TEXT("CleanupRegistry(full): RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"),
-							*GetNameSafe(Root),
-							*RootName.ToString(),
-							*GetNameSafe(Root->GetOuter()),
-							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
+						GT_VV_LOG(TEXT("GT.ObjectVariables.Registry.FullCleanup.RootUnrooted"), TEXT("CleanupRegistry(full): RemoveFromRoot root '%s' (Key='%s', Outer='%s', Chain=%s)"), *GetNameSafe(Root), *RootName.ToString(), *GetNameSafe(Root->GetOuter()), *GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 						Root->RemoveFromRoot();
 					}
 					// Sever the UObject outer reference back to the PIE GameInstance.
@@ -810,22 +789,10 @@ void UGorgeousRootObjectVariable::CleanupRegistry(const bool bFullCleanup)
 					if (UObject* RootOuter = Root->GetOuter();
 						RootOuter && RootOuter != GetTransientPackage())
 					{
-						UE_LOG(
-							LogGorgeousRootObjectVariable,
-							VeryVerbose,
-							TEXT("CleanupRegistry(full): Renaming root '%s' from outer '%s' to transient package (ChainBefore=%s)"),
-							*GetNameSafe(Root),
-							*GetNameSafe(RootOuter),
-							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
+						GT_VV_LOG(TEXT("GT.ObjectVariables.Registry.FullCleanup.ReparentingToTransient"), TEXT("CleanupRegistry(full): Renaming root '%s' from outer '%s' to transient package (ChainBefore=%s)"), *GetNameSafe(Root), *GetNameSafe(RootOuter), *GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 						Root->Rename(nullptr, GetTransientPackage(),
 							GORGEOUS_58_SWITCH(REN_DontCreateRedirectors | REN_ForceNoResetLoaders, REN_DontCreateRedirectors));
-						UE_LOG(
-							LogGorgeousRootObjectVariable,
-							VeryVerbose,
-							TEXT("CleanupRegistry(full): Root '%s' renamed to outer '%s' (ChainAfter=%s)"),
-							*GetNameSafe(Root),
-							*GetNameSafe(Root->GetOuter()),
-							*GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
+						GT_VV_LOG(TEXT("GT.ObjectVariables.Registry.FullCleanup.Reparented"), TEXT("CleanupRegistry(full): Root '%s' renamed to outer '%s' (ChainAfter=%s)"), *GetNameSafe(Root), *GetNameSafe(Root->GetOuter()), *GorgeousRootObjectVariable_Private::BuildOuterChain(Root));
 					}
 				}
 				NamedRootInstances.Remove(RootName);
@@ -888,7 +855,19 @@ UGorgeousObjectVariable* FoundObjectVariable = FindVariableByIdentifier(Identifi
 			}
 			else
 			{
-				GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
+#pragma push_macro("GT_DURATION")
+#pragma push_macro("GT_WORLD_CONTEXT")
+#undef GT_DURATION
+#define GT_DURATION 2.0f
+#undef GT_WORLD_CONTEXT
+#define GT_WORLD_CONTEXT Stack.Object
+				GT_W_LOG("GT.ObjectVariables.Universal.Type_Mismatch",
+					TEXT("Property type mismatch for %s"),
+					*OptionalPropertyName.ToString());
+#undef GT_WORLD_CONTEXT
+#pragma pop_macro("GT_WORLD_CONTEXT")
+#undef GT_DURATION
+#pragma pop_macro("GT_DURATION")
 			}
 		}
 	}
@@ -920,7 +899,19 @@ UGorgeousObjectVariable* FoundObjectVariable = FindVariableByIdentifier(Identifi
 			}
 			else
 			{
-				GT_W_LOG_FULL(TEXT("Property type mismatch for %s"), "GT.ObjectVariables.Universal.Type_Mismatch", 2.f, Stack.Object, *OptionalPropertyName.ToString());
+#pragma push_macro("GT_DURATION")
+#pragma push_macro("GT_WORLD_CONTEXT")
+#undef GT_DURATION
+#define GT_DURATION 2.0f
+#undef GT_WORLD_CONTEXT
+#define GT_WORLD_CONTEXT Stack.Object
+				GT_W_LOG("GT.ObjectVariables.Universal.Type_Mismatch",
+					TEXT("Property type mismatch for %s"),
+					*OptionalPropertyName.ToString());
+#undef GT_WORLD_CONTEXT
+#pragma pop_macro("GT_WORLD_CONTEXT")
+#undef GT_DURATION
+#pragma pop_macro("GT_DURATION")
 			}
 		}
 	}
@@ -1053,7 +1044,7 @@ UGorgeousRootObjectVariable* UGorgeousRootObjectVariable::GetOrCreateRootInterna
 	{
 		if (!GorgeousRootObjectVariable_Private::bAllowRootCreation)
 		{
-			UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("GetOrCreateRootInternal blocked for '%s' during teardown; returning existing root only."), *RootName.ToString());
+			GT_VV_LOG(TEXT("GT.ObjectVariables.Root.GetOrCreateBlockedDuringTeardown"), TEXT("GetOrCreateRootInternal blocked for '%s' during teardown; returning existing root only."), *RootName.ToString());
 		}
 		return TryGetExistingRoot(RootName);
 	}
@@ -1149,7 +1140,7 @@ void UGorgeousRootObjectVariable::HandleOrphanedChildren(UGorgeousObjectVariable
 		EGorgeousObjectVariableOrphanResolution EffectiveResolution = Resolution;
 		if (EffectiveResolution == EGorgeousObjectVariableOrphanResolution::ReparentToRoot && (!bSharedRootAllowsReparent || !TargetRootForReparent))
 		{
-			UE_LOG(LogGorgeousRootObjectVariable, VeryVerbose, TEXT("Root '%s' does not allow reparenting for orphan '%s'; destroying instead."), *OwningRootName.ToString(), *Orphan->GetName());
+			GT_VV_LOG(TEXT("GT.ObjectVariables.Root.OrphanReparentingUnsupported"), TEXT("Root '%s' does not allow reparenting for orphan '%s'; destroying instead."), *OwningRootName.ToString(), *Orphan->GetName());
 			EffectiveResolution = EGorgeousObjectVariableOrphanResolution::DestroyOrphans;
 		}
 

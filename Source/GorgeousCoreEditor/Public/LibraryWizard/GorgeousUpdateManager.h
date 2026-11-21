@@ -22,6 +22,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGorgeousUpdateCheckCompleted, bool, bUpdatesAvailable);
 
+class FJsonObject;
 class SProgressBar;
 class STextBlock;
 class SWindow;
@@ -66,7 +67,19 @@ public:
 private:
     FString ActiveDownloadChecksum;
     FHttpRequestPtr ActiveDownloadRequest;
-    bool bIsDevMode = false;
+
+    /**
+     * Builds the plugin-check entry with a fresh salted ModuleCore license proof.
+     * @param PluginName The plugin identity used by the API catalog.
+     * @param PluginBaseDir The installed plugin directory to fingerprint.
+     * @param CurrentVersion The installed descriptor version.
+     * @return The wire entry, keeping the diagnostic source SHA-256 separate.
+     */
+    TSharedRef<FJsonObject> BuildPluginUpdateEntry(const FString& PluginName, const FString& PluginBaseDir, const FString& CurrentVersion);
+
+#if WITH_DEV_AUTOMATION_TESTS
+    friend class FGorgeousNativeUpdatePayloadTest;
+#endif
 
     void ProbeConnection();
     void OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);

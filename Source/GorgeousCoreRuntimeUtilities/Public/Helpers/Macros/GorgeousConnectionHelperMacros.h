@@ -10,11 +10,14 @@
 <==========================================================================*/
 #pragma once
 
+// Default API host shared by the project settings and production URL constants.
+#define GORGEOUS_API_DEFAULT_HOST "api.gorgeous.simsalabim.studio"
+
 /**
  * Endpoint URL for the Gorgeous API.
  * All production requests require TLS and explicit user consent.
  */
-#define GORGEOUS_API_ENDPOINT "https://api.gorgeous.simsalabim.studio"
+#define GORGEOUS_API_ENDPOINT "https://" GORGEOUS_API_DEFAULT_HOST
 
 /**
  * Endpoint URL for the Gorgeous API V1.

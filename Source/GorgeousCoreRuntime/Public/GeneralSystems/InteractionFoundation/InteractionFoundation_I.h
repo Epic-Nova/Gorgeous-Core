@@ -13,6 +13,7 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousNetworkInteractionComponent.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
@@ -55,6 +56,11 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
 	bool CanInteract(AActor* InteractingActor) const;
+
+	/** Optional server-side override for interactables using the network interaction component. */
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Gorgeous Core|Interaction Foundation")
+	EGorgeousInteractionOwnership GetInteractionOwnership() const;
+	virtual EGorgeousInteractionOwnership GetInteractionOwnership_Implementation() const;
 
 	/**
 	 * Provides the focus metadata used to render this object's interaction prompt.

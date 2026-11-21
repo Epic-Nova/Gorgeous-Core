@@ -11,6 +11,7 @@
 #include "GorgeousCoreRuntimeUtilitiesModule.h"
 #include "Containers/Ticker.h"
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "Templates/GorgeousSingleton.h"
 
 void FGorgeousCoreRuntimeUtilitiesModule::GorgeousStartupModule()
@@ -18,7 +19,10 @@ void FGorgeousCoreRuntimeUtilitiesModule::GorgeousStartupModule()
 	// Schedule binary checksum generation 10 seconds after boot
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([](float DeltaTime)
 	{
-		UGorgeousPluginHelper::GenerateAndSaveBinaryChecksum();
+		if (const UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+		{
+			FGorgeousPersistentData::Get().GenerateAndSaveBinaryChecksums(Helper->GetKnownGorgeousPlugins(false));
+		}
 		return false; // Run exactly once
 	}), 10.0f);
 }

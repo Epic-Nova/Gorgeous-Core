@@ -10,6 +10,7 @@
 <==========================================================================*/
 
 #include "CoreMinimal.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 
 #if defined(WITH_AUTOMATION_TESTS) && WITH_AUTOMATION_TESTS
 
@@ -60,7 +61,6 @@ struct FPerfServerClientHarnessOptions
 	double TickStepSeconds = 1.0 / 120.0;
 };
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousObjectVariablePerf, Log, All);
 
 #if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 void UGorgeousPerfNetworkMetricsListener::HandleReport(const UE::Net::FNetworkMetricSnapshot& Snapshot)
@@ -1060,20 +1060,14 @@ namespace GorgeousObjectVariablePerf
 
 		static void LogSystemDelta(const TCHAR* Label, const FSystemStatSnapshot& Before, const FSystemStatSnapshot& After)
 		{
-			UE_LOG(LogGorgeousObjectVariablePerf, Display,
-				TEXT("[OVPerf][Sys] %s | Mem %s (%s) | CPU %.2f%%->%.2f%% Thread %.2f%%->%.2f%% | LastCPU %.4fs LastThread %.4fs"),
-				Label,
-				*DescribeMemoryUsage(After.MemoryStats), *DescribeMemoryDelta(Before.MemoryStats, After.MemoryStats),
-				Before.ProcessCPU.CPUTimePct, After.ProcessCPU.CPUTimePct,
-				Before.ThreadCPU.CPUTimePct, After.ThreadCPU.CPUTimePct,
-				After.LastProcessCPUSeconds, After.LastThreadCPUSeconds);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Sample.System"), TEXT("[OVPerf][Sys] %s | Mem %s (%s) | CPU %.2f%%->%.2f%% Thread %.2f%%->%.2f%% | LastCPU %.4fs LastThread %.4fs"), Label, *DescribeMemoryUsage(After.MemoryStats), *DescribeMemoryDelta(Before.MemoryStats, After.MemoryStats), Before.ProcessCPU.CPUTimePct, After.ProcessCPU.CPUTimePct, Before.ThreadCPU.CPUTimePct, After.ThreadCPU.CPUTimePct, After.LastProcessCPUSeconds, After.LastThreadCPUSeconds);
 			if (Before.bHasIO && After.bHasIO)
 			{
-				UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf][Sys] %s | IO %s"), Label, *DescribeIODelta(Before.IOStats, After.IOStats));
+				GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Sample.IO"), TEXT("[OVPerf][Sys] %s | IO %s"), Label, *DescribeIODelta(Before.IOStats, After.IOStats));
 			}
 			else
 			{
-				UE_LOG(LogGorgeousObjectVariablePerf, Verbose, TEXT("[OVPerf][Sys] %s | IO stats unavailable on this platform"), Label);
+				GT_V_LOG(TEXT("GT.ObjectVariables.Performance.Sample.IOUnavailable"), TEXT("[OVPerf][Sys] %s | IO stats unavailable on this platform"), Label);
 			}
 		}
 
@@ -1294,7 +1288,7 @@ namespace GorgeousObjectVariablePerf
 					}
 					else
 					{
-						UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] %s harness endpoint failed to allocate GameInstance"), DebugLabel);
+						GT_W_LOG(TEXT("GT.ObjectVariables.Performance.Harness.GameInstanceAllocationFailed"), TEXT("[OVPerf] %s harness endpoint failed to allocate GameInstance"), DebugLabel);
 					}
 				}
 
@@ -1308,7 +1302,7 @@ namespace GorgeousObjectVariablePerf
 			}
 			else
 			{
-				UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] %s harness endpoint missing GameInstance"), DebugLabel);
+				GT_W_LOG(TEXT("GT.ObjectVariables.Performance.Harness.GameInstanceMissing"), TEXT("[OVPerf] %s harness endpoint missing GameInstance"), DebugLabel);
 			}
 		}
 
@@ -1670,7 +1664,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 		EnableStatCollection();
 
 		bInitialized = true;
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Harness connected server/client on %s:%d"), *ListenAddress, ServerPort);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.Connected"), TEXT("[OVPerf] Harness connected server/client on %s:%d"), *ListenAddress, ServerPort);
 		return true;
 	}
 
@@ -1773,12 +1767,11 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 			{
 				if (!GameMode->IsA(AGorgeousHarnessGameMode::StaticClass()))
 				{
-					UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] Harness server GameMode was %s instead of %s"),
-						*GameMode->GetClass()->GetName(), *AGorgeousHarnessGameMode::StaticClass()->GetAuthoredName());
+					GT_W_LOG(TEXT("GT.ObjectVariables.Performance.Harness.GameModeMismatch"), TEXT("[OVPerf] Harness server GameMode was %s instead of %s"), *GameMode->GetClass()->GetName(), *AGorgeousHarnessGameMode::StaticClass()->GetAuthoredName());
 				}
 				else
 				{
-					UE_LOG(LogGorgeousObjectVariablePerf, Verbose, TEXT("[OVPerf] Harness server initialized %s"), *GameMode->GetClass()->GetName());
+					GT_V_LOG(TEXT("GT.ObjectVariables.Performance.Harness.GameModeInitialized"), TEXT("[OVPerf] Harness server initialized %s"), *GameMode->GetClass()->GetName());
 				}
 				return true;
 			}
@@ -1831,8 +1824,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 			Server.NetDriverName = ServerDriverName;
 			ServerPort = CandidatePort;
 			FString LocalAddrString = Server.NetDriver->GetLocalAddr().IsValid() ? Server.NetDriver->GetLocalAddr()->ToString(true) : TEXT("<unknown>");
-			UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Harness server listening on %s:%d (LocalAddr=%s Driver=%s)"),
-				*ListenAddress, ServerPort, *LocalAddrString, *Server.NetDriver->GetClass()->GetName());
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.ServerListening"), TEXT("[OVPerf] Harness server listening on %s:%d (LocalAddr=%s Driver=%s)"), *ListenAddress, ServerPort, *LocalAddrString, *Server.NetDriver->GetClass()->GetName());
 			return true;
 		}
 
@@ -1903,7 +1895,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 		PendingNetGame->NetDriver = Client.NetDriver;
 		PendingNetGame->BeginHandshake();
 
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Harness client dialing %s:%d"), *ConnectURL.Host, ConnectURL.Port);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.ClientConnecting"), TEXT("[OVPerf] Harness client dialing %s:%d"), *ConnectURL.Host, ConnectURL.Port);
 
 		return true;
 	}
@@ -1929,7 +1921,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 
 			if (CompletePendingClientTravel(Client))
 			{
-				UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Harness client sending join request after handshake ack"));
+				GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.JoinRequested"), TEXT("[OVPerf] Harness client sending join request after handshake ack"));
 			}
 		};
 		while (FPlatformTime::Seconds() < Deadline)
@@ -2150,10 +2142,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 			Endpoint.NetDriver->ProfileStats = true;
 			Endpoint.NetDriver->StatPeriod = FMath::Max(Endpoint.NetDriver->StatPeriod, 0.25f);
 			Endpoint.NetDriver->StatUpdateTime = FPlatformTime::Seconds();
-			UE_LOG(LogGorgeousObjectVariablePerf, Display,
-				TEXT("[OVPerf] Harness %s driver enabling automation stat capture (Driver=%s)"),
-				EndpointLabel,
-				*Endpoint.NetDriver->GetClass()->GetName());
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.StatCaptureEnabled"), TEXT("[OVPerf] Harness %s driver enabling automation stat capture (Driver=%s)"), EndpointLabel, *Endpoint.NetDriver->GetClass()->GetName());
 	#if GORGEOUSCORERUNTIME_ENABLE_NETWORK_METRICS
 				RegisterEndpointMetrics(Endpoint);
 	#endif
@@ -2164,7 +2153,7 @@ static void CaptureEndpointStatBaseline(FPerfNetEndpoint& Endpoint)
 		CaptureEndpointStatBaseline(Server);
 		CaptureEndpointStatBaseline(Client);
 		StatsEnableTimeSeconds = FPlatformTime::Seconds();
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Harness issuing stat net / stat irisreplication style capture (headless logging)"));
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Harness.StatCaptureRequested"), TEXT("[OVPerf] Harness issuing stat net / stat irisreplication style capture (headless logging)"));
 		bStatsCollectionEnabled = true;
 	}
 
@@ -2309,7 +2298,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		Scenario.ReplicationOptInFrequency, Scenario.ReplicationValidationSamples,
 		*FPerfScenario::DescribeNetworkPresetLabel(Scenario.NetworkEmulationPreset), Scenario.NetworkEmulationPreset,
 		bGauntletActive ? TEXT("true") : TEXT("false"));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("%s"), *ScenarioSummary);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.ScenarioSummary"), TEXT("%s"), *ScenarioSummary);
 
 	FPerfSummaryPanel SummaryPanel;
 	SummaryPanel.InitializeDefaults();
@@ -2348,11 +2337,11 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		RecordStat(EPerfStatCategory::Networking, NetSummary);
 		if (NetworkRuntime.bDriverSettingsApplied)
 		{
-			UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s (applied to active net drivers)"), *NetSummary);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.NetworkConfigurationApplied"), TEXT("[OVPerf] %s (applied to active net drivers)"), *NetSummary);
 		}
 		else if (!NetworkRuntime.DriverWarning.IsEmpty())
 		{
-			UE_LOG(LogGorgeousObjectVariablePerf, Warning, TEXT("[OVPerf] %s | %s"), *NetSummary, *NetworkRuntime.DriverWarning);
+			GT_W_LOG(TEXT("GT.ObjectVariables.Performance.NetworkConfigurationWarning"), TEXT("[OVPerf] %s | %s"), *NetSummary, *NetworkRuntime.DriverWarning);
 			AddWarning(NetworkRuntime.DriverWarning);
 		}
 	}
@@ -2427,12 +2416,11 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	{
 		RootLabels.Add(DescribeRootLabel(Context.RootName));
 	}
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Activated %d/%d root registries -> %s"),
-		ActiveRoots.Num(), Scenario.TargetRootRegistries, *FString::Join(RootLabels, TEXT(", ")));
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.RootsActivated"), TEXT("[OVPerf] Activated %d/%d root registries -> %s"), ActiveRoots.Num(), Scenario.TargetRootRegistries, *FString::Join(RootLabels, TEXT(", ")));
 
 	const FSystemStatSnapshot StatsBeforeSpawn = CaptureSystemStatsSnapshot();
 	RecordStat(EPerfStatCategory::System, FString::Printf(TEXT("System baseline: %s"), *DescribeMemoryUsage(StatsBeforeSpawn.MemoryStats)));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf][Sys] Baseline captured | %s"), *DescribeMemoryUsage(StatsBeforeSpawn.MemoryStats));
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.BaselineCaptured"), TEXT("[OVPerf][Sys] Baseline captured | %s"), *DescribeMemoryUsage(StatsBeforeSpawn.MemoryStats));
 
 	const EGorgeousObjectVariableOrphanResolution PreviousResolution = UGorgeousRootObjectVariable::GetDefaultOrphanResolution();
 	UGorgeousRootObjectVariable::SetDefaultOrphanResolution(EGorgeousObjectVariableOrphanResolution::DestroyOrphans);
@@ -2471,7 +2459,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	};
 
 	const double SpawnStart = FPlatformTime::Seconds();
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Spawning %d test variables with branching fanout <= %d..."), Scenario.VariableCount, Scenario.MaxBranchingFactor);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Spawn.Started"), TEXT("[OVPerf] Spawning %d test variables with branching fanout <= %d..."), Scenario.VariableCount, Scenario.MaxBranchingFactor);
 
 	struct FBranchWorkItem
 	{
@@ -2553,9 +2541,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			if (RootStat.bEnforcesNetworking && RootStat.bSupportsNetworking)
 			{
 				++RootStat.EnforcedNetworkingViolations;
-				UE_LOG(LogGorgeousObjectVariablePerf, Warning,
-					TEXT("[OVPerf] Root %s enforces networking but node %s is missing the perf networking helper."),
-					*DescribeRootLabel(RootStat.RootName), *Node->GetName());
+				GT_W_LOG(TEXT("GT.ObjectVariables.Performance.NetworkingHelperMissing"), TEXT("[OVPerf] Root %s enforces networking but node %s is missing the perf networking helper."), *DescribeRootLabel(RootStat.RootName), *Node->GetName());
 			}
 			return;
 		}
@@ -2716,14 +2702,13 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	}
 	const FPerfSample SpawnSample{ FPlatformTime::Seconds() - SpawnStart, SpawnedVariables.Num() };
 	RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Spawn"), SpawnSample));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Spawned %d variables in %.2f seconds"), SpawnSample.Count, SpawnSample.Seconds);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Spawn.Completed"), TEXT("[OVPerf] Spawned %d variables in %.2f seconds"), SpawnSample.Count, SpawnSample.Seconds);
 	TestTrue(TEXT("Spawn budget respected"), SpawnSample.Seconds <= Scenario.SpawnBudgetSeconds);
 	if (BranchingParentCount > 0)
 		{
 			const double ActualAverageBranching = static_cast<double>(TotalBranchingChildren) / static_cast<double>(BranchingParentCount);
 			const double BloatPercent = (SpawnRecords.Num() > 0) ? (static_cast<double>(TextBloatApplications) / static_cast<double>(SpawnRecords.Num())) * 100.0 : 0.0;
-			UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Branching parents=%d avgChildren=%.2f | Text bloat hits=%d (%.2f%%)"),
-				BranchingParentCount, ActualAverageBranching, TextBloatApplications, BloatPercent);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Spawn.BranchingSummary"), TEXT("[OVPerf] Branching parents=%d avgChildren=%.2f | Text bloat hits=%d (%.2f%%)"), BranchingParentCount, ActualAverageBranching, TextBloatApplications, BloatPercent);
 			RecordStat(EPerfStatCategory::Performance, FString::Printf(TEXT("Branching parents=%d avgChildren=%.2f"), BranchingParentCount, ActualAverageBranching));
 		}
 
@@ -2735,7 +2720,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			{
 				const double SharePercent = (static_cast<double>(Stats.SpawnedCount) / SpawnSample.Count) * 100.0;
 				const FString RootLabel = DescribeRootLabel(Stats.RootName);
-				UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Root %s captured %d vars (%.2f%% of run)"), *RootLabel, Stats.SpawnedCount, SharePercent);
+				GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Spawn.RootSummary"), TEXT("[OVPerf] Root %s captured %d vars (%.2f%% of run)"), *RootLabel, Stats.SpawnedCount, SharePercent);
 				RootShareSummaries.Add(FString::Printf(TEXT("%s=%d (%.2f%%)"), *RootLabel, Stats.SpawnedCount, SharePercent));
 			}
 			RecordStat(EPerfStatCategory::Performance, FString::Printf(TEXT("Root distribution -> %s"), *FString::Join(RootShareSummaries, TEXT(", "))));
@@ -2790,8 +2775,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const FPerfSample CrossRefSample{ FPlatformTime::Seconds() - CrossRefStart, NodesWithReferences };
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Cross-reference assignment"), CrossRefSample));
 		const double AverageLinks = (NodesWithReferences > 0) ? static_cast<double>(TotalReferenceLinks) / NodesWithReferences : 0.0;
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Assigned %lld reference links across %d nodes (avg %.2f) in %.2f seconds"),
-			TotalReferenceLinks, NodesWithReferences, AverageLinks, CrossRefSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.References.Assigned"), TEXT("[OVPerf] Assigned %lld reference links across %d nodes (avg %.2f) in %.2f seconds"), TotalReferenceLinks, NodesWithReferences, AverageLinks, CrossRefSample.Seconds);
 	}
 
 	const FSystemStatSnapshot StatsAfterCrossRefs = bShouldAssignCrossRefs ? CaptureSystemStatsSnapshot() : StatsAfterSpawn;
@@ -2802,7 +2786,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	TickHarness(4);
 
 	const double LookupStart = FPlatformTime::Seconds();
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Beginning identifier lookup validation (%d lookups)..."), Identifiers.Num());
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.IdentifierLookup.Started"), TEXT("[OVPerf] Beginning identifier lookup validation (%d lookups)..."), Identifiers.Num());
 	for (const FGuid& Identifier : Identifiers)
 	{
 		PumpHarnessWork();
@@ -2811,7 +2795,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	}
 	const FPerfSample LookupSample{ FPlatformTime::Seconds() - LookupStart, Identifiers.Num() };
 	RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Identifier lookup"), LookupSample));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Completed identifier lookups in %.2f seconds"), LookupSample.Seconds);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.IdentifierLookup.Completed"), TEXT("[OVPerf] Completed identifier lookups in %.2f seconds"), LookupSample.Seconds);
 	TestTrue(TEXT("Lookup budget respected"), LookupSample.Seconds <= Scenario.LookupBudgetSeconds);
 
 	const int32 ActualDisplayNameSamples = FMath::Min(Scenario.DisplayNameLookupSamples, SpawnRecords.Num());
@@ -2835,8 +2819,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 
 		const FPerfSample DisplayLookupSample{ FPlatformTime::Seconds() - DisplayLookupStart, ActualDisplayNameSamples };
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Display-name lookup"), DisplayLookupSample));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Display-name lookups succeeded %d/%d in %.2f seconds"),
-			SuccessfulDisplayLookups, ActualDisplayNameSamples, DisplayLookupSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.DisplayNameLookup.Completed"), TEXT("[OVPerf] Display-name lookups succeeded %d/%d in %.2f seconds"), SuccessfulDisplayLookups, ActualDisplayNameSamples, DisplayLookupSample.Seconds);
 	}
 
 	const int32 ActualRegistrationSamples = FMath::Min(Scenario.RegistrationValidationSamples, SpawnRecords.Num());
@@ -2852,22 +2835,22 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 
 		const FPerfSample RegistrationSample{ FPlatformTime::Seconds() - RegistrationStart, ActualRegistrationSamples };
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Registry membership checks"), RegistrationSample));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Registry membership checks completed in %.2f seconds"), RegistrationSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.RegistryMembership.Completed"), TEXT("[OVPerf] Registry membership checks completed in %.2f seconds"), RegistrationSample.Seconds);
 	}
 
 	const double HierarchyStart = FPlatformTime::Seconds();
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Flattening hierarchy across %d roots (expecting %d entries)..."), ActiveRoots.Num(), SpawnedVariables.Num());
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.HierarchyTraversal.Started"), TEXT("[OVPerf] Flattening hierarchy across %d roots (expecting %d entries)..."), ActiveRoots.Num(), SpawnedVariables.Num());
 	TArray<UGorgeousObjectVariable*> FlattenedRegistry;
 	FlattenedRegistry.Reserve(SpawnedVariables.Num());
 	for (const FActiveRootContext& Context : ActiveRoots)
 	{
 		TArray<UGorgeousObjectVariable*> RootEntries = UGorgeousRootObjectVariable::GetVariableHierarchyRegistry(Context.RootName);
 		FlattenedRegistry.Append(RootEntries);
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Root %s hierarchy contributed %d entries"), *DescribeRootLabel(Context.RootName), RootEntries.Num());
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.HierarchyTraversal.RootSummary"), TEXT("[OVPerf] Root %s hierarchy contributed %d entries"), *DescribeRootLabel(Context.RootName), RootEntries.Num());
 	}
 	const FPerfSample HierarchySample{ FPlatformTime::Seconds() - HierarchyStart, FlattenedRegistry.Num() };
 	RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Hierarchy query"), HierarchySample));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Hierarchy traversal returned %d entries in %.2f seconds"), HierarchySample.Count, HierarchySample.Seconds);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.HierarchyTraversal.Completed"), TEXT("[OVPerf] Hierarchy traversal returned %d entries in %.2f seconds"), HierarchySample.Count, HierarchySample.Seconds);
 	TestTrue(TEXT("Hierarchy traversal budget respected"), HierarchySample.Seconds <= Scenario.HierarchyBudgetSeconds);
 
 	const int32 ActualDeepLookupSamples = FMath::Min(Scenario.DeepLookupSamples, SpawnRecords.Num());
@@ -2906,8 +2889,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const double AverageDepth = (ActualDeepLookupSamples > 0) ? static_cast<double>(TotalDepth) / ActualDeepLookupSamples : 0.0;
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Deep identifier lookup"), DeepLookupSample));
 		RecordStat(EPerfStatCategory::Performance, FString::Printf(TEXT("Average depth %.2f (max %d)"), AverageDepth, MaxObservedDepth));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Deep lookup sample (%d paths, avg depth %.2f, max %d) finished in %.2f seconds"),
-			ActualDeepLookupSamples, AverageDepth, MaxObservedDepth, DeepLookupSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.DeepLookup.Completed"), TEXT("[OVPerf] Deep lookup sample (%d paths, avg depth %.2f, max %d) finished in %.2f seconds"), ActualDeepLookupSamples, AverageDepth, MaxObservedDepth, DeepLookupSample.Seconds);
 	}
 
 	const int32 ActualSubtreeSamples = FMath::Min(Scenario.SubtreeSamples, SpawnRecords.Num());
@@ -2929,8 +2911,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const double AverageEnumerated = (ActualSubtreeSamples > 0) ? static_cast<double>(TotalEnumerated) / ActualSubtreeSamples : 0.0;
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Subtree enumeration"), SubtreeSample));
 		RecordStat(EPerfStatCategory::Performance, FString::Printf(TEXT("Average subtree size %.2f (max %d)"), AverageEnumerated, MaxEnumerated));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Subtree enumeration sample (%d probes, avg size %.2f, max %d) finished in %.2f seconds"),
-			ActualSubtreeSamples, AverageEnumerated, MaxEnumerated, SubtreeSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.SubtreeEnumeration.Completed"), TEXT("[OVPerf] Subtree enumeration sample (%d probes, avg size %.2f, max %d) finished in %.2f seconds"), ActualSubtreeSamples, AverageEnumerated, MaxEnumerated, SubtreeSample.Seconds);
 	}
 
 	const int32 ActualReferenceSamples = FMath::Min(Scenario.ReferenceHopSamples, SpawnRecords.Num());
@@ -3001,9 +2982,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const FPerfSample ReferenceHopSample{ FPlatformTime::Seconds() - HopStart, ActualReferenceSamples };
 		RecordStat(EPerfStatCategory::Performance, DescribeSample(TEXT("Reference hopping"), ReferenceHopSample));
 		const double AverageHopDepth = (SuccessfulChains > 0) ? static_cast<double>(TotalHops) / SuccessfulChains : 0.0;
-		UE_LOG(LogGorgeousObjectVariablePerf, Display,
-			TEXT("[OVPerf] Reference hopping sampled %d chains | success %d | avg hops %.2f | max %d | %.2f seconds"),
-			ActualReferenceSamples, SuccessfulChains, AverageHopDepth, MaxChain, ReferenceHopSample.Seconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.ReferenceHopping.Completed"), TEXT("[OVPerf] Reference hopping sampled %d chains | success %d | avg hops %.2f | max %d | %.2f seconds"), ActualReferenceSamples, SuccessfulChains, AverageHopDepth, MaxChain, ReferenceHopSample.Seconds);
 		RecordStat(EPerfStatCategory::Performance, FString::Printf(TEXT("Reference hops avg %.2f (max %d, success %d/%d)"), AverageHopDepth, MaxChain, SuccessfulChains, ActualReferenceSamples));
 		TestTrue(TEXT("Reference hopping budget respected"), ReferenceHopSample.Seconds <= Scenario.ReferenceHopBudgetSeconds);
 	}
@@ -3173,7 +3152,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 						TotalStimulatedReceives,
 						LatestStimulatedSend);
 					RecordStat(EPerfStatCategory::Replication, StimulusSummary);
-					UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s"), *StimulusSummary);
+					GT_D_LOG(TEXT("GT.ObjectVariables.Performance.NetworkStimulusSummary"), TEXT("[OVPerf] %s"), *StimulusSummary);
 					TestTrue(TEXT("Replication stimulus dirtied perf payloads"), StimulusMutationFailures == 0);
 					if (StimulusMutationFailures > 0)
 					{
@@ -3189,9 +3168,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 				RecordStat(EPerfStatCategory::Replication, DescribeSample(TEXT("Replication validation"), ReplicationSample));
 				RecordStat(EPerfStatCategory::Replication, FString::Printf(TEXT("Replication active %d/%d (enforced failures %d | optional failures %d)"),
 					ActiveMatches, DesiredReplicationSamples, EnforcedFailures, OptionalFailures));
-				UE_LOG(LogGorgeousObjectVariablePerf, Display,
-					TEXT("[OVPerf] Replication validation checked %d nodes | active=%d | enforcedFail=%d | optionalFail=%d"),
-					DesiredReplicationSamples, ActiveMatches, EnforcedFailures, OptionalFailures);
+				GT_D_LOG(TEXT("GT.ObjectVariables.Performance.ReplicationValidation.Completed"), TEXT("[OVPerf] Replication validation checked %d nodes | active=%d | enforcedFail=%d | optionalFail=%d"), DesiredReplicationSamples, ActiveMatches, EnforcedFailures, OptionalFailures);
 				TestTrue(TEXT("Replication validation budget respected"),
 					ReplicationSample.Seconds <= Scenario.ReplicationValidationBudgetSeconds);
 				if (!NetworkRuntime.bForceReplicationFailures)
@@ -3218,14 +3195,14 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	{
 		const FString ActivationSummary = DescribeTimingBucket(TEXT("Replication activation timing"), ReplicationTiming.ActivationTiming);
 		RecordStat(EPerfStatCategory::Replication, ActivationSummary);
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s"), *ActivationSummary);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.ReplicationActivationSummary"), TEXT("[OVPerf] %s"), *ActivationSummary);
 	}
 
 	if (ReplicationTiming.ValidationTiming.HasSamples())
 	{
 		const FString ValidationSummary = DescribeTimingBucket(TEXT("Replication check timing"), ReplicationTiming.ValidationTiming);
 		RecordStat(EPerfStatCategory::Replication, ValidationSummary);
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s"), *ValidationSummary);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.NetworkValidationSummary"), TEXT("[OVPerf] %s"), *ValidationSummary);
 	}
 
 	if (NetworkRuntime.bEnabled)
@@ -3245,7 +3222,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 				ReplicationTiming.SimulatedDeliveries,
 				SimulatedTotal);
 			RecordStat(EPerfStatCategory::Networking, SimSummary);
-			UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s"), *SimSummary);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.NetworkSimulationSummary"), TEXT("[OVPerf] %s"), *SimSummary);
 		}
 		else
 		{
@@ -3263,13 +3240,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			}
 
 			const FString RootLabel = DescribeRootLabel(Stats.RootName);
-			UE_LOG(LogGorgeousObjectVariablePerf, Display,
-				TEXT("[OVPerf] Root %s networking -> enforce=%s | optIns=%d | active=%d | violations=%d"),
-				*RootLabel,
-				Stats.bEnforcesNetworking ? TEXT("true") : TEXT("false"),
-				Stats.NetworkingOptInCount,
-				Stats.NetworkingActiveCount,
-				Stats.EnforcedNetworkingViolations);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.RootNetworkSummary"), TEXT("[OVPerf] Root %s networking -> enforce=%s | optIns=%d | active=%d | violations=%d"), *RootLabel, Stats.bEnforcesNetworking ? TEXT("true") : TEXT("false"), Stats.NetworkingOptInCount, Stats.NetworkingActiveCount, Stats.EnforcedNetworkingViolations);
 			RecordStat(EPerfStatCategory::Replication, FString::Printf(TEXT("%s networking: optIns=%d active=%d violations=%d"),
 				*RootLabel, Stats.NetworkingOptInCount, Stats.NetworkingActiveCount, Stats.EnforcedNetworkingViolations));
 			if (Stats.ActivationTiming.HasSamples())
@@ -3327,7 +3298,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 			TotalReceiveBatches,
 			ObservedReplicationVariables);
 		RecordStat(EPerfStatCategory::Replication, PacketSummary);
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] %s"), *PacketSummary);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.PacketSummary"), TEXT("[OVPerf] %s"), *PacketSummary);
 		if (ObservedReplicationVariables == 0)
 		{
 			RecordStat(EPerfStatCategory::Replication, TEXT("No automation perf variables were serialized across the network (check replication activation / opt-in rate)."));
@@ -3418,15 +3389,13 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 		const double CombinedExclusiveMB = CombinedExclusiveBytes / (1024.0 * 1024.0);
 		const double CombinedInclusiveMB = CombinedInclusiveBytes / (1024.0 * 1024.0);
 		RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("Registry footprint exclusive %.2f MB | inclusive %.2f MB (sweep %.2fs)"), CombinedExclusiveMB, CombinedInclusiveMB, RegistrySweepSeconds));
-		UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Registry footprint -> exclusive %.2f MB | inclusive %.2f MB (sweep %.2fs)"),
-			CombinedExclusiveMB, CombinedInclusiveMB, RegistrySweepSeconds);
+		GT_D_LOG(TEXT("GT.ObjectVariables.Performance.RegistryFootprint"), TEXT("[OVPerf] Registry footprint -> exclusive %.2f MB | inclusive %.2f MB (sweep %.2fs)"), CombinedExclusiveMB, CombinedInclusiveMB, RegistrySweepSeconds);
 
 		for (const FRootRegistryStats& Stats : RootStats)
 		{
 			const double RootExclusiveMB = Stats.TotalExclusiveBytes / (1024.0 * 1024.0);
 			const double RootInclusiveMB = Stats.TotalInclusiveBytes / (1024.0 * 1024.0);
-			UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Root %s footprint -> %d vars | exclusive %.2f MB inclusive %.2f MB"),
-				*DescribeRootLabel(Stats.RootName), Stats.SpawnedCount, RootExclusiveMB, RootInclusiveMB);
+			GT_D_LOG(TEXT("GT.ObjectVariables.Performance.RootFootprint"), TEXT("[OVPerf] Root %s footprint -> %d vars | exclusive %.2f MB inclusive %.2f MB"), *DescribeRootLabel(Stats.RootName), Stats.SpawnedCount, RootExclusiveMB, RootInclusiveMB);
 			RecordStat(EPerfStatCategory::Memory, FString::Printf(TEXT("%s footprint: exclusive %.2f MB | inclusive %.2f MB"), *DescribeRootLabel(Stats.RootName), RootExclusiveMB, RootInclusiveMB));
 		}
 	}
@@ -3436,7 +3405,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	TickHarness(4);
 
 	const double CleanupStart = FPlatformTime::Seconds();
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Cleaning up %d test variables..."), SpawnedVariables.Num());
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Cleanup.Started"), TEXT("[OVPerf] Cleaning up %d test variables..."), SpawnedVariables.Num());
 	for (UGorgeousObjectVariable* Variable : SpawnedVariables)
 	{
 		PumpHarnessWork();
@@ -3445,7 +3414,7 @@ bool FGorgeousObjectVariableRegistryScaleTest::RunTest(const FString& Parameters
 	bManualCleanupCompleted = true;
 	const FPerfSample CleanupSample{ FPlatformTime::Seconds() - CleanupStart, SpawnedVariables.Num() };
 	RecordStat(EPerfStatCategory::Cleanup, DescribeSample(TEXT("Cleanup"), CleanupSample));
-	UE_LOG(LogGorgeousObjectVariablePerf, Display, TEXT("[OVPerf] Cleanup finished in %.2f seconds"), CleanupSample.Seconds);
+	GT_D_LOG(TEXT("GT.ObjectVariables.Performance.Cleanup.Completed"), TEXT("[OVPerf] Cleanup finished in %.2f seconds"), CleanupSample.Seconds);
 
 	const FSystemStatSnapshot StatsAfterCleanup = CaptureSystemStatsSnapshot();
 	LogSystemDelta(TEXT("PostCleanup"), StatsAfterValidation, StatsAfterCleanup);

@@ -106,4 +106,20 @@ struct GORGEOUSCORERUNTIMEUTILITIES_API FGorgeousLogEntry
 	// The hyperlink associated with the log entry.
 	UPROPERTY()
 	FGorgeousLogHyperlink Hyperlink;
+
+	// Whether this entry passes the Message Log configuration threshold.
+	UPROPERTY()
+	bool bPrintToMessageLog = true;
+
+	// The C++ macro callsite; empty when a Blueprint or direct API call did not supply an origin.
+	UPROPERTY()
+	FString SourceFile;
+
+	// The one-based line of the C++ macro invocation, or zero when no origin was supplied.
+	UPROPERTY()
+	int32 SourceLine = 0;
+
+	// The C++ function that emitted the entry, when provided by a logging macro.
+	UPROPERTY()
+	FString SourceFunction;
 };

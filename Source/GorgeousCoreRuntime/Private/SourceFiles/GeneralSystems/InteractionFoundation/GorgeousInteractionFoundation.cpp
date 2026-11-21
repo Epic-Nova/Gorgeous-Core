@@ -15,6 +15,8 @@
 #include "GeneralSystems/DebugAssist/GorgeousDebugAssistBlueprintFunctionLibrary.h"
 #include "GorgeousCoreRuntimeGlobals.h"
 #include "GeneralSystems/InteractionFoundation/InteractionFoundation_I.h"
+#include "GeneralSystems/InteractionFoundation/GorgeousNetworkInteractionComponent.h"
+#include "GameFramework/Pawn.h"
 #include "QualityOfLife/GorgeousPlayerController.h"
 #include "Engine/CollisionProfile.h"
 #include "Stats/Stats.h"
@@ -52,6 +54,24 @@ DECLARE_CYCLE_STAT(TEXT("Sphere Trace Focus"), STAT_GInteract_SphereTraceFocus, 
 
 namespace GorgeousInteractionFoundation
 {
+    static bool RouteNetworkInteraction(UGorgeousNetworkInteractionComponent& TargetComponent,
+        AActor* Interactor, const FHitResult& Hit, FGameplayTag Tag)
+    {
+        if (const AController* Controller = Cast<AController>(Interactor))
+        {
+            Interactor = Controller->GetPawn();
+        }
+
+        AActor* Target = TargetComponent.GetOwner();
+        if (Target->HasAuthority())
+        {
+            return TargetComponent.ExecuteInteraction(Interactor, Hit, Tag);
+        }
+        const APawn* Pawn = Cast<APawn>(Interactor);
+        auto* Router = Pawn ? Pawn->FindComponentByClass<UGorgeousNetworkInteractionComponent>() : nullptr;
+        return Router && Router->RequestInteraction(Target, Tag);
+    }
+
     static AActor* ResolveInteractingActor(const UObject* ContextObject)
     {
         if (!ContextObject)
@@ -351,6 +371,10 @@ bool UGorgeousInteractionFoundation::TryInteract(AActor* TargetActor, AActor* In
         return false;
     }
 
+    if (auto* TargetComponent = TargetActor->FindComponentByClass<UGorgeousNetworkInteractionComponent>())
+    {
+        return GorgeousInteractionFoundation::RouteNetworkInteraction(*TargetComponent, InteractingActor, HitResult, FGameplayTag());
+    }
     IInteractionFoundation_I::Execute_Interact(TargetActor, InteractingActor, HitResult);
     IncrementSuccessfulInteractions();
     return true;
@@ -416,6 +440,12 @@ bool UGorgeousInteractionFoundation::TrySphereTraceInteract(const UObject* World
         return false;
     }
     
+    if (auto* TargetComponent = TargetActor->FindComponentByClass<UGorgeousNetworkInteractionComponent>())
+    {
+        return GorgeousInteractionFoundation::RouteNetworkInteraction(*TargetComponent,
+            GorgeousInteractionFoundation::ResolveInteractingActor(WorldContextObject), HitResult, InteractionTag);
+    }
+
     if (!GorgeousInteractionFoundation::DoesTargetSupportTag(TargetActor, InteractionTag))
     {
         IncrementRejectedInteractions();

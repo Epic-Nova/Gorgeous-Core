@@ -317,7 +317,7 @@ void UGorgeousObjectVariableCmdletHandler::ListGorgeousVariables(const TArray<FS
 	int32 ArgIndex = 0;
 	FName RootName = NAME_None;
 	bool bAllRoots = false;
-	if (!ConsumeRootArgument(TEXT("gorgeous.ov.list"), TEXT("<RootName|all>"), Args, ArgIndex, RootName, bAllRoots, true, TEXT("GorgeousVariableHierarchy")))
+	if (!ConsumeRootArgument(TEXT("gorgeous.ov.list"), TEXT("<RootName|all>"), Args, ArgIndex, RootName, bAllRoots, true, TEXT("GT.ObjectVariables.HierarchyTraversal")))
 	{
 		return;
 	}
@@ -355,14 +355,14 @@ void UGorgeousObjectVariableCmdletHandler::LookupGorgeousVariable(const TArray<F
 	int32 ArgIndex = 0;
 	FName RootName = NAME_None;
 	bool bAllRoots = false;
-	if (!ConsumeRootArgument(TEXT("gorgeous.ov.lookup"), TEXT("<RootName> <DisplayName|Identifier>"), Args, ArgIndex, RootName, bAllRoots, false, TEXT("GorgeousVariableLookup")))
+	if (!ConsumeRootArgument(TEXT("gorgeous.ov.lookup"), TEXT("<RootName> <DisplayName|Identifier>"), Args, ArgIndex, RootName, bAllRoots, false, TEXT("GT.ObjectVariables.Lookup")))
 	{
 		return;
 	}
 
 	if (Args.Num() <= ArgIndex)
 	{
-		LogCommandUsage(TEXT("gorgeous.ov.lookup"), TEXT("<RootName> <DisplayName|Identifier>"), TEXT("GorgeousVariableLookup"));
+		LogCommandUsage(TEXT("gorgeous.ov.lookup"), TEXT("<RootName> <DisplayName|Identifier>"), TEXT("GT.ObjectVariables.Lookup"));
 		return;
 	}
 
@@ -392,7 +392,7 @@ void UGorgeousObjectVariableCmdletHandler::PrintGorgeousVariableStats(const TArr
 	int32 ArgIndex = 0;
 	FName RootName = NAME_None;
 	bool bAllRoots = false;
-	if (!ConsumeRootArgument(TEXT("gorgeous.ov.stats"), TEXT("<RootName> [DisplayName|Identifier]"), Args, ArgIndex, RootName, bAllRoots, false, TEXT("GorgeousVariableStats")))
+	if (!ConsumeRootArgument(TEXT("gorgeous.ov.stats"), TEXT("<RootName> [DisplayName|Identifier]"), Args, ArgIndex, RootName, bAllRoots, false, TEXT("GT.ObjectVariables.Stats")))
 	{
 		return;
 	}

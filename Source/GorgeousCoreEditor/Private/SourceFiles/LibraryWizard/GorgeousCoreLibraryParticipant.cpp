@@ -1,19 +1,33 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
+/*==========================================================================>
+|               Gorgeous Core - Core functionality provider                 |
+| ------------------------------------------------------------------------- |
+|         Copyright (C) 2026 Gorgeous Things by Simsalabim Studios,         |
+|              administrated by Epic Nova. All rights reserved.             |
+| ------------------------------------------------------------------------- |
+|                    Epic Nova is an independent entity,                    |
+|          that is not affiliated with Epic Games in any capacity.          |
+<==========================================================================*/
 #include "LibraryWizard/GorgeousCoreLibraryParticipant.h"
+
+//<=============================--- Includes ---=============================>
+//<--------------------------=== Module Includes ===------------------------->
 #include "LibraryWizard/GorgeousUpdateManager.h"
-#include "Editor.h"
-#include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "LibraryWizard/GorgeousRecompilationHelper.h"
+#include "LibraryWizard/GorgeousPersistentDataConfig_DA.h"
+//<--------------------------=== Engine Includes ===------------------------->
+#include "Editor.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformProcess.h"
 #include "Interfaces/IPluginManager.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "ISettingsModule.h"
-#include "LibraryWizard/GorgeousPersistentDataConfig_DA.h"
 #include "Framework/MultiBox/MultiBoxBuilder.h"
 #include "PropertyEditorModule.h"
 #include "Widgets/SWindow.h"
 #include "Framework/Application/SlateApplication.h"
+//<-------------------------------------------------------------------------->
 
 FGorgeousCoreLibraryParticipant::FGorgeousCoreLibraryParticipant()
 {
@@ -176,53 +190,60 @@ void FGorgeousCoreLibraryParticipant::RefreshOfflineCache()
 {
 	TransientAssets.Empty();
 
-	if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+	FGorgeousPersistentData& Data = FGorgeousPersistentData::Get();
+	TArray<FGorgeousOfflineSystemCacheEntry> CacheEntries = Data.GetOfflineSystemCache();
+
+	// We register a virtual mount point in /Memory so the Asset Registry indexes the items
+	// without throwing "Save Package" prompts when the editor closes!
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AddPath(TEXT("/Temp/GorgeousCore/OfflineSystems"));
+
+	UPackage* MemoryPackage = CreatePackage(TEXT("/Temp/GorgeousCore/OfflineSystems"));
+
+	for (const FGorgeousOfflineSystemCacheEntry& Entry : CacheEntries)
 	{
-		TArray<FGorgeousOfflineSystemCacheEntry> CacheEntries = Helper->GetOfflineSystemCache();
-
-		// We register a virtual mount point in /Memory so the Asset Registry indexes the items
-		// without throwing "Save Package" prompts when the editor closes!
-		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-		AssetRegistryModule.Get().AddPath(TEXT("/Temp/GorgeousCore/OfflineSystems"));
-
-		UPackage* MemoryPackage = CreatePackage(TEXT("/Temp/GorgeousCore/OfflineSystems"));
-
-		for (const FGorgeousOfflineSystemCacheEntry& Entry : CacheEntries)
+		FString AssetName = FString::Printf(TEXT("SYS_%s"), *Entry.SystemId);
+		// Dropping RF_Transient so the Asset Registry doesn't instantly reject it
+		UGorgeousInstallableSystem_DA* NewSystem = FindObject<UGorgeousInstallableSystem_DA>(MemoryPackage, *AssetName);
+		const bool bCreatedSystem = !NewSystem;
+		if (bCreatedSystem)
 		{
-			FString AssetName = FString::Printf(TEXT("SYS_%s"), *Entry.SystemId);
-			// Dropping RF_Transient so the Asset Registry doesn't instantly reject it
-			UGorgeousInstallableSystem_DA* NewSystem = NewObject<UGorgeousInstallableSystem_DA>(MemoryPackage, FName(*AssetName), RF_Public | RF_Standalone);
-
-			NewSystem->SystemId = Entry.SystemId;
-			NewSystem->TargetPluginName = Entry.TargetPluginName;
-			NewSystem->SystemName = FText::FromString(Entry.DisplayName);
-			NewSystem->SystemDescription = FText::FromString(Entry.Description);
-			NewSystem->Version = Entry.Version;
-			NewSystem->DownloadUrl = Entry.DownloadUrl;
-            NewSystem->ChecksumSha256 = Entry.ChecksumSha256;
-            NewSystem->SignatureEd25519 = Entry.SignatureEd25519;
-            NewSystem->DownloadToken = Entry.DownloadToken;
-			NewSystem->SourcePaths = Entry.SourcePaths;
-			NewSystem->ContentPaths = Entry.ContentPaths;
-			NewSystem->bIsPreShipped = Entry.bIsCoreSystem;
-			NewSystem->bIsInstalled = NewSystem->CheckIsInstalled();
-
-			TransientAssets.Add(NewSystem);
-			FAssetRegistryModule::AssetCreated(NewSystem);
+			NewSystem = NewObject<UGorgeousInstallableSystem_DA>(MemoryPackage, FName(*AssetName), RF_Public | RF_Standalone);
 		}
 
-		// Spawn a memory instance of the persistent data config so it appears in the Library UI
-		UGorgeousPersistentDataConfig_DA* SettingsAsset = NewObject<UGorgeousPersistentDataConfig_DA>(MemoryPackage, TEXT("GorgeousPersistentData"), RF_Public | RF_Standalone);
-		
-		// Map the properties from the live Helper JSON data
-		SettingsAsset->ValidationCount = Helper->GetSystemValidationCount();
-		SettingsAsset->ValidationInterval = Helper->GetSystemValidationInterval();
-		SettingsAsset->bHasRunInitialValidation = Helper->HasRunInitialValidation();
-		SettingsAsset->bForceDevMode = Helper->GetForceDevMode();
-		SettingsAsset->OfflineSystemCache = CacheEntries;
-		SettingsAsset->PluginUpdateCache = Helper->GetPluginUpdateCache();
-		
-		TransientAssets.Add(SettingsAsset);
-		FAssetRegistryModule::AssetCreated(SettingsAsset);
+		NewSystem->SystemId = Entry.SystemId;
+		NewSystem->TargetPluginName = Entry.TargetPluginName;
+		NewSystem->SystemName = FText::FromString(Entry.DisplayName);
+		NewSystem->SystemDescription = FText::FromString(Entry.Description);
+		NewSystem->Version = Entry.Version;
+		NewSystem->DownloadUrl = Entry.DownloadUrl;
+		NewSystem->ChecksumSha256 = Entry.ChecksumSha256;
+		NewSystem->SignatureEd25519 = Entry.SignatureEd25519;
+		NewSystem->DownloadToken = Entry.DownloadToken;
+		NewSystem->SourcePaths = Entry.SourcePaths;
+		NewSystem->ContentPaths = Entry.ContentPaths;
+		NewSystem->bIsPreShipped = Entry.bIsCoreSystem;
+		NewSystem->bIsInstalled = NewSystem->CheckIsInstalled();
+
+		TransientAssets.Add(NewSystem);
+		if (bCreatedSystem) FAssetRegistryModule::AssetCreated(NewSystem);
 	}
+
+	// Spawn a memory instance of the persistent data config so it appears in the Library UI
+	UGorgeousPersistentDataConfig_DA* SettingsAsset = FindObject<UGorgeousPersistentDataConfig_DA>(MemoryPackage, TEXT("GorgeousPersistentData"));
+	const bool bCreatedSettings = !SettingsAsset;
+	if (bCreatedSettings)
+	{
+		SettingsAsset = NewObject<UGorgeousPersistentDataConfig_DA>(MemoryPackage, TEXT("GorgeousPersistentData"), RF_Public | RF_Standalone);
+	}
+
+	// Populate the editor proxy from the current persistent-data service.
+	SettingsAsset->ValidationCount = Data.GetSystemValidationCount();
+	SettingsAsset->ValidationInterval = Data.GetSystemValidationInterval();
+	SettingsAsset->bHasRunInitialValidation = Data.HasRunInitialValidation();
+	SettingsAsset->OfflineSystemCache = CacheEntries;
+	SettingsAsset->PluginUpdateCache = Data.GetPluginUpdateCache();
+
+	TransientAssets.Add(SettingsAsset);
+	if (bCreatedSettings) FAssetRegistryModule::AssetCreated(SettingsAsset);
 }

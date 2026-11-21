@@ -10,10 +10,10 @@
 <==========================================================================*/
 
 #include "AutoReplication/GorgeousReplicationBeacon.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ObjectVariables/GorgeousRootObjectVariable.h"
 #include "ObjectVariables/GorgeousObjectVariable.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousReplicationBeacon, Log, All);
 
 // ════════════════════════════════════════════════════════════════════════════
 //  AGorgeousReplicationBeaconClient
@@ -30,16 +30,14 @@ AGorgeousReplicationBeaconClient::AGorgeousReplicationBeaconClient(const FObject
 
 void AGorgeousReplicationBeaconClient::OnConnected()
 {
-	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("Replication snapshot beacon connected. Claiming configured managed roots."));
+	GT_I_LOG(TEXT("GT.AutoReplication.Beacon.Connected"), TEXT("Replication snapshot beacon connected. Claiming configured managed roots."));
 
 	ClaimManagedRoots();
 }
 
 void AGorgeousReplicationBeaconClient::OnFailure()
 {
-	UE_LOG(LogGorgeousReplicationBeacon, Warning,
-		TEXT("Replication snapshot beacon connection failed. Releasing managed roots."));
+	GT_W_LOG(TEXT("GT.AutoReplication.Beacon.ConnectionFailed"), TEXT("Replication snapshot beacon connection failed. Releasing managed roots."));
 
 	ReleaseManagedRoots();
 
@@ -101,9 +99,7 @@ void AGorgeousReplicationBeaconClient::ClaimManagedRoots()
 
 		UGorgeousRootObjectVariable::ClaimRootRegistryOwnership(RootName, StableId, this);
 
-		UE_LOG(LogGorgeousReplicationBeacon, Verbose,
-			TEXT("Claimed root '%s' with stable ID '%s'."),
-			*RootName.ToString(), *StableId);
+		GT_V_LOG(TEXT("GT.AutoReplication.Beacon.RootClaimed"), TEXT("Claimed root '%s' with stable ID '%s'."), *RootName.ToString(), *StableId);
 	}
 }
 
@@ -164,9 +160,7 @@ void AGorgeousReplicationBeaconHostObject::OnClientConnected(
 {
 	Super::OnClientConnected(NewClientActor, ClientConnection);
 
-	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("Replication snapshot beacon client connected: %s"),
-		*NewClientActor->GetName());
+	GT_I_LOG(TEXT("GT.AutoReplication.Beacon.ClientConnected"), TEXT("Replication snapshot beacon client connected: %s"), *NewClientActor->GetName());
 }
 
 void AGorgeousReplicationBeaconHostObject::NotifyClientDisconnected(
@@ -180,9 +174,7 @@ void AGorgeousReplicationBeaconHostObject::NotifyClientDisconnected(
 
 	Super::NotifyClientDisconnected(LeavingClientActor);
 
-	UE_LOG(LogGorgeousReplicationBeacon, Log,
-		TEXT("Replication snapshot beacon client disconnected: %s"),
-		*LeavingClientActor->GetName());
+	GT_I_LOG(TEXT("GT.AutoReplication.Beacon.ClientDisconnected"), TEXT("Replication snapshot beacon client disconnected: %s"), *LeavingClientActor->GetName());
 }
 
 void AGorgeousReplicationBeaconClient::EndPlay(const EEndPlayReason::Type Reason)

@@ -4,6 +4,9 @@
 
 #include "HttpModule.h"
 #include "LibraryWizard/GorgeousNetworkConsent.h"
+#include "NudgeHelper/GorgeousNudgeSubsystem.h"
+#include "NudgeHelper/GorgeousNudgeDeveloperSettings.h"
+#include "Editor.h"
 #include "LibraryWizard/GorgeousReleaseVerification.h"
 #include "FileHelpers.h"
 #include "Widgets/Input/SButton.h"
@@ -19,14 +22,17 @@
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "Misc/SecureHash.h"
+#include "Misc/Guid.h"
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Helpers/Macros/GorgeousConnectionHelperMacros.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "LibraryWizard/GorgeousApiEndpoints.h"
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/GorgeousLoggingHelper.h"
 #include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/Text/STextBlock.h"
@@ -42,6 +48,14 @@ THIRD_PARTY_INCLUDES_END
 void UGorgeousUpdateManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
+    GorgeousNetworkConsent::ScheduleStartupPrompt(FSimpleDelegate::CreateWeakLambda(this, [this]
+    {
+        ProbeConnection();
+        if (GEditor && UGorgeousNudgeDeveloperSettings::Get()->bEnableAutomaticNudges)
+        {
+            if (auto* Nudges = GEditor->GetEditorSubsystem<UGorgeousNudgeSubsystem>()) Nudges->CheckForNudgesNow();
+        }
+    }));
     ProbeConnection();
 }
 
@@ -51,7 +65,7 @@ void UGorgeousUpdateManager::ProbeConnection()
 
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnProbeConnectionResponse);
-    Request->SetURL(TEXT(GORGEOUS_API_ENDPOINT));
+    Request->SetURL(GorgeousApiEndpoints::GetEndpoint());
     Request->SetVerb("GET");
     Request->ProcessRequest();
 }
@@ -59,33 +73,14 @@ void UGorgeousUpdateManager::ProbeConnection()
 void UGorgeousUpdateManager::OnProbeConnectionResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
     if (!GorgeousNetworkConsent::IsAllowed()) return;
-    FString RequestURL = Request->GetURL();
+    if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode())
+        || !GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())) return;
 
-    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    if (Request->GetURL().StartsWith(TEXT("http://"), ESearchCase::IgnoreCase))
     {
-        if (RequestURL.StartsWith(TEXT("http://")))
-        {
-            bIsDevMode = true;
-            GT_W_LOG_FULL_EX(
-                TEXT("Gorgeous Dev Mode Activated"),
-                TEXT("Operating in HTTP is dangerous."),
-                GT_DURATION,
-                true,
-                true,
-                true,
-                true,
-                nullptr,
-                nullptr
-            );
-        }
-        else
-        {
-            bIsDevMode = false;
-        }
-
-        FetchSystemsCatalog();
+        GT_W_LOG("GT.DevelopmentMode.Activated", TEXT("Gorgeous API development origin uses HTTP."));
     }
-
+    FetchSystemsCatalog();
 }
 
 FString UGorgeousUpdateManager::HashDirectory(const FString& DirectoryPath)
@@ -256,6 +251,25 @@ void UGorgeousUpdateManager::Deinitialize()
     ActiveProgressStatusText.Reset();
 }
 
+TSharedRef<FJsonObject> UGorgeousUpdateManager::BuildPluginUpdateEntry(const FString& PluginName,
+    const FString& PluginBaseDir, const FString& CurrentVersion)
+{
+    const FString BaseFootprint = CalculatePluginModuleCoreHash(PluginName, PluginBaseDir);
+    const FString Salt = FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    const FString SaltedFootprint = BaseFootprint + Salt;
+    const FTCHARToUTF8 Utf8Footprint(*SaltedFootprint);
+    const FString LicenseProof = FMD5::HashBytes(reinterpret_cast<const uint8*>(Utf8Footprint.Get()), Utf8Footprint.Length());
+
+    const TSharedRef<FJsonObject> Entry = MakeShared<FJsonObject>();
+    Entry->SetStringField(TEXT("PluginName"), PluginName);
+    Entry->SetStringField(TEXT("Checksum"), LicenseProof);
+    Entry->SetStringField(TEXT("Salt"), Salt);
+    // Source fingerprints are diagnostic metadata, not the license or archive hash.
+    Entry->SetStringField(TEXT("SourceChecksumSha256"), CalculatePluginChecksum(PluginName, PluginBaseDir));
+    Entry->SetStringField(TEXT("CurrentVersion"), CurrentVersion);
+    return Entry;
+}
+
 void UGorgeousUpdateManager::CheckForUpdates()
 {
     if (!GorgeousNetworkConsent::IsAllowed(true)) return;
@@ -269,14 +283,8 @@ void UGorgeousUpdateManager::CheckForUpdates()
         // Include the plugin itself and all Gorgeous plugins
         if (PluginName.StartsWith(TEXT("Gorgeous"), ESearchCase::IgnoreCase) || PluginName == TEXT("GorgeousCore"))
         {
-            FString Hash = CalculatePluginChecksum(PluginName, Plugin->GetBaseDir());
-
-            TSharedPtr<FJsonObject> PluginObj = MakeShareable(new FJsonObject());
-            PluginObj->SetStringField(TEXT("PluginName"), PluginName);
-            PluginObj->SetStringField(TEXT("Checksum"), Hash);
-            PluginObj->SetStringField(TEXT("CurrentVersion"), Plugin->GetDescriptor().VersionName);
-
-            PluginJsonArray.Add(MakeShareable(new FJsonValueObject(PluginObj)));
+            PluginJsonArray.Add(MakeShared<FJsonValueObject>(
+                BuildPluginUpdateEntry(PluginName, Plugin->GetBaseDir(), Plugin->GetDescriptor().VersionName)));
         }
     }
 
@@ -287,7 +295,7 @@ void UGorgeousUpdateManager::CheckForUpdates()
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
     FJsonSerializer::Serialize(PayloadObj.ToSharedRef(), Writer);
 
-    FString Endpoint = bIsDevMode ? FString(TEXT("https://api.gorgeous.simsalabim.studio/api/v1/plugins/update-check")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/plugins/update-check"));
+    const FString Endpoint = GorgeousApiEndpoints::GetV1Endpoint(TEXT("/plugins/update-check"));
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnUpdateCheckResponse);
     Request->SetURL(Endpoint);
@@ -302,7 +310,7 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
     if (!GorgeousNetworkConsent::IsAllowed()) return;
     bool bUpdatesAvailable = false;
 
-    if (bWasSuccessful && Response.IsValid())
+    if (bWasSuccessful && Response.IsValid() && GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL()))
     {
         if (EHttpResponseCodes::IsOk(Response->GetResponseCode()))
         {
@@ -369,10 +377,7 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
                     }
                 }
 
-                if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
-                {
-                    Helper->SetPluginUpdateCache(PluginCache);
-                }
+                FGorgeousPersistentData::Get().SetPluginUpdateCache(PluginCache);
             }
         }
         else
@@ -391,7 +396,7 @@ void UGorgeousUpdateManager::OnUpdateCheckResponse(FHttpRequestPtr Request, FHtt
 void UGorgeousUpdateManager::FetchSystemsCatalog()
 {
     if (!GorgeousNetworkConsent::IsAllowed(false)) return;
-    FString Endpoint = bIsDevMode ? FString(TEXT("https://api.gorgeous.simsalabim.studio/api/v1/systems")) : FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/systems"));
+    const FString Endpoint = GorgeousApiEndpoints::GetV1Endpoint(TEXT("/systems"));
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindUObject(this, &UGorgeousUpdateManager::OnFetchSystemsCatalogResponse);
     Request->SetURL(Endpoint);
@@ -402,7 +407,8 @@ void UGorgeousUpdateManager::FetchSystemsCatalog()
 void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
 {
     if (!GorgeousNetworkConsent::IsAllowed()) return;
-    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    if (bWasSuccessful && Response.IsValid() && GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL())
+        && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
     {
         TSharedPtr<FJsonObject> JsonObject;
         TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
@@ -412,70 +418,73 @@ void UGorgeousUpdateManager::OnFetchSystemsCatalogResponse(FHttpRequestPtr Reque
             const TArray<TSharedPtr<FJsonValue>>* OfflineCacheArray;
             if (JsonObject->TryGetArrayField(TEXT("OfflineSystemCache"), OfflineCacheArray))
             {
-                if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+                TArray<FGorgeousOfflineSystemCacheEntry> ExistingCache = FGorgeousPersistentData::Get().GetOfflineSystemCache();
+                TMap<FString, FGorgeousOfflineSystemCacheEntry> MergedCacheMap;
+
+                // Retain existing core systems from cache
+                for (const FGorgeousOfflineSystemCacheEntry& Existing : ExistingCache)
                 {
-                    TArray<FGorgeousOfflineSystemCacheEntry> ExistingCache = Helper->GetOfflineSystemCache();
-                    TMap<FString, FGorgeousOfflineSystemCacheEntry> MergedCacheMap;
-                    
-                    // Retain existing core systems from cache
-                    for (const FGorgeousOfflineSystemCacheEntry& Existing : ExistingCache)
+                    if (Existing.bIsCoreSystem)
                     {
-                        if (Existing.bIsCoreSystem)
-                        {
-                            MergedCacheMap.Add(Existing.SystemId, Existing);
-                        }
+                        MergedCacheMap.Add(Existing.SystemId, Existing);
                     }
-
-                    // Parse the API results and merge
-                    for (const TSharedPtr<FJsonValue>& Value : *OfflineCacheArray)
-                    {
-                        TSharedPtr<FJsonObject> Obj = Value->AsObject();
-                        if (Obj.IsValid())
-                        {
-                            FString SysId = Obj->GetStringField(TEXT("SystemId"));
-                            FGorgeousOfflineSystemCacheEntry Entry;
-                            
-                            // Inherit properties like bIsCoreSystem from existing cache if it exists
-                            if (MergedCacheMap.Contains(SysId))
-                            {
-                                Entry = MergedCacheMap[SysId];
-                            }
-                            
-                            Entry.SystemId = SysId;
-                            Entry.TargetPluginName = Obj->GetStringField(TEXT("TargetPluginName"));
-                            Entry.DisplayName = Obj->GetStringField(TEXT("DisplayName"));
-                            Entry.Description = Obj->GetStringField(TEXT("Description"));
-                            Entry.Version = Obj->GetStringField(TEXT("Version"));
-                            Entry.DownloadUrl = Obj->GetStringField(TEXT("DownloadUrl"));
-                            Obj->TryGetStringField(TEXT("ChecksumSha256"), Entry.ChecksumSha256);
-                            Obj->TryGetStringField(TEXT("SignatureEd25519"), Entry.SignatureEd25519);
-                            Obj->TryGetStringField(TEXT("DownloadToken"), Entry.DownloadToken);
-                            
-                            FString ChangelogUrl;
-                            if (Obj->TryGetStringField(TEXT("ChangelogUrl"), ChangelogUrl)) { Entry.ChangelogUrl = ChangelogUrl; }
-
-                            Entry.SourcePaths.Empty();
-                            const TArray<TSharedPtr<FJsonValue>>* SourcePaths;
-                            if (Obj->TryGetArrayField(TEXT("SourcePaths"), SourcePaths))
-                            {
-                                for (const TSharedPtr<FJsonValue>& PathVal : *SourcePaths) { Entry.SourcePaths.Add(PathVal->AsString()); }
-                            }
-                            
-                            Entry.ContentPaths.Empty();
-                            const TArray<TSharedPtr<FJsonValue>>* ContentPaths;
-                            if (Obj->TryGetArrayField(TEXT("ContentPaths"), ContentPaths))
-                            {
-                                for (const TSharedPtr<FJsonValue>& PathVal : *ContentPaths) { Entry.ContentPaths.Add(PathVal->AsString()); }
-                            }
-                            
-                            MergedCacheMap.Add(SysId, Entry);
-                        }
-                    }
-                    
-                    TArray<FGorgeousOfflineSystemCacheEntry> FinalCache;
-                    MergedCacheMap.GenerateValueArray(FinalCache);
-                    Helper->SetOfflineSystemCache(FinalCache);
                 }
+
+                // Parse the API results and merge
+                for (const TSharedPtr<FJsonValue>& Value : *OfflineCacheArray)
+                {
+                    const TSharedPtr<FJsonObject> Obj = Value.IsValid() && Value->Type == EJson::Object ? Value->AsObject() : nullptr;
+                    if (Obj.IsValid())
+                    {
+                        const auto ReadString = [&Obj](const TCHAR* FieldName)
+                        {
+                            FString Value;
+                            Obj->TryGetStringField(FieldName, Value);
+                            return Value;
+                        };
+                        const FString SysId = ReadString(TEXT("SystemId"));
+                        if (SysId.IsEmpty()) continue;
+                        FGorgeousOfflineSystemCacheEntry Entry;
+
+                        // Inherit properties like bIsCoreSystem from existing cache if it exists
+                        if (MergedCacheMap.Contains(SysId))
+                        {
+                            Entry = MergedCacheMap[SysId];
+                        }
+
+                        Entry.SystemId = SysId;
+                        Entry.TargetPluginName = ReadString(TEXT("TargetPluginName"));
+                        Entry.DisplayName = ReadString(TEXT("DisplayName"));
+                        Entry.Description = ReadString(TEXT("Description"));
+                        Entry.Version = ReadString(TEXT("Version"));
+                        Entry.DownloadUrl = ReadString(TEXT("DownloadUrl"));
+                        Entry.ChecksumSha256 = ReadString(TEXT("ChecksumSha256"));
+                        Entry.SignatureEd25519 = ReadString(TEXT("SignatureEd25519"));
+                        Entry.DownloadToken = ReadString(TEXT("DownloadToken"));
+
+                        Entry.ChangelogUrl = ReadString(TEXT("ChangelogUrl"));
+
+                        Entry.SourcePaths.Empty();
+                        const TArray<TSharedPtr<FJsonValue>>* SourcePaths;
+                        if (Obj->TryGetArrayField(TEXT("SourcePaths"), SourcePaths))
+                        {
+                            for (const TSharedPtr<FJsonValue>& PathVal : *SourcePaths) { if (PathVal.IsValid() && PathVal->Type == EJson::String) Entry.SourcePaths.Add(PathVal->AsString()); }
+                        }
+
+                        Entry.ContentPaths.Empty();
+                        const TArray<TSharedPtr<FJsonValue>>* ContentPaths;
+                        if (Obj->TryGetArrayField(TEXT("ContentPaths"), ContentPaths))
+                        {
+                            for (const TSharedPtr<FJsonValue>& PathVal : *ContentPaths) { if (PathVal.IsValid() && PathVal->Type == EJson::String) Entry.ContentPaths.Add(PathVal->AsString()); }
+                        }
+
+                        MergedCacheMap.Add(SysId, Entry);
+                    }
+                }
+
+                TArray<FGorgeousOfflineSystemCacheEntry> FinalCache;
+                MergedCacheMap.GenerateValueArray(FinalCache);
+                FGorgeousPersistentData::Get().SetOfflineSystemCache(FinalCache);
             }
         }
         GT_I_LOG("GT.Updates", TEXT("Successfully fetched and cached Gorgeous Systems Catalog."));
@@ -499,17 +508,13 @@ void UGorgeousUpdateManager::DownloadPluginUpdate(const FString& PluginName, con
         return;
     }
 
-    const auto* Helper = UGorgeousPluginHelper::GetSingleton();
-    const FString URL = FString(TEXT(GORGEOUS_API_V1_ENDPOINT) TEXT("/downloads/")) + FGenericPlatformHttp::UrlEncode(DownloadToken);
-    if (Helper)
+    const FString URL = GorgeousApiEndpoints::GetV1Endpoint(TEXT("/downloads/") + FGenericPlatformHttp::UrlEncode(DownloadToken));
+    for (const auto& Entry : FGorgeousPersistentData::Get().GetPluginUpdateCache())
     {
-        for (const auto& Entry : Helper->GetPluginUpdateCache())
+        if (Entry.PluginName==PluginName && Entry.DownloadToken==DownloadToken)
         {
-            if (Entry.PluginName==PluginName && Entry.DownloadToken==DownloadToken)
-            {
-                DownloadZipAndInstall(URL,PluginName,Entry.ChecksumSha256,DownloadToken,Entry.AvailableVersion,Entry.SignatureEd25519);
-                return;
-            }
+            DownloadZipAndInstall(URL,PluginName,Entry.ChecksumSha256,DownloadToken,Entry.AvailableVersion,Entry.SignatureEd25519);
+            return;
         }
     }
     GT_E_LOG("GT.Updates", TEXT("Download rejected: no matching signed catalog entry."));
@@ -520,10 +525,10 @@ void UGorgeousUpdateManager::DownloadZipAndInstall(const FString& URL, const FSt
     if (!GorgeousNetworkConsent::IsAllowed(true)) return;
     const bool bValidPluginName = !PluginName.IsEmpty() && Algo::AllOf(PluginName, [](TCHAR C) { return (C >= 'A' && C <= 'Z') || (C >= 'a' && C <= 'z') || (C >= '0' && C <= '9') || C=='_' || C=='-'; });
     if (!GorgeousReleaseVerification::VerifyWithPinnedKey(Token,Version,ExpectedSHA256,SignatureEd25519) ||
-        !bValidPluginName || !GorgeousNetworkConsent::IsSafeURL(URL) || ExpectedSHA256.Len()!=64 ||
+        !bValidPluginName || !GorgeousApiEndpoints::IsAllowedURL(URL) || ExpectedSHA256.Len()!=64 ||
         PluginName.IsEmpty() || PluginName.Contains(TEXT("/")) || PluginName.Contains(TEXT("\\")) || PluginName.Contains(TEXT(":")))
     {
-        FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GorgeousUpdates", "InvalidCatalog", "Download unavailable: configure the trusted release public key and use a valid signed catalog entry with an HTTPS URL and target plugin name."));
+        FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GorgeousUpdates", "InvalidCatalog", "Download unavailable: configure the trusted release public key and use a valid signed catalog entry with an allowed URL and target plugin name."));
         return;
     }
     if (ActiveDownloadRequest.IsValid()) return;
@@ -603,19 +608,20 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
         ActiveDownloadChecksum.Reset();
     };
     if (!GorgeousNetworkConsent::IsAllowed()) return;
+    const bool bDownloadSucceeded = bWasSuccessful && Response.IsValid()
+        && GorgeousApiEndpoints::IsAllowedURL(Response->GetEffectiveURL()) && EHttpResponseCodes::IsOk(Response->GetResponseCode());
     if (ActiveProgressBar.IsValid())
     {
         ActiveProgressBar->SetPercent(1.0f);
     }
     if (ActiveProgressStatusText.IsValid())
     {
-        bool bOk = bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode());
         ActiveProgressStatusText->SetText(FText::FromString(
-            bOk ? TEXT("Download complete. Preparing installer...") : TEXT("Download failed.")
+            bDownloadSucceeded ? TEXT("Download complete. Preparing installer...") : TEXT("Download failed.")
         ));
     }
 
-    if (!bWasSuccessful || !Response.IsValid() || !EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    if (!bDownloadSucceeded)
     {
         FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("GorgeousUpdates", "DownloadFailed", "The update download failed. Your project was not changed."));
         GT_E_LOG("GT.Updates", TEXT("Failed to download update for plugin %s. Response code: %d"), *PluginName, Response.IsValid() ? Response->GetResponseCode() : 0);
@@ -655,9 +661,9 @@ void UGorgeousUpdateManager::OnDownloadPluginUpdateResponse(FHttpRequestPtr Requ
 
     GT_I_LOG("GT.Updates", TEXT("Saved plugin update zip to %s"), *ZipPath);
 
-    if (UGorgeousPluginHelper* Helper = UGorgeousPluginHelper::GetSingleton())
+    if (UGorgeousPluginHelper* DiscoveryHelper = UGorgeousPluginHelper::GetSingleton())
     {
-        Helper->InvalidatePersistedChecksum();
+        FGorgeousPersistentData::Get().InvalidatePersistedChecksum(DiscoveryHelper->GetKnownGorgeousPlugins(false));
     }
     
     const FString InstallerPath = IPluginManager::Get().FindPlugin("GorgeousCore")->GetBaseDir() / "Binaries" / FPlatformProcess::GetBinariesSubdirectory() / TEXT("gorgeous-installer");

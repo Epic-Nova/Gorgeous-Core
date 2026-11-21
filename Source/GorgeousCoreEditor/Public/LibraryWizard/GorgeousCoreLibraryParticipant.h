@@ -35,6 +35,9 @@ public:
 	virtual FText GetAssetDescription(const FAssetData& Asset) override;
 	virtual void OnCategoryActionExecuted(FName CategoryId, FName ActionId) override;
 
+	// Updates live catalog-backed descriptors before the Library focuses a system.
+	virtual void RefreshLibraryAssets() override { RefreshOfflineCache(); }
+
 	/** Refresh the transient offline cache data assets */
 	void RefreshOfflineCache();
 

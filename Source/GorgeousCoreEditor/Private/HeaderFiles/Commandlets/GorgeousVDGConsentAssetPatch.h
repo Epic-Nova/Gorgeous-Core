@@ -1,5 +1,6 @@
 #pragma once
 #include "GeneralSystems/VisualDataGathering/GorgeousVDGConsent.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "K2Node_AsyncAction.h"
 #include "K2Node_CustomEvent.h"
 #include "EdGraphSchema_K2.h"
@@ -28,7 +29,7 @@
 static int32 RunGorgeousVDGStoreCommitPatch(const FString& Params)
 {
     const bool bApply=FParse::Param(*Params,TEXT("PatchVDGConsent")) && FParse::Param(*Params,TEXT("Apply"));
-    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringManager_AC");
+    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringManager_AC");
     auto Report=MakeShared<FJsonObject>();
     Report->SetStringField(TEXT("Asset"),AssetPath); Report->SetBoolField(TEXT("Apply"),bApply); Report->SetBoolField(TEXT("Saved"),false);
     auto Finish=[&](int32 Code,const FString& Message)
@@ -38,7 +39,7 @@ static int32 RunGorgeousVDGStoreCommitPatch(const FString& Params)
         const FString Filename=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreCommitPatch.json");
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename),true);
         if (!FFileHelper::SaveStringToFile(Text,*Filename)) return 1;
-        UE_LOG(LogTemp,Display,TEXT("VDG_STORE_COMMIT: %s; code=%d"),*Message,Code); return Code;
+        GT_D_LOG(TEXT("GT.VDG.Consent.AssetPatch.StoreCommitResult"), TEXT("VDG_STORE_COMMIT: %s; code=%d"), *Message, Code); return Code;
     };
     auto* Blueprint=LoadObject<UBlueprint>(nullptr,*AssetPath);
     if (!Blueprint) return Finish(1,TEXT("Manager Blueprint did not load"));
@@ -146,7 +147,7 @@ static int32 RunGorgeousVDGStoreCommitPatch(const FString& Params)
     FSHAHash Hash; FSHA1::HashBuffer(Bytes.GetData(),Bytes.Num(),Hash.Hash);
     FString Expected;
     if (!FParse::Value(*Params,TEXT("VDGConsentExpectedSHA1="),Expected) || !Expected.Equals(Hash.ToString(),ESearchCase::IgnoreCase)) return Finish(1,TEXT("Explicit Manager SHA1 missing or mismatched"));
-    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreCommitBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGeatheringManager_AC.uasset");
+    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreCommitBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGatheringManager_AC.uasset");
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Backup),true);
     if (IFileManager::Get().Copy(*Backup,*Filename)!=COPY_OK) return Finish(1,TEXT("Original package backup failed; no graph change"));
     Report->SetStringField(TEXT("OriginalSHA1"),Hash.ToString()); Report->SetStringField(TEXT("Backup"),Backup);
@@ -200,7 +201,7 @@ static int32 RunGorgeousVDGStoreAssetPatch(const FString& Params)
 {
     const bool bApply=FParse::Param(*Params,TEXT("PatchVDGConsent")) && FParse::Param(*Params,TEXT("Apply"));
     const bool bPatchLookup=FParse::Param(*Params,TEXT("VDGStoreLookup"));
-    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringManager_AC");
+    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringManager_AC");
     auto Report=MakeShared<FJsonObject>();
     Report->SetStringField(TEXT("Asset"),AssetPath); Report->SetBoolField(TEXT("Apply"),bApply); Report->SetBoolField(TEXT("Saved"),false);
     auto Finish=[&](int32 Code,const FString& Message)
@@ -210,7 +211,7 @@ static int32 RunGorgeousVDGStoreAssetPatch(const FString& Params)
         const FString Filename=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreRoutingPatch.json");
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename),true);
         if (!FFileHelper::SaveStringToFile(Text,*Filename)) return 1;
-        UE_LOG(LogTemp,Display,TEXT("VDG_STORE_PATCH: %s; code=%d"),*Message,Code); return Code;
+        GT_D_LOG(TEXT("GT.VDG.Consent.AssetPatch.StorePatchResult"), TEXT("VDG_STORE_PATCH: %s; code=%d"), *Message, Code); return Code;
     };
     auto* Blueprint=LoadObject<UBlueprint>(nullptr,*AssetPath);
     if (!Blueprint) return Finish(1,TEXT("Manager Blueprint did not load"));
@@ -258,7 +259,7 @@ static int32 RunGorgeousVDGStoreAssetPatch(const FString& Params)
     FString Expected;
     if (!FParse::Value(*Params,TEXT("VDGConsentExpectedSHA1="),Expected) || !Expected.Equals(Hash.ToString(),ESearchCase::IgnoreCase))
         return Finish(1,TEXT("Explicit original-package SHA1 missing or mismatched"));
-    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGeatheringManager_AC.uasset");
+    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGStoreBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGatheringManager_AC.uasset");
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Backup),true);
     if (IFileManager::Get().Copy(*Backup,*Filename)!=COPY_OK) return Finish(1,TEXT("Manager backup failed; no graph change"));
     Report->SetStringField(TEXT("OriginalSHA1"),Hash.ToString()); Report->SetStringField(TEXT("Backup"),Backup);
@@ -293,7 +294,7 @@ static int32 RunGorgeousVDGConsentAssetPatch(const FString& Params)
     if (FParse::Param(*Params,TEXT("VDGStoreCommit"))) return RunGorgeousVDGStoreCommitPatch(Params);
     if (FParse::Param(*Params,TEXT("VDGStoreRouting")) || FParse::Param(*Params,TEXT("VDGStoreLookup"))) return RunGorgeousVDGStoreAssetPatch(Params);
     const bool bApply=FParse::Param(*Params,TEXT("PatchVDGConsent")) && FParse::Param(*Params,TEXT("Apply"));
-    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGeathering/Classes/ActorComponents/BP_VisualDataGeatheringInteractor_AC");
+    const FString AssetPath=TEXT("/GorgeousCore/Systems/VisualDataGathering/Classes/ActorComponents/BP_VisualDataGatheringInteractor_AC");
     auto Report=MakeShared<FJsonObject>();
     Report->SetStringField(TEXT("Asset"),AssetPath);
     Report->SetBoolField(TEXT("Apply"),bApply);
@@ -305,7 +306,7 @@ static int32 RunGorgeousVDGConsentAssetPatch(const FString& Params)
         const FString Filename=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGConsentPatch.json");
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(Filename),true);
         if (!FFileHelper::SaveStringToFile(Text,*Filename)) return 1;
-        UE_LOG(LogTemp,Display,TEXT("VDG_CONSENT_PATCH: %s; code=%d; report=%s"),*Message,Code,*Filename);
+        GT_D_LOG(TEXT("GT.VDG.Consent.AssetPatch.ConsentPatchResult"), TEXT("VDG_CONSENT_PATCH: %s; code=%d; report=%s"), *Message, Code, *Filename);
         return Code;
     };
     auto* Blueprint=LoadObject<UBlueprint>(nullptr,*AssetPath);
@@ -315,7 +316,7 @@ static int32 RunGorgeousVDGConsentAssetPatch(const FString& Params)
     int32 MatchingEvents=0,ConsentNodes=0;
     for (UEdGraph* Graph:Graphs) for (UEdGraphNode* Node:Graph->Nodes)
     {
-        if (auto* Event=Cast<UK2Node_CustomEvent>(Node)) if (Event->CustomFunctionName==TEXT("GeatherBySchemaClient")) { Entry=Event; ++MatchingEvents; }
+        if (auto* Event=Cast<UK2Node_CustomEvent>(Node)) if (Event->CustomFunctionName==TEXT("GatherBySchemaClient")) { Entry=Event; ++MatchingEvents; }
         if (auto* Action=Cast<UK2Node_AsyncAction>(Node))
             if (Action->GetFactoryFunction()==UAsyncAction_RequestVDGConsent::StaticClass()->FindFunctionByName(TEXT("RequestVDGConsent"))) { Existing=Action; ++ConsentNodes; }
     }
@@ -338,7 +339,7 @@ static int32 RunGorgeousVDGConsentAssetPatch(const FString& Params)
     FString Expected;
     if (!FParse::Value(*Params,TEXT("VDGConsentExpectedSHA1="),Expected) || !Expected.Equals(Hash.ToString(),ESearchCase::IgnoreCase))
         return Finish(1,TEXT("Explicit original-package SHA1 guard missing or mismatched"));
-    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGConsentBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGeatheringInteractor_AC.uasset");
+    const FString Backup=FPaths::ProjectSavedDir()/TEXT("GorgeousThings/VDGConsentBefore")/FGuid::NewGuid().ToString(EGuidFormats::Digits)/TEXT("BP_VisualDataGatheringInteractor_AC.uasset");
     IFileManager::Get().MakeDirectory(*FPaths::GetPath(Backup),true);
     if (IFileManager::Get().Copy(*Backup,*Filename)!=COPY_OK) return Finish(1,TEXT("Original package backup failed; no graph change made"));
     Report->SetStringField(TEXT("OriginalSHA1"),Hash.ToString()); Report->SetStringField(TEXT("Backup"),Backup);

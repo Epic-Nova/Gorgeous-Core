@@ -29,6 +29,9 @@ public class GorgeousCoreEditor : GorgeousModuleRules
         PrecompileForTargets = PrecompileTargetsType.Any;
         bUsePrecompiled = false;
 
+
+        WriteDefinitionDebugReport();
+
         // The base class handles core Unreal dependencies automatically based on headers.
         // We explicitly include non-header dependencies or third-party crypto here:
         PrivateDependencyModuleNames.AddRange(new[]

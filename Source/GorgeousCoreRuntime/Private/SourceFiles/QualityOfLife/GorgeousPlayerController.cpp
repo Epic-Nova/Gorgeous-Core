@@ -1,4 +1,5 @@
 #include "HAL/PlatformTime.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 /*==========================================================================>
 |               Gorgeous Core - Core functionality provider                 |
@@ -32,7 +33,6 @@
 #include "Framework/Application/SlateApplication.h"
 //<-------------------------------------------------------------------------->
 
-DEFINE_LOG_CATEGORY_STATIC(LogGorgeousPlayerController, Log, All);
 
 //=============================================================================
 // AGorgeousPlayerController Implementation
@@ -156,7 +156,7 @@ void AGorgeousPlayerController::RecordAutomationRPCWitness(const FName HandlerNa
 
 void AGorgeousPlayerController::Automation_ServerToClient(int32 Sequence, const FString& Stamp)
 {
-	UE_LOG(LogGorgeousPlayerController, Log, TEXT("[AutomationRPC] Server->Client handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.ServerToClientHandled"), TEXT("[AutomationRPC] Server->Client handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
 #if WITH_DEV_AUTOMATION_TESTS
 	RecordAutomationRPCWitness(TEXT("Automation_ServerToClient"), Sequence, Stamp);
 #endif
@@ -164,7 +164,7 @@ void AGorgeousPlayerController::Automation_ServerToClient(int32 Sequence, const 
 
 void AGorgeousPlayerController::Automation_ClientToServer(int32 Sequence, const FString& Stamp)
 {
-	UE_LOG(LogGorgeousPlayerController, Log, TEXT("[AutomationRPC] Client->Server handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.ClientToServerHandled"), TEXT("[AutomationRPC] Client->Server handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
 #if WITH_DEV_AUTOMATION_TESTS
 	RecordAutomationRPCWitness(TEXT("Automation_ClientToServer"), Sequence, Stamp);
 #endif
@@ -172,7 +172,7 @@ void AGorgeousPlayerController::Automation_ClientToServer(int32 Sequence, const 
 
 void AGorgeousPlayerController::Automation_Multicast(int32 Sequence, const FString& Stamp)
 {
-	UE_LOG(LogGorgeousPlayerController, Log, TEXT("[AutomationRPC] Multicast handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.MulticastHandled"), TEXT("[AutomationRPC] Multicast handled on %s seq=%d stamp=%s"), *GetName(), Sequence, *Stamp);
 #if WITH_DEV_AUTOMATION_TESTS
 	RecordAutomationRPCWitness(TEXT("Automation_Multicast"), Sequence, Stamp);
 #endif
@@ -187,9 +187,7 @@ void AGorgeousPlayerController::Automation_HandleRPC_WithReturnOV(UInteger_SOV* 
 	{
 		ReturnValue->Value = TestInputInt * RPC_TRANSFORM_MULTIPLY + RPC_TRANSFORM_ADD;
 	}
-	UE_LOG(LogGorgeousPlayerController, Log,
-		TEXT("[AutomationRPC] Owner handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"),
-		*GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
+	GT_I_LOG(TEXT("GT.AutoReplication.Tests.RPC.OwnerReturnHandled"), TEXT("[AutomationRPC] Owner handler on %s: TestInputInt=%d -> ReturnOV.Value=%d seq=%d from=%s"), *GetName(), TestInputInt, ReturnValue ? ReturnValue->Value : -1, Sequence, *Origin);
 #if WITH_DEV_AUTOMATION_TESTS
 	RecordAutomationRPCWitness(TEXT("Automation_HandleRPC_WithReturnOV"), Sequence,
 		FString::Printf(TEXT("Int=%d->OV=%d Str=%s From=%s"),

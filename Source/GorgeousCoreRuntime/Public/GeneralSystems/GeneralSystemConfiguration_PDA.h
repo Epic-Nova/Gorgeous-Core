@@ -13,6 +13,8 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "GeneralSystems/GorgeousPrimaryDataAsset.h"
+#include "Helpers/Macros/GorgeousVersionHelperMacros.h"
+#include GORGEOUS_56_SWITCH("InstancedStruct.h", "StructUtils/InstancedStruct.h")
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
 #include "GeneralSystemConfiguration_PDA.generated.h"
 //<-------------------------------------------------------------------------->
@@ -193,6 +195,10 @@ public:
     // The interaction component of this system that handles client side stuff
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration", meta = (EditCondition = "!bIsCodeSystem", EditConditionHides))
     TSubclassOf<UGeneralSystem_AC> InteractorComponent;
+
+    /** Pick a struct to expose its editable fields in Core → Systems. These values are the asset defaults. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Project Settings")
+    FInstancedStruct ProjectSettingsDefaults;
 
     // Marks systems implemented entirely in code and without generated system components.
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "General Core System Configuration")

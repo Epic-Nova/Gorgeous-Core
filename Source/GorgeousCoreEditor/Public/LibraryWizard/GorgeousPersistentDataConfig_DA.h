@@ -12,7 +12,7 @@
 
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
-#include "Helpers/GorgeousPluginHelper.h"
+#include "Helpers/GorgeousPersistentData.h"
 //<--------------------------=== Engine Includes ===------------------------->
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -40,9 +40,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Validation")
 	bool bHasRunInitialValidation = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Developer")
-	bool bForceDevMode = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cache")
 	TArray<FGorgeousOfflineSystemCacheEntry> OfflineSystemCache;

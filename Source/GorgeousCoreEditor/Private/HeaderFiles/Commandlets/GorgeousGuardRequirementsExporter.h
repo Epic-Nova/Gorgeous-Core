@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios. All rights reserved.
 #pragma once
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
 #include "Interfaces/IPluginManager.h"
 #include "Misc/FileHelper.h"
@@ -21,7 +22,7 @@ inline int32 Export(const FString& Params)
     FString PluginName = TEXT("GorgeousCore");
     FParse::Value(*Params, TEXT("GuardPlugin="), PluginName);
     const auto Plugin = IPluginManager::Get().FindPlugin(PluginName);
-    if (!Plugin) { UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: plugin not found: %s"), *PluginName); return 1; }
+    if (!Plugin) { GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.PluginMissing"), TEXT("GUARD_MANIFEST: plugin not found: %s"), *PluginName); return 1; }
     FString Root = FPaths::ConvertRelativePathToFull(Plugin->GetBaseDir()) + TEXT("/");
     FPaths::NormalizeDirectoryName(Root);
     Root += TEXT("/");
@@ -34,7 +35,7 @@ inline int32 Export(const FString& Params)
     Filter.bRecursivePaths = true;
     TArray<FAssetData> Assets;
     Registry.GetAssets(Filter, Assets);
-    if (Assets.IsEmpty()) { UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: no guard assets found under /%s; refusing an empty export"), *PluginName); return 1; }
+    if (Assets.IsEmpty()) { GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.NoGuardsFound"), TEXT("GUARD_MANIFEST: no guard assets found under /%s; refusing an empty export"), *PluginName); return 1; }
     Assets.Sort([](const FAssetData& A, const FAssetData& B) { return A.GetSoftObjectPath().ToString() < B.GetSoftObjectPath().ToString(); });
     TArray<TSharedPtr<FJsonValue>> Guards;
     TSet<FName> Identifiers;
@@ -58,12 +59,12 @@ inline int32 Export(const FString& Params)
         const auto* Guard = Cast<UGorgeousExtensionResourceGuard>(Asset.GetAsset());
         if (!Guard || Guard->SystemIdentifier.IsNone() || Identifiers.Contains(Guard->SystemIdentifier) || Guard->GetOutermost()->IsDirty())
         {
-            UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: invalid, duplicate, or unsaved guard: %s"), *Asset.GetSoftObjectPath().ToString()); return 1;
+            GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.InvalidGuard"), TEXT("GUARD_MANIFEST: invalid, duplicate, or unsaved guard: %s"), *Asset.GetSoftObjectPath().ToString()); return 1;
         }
         Identifiers.Add(Guard->SystemIdentifier);
         FString Filename = FPaths::ConvertRelativePathToFull(FPackageName::LongPackageNameToFilename(Asset.PackageName.ToString(), FPackageName::GetAssetPackageExtension()));
         FPaths::NormalizeFilename(Filename);
-        if (!Filename.StartsWith(Root) || !FPaths::FileExists(Filename)) { UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: source asset outside plugin or missing: %s"), *Filename); return 1; }
+        if (!Filename.StartsWith(Root) || !FPaths::FileExists(Filename)) { GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.SourceAssetInvalid"), TEXT("GUARD_MANIFEST: source asset outside plugin or missing: %s"), *Filename); return 1; }
         FString Relative = Filename.Mid(Root.Len());
         Folders.Add(FPaths::GetPath(Relative));
         auto Entry = MakeShared<FJsonObject>();
@@ -94,7 +95,7 @@ inline int32 Export(const FString& Params)
     {
         TArray<uint8> Bytes;
         if (!FFileHelper::LoadFileToArray(Bytes, *(Root + Name)))
-        { UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: cannot hash %s"), *Name); return 1; }
+        { GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.SourceHashFailed"), TEXT("GUARD_MANIFEST: cannot hash %s"), *Name); return 1; }
         auto Entry = MakeShared<FJsonObject>();
         Entry->SetStringField(TEXT("Path"), Name);
         // This fingerprint detects stale build inputs; it is not a package signature.
@@ -117,9 +118,9 @@ inline int32 Export(const FString& Params)
     {
         IFileManager::Get().MakeDirectory(*FPaths::GetPath(Destination), true);
         if (!FFileHelper::SaveStringToFile(Output, *Destination, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM))
-        { UE_LOG(LogTemp, Error, TEXT("GUARD_MANIFEST: cannot write %s"), *Destination); return 1; }
+        { GT_E_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.WriteFailed"), TEXT("GUARD_MANIFEST: cannot write %s"), *Destination); return 1; }
     }
-    UE_LOG(LogTemp, Display, TEXT("GUARD_MANIFEST_RESULT Plugin=%s Guards=%d Sources=%d Path=%s"), *PluginName, Guards.Num(), Sources.Num(), *Destination);
+    GT_D_LOG(TEXT("GT.ExtensionResourceGuard.RequirementsExport.Result"), TEXT("GUARD_MANIFEST_RESULT Plugin=%s Guards=%d Sources=%d Path=%s"), *PluginName, Guards.Num(), Sources.Num(), *Destination);
     return 0;
 }
 }

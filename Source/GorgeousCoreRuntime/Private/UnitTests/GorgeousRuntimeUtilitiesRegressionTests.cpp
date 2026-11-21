@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Simsalabim Studios (Nils Bergemann). All rights reserved.
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
+#include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "Helpers/GorgeousFileHelper.h"
 #include "Helpers/GorgeousLoggingHelper.h"
 #include "Libraries/GorgeousLoggingBlueprintFunctionLibrary.h"
@@ -59,7 +60,7 @@ bool FGorgeousLoggingSuppressionRegressionTest::RunTest(const FString&)
     GorgeousLogging::SetLoggingKeySuppressed(Key, false);
     TestFalse(TEXT("False lifts suppression in the Utilities DLL too"), UGorgeousLoggingBlueprintFunctionLibrary::IsLoggingKeySuppressed(Key));
     int32 Evaluations = 0;
-    GT_E_LOG_ENSURE(++Evaluations == 1, TEXT("Gorgeous.Audit.Condition"), TEXT("Condition must be evaluated once"));
+    GT_E_LOG_ENSURE(TEXT("GT.Tests.Logging.Condition"), ++Evaluations == 1, TEXT("Condition must be evaluated once"));
     TestEqual(TEXT("Assertion macro evaluates condition once"), Evaluations, 1);
     bool bOnly58 = false;
     GORGEOUS_58_ONLY(bOnly58 = true;)

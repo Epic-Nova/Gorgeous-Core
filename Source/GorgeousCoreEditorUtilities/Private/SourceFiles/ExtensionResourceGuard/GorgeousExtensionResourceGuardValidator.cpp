@@ -13,7 +13,6 @@
 //<=============================--- Includes ---=============================>
 //<--------------------------=== Module Includes ===------------------------->
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuardEnforcer.h"
-#define GT_DURATION 15.0f
 #include "Helpers/Macros/GorgeousLoggingHelperMacros.h"
 #include "ExtensionResourceGuard/GorgeousExtensionResourceGuard.h"
 #include "Helpers/GorgeousLoggingHelper.h"
@@ -24,6 +23,11 @@
 #include "UnrealEdMisc.h"
 #include "Interfaces/IProjectManager.h"
 //<-------------------------------------------------------------------------->
+
+// Keep guard notifications readable without leaking their lifetime into unity neighbours.
+#pragma push_macro("GT_DURATION")
+#undef GT_DURATION
+#define GT_DURATION 15.0f
 
 //=============================================================================
 // UGorgeousExtensionResourceGuardValidator Implementation
@@ -202,7 +206,7 @@ EDataValidationResult UGorgeousExtensionResourceGuardValidator::ValidateLoadedAs
 			GT_E_LOG_FULL_EX(
 				"GT.ExtensionResourceGuard.MissingBlueprintPacks",
 				TEXT("Missing required blueprint extension pack(s) '%s' for system '%s'."),
-				3.0f,
+				GT_DURATION,
 				true,
 				true,
 				true,
@@ -334,3 +338,6 @@ void UGorgeousExtensionResourceGuardValidator::HandleEnableRequiredPlugin(const 
 		}
 	}
 }
+
+#undef GT_DURATION
+#pragma pop_macro("GT_DURATION")

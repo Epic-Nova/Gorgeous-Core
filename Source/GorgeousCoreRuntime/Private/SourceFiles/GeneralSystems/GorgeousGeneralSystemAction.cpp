@@ -2,6 +2,7 @@
 #include "GeneralSystems/GorgeousGeneralSystemAction.h"
 #include "GeneralSystems/GorgeousConfigurationText.h"
 #include "GeneralSystems/GorgeousProjectSettingsContribution.h"
+#include "Helpers/GorgeousPersistentData.h"
 #include "Misc/App.h"
 
 #include "DataRegistrySubsystem.h"
@@ -159,7 +160,7 @@ void UGorgeousAddDataRegistrySourceAction::OnSystemActivated_Implementation(UGen
     const FSoftObjectPath SourcePath = SourceAsset.ToSoftObjectPath();
     if (!RegistryType.IsValid() || !SourcePath.IsValid())
     {
-        UE_LOG(LogTemp, Warning, TEXT("General system '%s' has an invalid Data Registry extension action."), *GetNameSafe(SystemConfiguration));
+        GT_W_LOG(TEXT("GT.GeneralSystemAction.DataRegistry.Invalid"), TEXT("General system '%s' has an invalid Data Registry extension action."), *GetNameSafe(SystemConfiguration));
         return;
     }
 
@@ -865,63 +866,12 @@ namespace GorgeousPromptPrivate
 
     static bool IsDismissed(const FString& Key)
     {
-        FString Contents;
-        TSharedPtr<FJsonObject> Root;
-        const FString Path = FPaths::ProjectSavedDir() / TEXT("GorgeousThings/GorgeousPersistentData.json");
-        if (!FFileHelper::LoadFileToString(Contents, *Path))
-        {
-            return false;
-        }
-        const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-        if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid())
-        {
-            return false;
-        }
-        const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
-        if (!Root->TryGetArrayField(TEXT("DismissedSystemActionPrompts"), Values) || !Values)
-        {
-            return false;
-        }
-        for (const TSharedPtr<FJsonValue>& Value : *Values)
-        {
-            if (Value.IsValid() && Value->AsString() == Key)
-            {
-                return true;
-            }
-        }
-        return false;
+        return FGorgeousPersistentData::Get().IsSystemActionPromptDismissed(Key);
     }
 
     static void Dismiss(const FString& Key)
     {
-        const FString Path = FPaths::ProjectSavedDir() / TEXT("GorgeousThings/GorgeousPersistentData.json");
-        FString Contents;
-        TSharedPtr<FJsonObject> Root = MakeShared<FJsonObject>();
-        if (FFileHelper::LoadFileToString(Contents, *Path))
-        {
-            const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Contents);
-            TSharedPtr<FJsonObject> Parsed;
-            if (FJsonSerializer::Deserialize(Reader, Parsed) && Parsed.IsValid())
-            {
-                Root = Parsed;
-            }
-        }
-
-        TArray<TSharedPtr<FJsonValue>> Values;
-        const TArray<TSharedPtr<FJsonValue>>* Existing = nullptr;
-        if (Root->TryGetArrayField(TEXT("DismissedSystemActionPrompts"), Existing) && Existing)
-        {
-            Values = *Existing;
-        }
-        Values.Add(MakeShared<FJsonValueString>(Key));
-        Root->SetArrayField(TEXT("DismissedSystemActionPrompts"), Values);
-        FString Output;
-        const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Output);
-        if (FJsonSerializer::Serialize(Root.ToSharedRef(), Writer))
-        {
-            IFileManager::Get().MakeDirectory(*FPaths::GetPath(Path), true);
-            FFileHelper::SaveStringToFile(Output, *Path);
-        }
+        FGorgeousPersistentData::Get().DismissSystemActionPrompt(Key);
     }
 }
 
@@ -1094,6 +1044,6 @@ void UGorgeousTriggerPromptAction::OnSystemActivated_Implementation(UGeneralSyst
         }
     }
 #else
-    UE_LOG(LogTemp, Warning, TEXT("Editor-only trigger prompt '%s' was skipped outside the editor."), *GetNameSafe(this));
+    GT_W_LOG(TEXT("GT.GeneralSystemAction.EditorPrompt.SkippedOutsideEditor"), TEXT("Editor-only trigger prompt '%s' was skipped outside the editor."), *GetNameSafe(this));
 #endif
 }

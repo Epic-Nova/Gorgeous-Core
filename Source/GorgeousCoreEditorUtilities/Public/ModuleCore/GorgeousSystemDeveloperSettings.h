@@ -12,13 +12,14 @@
 
 //<=============================--- Includes ---=============================>
 //--------------=== Third Party & Miscellaneous Includes ===-----------------
+#include "ModuleCore/GorgeousCoreDeveloperSettings.h"
 #include "GorgeousSystemDeveloperSettings.generated.h"
 //<-------------------------------------------------------------------------->
 
 class UGeneralSystemConfiguration_PDA;
 
-UCLASS(Config = Editor, DefaultConfig, DisplayName = "Core ↪ System Overrides")
-class GORGEOUSCOREEDITORUTILITIES_API UGorgeousSystemDeveloperSettings : public UDeveloperSettings
+UCLASS(Config = Editor, DefaultConfig, DisplayName = "Core ↪ System Overrides", meta = (GorgeousSettingsPage = "Systems", GorgeousSettingsGuard = "General"))
+class GORGEOUSCOREEDITORUTILITIES_API UGorgeousSystemDeveloperSettings : public UGorgeousCoreDeveloperSettings
 {
     GENERATED_BODY()
 
@@ -29,7 +30,6 @@ public:
     static UGorgeousSystemDeveloperSettings* Get();
 
 #if WITH_EDITOR
-    virtual FName GetCategoryName() const override { return TEXT("Gorgeous Things"); }
     virtual FText GetSectionText() const override;
 #endif
 

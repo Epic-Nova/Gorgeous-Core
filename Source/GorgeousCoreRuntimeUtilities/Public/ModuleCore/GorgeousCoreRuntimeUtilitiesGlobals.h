@@ -15,7 +15,8 @@
 #include "GorgeousCoreRuntimeUtilitiesStructures.h"
 //<-------------------------------------------------------------------------->
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FGorgeousLogEntryDelegate, const FGorgeousLogEntry&);
+// Worker diagnostics may broadcast while editor/runtime subscribers bind or unbind.
+DECLARE_TS_MULTICAST_DELEGATE_OneParam(FGorgeousLogEntryDelegate, const FGorgeousLogEntry&);
 //<--------------------------------------------------->
 
 //<============================--- C++ Only ---=============================>
