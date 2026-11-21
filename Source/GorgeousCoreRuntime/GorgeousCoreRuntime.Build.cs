@@ -106,15 +106,8 @@ public class GorgeousCoreRuntime : GorgeousModuleRules
     }
 
     [GorgeousMacroProvider]
-    public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros(ReadOnlyTargetRules Target)
+    public static System.Collections.Generic.IEnumerable<string> ProvideGlobalMacros()
     {
-        var moduleDir = GetModuleDir();
-        var pluginsDir = Path.GetFullPath(Path.Combine(moduleDir, "..", "..", "..", ".."));
-        
-        var macros = new System.Collections.Generic.List<string>();
-        macros.AddRange(InjectPluginMacros(pluginsDir, Target.ProjectFile?.FullName));
-        macros.AddRange(InjectGeneralSystemMacros("Core", moduleDir, true));
-        
-        return macros;
+        return InjectGeneralSystemMacros("Core", GetModuleDir(), true);
     }
 }
